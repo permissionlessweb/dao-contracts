@@ -74,7 +74,6 @@ dao-voting-cw20-staked = { workspace = true }
 dao-voting-cw4 = { workspace = true }
 dao-voting-cw721-staked = { workspace = true }
 dao-voting-cw721-roles = { workspace = true }
-dao-voting-onft-staked = { workspace = true }
 dao-voting-token-staked = { workspace = true }
 dao-proposal-hook-counter = { workspace = true }
 
