@@ -26,6 +26,7 @@ cw-payroll-factory.workspace = true
 cw-token-swap = { path = "../../contracts/external/cw-token-swap" }
 cw-tokenfactory-issuer.workspace = true
 dao-migrator = { path = "../../contracts/external/dao-migrator" }
+dao-calendar.workspace = true
 dao-dao-core.workspace = true
 dao-interface.workspace = true
 dao-pre-propose-approval-single.workspace = true
