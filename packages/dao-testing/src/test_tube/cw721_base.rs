@@ -1,7 +1,7 @@
 use cosmwasm_std::{Coin, Empty};
 use cw721_base::{
+    error::ContractError,
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
-    ContractError,
 };
 use osmosis_test_tube::{
     osmosis_std::types::cosmwasm::wasm::v1::MsgExecuteContractResponse, Account, Module,
@@ -77,7 +77,7 @@ impl<'a> Cw721Base<'a> {
     // executes
     pub fn execute(
         &self,
-        execute_msg: &ExecuteMsg<Empty, Empty>,
+        execute_msg: &ExecuteMsg,
         funds: &[Coin],
         signer: &SigningAccount,
     ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
@@ -86,7 +86,7 @@ impl<'a> Cw721Base<'a> {
     }
 
     // queries
-    pub fn query<T>(&self, query_msg: &QueryMsg<Empty>) -> Result<T, RunnerError>
+    pub fn query<T>(&self, query_msg: &QueryMsg) -> Result<T, RunnerError>
     where
         T: DeserializeOwned,
     {
