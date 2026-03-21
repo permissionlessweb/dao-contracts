@@ -5,10 +5,11 @@ use cosmwasm_std::{
     Order, Reply, Response, StdError, StdResult, SubMsg, WasmMsg,
 };
 use cw2::{get_contract_version, set_contract_version, ContractVersion};
+use cw721::DefaultOptionalCollectionExtension;
+use cw_reply_helper::parse_reply_instantiate_data;
 use cw_paginate_storage::{paginate_map, paginate_map_keys, paginate_map_values};
 use cw_storage_plus::Map;
 use cw_utils::Duration;
-use cw721::RoyaltyInfo;
 use dao_interface::{
     msg::{ExecuteMsg, InitialItem, InstantiateMsg, MigrateMsg, QueryMsg},
     query::{
@@ -479,9 +480,12 @@ pub fn execute_update_cw721_list(
         return Err(ContractError::Unauthorized {});
     }
     do_update_addr_list(deps, CW721_LIST, to_add, to_remove, |addr, deps| {
-        let _info: cw721::ContractInfoResponse = deps
-            .querier
-            .query_wasm_smart(addr, &cw721::Cw721QueryMsg::ContractInfo {})?;
+        let _info: cw721::msg::CollectionInfoAndExtensionResponse<
+            DefaultOptionalCollectionExtension,
+        > = deps.querier.query_wasm_smart(
+            addr,
+            &cw721::msg::Cw721QueryMsg::<Empty, DefaultOptionalCollectionExtension, Empty>::GetCollectionInfoAndExtension {},
+        )?;
         Ok(())
     })?;
     Ok(Response::default().add_attribute("action", "update_cw721_list"))
@@ -903,9 +907,24 @@ pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, Con
                 return Err(ContractError::AlreadyMigrated {});
             }
 
-            use cw_core_v1 as v1;
+            // Redeclare v1 storage items using v2-compatible types.
+            // The raw storage format (key names + serde JSON) is identical
+            // across cosmwasm-std versions, so we can read v1 data directly.
+            use cw_storage_plus::Item as Item2;
+            use cw_storage_plus::Map as Map2;
 
-            let current_keys = v1::state::PROPOSAL_MODULES
+            #[derive(serde::Serialize, serde::Deserialize)]
+            struct V1Config {
+                name: String,
+                description: String,
+                image_url: Option<String>,
+                automatically_add_cw20s: bool,
+                automatically_add_cw721s: bool,
+            }
+            const V1_PROPOSAL_MODULES: Map2<Addr, Empty> = Map2::new("proposal_modules");
+            const V1_CONFIG: Item2<V1Config> = Item2::new("config");
+
+            let current_keys = V1_PROPOSAL_MODULES
                 .keys(deps.storage, None, None, Order::Ascending)
                 .collect::<StdResult<Vec<Addr>>>()?;
 
@@ -930,7 +949,7 @@ pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, Con
                 })?;
 
             // Update config to have the V2 "dao_uri" field.
-            let v1_config = v1::state::CONFIG.load(deps.storage)?;
+            let v1_config = V1_CONFIG.load(deps.storage)?;
             CONFIG.save(
                 deps.storage,
                 &Config {

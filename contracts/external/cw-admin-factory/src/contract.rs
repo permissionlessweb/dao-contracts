@@ -5,10 +5,10 @@ use cosmwasm_std::{
     WasmMsg,
 };
 
-use cw2::set_contract_version;
 use crate::error::ContractError;
 use crate::msg::{AdminResponse, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::state::{ADMIN, EXPECT};
+use cw2::set_contract_version;
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:cw-admin-factory";
 pub(crate) const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -139,32 +139,49 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
     let msg_id = msg.id;
     match msg_id {
         INSTANTIATE_CONTRACT_REPLY_ID | INSTANTIATE2_CONTRACT_REPLY_ID => {
-            let res = parse_reply_instantiate_data(msg)?;
-            let contract_addr = deps.api.addr_validate(&res.contract_address)?;
+            match msg.result {
+                cosmwasm_std::SubMsgResult::Ok(res) => {
+        
+                    let contract_addr = deps.api.addr_validate(&res
+                        .events
+                        .iter()
+                        .find(|e| e.ty == "instantiate")
+                        .and_then(|ev| {
+                            ev.attributes.iter().find(|a| {
+                                a.key == "_contract_address" || a.key == "contract_address"
+                            })
+                        })
+                        .ok_or_else(|| ContractError::ReplyParseError {
+                            err: "contract_address not found in reply".to_string(),
+                        })?.value)?;
 
-            if msg_id == INSTANTIATE2_CONTRACT_REPLY_ID {
-                // If saved an expected address, verify it matches and clear it.
-                let expect = EXPECT.may_load(deps.storage)?;
-                if let Some(expect) = expect {
-                    EXPECT.remove(deps.storage);
-                    if contract_addr != expect {
-                        return Err(ContractError::UnexpectedContractAddress {
-                            expected: expect.to_string(),
-                            actual: contract_addr.to_string(),
-                        });
+                    if msg_id == INSTANTIATE2_CONTRACT_REPLY_ID {
+                        // If saved an expected address, verify it matches and clear it.
+                        let expect = EXPECT.may_load(deps.storage)?;
+                        if let Some(expect) = expect {
+                            EXPECT.remove(deps.storage);
+                            if contract_addr != expect {
+                                return Err(ContractError::UnexpectedContractAddress {
+                                    expected: expect.to_string(),
+                                    actual: contract_addr.to_string(),
+                                });
+                            }
+                        }
                     }
+
+                    // Make the contract its own admin.
+                    let msg = WasmMsg::UpdateAdmin {
+                        contract_addr: contract_addr.to_string(),
+                        admin: contract_addr.to_string(),
+                    };
+
+                    Ok(Response::default()
+                        .add_attribute("set contract admin as itself", contract_addr)
+                        .add_message(msg))
                 }
+
+                cosmwasm_std::SubMsgResult::Err(_) => todo!(),
             }
-
-            // Make the contract its own admin.
-            let msg = WasmMsg::UpdateAdmin {
-                contract_addr: contract_addr.to_string(),
-                admin: contract_addr.to_string(),
-            };
-
-            Ok(Response::default()
-                .add_attribute("set contract admin as itself", contract_addr)
-                .add_message(msg))
         }
         _ => Err(ContractError::UnknownReplyID {}),
     }

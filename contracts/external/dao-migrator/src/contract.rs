@@ -19,11 +19,13 @@ use crate::{
     types::{
         CodeIdPair, MigrationMsgs, MigrationParams, ModulesAddrs, TestState, V1CodeIds, V2CodeIds,
     },
-    utils::state_queries::{
-        query_proposal_count_v1, query_proposal_count_v2, query_proposal_v1, query_proposal_v2,
-        query_single_voting_power_v1, query_single_voting_power_v2, query_total_voting_power_v1,
-        query_total_voting_power_v2,
-    },
+};
+
+#[cfg(feature = "v1")]
+use crate::utils::state_queries::{
+    query_proposal_count_v1, query_proposal_count_v2, query_proposal_v1, query_proposal_v2,
+    query_single_voting_power_v1, query_single_voting_power_v2, query_total_voting_power_v1,
+    query_total_voting_power_v2,
 };
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:dao-migrator";
@@ -65,17 +67,10 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
-    execute_migration_v1_v2(
-        deps,
-        env,
-        info,
-        msg.sub_daos,
-        msg.migration_params,
-        msg.v1_code_ids,
-        msg.v2_code_ids,
-    )
+   Ok(Response::default())
 }
 
+#[cfg(feature = "v1")]
 fn execute_migration_v1_v2(
     deps: DepsMut,
     env: Env,
@@ -128,11 +123,11 @@ fn execute_migration_v1_v2(
             v2_code_ids.cw4_voting,
             MigrationMsgs::DaoVotingCw4(dao_voting_cw4::msg::MigrateMsg {}),
         ), // cw4-voting -> dao_voting_cw4
-        CodeIdPair::new(
-            v1_code_ids.cw20_staked_balances_voting,
-            v2_code_ids.cw20_staked_balances_voting,
-            MigrationMsgs::DaoVotingCw20Staked(dao_voting_cw20_staked::msg::MigrateMsg {}),
-        ), // cw20-staked-balances-voting -> dao-voting-cw20-staked
+           // CodeIdPair::new(
+           //     v1_code_ids.cw20_staked_balances_voting,
+           //     v2_code_ids.cw20_staked_balances_voting,
+           //     MigrationMsgs::DaoVotingCw20Staked(dao_voting_cw20_staked::msg::MigrateMsg {}),
+           // ), // cw20-staked-balances-voting -> dao-voting-cw20-staked
     ];
     let staking_pair = CodeIdPair::new(
         v1_code_ids.cw20_stake,
@@ -175,49 +170,49 @@ fn execute_migration_v1_v2(
         );
         modules_addrs.voting = Some(voting_module.clone());
 
-        // If voting module is staked cw20, we check that they confirmed migration
-        // and migrate the cw20_staked module
-        if let MigrationMsgs::DaoVotingCw20Staked(_) = voting_pair.migrate_msg {
-            if !migration_params
-                .migrate_stake_cw20_manager
-                .unwrap_or_default()
-            {
-                return Err(ContractError::DontMigrateCw20);
-            }
+        // // If voting module is staked cw20, we check that they confirmed migration
+        // // and migrate the cw20_staked module
+        // if let MigrationMsgs::DaoVotingCw20Staked(_) = voting_pair.migrate_msg {
+        //     if !migration_params
+        //         .migrate_stake_cw20_manager
+        //         .unwrap_or_default()
+        //     {
+        //         return Err(ContractError::DontMigrateCw20);
+        //     }
 
-            let cw20_staked_addr: Addr = deps.querier.query_wasm_smart(
-                voting_module,
-                &cw20_staked_balance_voting_v1::msg::QueryMsg::StakingContract {},
-            )?;
+        //     let cw20_staked_addr: Addr = deps.querier.query_wasm_smart(
+        //         voting_module,
+        //         &cw20_staked_balance_voting_v1::msg::QueryMsg::StakingContract {},
+        //     )?;
 
-            let c20_staked_code_id = if let Ok(contract_info) = deps
-                .querier
-                .query_wasm_contract_info(cw20_staked_addr.clone())
-            {
-                contract_info.code_id
-            } else {
-                // Return false if we don't get contract info, means something went wrong.
-                return Err(ContractError::NoContractInfo {
-                    address: cw20_staked_addr.into(),
-                });
-            };
+        //     let c20_staked_code_id = if let Ok(contract_info) = deps
+        //         .querier
+        //         .query_wasm_contract_info(cw20_staked_addr.clone())
+        //     {
+        //         contract_info.code_id
+        //     } else {
+        //         // Return false if we don't get contract info, means something went wrong.
+        //         return Err(ContractError::NoContractInfo {
+        //             address: cw20_staked_addr.into(),
+        //         });
+        //     };
 
-            // If module is not DAO DAO module
-            if c20_staked_code_id != staking_pair.v1_code_id {
-                return Err(ContractError::CantMigrateModule {
-                    code_id: c20_staked_code_id,
-                });
-            }
+        //     // If module is not DAO DAO module
+        //     if c20_staked_code_id != staking_pair.v1_code_id {
+        //         return Err(ContractError::CantMigrateModule {
+        //             code_id: c20_staked_code_id,
+        //         });
+        //     }
 
-            msgs.push(
-                WasmMsg::Migrate {
-                    contract_addr: cw20_staked_addr.to_string(),
-                    new_code_id: staking_pair.v2_code_id,
-                    msg: to_json_binary(&staking_pair.migrate_msg).unwrap(),
-                }
-                .into(),
-            );
-        }
+        //     msgs.push(
+        //         WasmMsg::Migrate {
+        //             contract_addr: cw20_staked_addr.to_string(),
+        //             new_code_id: staking_pair.v2_code_id,
+        //             msg: to_json_binary(&staking_pair.migrate_msg).unwrap(),
+        //         }
+        //         .into(),
+        //     );
+        // }
     } else {
         return Err(ContractError::VotingModuleNotFound);
     }
@@ -339,6 +334,7 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
         V1_V2_REPLY_ID => {
             let core_addr = CORE_ADDR.load(deps.storage)?;
             // This is called after we got all the migrations successfully
+            #[cfg(feature = "v1")]
             test_state(deps.as_ref())?;
 
             // FINALLY remove the migrator from the core
@@ -371,6 +367,7 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
     }
 }
 
+#[cfg(feature = "v1")]
 fn query_state_v1(deps: Deps, module_addrs: ModulesAddrs) -> Result<TestState, ContractError> {
     let proposal_counts = query_proposal_count_v1(deps, module_addrs.proposals.clone())?;
     let (proposals, sample_proposal_data) = query_proposal_v1(deps, module_addrs.proposals)?;
@@ -394,6 +391,7 @@ fn query_state_v1(deps: Deps, module_addrs: ModulesAddrs) -> Result<TestState, C
     })
 }
 
+#[cfg(feature = "v1")]
 fn query_state_v2(deps: Deps, module_addrs: ModulesAddrs) -> Result<TestState, ContractError> {
     let proposal_counts = query_proposal_count_v2(deps, module_addrs.proposals.clone())?;
     let (proposals, sample_proposal_data) =
@@ -418,6 +416,7 @@ fn query_state_v2(deps: Deps, module_addrs: ModulesAddrs) -> Result<TestState, C
     })
 }
 
+#[cfg(feature = "v1")]
 fn test_state(deps: Deps) -> Result<(), ContractError> {
     let old_state = TEST_STATE.load(deps.storage)?;
     let modules_addrs = MODULES_ADDRS.load(deps.storage)?;

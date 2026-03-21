@@ -6,10 +6,9 @@ use cosmwasm_std::{
 };
 use cw2::{get_contract_version, set_contract_version, ContractVersion};
 use cw721::{
-    msg::{Cw721ExecuteMsg, Cw721QueryMsg, NumTokensResponse},
+    msg::{Cw721ExecuteMsg, NumTokensResponse},
     receiver::Cw721ReceiveMsg,
-    DefaultOptionalCollectionExtension, DefaultOptionalCollectionExtensionMsg,
-    DefaultOptionalNftExtension,
+    DefaultOptionalCollectionExtension,
 };
 use cw_storage_plus::Bound;
 use cw_utils::Duration;
@@ -28,7 +27,7 @@ use crate::msg::{
 };
 use crate::state::{
     register_staked_nft, register_unstaked_nfts, Config, ACTIVE_THRESHOLD, CONFIG, DAO, HOOKS,
-    INITIAL_NFTS, LEGACY_NFT_CLAIMS, NFT_BALANCES, NFT_CLAIMS, STAKED_NFTS_PER_OWNER,
+    INITIAL_NFTS, NFT_BALANCES, NFT_CLAIMS, STAKED_NFTS_PER_OWNER,
     TOTAL_STAKED_NFTS,
 };
 use crate::ContractError;
@@ -103,7 +102,7 @@ pub fn instantiate(
                 if let NftContract::Existing { ref address } = msg.nft_contract {
                     let nft_supply: NumTokensResponse = deps.querier.query_wasm_smart(
                         address,
-                        &Cw721QueryMsg::<Empty, Empty, Empty>::NumTokens {},
+                        &cw721_base::msg::QueryMsg::NumTokens {},
                     )?;
                     // Check the absolute count is less than the supply of NFTs and
                     // greater than zero.
@@ -312,14 +311,8 @@ pub fn execute_unstake(
                 .map(|token_id| -> StdResult<WasmMsg> {
                     Ok(cosmwasm_std::WasmMsg::Execute {
                         contract_addr: config.nft_address.to_string(),
-                        msg: to_json_binary::<
-                            Cw721ExecuteMsg<
-                                DefaultOptionalNftExtension,
-                                DefaultOptionalCollectionExtension,
-                                DefaultOptionalCollectionExtensionMsg,
-                            >,
-                        >(
-                            &cw721::msg::Cw721ExecuteMsg::TransferNft {
+                        msg: to_json_binary(
+                            &Cw721ExecuteMsg::<Empty, Empty, Empty>::TransferNft {
                                 recipient: info.sender.to_string(),
                                 token_id,
                             },
@@ -364,9 +357,9 @@ pub fn execute_claim_nfts(
 ) -> Result<Response, ContractError> {
     let token_ids = match claim_type {
         // attempt to claim all legacy NFTs
-        ClaimType::Legacy => {
-            LEGACY_NFT_CLAIMS.claim_nfts(deps.storage, &info.sender, &env.block)?
-        }
+        // ClaimType::Legacy => {
+        //     LEGACY_NFT_CLAIMS.claim_nfts(deps.storage, &info.sender, &env.block)?
+        // }
         // attempt to claim all non-legacy NFTs
         ClaimType::All => {
             let token_ids = NFT_CLAIMS
@@ -403,10 +396,12 @@ pub fn execute_claim_nfts(
         .map(|token_id| -> StdResult<CosmosMsg> {
             Ok(WasmMsg::Execute {
                 contract_addr: config.nft_address.to_string(),
-                msg: to_json_binary(&cw721::msg::Cw721ExecuteMsg::TransferNft {
-                    recipient: info.sender.to_string(),
-                    token_id,
-                })?,
+                msg: to_json_binary(
+                    &Cw721ExecuteMsg::<Empty, Empty, Empty>::TransferNft {
+                        recipient: info.sender.to_string(),
+                        token_id,
+                    },
+                )?,
                 funds: vec![],
             }
             .into())
@@ -509,11 +504,7 @@ pub fn execute_update_active_threshold(
             ActiveThreshold::AbsoluteCount { count } => {
                 let nft_supply: NumTokensResponse = deps.querier.query_wasm_smart(
                     config.nft_address,
-                    &Cw721QueryMsg::<
-                        DefaultOptionalNftExtension,
-                        DefaultOptionalNftExtension,
-                        Empty,
-                    >::NumTokens {},
+                    &cw721_base::msg::QueryMsg::NumTokens {},
                 )?;
                 assert_valid_absolute_count_threshold(
                     count,
@@ -747,11 +738,15 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
     match msg.id {
         INSTANTIATE_NFT_CONTRACT_REPLY_ID => {
-            let res = parse_reply_instantiate_data(msg);
-            match res {
-                Ok(res) => {
+            match msg.result {
+                cosmwasm_std::SubMsgResult::Ok(res) => {
                     let dao = DAO.load(deps.storage)?;
-                    let nft_contract = res.contract_address;
+
+                    let nft_contract = cw_reply_helper::parse_event_from_reply_submsg(
+                        res.events,
+                        "instantiate",
+                        "contract_address",
+                    )?;
 
                     // Save NFT contract to config
                     let mut config = CONFIG.load(deps.storage)?;
@@ -797,7 +792,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
                         .add_attribute("nft_contract", nft_contract)
                         .add_submessages(submessages))
                 }
-                Err(_) => Err(ContractError::NftInstantiateError {}),
+                cosmwasm_std::SubMsgResult::Err(_) => Err(ContractError::NftInstantiateError {}),
             }
         }
         VALIDATE_SUPPLY_REPLY_ID => {
@@ -809,9 +804,10 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
             let collection_addr = CONFIG.load(deps.storage)?.nft_address;
 
             // Query the total supply of the NFT contract
-            let nft_supply: NumTokensResponse = deps
-                .querier
-                .query_wasm_smart(collection_addr.clone(), &Cw721QueryMsg::NumTokens {})?;
+            let nft_supply: NumTokensResponse = deps.querier.query_wasm_smart(
+                collection_addr.clone(),
+                &cw721_base::msg::QueryMsg::NumTokens {},
+            )?;
 
             // Check greater than zero
             if nft_supply.count == 0 {
@@ -846,14 +842,16 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
         }
         FACTORY_EXECUTE_REPLY_ID => {
             // Parse reply data
-            let res = parse_reply_execute_data(msg)?;
-            match res.data {
-                Some(data) => {
+            match msg.result {
+                cosmwasm_std::SubMsgResult::Ok(_) => {
                     let mut config = CONFIG.load(deps.storage)?;
 
                     // Parse info from the callback, this will fail
                     // if incorrectly formatted.
-                    let info: NftFactoryCallback = from_json(data)?;
+                    let callback_data = cw_reply_helper::parse_reply_execute_data(&msg)
+                        .map_err(|e| StdError::generic_err(e.to_string()))?
+                        .ok_or(ContractError::NoFactoryCallback {})?;
+                    let info: NftFactoryCallback = from_json(callback_data)?;
 
                     // Validate NFT contract address
                     let nft_address = deps.api.addr_validate(&info.nft_contract)?;
@@ -861,7 +859,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
                     // Validate that this is an NFT with a query
                     deps.querier.query_wasm_smart::<NumTokensResponse>(
                         nft_address.clone(),
-                        &Cw721QueryMsg::NumTokens {},
+                        &cw721_base::msg::QueryMsg::NumTokens {},
                     )?;
 
                     // Update NFT contract
@@ -879,7 +877,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
 
                     Ok(res)
                 }
-                None => Err(ContractError::NoFactoryCallback {}),
+                cosmwasm_std::SubMsgResult::Err(_) => Err(ContractError::NoFactoryCallback {}),
             }
         }
         _ => Err(ContractError::UnknownReplyId { id: msg.id }),

@@ -176,16 +176,30 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
-    match msg.id {
-        INSTANTIATE_PROTOBUF_REGISTRY_REPLY_ID => {
-            let res = parse_reply_instantiate_data(msg)?;
-            let addr = deps.api.addr_validate(&res.contract_address)?;
+    match msg.result {
+        cosmwasm_std::SubMsgResult::Ok(res) => match msg.id {
+            INSTANTIATE_PROTOBUF_REGISTRY_REPLY_ID => {
+                let addr = deps.api.addr_validate(
+                    &res.events
+                        .iter()
+                        .find(|e| e.ty == "instantiate")
+                        .and_then(|ev| {
+                            ev.attributes.iter().find(|a| {
+                                a.key == "_contract_address" || a.key == "contract_address"
+                            })
+                        })
+                        .ok_or_else(|| ContractError::ReplyParseError {
+                            err: "contract_address not found in reply".to_string(),
+                        })?
+                        .value,
+                )?;
 
-            PROTOBUF_REGISTRY.save(deps.storage, &addr)?;
+                PROTOBUF_REGISTRY.save(deps.storage, &addr)?;
 
-            Ok(Response::default().add_attribute("protobuf_registry", addr))
-        }
-
-        _ => Err(ContractError::UnknownReplyID { id: msg.id }),
+                Ok(Response::default().add_attribute("protobuf_registry", addr))
+            }
+            _ => Err(ContractError::UnknownReplyID { id: msg.id }),
+        },
+        cosmwasm_std::SubMsgResult::Err(_) => todo!(),
     }
 }

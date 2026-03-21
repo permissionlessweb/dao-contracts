@@ -56,6 +56,7 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
+#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
     /// Callable by the Admin, if one is configured.
     /// Executes messages in order.
@@ -138,6 +139,7 @@ pub enum ExecuteMsg {
 
 #[cw_serde]
 #[derive(QueryResponses)]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 pub enum QueryMsg {
     /// Get's the DAO's admin. Returns `Addr`.
     #[returns(cosmwasm_std::Addr)]

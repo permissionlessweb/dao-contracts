@@ -70,6 +70,7 @@ pub struct Assignment {
 
 #[cw_ownable_execute]
 #[cw_serde]
+#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
     // System management
     /// Update the DAO to execute actions on. Make sure to add this module to
@@ -176,6 +177,8 @@ pub enum ExecuteMsg {
 #[cw_ownable_query]
 #[cw_serde]
 #[derive(QueryResponses)]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
+
 pub enum QueryMsg {
     // System queries
     #[returns(InfoResponse)]

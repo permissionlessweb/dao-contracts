@@ -18,6 +18,7 @@ pub struct InstantiateMsg {
 
 #[cw_ownable_execute]
 #[cw_serde]
+#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
     UpdateConfig {
         staking_addr: String,
@@ -30,6 +31,7 @@ pub enum ExecuteMsg {
 
 #[cw_serde]
 #[derive(QueryResponses)]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 pub enum QueryMsg {
     #[returns(InfoResponse)]
     Info {},
@@ -46,8 +48,4 @@ pub struct InfoResponse {
 }
 
 #[cw_serde]
-pub enum MigrateMsg {
-    /// Updates the contract from v1 -> v2. Version two implements a
-    /// two step ownership transfer.
-    FromV1 {},
-}
+pub enum MigrateMsg {}

@@ -6,7 +6,6 @@ use cosmwasm_std::{
 };
 use cw2::{get_contract_version, set_contract_version, ContractVersion};
 use cw20::{Cw20Coin, TokenInfoResponse};
-use cw_utils::parse_reply_instantiate_data;
 use dao_interface::state::{Admin, ModuleInstantiateInfo};
 use dao_interface::voting::IsActiveResponse;
 use dao_voting::threshold::{ActiveThreshold, ActiveThresholdResponse};
@@ -399,18 +398,31 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractError> {
-    match msg.id {
-        INSTANTIATE_TOKEN_REPLY_ID => {
-            let res = parse_reply_instantiate_data(msg);
-            match res {
-                Ok(res) => {
+    match msg.result {
+        cosmwasm_std::SubMsgResult::Ok(res) => {
+            match msg.id {
+                INSTANTIATE_TOKEN_REPLY_ID => {
                     let token = TOKEN.may_load(deps.storage)?;
                     if token.is_some() {
                         // There is no known way this error could ever
                         // be triggered, we're just paranoid.
                         return Err(ContractError::DuplicateToken {});
                     }
-                    let token = deps.api.addr_validate(&res.contract_address)?;
+                    let token = deps.api.addr_validate(
+                        &res.events
+                            .iter()
+                            .find(|e| e.ty == "instantiate")
+                            .and_then(|ev| {
+                                ev.attributes.iter().find(|a| {
+                                    a.key == "_contract_address" || a.key == "contract_address"
+                                })
+                            })
+                            .ok_or_else(|| ContractError::ReplyParseError {
+                                err: "contract_address not found in reply".to_string(),
+                            })?
+                            .value,
+                    )?;
+
                     TOKEN.save(deps.storage, &token)?;
 
                     let active_threshold = ACTIVE_THRESHOLD.may_load(deps.storage)?;
@@ -443,14 +455,21 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
                         .add_attribute("token_address", token)
                         .add_submessage(msg))
                 }
-                Err(_) => Err(ContractError::TokenInstantiateError {}),
-            }
-        }
-        INSTANTIATE_STAKING_REPLY_ID => {
-            let res = parse_reply_instantiate_data(msg);
-            match res {
-                Ok(res) => {
-                    let staking_contract_addr = deps.api.addr_validate(&res.contract_address)?;
+                INSTANTIATE_STAKING_REPLY_ID => {
+                    let staking_contract_addr = deps.api.addr_validate(
+                        &res.events
+                            .iter()
+                            .find(|e| e.ty == "instantiate")
+                            .and_then(|ev| {
+                                ev.attributes.iter().find(|a| {
+                                    a.key == "_contract_address" || a.key == "contract_address"
+                                })
+                            })
+                            .ok_or_else(|| ContractError::ReplyParseError {
+                                err: "contract_address not found in reply".to_string(),
+                            })?
+                            .value,
+                    )?;
 
                     let staking = STAKING_CONTRACT.may_load(deps.storage)?;
                     if staking.is_some() {
@@ -461,9 +480,9 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 
                     Ok(Response::new().add_attribute("staking_contract", staking_contract_addr))
                 }
-                Err(_) => Err(ContractError::StakingInstantiateError {}),
+                _ => Err(ContractError::UnknownReplyId { id: msg.id }),
             }
         }
-        _ => Err(ContractError::UnknownReplyId { id: msg.id }),
+        cosmwasm_std::SubMsgResult::Err(_) => Err(ContractError::UnknownReplyId { id: msg.id }),
     }
 }

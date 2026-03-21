@@ -14,11 +14,9 @@ use cw_tokenfactory_issuer::msg::{
     ExecuteMsg as IssuerExecuteMsg, InstantiateMsg as IssuerInstantiateMsg,
 };
 
-use cw_tokenfactory_issuer::msg::{DenomUnit, Metadata};
 
-use cw_utils::{
-    maybe_addr, must_pay, parse_reply_execute_data, parse_reply_instantiate_data, Duration,
-};
+
+use cw_utils::{maybe_addr, must_pay, Duration};
 use dao_hooks::stake::{stake_hook_msgs, unstake_hook_msgs};
 use dao_interface::{
     state::{Admin, ModuleInstantiateCallback, ModuleInstantiateInfo},
@@ -645,239 +643,247 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractError> {
-    match msg.id {
-        INSTANTIATE_TOKEN_FACTORY_ISSUER_REPLY_ID => {
-            // Parse and save address of cw-tokenfactory-issuer
-            let issuer_addr = parse_reply_instantiate_data(msg)?.contract_address;
-            TOKEN_ISSUER_CONTRACT.save(deps.storage, &deps.api.addr_validate(&issuer_addr)?)?;
+    match msg.result {
+        cosmwasm_std::SubMsgResult::Ok(res) => match msg.id {
+            INSTANTIATE_TOKEN_FACTORY_ISSUER_REPLY_ID => {
+                // Parse and save address of cw-tokenfactory-issuer
+                let issuer_addr = cw_reply_helper::parse_event_from_reply_submsg(
+                    res.events,
+                    "instantiate",
+                    "contract_address",
+                )?;
 
-            // Load info for new token and remove temporary data
-            let token_info = TOKEN_INSTANTIATION_INFO.load(deps.storage)?;
-            TOKEN_INSTANTIATION_INFO.remove(deps.storage);
+                TOKEN_ISSUER_CONTRACT.save(deps.storage, &deps.api.addr_validate(&issuer_addr)?)?;
 
-            match token_info {
-                TokenInfo::New(token) => {
-                    // Load the DAO address
-                    let dao = DAO.load(deps.storage)?;
+                // Load info for new token and remove temporary data
+                let token_info = TOKEN_INSTANTIATION_INFO.load(deps.storage)?;
+                TOKEN_INSTANTIATION_INFO.remove(deps.storage);
 
-                    // Format the denom and save it. Thorchain uses x/denom
-                    // format, and we inserted the issuer address into the
-                    // subdenom to ensure uniqueness. Other chains use
-                    // factory/issuer_addr/subdenom format, with the issuer
-                    // address automatically inserted.
-                    #[cfg(feature = "thorchain_tokenfactory")]
-                    let denom = format!("x/{}/{}", issuer_addr, token.subdenom);
-                    #[cfg(not(feature = "thorchain_tokenfactory"))]
-                    let denom = format!("factory/{}/{}", issuer_addr, token.subdenom);
+                match token_info {
+                    TokenInfo::New(token) => {
+                        // Load the DAO address
+                        let dao = DAO.load(deps.storage)?;
 
-                    DENOM.save(deps.storage, &denom)?;
+                        // Format the denom and save it. Thorchain uses x/denom
+                        // format, and we inserted the issuer address into the
+                        // subdenom to ensure uniqueness. Other chains use
+                        // factory/issuer_addr/subdenom format, with the issuer
+                        // address automatically inserted.
+                        #[cfg(feature = "thorchain_tokenfactory")]
+                        let denom = format!("x/{}/{}", issuer_addr, token.subdenom);
+                        #[cfg(not(feature = "thorchain_tokenfactory"))]
+                        let denom = format!("factory/{}/{}", issuer_addr, token.subdenom);
 
-                    // Check supply is greater than zero, iterate through initial
-                    // balances and sum them, add DAO balance as well.
-                    let initial_supply = token
-                        .initial_balances
-                        .iter()
-                        .fold(Uint128::zero(), |previous, new_balance| {
-                            previous + new_balance.amount
-                        });
-                    let total_supply =
-                        initial_supply + token.initial_dao_balance.unwrap_or_default();
+                        DENOM.save(deps.storage, &denom)?;
 
-                    // Validate active threshold absolute count if configured
-                    if let Some(ActiveThreshold::AbsoluteCount { count }) =
-                        ACTIVE_THRESHOLD.may_load(deps.storage)?
-                    {
-                        // We use initial_supply here because the DAO balance is not
-                        // able to be staked by users.
-                        assert_valid_absolute_count_threshold(count, initial_supply)?;
-                    }
+                        // Check supply is greater than zero, iterate through initial
+                        // balances and sum them, add DAO balance as well.
+                        let initial_supply = token
+                            .initial_balances
+                            .iter()
+                            .fold(Uint128::zero(), |previous, new_balance| {
+                                previous + new_balance.amount
+                            });
+                        let total_supply =
+                            initial_supply + token.initial_dao_balance.unwrap_or_default();
 
-                    // Cannot instantiate with no initial token owners because it would
-                    // immediately lock the DAO.
-                    if initial_supply.is_zero() {
-                        return Err(ContractError::InitialBalancesError {});
-                    }
-
-                    // Msgs to be executed to finalize setup
-                    let mut msgs: Vec<WasmMsg> = vec![];
-
-                    // Grant an allowance to mint the initial supply
-                    msgs.push(WasmMsg::Execute {
-                        contract_addr: issuer_addr.clone(),
-                        msg: to_json_binary(&IssuerExecuteMsg::SetMinterAllowance {
-                            address: env.contract.address.to_string(),
-                            allowance: total_supply,
-                        })?,
-                        funds: vec![],
-                    });
-
-                    // If metadata, set it by calling the contract
-                    #[cfg(any(
-                        feature = "osmosis_tokenfactory",
-                        feature = "cosmwasm_tokenfactory"
-                    ))]
-                    if let Some(metadata) = token.metadata {
-                        // The first denom_unit must be the same as the tf and base denom.
-                        // It must have an exponent of 0. This the smallest unit of the token.
-                        // For more info: // https://docs.cosmos.network/main/architecture/adr-024-coin-metadata
-                        let mut denom_units = vec![DenomUnit {
-                            denom: denom.clone(),
-                            exponent: 0,
-                            aliases: vec![token.subdenom],
-                        }];
-
-                        // Caller can optionally define additional units
-                        if let Some(mut additional_units) = metadata.additional_denom_units {
-                            denom_units.append(&mut additional_units);
+                        // Validate active threshold absolute count if configured
+                        if let Some(ActiveThreshold::AbsoluteCount { count }) =
+                            ACTIVE_THRESHOLD.may_load(deps.storage)?
+                        {
+                            // We use initial_supply here because the DAO balance is not
+                            // able to be staked by users.
+                            assert_valid_absolute_count_threshold(count, initial_supply)?;
                         }
 
-                        // Sort denom units by exponent, must be in ascending order
-                        denom_units.sort_by(|a, b| a.exponent.cmp(&b.exponent));
+                        // Cannot instantiate with no initial token owners because it would
+                        // immediately lock the DAO.
+                        if initial_supply.is_zero() {
+                            return Err(ContractError::InitialBalancesError {});
+                        }
 
+                        // Msgs to be executed to finalize setup
+                        let mut msgs: Vec<WasmMsg> = vec![];
+
+                        // Grant an allowance to mint the initial supply
                         msgs.push(WasmMsg::Execute {
                             contract_addr: issuer_addr.clone(),
-                            msg: to_json_binary(&IssuerExecuteMsg::SetDenomMetadata {
-                                metadata: Metadata {
-                                    description: metadata.description,
-                                    denom_units,
-                                    base: denom.clone(),
-                                    display: metadata.display,
-                                    name: metadata.name,
-                                    symbol: metadata.symbol,
-                                },
+                            msg: to_json_binary(&IssuerExecuteMsg::SetMinterAllowance {
+                                address: env.contract.address.to_string(),
+                                allowance: total_supply,
                             })?,
                             funds: vec![],
                         });
-                    }
 
-                    // Call issuer contract to mint tokens for initial balances
-                    token
-                        .initial_balances
-                        .iter()
-                        .for_each(|b: &InitialBalance| {
+                        // If metadata, set it by calling the contract
+                        #[cfg(any(
+                            feature = "osmosis_tokenfactory",
+                            feature = "cosmwasm_tokenfactory"
+                        ))]
+                        if let Some(metadata) = token.metadata {
+                            // The first denom_unit must be the same as the tf and base denom.
+                            // It must have an exponent of 0. This the smallest unit of the token.
+                            // For more info: // https://docs.cosmos.network/main/architecture/adr-024-coin-metadata
+
+                            use cosmwasm_std::{DenomMetadata, DenomUnit};
+                            let mut denom_units = vec![DenomUnit {
+                                denom: denom.clone(),
+                                exponent: 0,
+                                aliases: vec![token.subdenom],
+                            }];
+
+                            // Caller can optionally define additional units
+                            if let Some(mut additional_units) = metadata.additional_denom_units {
+                                denom_units.append(&mut additional_units);
+                            }
+
+                            // Sort denom units by exponent, must be in ascending order
+                            denom_units.sort_by(|a, b| a.exponent.cmp(&b.exponent));
+
                             msgs.push(WasmMsg::Execute {
                                 contract_addr: issuer_addr.clone(),
-                                msg: to_json_binary(&IssuerExecuteMsg::Mint {
-                                    to_address: b.address.clone(),
-                                    amount: b.amount,
-                                })
-                                .unwrap_or_default(),
-                                funds: vec![],
-                            });
-                        });
-
-                    // Add initial DAO balance to initial_balances if nonzero.
-                    if let Some(initial_dao_balance) = token.initial_dao_balance {
-                        if !initial_dao_balance.is_zero() {
-                            msgs.push(WasmMsg::Execute {
-                                contract_addr: issuer_addr.clone(),
-                                msg: to_json_binary(&IssuerExecuteMsg::Mint {
-                                    to_address: dao.to_string(),
-                                    amount: initial_dao_balance,
+                                msg: to_json_binary(&IssuerExecuteMsg::SetDenomMetadata {
+                                    metadata: DenomMetadata {
+                                        description: metadata.description,
+                                        denom_units,
+                                        base: denom.clone(),
+                                        display: metadata.display,
+                                        name: metadata.name,
+                                        symbol: metadata.symbol,
+                                        uri: String::new(),
+                                        uri_hash: String::new(),
+                                    },
                                 })?,
                                 funds: vec![],
                             });
                         }
-                    }
 
-                    // Begin update issuer contract owner to be the DAO, this is a
-                    // two-step ownership transfer.
-                    msgs.push(WasmMsg::Execute {
-                        contract_addr: issuer_addr.clone(),
-                        msg: to_json_binary(&IssuerExecuteMsg::UpdateOwnership(
-                            cw_ownable::Action::TransferOwnership {
-                                new_owner: dao.to_string(),
-                                expiry: None,
-                            },
-                        ))?,
-                        funds: vec![],
-                    });
+                        // Call issuer contract to mint tokens for initial balances
+                        token
+                            .initial_balances
+                            .iter()
+                            .for_each(|b: &InitialBalance| {
+                                msgs.push(WasmMsg::Execute {
+                                    contract_addr: issuer_addr.clone(),
+                                    msg: to_json_binary(&IssuerExecuteMsg::Mint {
+                                        to_address: b.address.clone(),
+                                        amount: b.amount,
+                                    })
+                                    .unwrap_or_default(),
+                                    funds: vec![],
+                                });
+                            });
 
-                    // On setup success, have the DAO complete the second part of
-                    // ownership transfer by accepting ownership in a
-                    // ModuleInstantiateCallback.
-                    let callback = to_json_binary(&ModuleInstantiateCallback {
-                        msgs: vec![CosmosMsg::Wasm(WasmMsg::Execute {
+                        // Add initial DAO balance to initial_balances if nonzero.
+                        if let Some(initial_dao_balance) = token.initial_dao_balance {
+                            if !initial_dao_balance.is_zero() {
+                                msgs.push(WasmMsg::Execute {
+                                    contract_addr: issuer_addr.clone(),
+                                    msg: to_json_binary(&IssuerExecuteMsg::Mint {
+                                        to_address: dao.to_string(),
+                                        amount: initial_dao_balance,
+                                    })?,
+                                    funds: vec![],
+                                });
+                            }
+                        }
+
+                        // Begin update issuer contract owner to be the DAO, this is a
+                        // two-step ownership transfer.
+                        msgs.push(WasmMsg::Execute {
                             contract_addr: issuer_addr.clone(),
                             msg: to_json_binary(&IssuerExecuteMsg::UpdateOwnership(
-                                cw_ownable::Action::AcceptOwnership {},
+                                cw_ownable::Action::TransferOwnership {
+                                    new_owner: dao.to_string(),
+                                    expiry: None,
+                                },
                             ))?,
                             funds: vec![],
-                        })],
-                    })?;
+                        });
 
-                    Ok(Response::new()
-                        .add_attribute("denom", denom)
-                        .add_attribute("token_contract", issuer_addr)
-                        .add_messages(msgs)
-                        .set_data(callback))
+                        // On setup success, have the DAO complete the second part of
+                        // ownership transfer by accepting ownership in a
+                        // ModuleInstantiateCallback.
+                        let callback = to_json_binary(&ModuleInstantiateCallback {
+                            msgs: vec![CosmosMsg::Wasm(WasmMsg::Execute {
+                                contract_addr: issuer_addr.clone(),
+                                msg: to_json_binary(&IssuerExecuteMsg::UpdateOwnership(
+                                    cw_ownable::Action::AcceptOwnership {},
+                                ))?,
+                                funds: vec![],
+                            })],
+                        })?;
+
+                        Ok(Response::new()
+                            .add_attribute("denom", denom)
+                            .add_attribute("token_contract", issuer_addr)
+                            .add_messages(msgs)
+                            .set_data(callback))
+                    }
+                    _ => unreachable!(),
                 }
-                _ => unreachable!(),
             }
-        }
-        FACTORY_EXECUTE_REPLY_ID => {
-            // Parse reply
-            let res = parse_reply_execute_data(msg)?;
-            match res.data {
-                Some(data) => {
-                    // Parse info from the callback, this will fail
-                    // if incorrectly formatted.
-                    let info: TokenFactoryCallback = from_json(data)?;
+            FACTORY_EXECUTE_REPLY_ID => {
+                // Parse reply
+                // Parse info from the callback, this will fail
+                // if incorrectly formatted.
+                let reply_data = res
+                    .msg_responses
+                    .first()
+                    .ok_or(ContractError::NoFactoryCallback {})?
+                    .value
+                    .clone();
+                let info: TokenFactoryCallback = from_json(reply_data)?;
+                DENOM.save(deps.storage, &info.denom)?;
+                let dao = DAO.load(deps.storage)?;
 
-                    // Save Denom
-                    DENOM.save(deps.storage, &info.denom)?;
+                // Ensure initial supply held by potential stakers is
+                // nonzero (and surpasses the active threshold if set) so
+                // the DAO is not immediately locked. Ignore DAO balance
+                // since it's unable to be staked.
+                let total_minted = deps.querier.query_supply(&info.denom)?;
+                let dao_minted = deps.querier.query_balance(dao, &info.denom)?;
+                let initial_supply = total_minted.amount - dao_minted.amount;
 
-                    // Load the DAO address
-                    let dao = DAO.load(deps.storage)?;
-
-                    // Ensure initial supply held by potential stakers is
-                    // nonzero (and surpasses the active threshold if set) so
-                    // the DAO is not immediately locked. Ignore DAO balance
-                    // since it's unable to be staked.
-                    let total_minted = deps.querier.query_supply(&info.denom)?;
-                    let dao_minted = deps.querier.query_balance(dao, &info.denom)?;
-                    let initial_supply = total_minted.amount - dao_minted.amount;
-
-                    // Validate active threshold absolute count if configured
-                    if let Some(ActiveThreshold::AbsoluteCount { count }) =
-                        ACTIVE_THRESHOLD.may_load(deps.storage)?
-                    {
-                        // We use initial_supply here because the DAO balance is
-                        // not able to be staked by users.
-                        assert_valid_absolute_count_threshold(count, initial_supply)?;
-                    }
-
-                    // Cannot instantiate with no initial token owners because
-                    // it would immediately lock the DAO.
-                    if initial_supply.is_zero() {
-                        return Err(ContractError::InitialBalancesError {});
-                    }
-
-                    // Save token issuer contract if one is returned
-                    if let Some(ref token_contract) = info.token_contract {
-                        TOKEN_ISSUER_CONTRACT
-                            .save(deps.storage, &deps.api.addr_validate(token_contract)?)?;
-                    }
-
-                    // Construct the response
-                    let mut res = Response::new()
-                        .add_attribute("denom", info.denom)
-                        .add_attribute(
-                            "token_contract",
-                            info.token_contract.unwrap_or("None".to_string()),
-                        );
-
-                    // If a callback has been configured, set the module
-                    // instantiate callback data.
-                    if let Some(callback) = info.module_instantiate_callback {
-                        res = res.set_data(to_json_binary(&callback)?);
-                    }
-
-                    Ok(res)
+                // Validate active threshold absolute count if configured
+                if let Some(ActiveThreshold::AbsoluteCount { count }) =
+                    ACTIVE_THRESHOLD.may_load(deps.storage)?
+                {
+                    // We use initial_supply here because the DAO balance is
+                    // not able to be staked by users.
+                    assert_valid_absolute_count_threshold(count, initial_supply)?;
                 }
-                None => Err(ContractError::NoFactoryCallback {}),
+
+                // Cannot instantiate with no initial token owners because
+                // it would immediately lock the DAO.
+                if initial_supply.is_zero() {
+                    return Err(ContractError::InitialBalancesError {});
+                }
+
+                // Save token issuer contract if one is returned
+                if let Some(ref token_contract) = info.token_contract {
+                    TOKEN_ISSUER_CONTRACT
+                        .save(deps.storage, &deps.api.addr_validate(token_contract)?)?;
+                }
+
+                // Construct the response
+                let mut res = Response::new()
+                    .add_attribute("denom", info.denom)
+                    .add_attribute(
+                        "token_contract",
+                        info.token_contract.unwrap_or("None".to_string()),
+                    );
+
+                // If a callback has been configured, set the module
+                // instantiate callback data.
+                if let Some(callback) = info.module_instantiate_callback {
+                    res = res.set_data(to_json_binary(&callback)?);
+                }
+
+                Ok(res)
             }
-        }
-        _ => Err(ContractError::UnknownReplyId { id: msg.id }),
+            _ => Err(ContractError::UnknownReplyId { id: msg.id }),
+        },
+        cosmwasm_std::SubMsgResult::Err(e) => Err(ContractError::InstantiateError { e }),
     }
 }

@@ -22,6 +22,7 @@ pub struct InstantiateMsg {
 
 #[cw_ownable_execute]
 #[cw_serde]
+#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
     StakeChangeHook(StakeChangedHookMsg),
     Claim {},
@@ -32,11 +33,6 @@ pub enum ExecuteMsg {
 
 #[cw_serde]
 pub enum MigrateMsg {
-    /// Migrates from version 0.2.6 to 2.0.0. The significant changes
-    /// being the addition of a two-step ownership transfer using
-    /// `cw_ownable` and the removal of the manager. Migrating will
-    /// automatically remove the current manager.
-    FromV1 {},
 }
 
 #[cw_serde]
@@ -46,6 +42,7 @@ pub enum ReceiveMsg {
 
 #[cw_serde]
 #[derive(QueryResponses)]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 pub enum QueryMsg {
     #[returns(InfoResponse)]
     Info {},
