@@ -5,6 +5,7 @@ use dao_voting::{
     voting::Votes,
 };
 
+#[cfg(feature = "v1")]
 pub(crate) fn v1_expiration_to_v2(v1: cw_utils_v1::Expiration) -> Expiration {
     match v1 {
         cw_utils_v1::Expiration::AtHeight(height) => Expiration::AtHeight(height),
@@ -13,6 +14,7 @@ pub(crate) fn v1_expiration_to_v2(v1: cw_utils_v1::Expiration) -> Expiration {
     }
 }
 
+#[cfg(feature = "v1")]
 pub(crate) fn v1_percentage_threshold_to_v2(
     v1: voting_v1::PercentageThreshold,
 ) -> PercentageThreshold {
@@ -22,6 +24,7 @@ pub(crate) fn v1_percentage_threshold_to_v2(
     }
 }
 
+#[cfg(feature = "v1")]
 pub(crate) fn v1_threshold_to_v2(v1: voting_v1::Threshold) -> Threshold {
     match v1 {
         voting_v1::Threshold::AbsolutePercentage { percentage } => Threshold::AbsolutePercentage {
@@ -35,6 +38,7 @@ pub(crate) fn v1_threshold_to_v2(v1: voting_v1::Threshold) -> Threshold {
     }
 }
 
+#[cfg(feature = "v1")]
 pub(crate) fn v1_status_to_v2(v1: voting_v1::Status) -> Status {
     match v1 {
         voting_v1::Status::Open => Status::Open,
@@ -45,6 +49,7 @@ pub(crate) fn v1_status_to_v2(v1: voting_v1::Status) -> Status {
     }
 }
 
+#[cfg(feature = "v1")]
 pub(crate) fn v1_votes_to_v2(v1: voting_v1::Votes) -> Votes {
     Votes {
         yes: v1.yes,

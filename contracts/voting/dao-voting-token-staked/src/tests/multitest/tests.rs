@@ -4,7 +4,7 @@ use crate::msg::{
     StakerBalanceResponse, TokenInfo,
 };
 use crate::state::Config;
-use cosmwasm_std::testing::{mock_dependencies, mock_env};
+use cosmwasm_std::testing::{mock_dependencies, mock_env, MockApi};
 use cosmwasm_std::{coins, Addr, Coin, Decimal, Uint128};
 use cw_controllers::ClaimsResponse;
 use cw_multi_test::{next_block, App, AppResponse, BankSudo, Executor, SudoMsg};
@@ -28,7 +28,7 @@ const ODD_DENOM: &str = "uodd";
 fn mock_app() -> App {
     let mut app = App::default();
     app.sudo(SudoMsg::Bank(BankSudo::Mint {
-        to_address: DAO_ADDR.to_string(),
+        to_address: MockApi::default().addr_make(DAO_ADDR).to_string(),
         amount: vec![
             Coin {
                 denom: DENOM.to_string(),
@@ -42,7 +42,7 @@ fn mock_app() -> App {
     }))
     .unwrap();
     app.sudo(SudoMsg::Bank(BankSudo::Mint {
-        to_address: ADDR1.to_string(),
+        to_address: MockApi::default().addr_make(ADDR1).to_string(),
         amount: vec![
             Coin {
                 denom: DENOM.to_string(),
@@ -60,7 +60,7 @@ fn mock_app() -> App {
     }))
     .unwrap();
     app.sudo(SudoMsg::Bank(BankSudo::Mint {
-        to_address: ADDR2.to_string(),
+        to_address: MockApi::default().addr_make(ADDR2).to_string(),
         amount: vec![
             Coin {
                 denom: DENOM.to_string(),
@@ -79,7 +79,7 @@ fn mock_app() -> App {
 fn instantiate_staking(app: &mut App, staking_id: u64, msg: InstantiateMsg) -> Addr {
     app.instantiate_contract(
         staking_id,
-        Addr::unchecked(DAO_ADDR),
+        MockApi::default().addr_make(DAO_ADDR),
         &msg,
         &[],
         "Staking",
@@ -96,7 +96,7 @@ fn stake_tokens(
     denom: &str,
 ) -> anyhow::Result<AppResponse> {
     app.execute_contract(
-        Addr::unchecked(sender),
+        MockApi::default().addr_make(sender),
         staking_addr,
         &ExecuteMsg::Stake {},
         &coins(amount, denom),
@@ -110,7 +110,7 @@ fn unstake_tokens(
     amount: u128,
 ) -> anyhow::Result<AppResponse> {
     app.execute_contract(
-        Addr::unchecked(sender),
+        MockApi::default().addr_make(sender),
         staking_addr,
         &ExecuteMsg::Unstake {
             amount: Uint128::new(amount),
@@ -121,7 +121,7 @@ fn unstake_tokens(
 
 fn claim(app: &mut App, staking_addr: Addr, sender: &str) -> anyhow::Result<AppResponse> {
     app.execute_contract(
-        Addr::unchecked(sender),
+        MockApi::default().addr_make(sender),
         staking_addr,
         &ExecuteMsg::Claim {},
         &[],
@@ -135,7 +135,7 @@ fn update_config(
     duration: Option<Duration>,
 ) -> anyhow::Result<AppResponse> {
     app.execute_contract(
-        Addr::unchecked(sender),
+        MockApi::default().addr_make(sender),
         staking_addr,
         &ExecuteMsg::UpdateConfig { duration },
         &[],
@@ -178,7 +178,8 @@ fn get_claims(app: &mut App, staking_addr: Addr, address: String) -> ClaimsRespo
         .unwrap()
 }
 
-fn get_balance(app: &mut App, address: &str, denom: &str) -> Uint128 {
+fn get_balance(app: &mut App, address_label: &str, denom: &str) -> Uint128 {
+    let address = app.api().addr_make(address_label);
     app.wrap().query_balance(address, denom).unwrap().amount
 }
 
@@ -408,7 +409,11 @@ fn test_unstake() {
     unstake_tokens(&mut app, addr.clone(), ADDR1, 75).unwrap();
 
     // Query claims
-    let claims = get_claims(&mut app, addr.clone(), ADDR1.to_string());
+    let claims = get_claims(
+        &mut app,
+        addr.clone(),
+        MockApi::default().addr_make(ADDR1).to_string(),
+    );
     assert_eq!(claims.claims.len(), 1);
     app.update_block(next_block);
 
@@ -416,7 +421,11 @@ fn test_unstake() {
     unstake_tokens(&mut app, addr.clone(), ADDR1, 25).unwrap();
 
     // Query claims
-    let claims = get_claims(&mut app, addr, ADDR1.to_string());
+    let claims = get_claims(
+        &mut app,
+        addr,
+        MockApi::default().addr_make(ADDR1).to_string(),
+    );
     assert_eq!(claims.claims.len(), 2);
 }
 
@@ -653,7 +662,7 @@ fn test_query_dao() {
 
     let msg = QueryMsg::Dao {};
     let dao: Addr = app.wrap().query_wasm_smart(addr, &msg).unwrap();
-    assert_eq!(dao, Addr::unchecked(DAO_ADDR));
+    assert_eq!(dao, MockApi::default().addr_make(DAO_ADDR));
 }
 
 #[test]
@@ -695,7 +704,11 @@ fn test_query_claims() {
         },
     );
 
-    let claims = get_claims(&mut app, addr.clone(), ADDR1.to_string());
+    let claims = get_claims(
+        &mut app,
+        addr.clone(),
+        MockApi::default().addr_make(ADDR1).to_string(),
+    );
     assert_eq!(claims.claims.len(), 0);
 
     // Stake some tokens
@@ -706,13 +719,21 @@ fn test_query_claims() {
     unstake_tokens(&mut app, addr.clone(), ADDR1, 25).unwrap();
     app.update_block(next_block);
 
-    let claims = get_claims(&mut app, addr.clone(), ADDR1.to_string());
+    let claims = get_claims(
+        &mut app,
+        addr.clone(),
+        MockApi::default().addr_make(ADDR1).to_string(),
+    );
     assert_eq!(claims.claims.len(), 1);
 
     unstake_tokens(&mut app, addr.clone(), ADDR1, 25).unwrap();
     app.update_block(next_block);
 
-    let claims = get_claims(&mut app, addr, ADDR1.to_string());
+    let claims = get_claims(
+        &mut app,
+        addr,
+        MockApi::default().addr_make(ADDR1).to_string(),
+    );
     assert_eq!(claims.claims.len(), 2);
 }
 
@@ -764,7 +785,12 @@ fn test_voting_power_queries() {
     assert!(resp.power.is_zero());
 
     // ADDR1 has no power, none staked
-    let resp = get_voting_power_at_height(&mut app, addr.clone(), ADDR1.to_string(), None);
+    let resp = get_voting_power_at_height(
+        &mut app,
+        addr.clone(),
+        MockApi::default().addr_make(ADDR1).to_string(),
+        None,
+    );
     assert!(resp.power.is_zero());
 
     // ADDR1 stakes
@@ -776,11 +802,21 @@ fn test_voting_power_queries() {
     assert_eq!(resp.power, Uint128::new(100));
 
     // ADDR1 has 100 power
-    let resp = get_voting_power_at_height(&mut app, addr.clone(), ADDR1.to_string(), None);
+    let resp = get_voting_power_at_height(
+        &mut app,
+        addr.clone(),
+        MockApi::default().addr_make(ADDR1).to_string(),
+        None,
+    );
     assert_eq!(resp.power, Uint128::new(100));
 
     // ADDR2 still has 0 power
-    let resp = get_voting_power_at_height(&mut app, addr.clone(), ADDR2.to_string(), None);
+    let resp = get_voting_power_at_height(
+        &mut app,
+        addr.clone(),
+        MockApi::default().addr_make(ADDR2).to_string(),
+        None,
+    );
     assert!(resp.power.is_zero());
 
     // ADDR2 stakes
@@ -794,13 +830,21 @@ fn test_voting_power_queries() {
     assert_eq!(resp.power, Uint128::new(100));
 
     // ADDR1 has 100 power
-    let resp =
-        get_voting_power_at_height(&mut app, addr.clone(), ADDR1.to_string(), Some(prev_height));
+    let resp = get_voting_power_at_height(
+        &mut app,
+        addr.clone(),
+        MockApi::default().addr_make(ADDR1).to_string(),
+        Some(prev_height),
+    );
     assert_eq!(resp.power, Uint128::new(100));
 
     // ADDR2 still has 0 power
-    let resp =
-        get_voting_power_at_height(&mut app, addr.clone(), ADDR2.to_string(), Some(prev_height));
+    let resp = get_voting_power_at_height(
+        &mut app,
+        addr.clone(),
+        MockApi::default().addr_make(ADDR2).to_string(),
+        Some(prev_height),
+    );
     assert!(resp.power.is_zero());
 
     // For current height, total 150, ADDR1 100, ADDR2 50
@@ -809,11 +853,21 @@ fn test_voting_power_queries() {
     assert_eq!(resp.power, Uint128::new(150));
 
     // ADDR1 has 100 power
-    let resp = get_voting_power_at_height(&mut app, addr.clone(), ADDR1.to_string(), None);
+    let resp = get_voting_power_at_height(
+        &mut app,
+        addr.clone(),
+        MockApi::default().addr_make(ADDR1).to_string(),
+        None,
+    );
     assert_eq!(resp.power, Uint128::new(100));
 
     // ADDR2 now has 50 power
-    let resp = get_voting_power_at_height(&mut app, addr.clone(), ADDR2.to_string(), None);
+    let resp = get_voting_power_at_height(
+        &mut app,
+        addr.clone(),
+        MockApi::default().addr_make(ADDR2).to_string(),
+        None,
+    );
     assert_eq!(resp.power, Uint128::new(50));
 
     // ADDR1 unstakes half
@@ -827,13 +881,21 @@ fn test_voting_power_queries() {
     assert_eq!(resp.power, Uint128::new(150));
 
     // ADDR1 has 100 power
-    let resp =
-        get_voting_power_at_height(&mut app, addr.clone(), ADDR1.to_string(), Some(prev_height));
+    let resp = get_voting_power_at_height(
+        &mut app,
+        addr.clone(),
+        MockApi::default().addr_make(ADDR1).to_string(),
+        Some(prev_height),
+    );
     assert_eq!(resp.power, Uint128::new(100));
 
     // ADDR2 still has 0 power
-    let resp =
-        get_voting_power_at_height(&mut app, addr.clone(), ADDR2.to_string(), Some(prev_height));
+    let resp = get_voting_power_at_height(
+        &mut app,
+        addr.clone(),
+        MockApi::default().addr_make(ADDR2).to_string(),
+        Some(prev_height),
+    );
     assert_eq!(resp.power, Uint128::new(50));
 
     // For current height, total 100, ADDR1 50, ADDR2 50
@@ -842,11 +904,21 @@ fn test_voting_power_queries() {
     assert_eq!(resp.power, Uint128::new(100));
 
     // ADDR1 has 50 power
-    let resp = get_voting_power_at_height(&mut app, addr.clone(), ADDR1.to_string(), None);
+    let resp = get_voting_power_at_height(
+        &mut app,
+        addr.clone(),
+        MockApi::default().addr_make(ADDR1).to_string(),
+        None,
+    );
     assert_eq!(resp.power, Uint128::new(50));
 
     // ADDR2 now has 50 power
-    let resp = get_voting_power_at_height(&mut app, addr, ADDR2.to_string(), None);
+    let resp = get_voting_power_at_height(
+        &mut app,
+        addr,
+        MockApi::default().addr_make(ADDR2).to_string(),
+        None,
+    );
     assert_eq!(resp.power, Uint128::new(50));
 }
 
@@ -888,11 +960,11 @@ fn test_query_list_stakers() {
     let test_res = ListStakersResponse {
         stakers: vec![
             StakerBalanceResponse {
-                address: ADDR1.to_string(),
+                address: MockApi::default().addr_make(ADDR1).to_string(),
                 balance: Uint128::new(100),
             },
             StakerBalanceResponse {
-                address: ADDR2.to_string(),
+                address: MockApi::default().addr_make(ADDR2).to_string(),
                 balance: Uint128::new(50),
             },
         ],
@@ -906,7 +978,7 @@ fn test_query_list_stakers() {
         .query_wasm_smart(
             addr.clone(),
             &QueryMsg::ListStakers {
-                start_after: Some(ADDR1.to_string()),
+                start_after: Some(MockApi::default().addr_make(ADDR1).to_string()),
                 limit: None,
             },
         )
@@ -914,7 +986,7 @@ fn test_query_list_stakers() {
 
     let test_res = ListStakersResponse {
         stakers: vec![StakerBalanceResponse {
-            address: ADDR2.to_string(),
+            address: MockApi::default().addr_make(ADDR2).to_string(),
             balance: Uint128::new(50),
         }],
     };
@@ -927,7 +999,7 @@ fn test_query_list_stakers() {
         .query_wasm_smart(
             addr,
             &QueryMsg::ListStakers {
-                start_after: Some(ADDR2.to_string()),
+                start_after: Some(MockApi::default().addr_make(ADDR2).to_string()),
                 limit: None,
             },
         )
@@ -1136,12 +1208,17 @@ fn test_update_active_threshold() {
     };
 
     // Expect failure as sender is not the DAO
-    app.execute_contract(Addr::unchecked(ADDR1), addr.clone(), &msg, &[])
+    app.execute_contract(MockApi::default().addr_make(ADDR1), addr.clone(), &msg, &[])
         .unwrap_err();
 
     // Expect success as sender is the DAO
-    app.execute_contract(Addr::unchecked(DAO_ADDR), addr.clone(), &msg, &[])
-        .unwrap();
+    app.execute_contract(
+        MockApi::default().addr_make(DAO_ADDR),
+        addr.clone(),
+        &msg,
+        &[],
+    )
+    .unwrap();
 
     let resp: ActiveThresholdResponse = app
         .wrap()
@@ -1249,10 +1326,10 @@ fn test_add_remove_hooks() {
 
     // Add a hook.
     app.execute_contract(
-        Addr::unchecked(DAO_ADDR),
+        MockApi::default().addr_make(DAO_ADDR),
         addr.clone(),
         &ExecuteMsg::AddHook {
-            addr: "hook".to_string(),
+            addr: MockApi::default().addr_make("hook").to_string(),
         },
         &[],
     )
@@ -1263,14 +1340,17 @@ fn test_add_remove_hooks() {
         .wrap()
         .query_wasm_smart(addr.clone(), &QueryMsg::GetHooks {})
         .unwrap();
-    assert_eq!(resp.hooks, vec!["hook".to_string()]);
+    assert_eq!(
+        resp.hooks,
+        vec![MockApi::default().addr_make("hook").to_string()]
+    );
 
     // Remove hook.
     app.execute_contract(
-        Addr::unchecked(DAO_ADDR),
+        MockApi::default().addr_make(DAO_ADDR),
         addr.clone(),
         &ExecuteMsg::RemoveHook {
-            addr: "hook".to_string(),
+            addr: MockApi::default().addr_make("hook").to_string(),
         },
         &[],
     )
@@ -1294,7 +1374,7 @@ fn test_staking_hooks() {
     let hook = app
         .instantiate_contract(
             hook_id,
-            Addr::unchecked(DAO_ADDR),
+            MockApi::default().addr_make(DAO_ADDR),
             &dao_proposal_hook_counter::msg::InstantiateMsg {
                 should_error: false,
             },
@@ -1318,7 +1398,7 @@ fn test_staking_hooks() {
 
     // Add a staking hook.
     app.execute_contract(
-        Addr::unchecked(DAO_ADDR),
+        MockApi::default().addr_make(DAO_ADDR),
         addr.clone(),
         &ExecuteMsg::AddHook {
             addr: hook.to_string(),

@@ -225,7 +225,7 @@ impl CheckedDepositInfo {
 
 #[cfg(test)]
 pub mod tests {
-    use cosmwasm_std::{coin, coins, testing::mock_info, BankMsg};
+    use cosmwasm_std::{coin, coins, testing::{message_info, MockApi}, BankMsg};
 
     use super::*;
 
@@ -234,7 +234,7 @@ pub mod tests {
 
     #[test]
     fn test_check_native_deposit_paid_yes() {
-        let info = mock_info("ekez", &coins(10, NATIVE_DENOM));
+        let info = message_info(&MockApi::default().addr_make("ekez"), &coins(10, NATIVE_DENOM));
         let deposit_info = CheckedDepositInfo {
             denom: CheckedDenom::Native(NATIVE_DENOM.to_string()),
             amount: Uint128::new(10),
@@ -247,7 +247,7 @@ pub mod tests {
 
         // Doesn't matter what we submit if it's a cw20 token.
         info.funds = vec![];
-        deposit_info.denom = CheckedDenom::Cw20(Addr::unchecked(CW20));
+        deposit_info.denom = CheckedDenom::Cw20(MockApi::default().addr_make(CW20));
         deposit_info.check_native_deposit_paid(&info).unwrap();
 
         info.funds = coins(100, NATIVE_DENOM);
@@ -256,7 +256,7 @@ pub mod tests {
 
     #[test]
     fn test_native_deposit_paid_wrong_amount() {
-        let info = mock_info("ekez", &coins(9, NATIVE_DENOM));
+        let info = message_info(&MockApi::default().addr_make("ekez"), &coins(9, NATIVE_DENOM));
         let deposit_info = CheckedDepositInfo {
             denom: CheckedDenom::Native(NATIVE_DENOM.to_string()),
             amount: Uint128::new(10),
@@ -274,7 +274,7 @@ pub mod tests {
 
     #[test]
     fn check_native_deposit_paid_wrong_denom() {
-        let info = mock_info("ekez", &coins(10, "unotekez"));
+        let info = message_info(&MockApi::default().addr_make("ekez"), &coins(10, "unotekez"));
         let deposit_info = CheckedDepositInfo {
             denom: CheckedDenom::Native(NATIVE_DENOM.to_string()),
             amount: Uint128::new(10),
@@ -294,7 +294,7 @@ pub mod tests {
     // deposit seems like a frontend bug off.
     #[test]
     fn check_sending_other_denoms_is_not_allowed() {
-        let info = mock_info("ekez", &[coin(10, "unotekez"), coin(10, "ekez")]);
+        let info = message_info(&MockApi::default().addr_make("ekez"), &[coin(10, "unotekez"), coin(10, "ekez")]);
         let deposit_info = CheckedDepositInfo {
             denom: CheckedDenom::Native(NATIVE_DENOM.to_string()),
             amount: Uint128::new(10),
@@ -307,7 +307,7 @@ pub mod tests {
 
     #[test]
     fn check_native_deposit_paid_no_denoms() {
-        let info = mock_info("ekez", &[]);
+        let info = message_info(&MockApi::default().addr_make("ekez"), &[]);
         let deposit_info = CheckedDepositInfo {
             denom: CheckedDenom::Native(NATIVE_DENOM.to_string()),
             amount: Uint128::new(10),
@@ -326,22 +326,22 @@ pub mod tests {
             refund_policy: DepositRefundPolicy::Always,
         };
         let messages = deposit_info
-            .get_take_deposit_messages(&Addr::unchecked("ekez"), &Addr::unchecked(CW20))
+            .get_take_deposit_messages(&MockApi::default().addr_make("ekez"), &MockApi::default().addr_make(CW20))
             .unwrap();
         assert_eq!(messages, vec![]);
 
         // Does something for cw20s.
-        deposit_info.denom = CheckedDenom::Cw20(Addr::unchecked(CW20));
+        deposit_info.denom = CheckedDenom::Cw20(MockApi::default().addr_make(CW20));
         let messages = deposit_info
-            .get_take_deposit_messages(&Addr::unchecked("ekez"), &Addr::unchecked("contract"))
+            .get_take_deposit_messages(&MockApi::default().addr_make("ekez"), &MockApi::default().addr_make("contract"))
             .unwrap();
         assert_eq!(
             messages,
             vec![CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: CW20.to_string(),
+                contract_addr: MockApi::default().addr_make(CW20).to_string(),
                 msg: to_json_binary(&cw20::Cw20ExecuteMsg::TransferFrom {
-                    owner: "ekez".to_string(),
-                    recipient: "contract".to_string(),
+                    owner: MockApi::default().addr_make("ekez").to_string(),
+                    recipient: MockApi::default().addr_make("contract").to_string(),
                     amount: Uint128::new(10)
                 })
                 .unwrap(),
@@ -353,7 +353,7 @@ pub mod tests {
         // tx to fail for a valid cw20).
         deposit_info.amount = Uint128::zero();
         let messages = deposit_info
-            .get_take_deposit_messages(&Addr::unchecked("ekez"), &Addr::unchecked(CW20))
+            .get_take_deposit_messages(&MockApi::default().addr_make("ekez"), &MockApi::default().addr_make(CW20))
             .unwrap();
         assert_eq!(messages, vec![]);
     }
@@ -366,12 +366,12 @@ pub mod tests {
             refund_policy: DepositRefundPolicy::Always,
         };
         let messages = deposit_info
-            .get_return_deposit_message(&Addr::unchecked("ekez"))
+            .get_return_deposit_message(&MockApi::default().addr_make("ekez"))
             .unwrap();
         assert_eq!(
             messages,
             vec![CosmosMsg::Bank(BankMsg::Send {
-                to_address: "ekez".to_string(),
+                to_address: MockApi::default().addr_make("ekez").to_string(),
                 amount: coins(10, "uekez")
             })]
         );
@@ -379,7 +379,7 @@ pub mod tests {
         // Don't fire a message if there is nothing to send!
         deposit_info.amount = Uint128::zero();
         let messages = deposit_info
-            .get_return_deposit_message(&Addr::unchecked("ekez"))
+            .get_return_deposit_message(&MockApi::default().addr_make("ekez"))
             .unwrap();
         assert_eq!(messages, vec![]);
     }
@@ -387,19 +387,19 @@ pub mod tests {
     #[test]
     fn test_get_return_deposit_message_cw20() {
         let mut deposit_info = CheckedDepositInfo {
-            denom: CheckedDenom::Cw20(Addr::unchecked(CW20)),
+            denom: CheckedDenom::Cw20(MockApi::default().addr_make(CW20)),
             amount: Uint128::new(10),
             refund_policy: DepositRefundPolicy::Always,
         };
         let messages = deposit_info
-            .get_return_deposit_message(&Addr::unchecked("ekez"))
+            .get_return_deposit_message(&MockApi::default().addr_make("ekez"))
             .unwrap();
         assert_eq!(
             messages,
             vec![CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: CW20.to_string(),
+                contract_addr: MockApi::default().addr_make(CW20).to_string(),
                 msg: to_json_binary(&cw20::Cw20ExecuteMsg::Transfer {
-                    recipient: "ekez".to_string(),
+                    recipient: MockApi::default().addr_make("ekez").to_string(),
                     amount: Uint128::new(10)
                 })
                 .unwrap(),
@@ -410,7 +410,7 @@ pub mod tests {
         // Don't fire a message if there is nothing to send!
         deposit_info.amount = Uint128::zero();
         let messages = deposit_info
-            .get_return_deposit_message(&Addr::unchecked("ekez"))
+            .get_return_deposit_message(&MockApi::default().addr_make("ekez"))
             .unwrap();
         assert_eq!(messages, vec![]);
     }

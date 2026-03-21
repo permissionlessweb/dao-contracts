@@ -6,7 +6,7 @@ use crate::{
     msg::ExecuteMsg,
     proposal::{ProposalResponse, Status},
     tally::Winner,
-    testing::suite::unimportant_message,
+    testing::suite::{addr_str, unimportant_message},
     ContractError,
 };
 
@@ -27,12 +27,12 @@ fn test_proposal_lifecycle_closed() {
         .with_proposal(2)
         .build();
 
-    suite.vote("blue", 1, vec![0, 2, 1]).unwrap();
-    suite.vote("violet", 1, vec![1, 0, 2]).unwrap();
-    suite.vote("magenta", 1, vec![2, 1, 0]).unwrap();
-    suite.vote("gold", 1, vec![1, 0, 2]).unwrap();
-    suite.vote("crimson", 1, vec![0, 2, 1]).unwrap();
-    suite.vote("turquoise", 1, vec![2, 0, 1]).unwrap();
+    suite.vote(addr_str("blue"), 1, vec![0, 2, 1]).unwrap();
+    suite.vote(addr_str("violet"), 1, vec![1, 0, 2]).unwrap();
+    suite.vote(addr_str("magenta"), 1, vec![2, 1, 0]).unwrap();
+    suite.vote(addr_str("gold"), 1, vec![1, 0, 2]).unwrap();
+    suite.vote(addr_str("crimson"), 1, vec![0, 2, 1]).unwrap();
+    suite.vote(addr_str("turquoise"), 1, vec![2, 0, 1]).unwrap();
 
     suite.a_day_passes();
 
@@ -40,7 +40,7 @@ fn test_proposal_lifecycle_closed() {
     assert_eq!(winner, Winner::Never);
     assert_eq!(status, Status::Rejected);
 
-    suite.close("crimson", 1).unwrap();
+    suite.close(addr_str("crimson"), 1).unwrap();
 
     let (_, status) = suite.query_winner_and_status(1);
     assert_eq!(status, Status::Closed);
@@ -75,7 +75,7 @@ fn test_proposal_zero_choices() {
 #[test]
 fn test_no_propose_zero_voting_power() {
     let mut suite = SuiteBuilder::default().build();
-    let err = suite.propose("someone", vec![]);
+    let err = suite.propose(addr_str("someone"), vec![]);
     is_error!(err, &ContractError::ZeroVotingPower {}.to_string());
 }
 
@@ -108,7 +108,7 @@ fn test_proposal_never_reaches_quorum() {
         .with_proposal(2)
         .build();
 
-    suite.vote("pleb", 1, vec![0, 2, 1]).unwrap();
+    suite.vote(addr_str("pleb"), 1, vec![0, 2, 1]).unwrap();
 
     // seven days pass
     suite.a_week_passes();
@@ -125,7 +125,7 @@ fn test_proposal_passes_after_expiry() {
         .with_proposal(2)
         .build();
 
-    suite.vote("pleb", 1, vec![0, 2, 1]).unwrap();
+    suite.vote(addr_str("pleb"), 1, vec![0, 2, 1]).unwrap();
 
     suite.a_week_passes();
 
@@ -157,7 +157,7 @@ fn test_no_revoting() {
 #[test]
 fn test_no_vote_zero_power() {
     let mut suite = SuiteBuilder::default().with_proposal(1).build();
-    let err = suite.vote("somebody", 1, vec![0, 1]);
+    let err = suite.vote(addr_str("somebody"), 1, vec![0, 1]);
     is_error!(err, &ContractError::ZeroVotingPower {}.to_string());
 }
 

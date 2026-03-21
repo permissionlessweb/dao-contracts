@@ -1,23 +1,25 @@
 use std::ops::{Deref, DerefMut};
 
 use crate::testing::bitsong_stargate::StargateKeeper;
-use cosmwasm_std::{testing::MockApi, Empty, GovMsg, IbcMsg, IbcQuery, MemoryStorage};
+use cosmwasm_std::{testing::MockApi, Empty};
 use cw_multi_test::{
-    no_init, App, AppBuilder, BankKeeper, DistributionKeeper, FailingModule, StakeKeeper,
-    WasmKeeper,
+    no_init, App, AppBuilder, BankKeeper, DistributionKeeper, FailingModule, GovFailingModule,
+    IbcFailingModule, StakeKeeper, WasmKeeper,
 };
+use cosmwasm_std::testing::MockStorage;
+
 #[allow(clippy::type_complexity)]
 pub struct BitsongApp(
     App<
         BankKeeper,
         MockApi,
-        MemoryStorage,
+        MockStorage,
         FailingModule<Empty, Empty, Empty>,
         WasmKeeper<Empty, Empty>,
         StakeKeeper,
         DistributionKeeper,
-        FailingModule<IbcMsg, IbcQuery, Empty>,
-        FailingModule<GovMsg, Empty, Empty>,
+        IbcFailingModule,
+        GovFailingModule,
         StargateKeeper,
     >,
 );
@@ -25,13 +27,13 @@ impl Deref for BitsongApp {
     type Target = App<
         BankKeeper,
         MockApi,
-        MemoryStorage,
+        MockStorage,
         FailingModule<Empty, Empty, Empty>,
         WasmKeeper<Empty, Empty>,
         StakeKeeper,
         DistributionKeeper,
-        FailingModule<IbcMsg, IbcQuery, Empty>,
-        FailingModule<GovMsg, Empty, Empty>,
+        IbcFailingModule,
+        GovFailingModule,
         StargateKeeper,
     >;
 

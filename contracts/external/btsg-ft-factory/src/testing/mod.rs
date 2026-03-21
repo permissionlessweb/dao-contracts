@@ -3,13 +3,14 @@ mod bitsong_stargate;
 mod tests;
 
 use app::BitsongApp;
+use cosmwasm_std::testing::MockApi;
 use cosmwasm_std::Addr;
 use cw_multi_test::Executor;
 use dao_testing::contracts::{btsg_ft_factory_contract, dao_voting_token_staked_contract};
 
 use crate::msg::InstantiateMsg;
 
-/// Address used to stake stuff.
+/// Label used to generate staker address via MockApi::addr_make.
 pub(crate) const STAKER: &str = "staker";
 
 pub(crate) struct CommonTest {
@@ -23,10 +24,11 @@ pub(crate) fn setup_test() -> CommonTest {
     let factory_id = app.store_code(btsg_ft_factory_contract());
     let module_id = app.store_code(dao_voting_token_staked_contract());
 
+    let anyone = MockApi::default().addr_make("anyone");
     let factory = app
         .instantiate_contract(
             factory_id,
-            Addr::unchecked("anyone"),
+            anyone,
             &InstantiateMsg {},
             &[],
             "bitsong_fantoken_factory",

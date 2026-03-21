@@ -21,6 +21,7 @@ use dao_voting::{
 };
 use dao_voting_cw4::msg::GroupContract;
 
+use super::{addr, addr_str};
 use crate::testing::tests::ALTERNATIVE_ADDR;
 use crate::{msg::InstantiateMsg, testing::tests::CREATOR_ADDR};
 
@@ -113,7 +114,7 @@ pub fn _instantiate_with_staked_cw721_governance(
 
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![Cw20Coin {
-            address: CREATOR_ADDR.to_string(),
+            address: addr_str(CREATOR_ADDR),
             amount: Uint128::new(100_000_000),
         }]
     });
@@ -140,11 +141,14 @@ pub fn _instantiate_with_staked_cw721_governance(
     let nft_address = app
         .instantiate_contract(
             cw721_id,
-            Addr::unchecked("ekez"),
+            addr("ekez"),
             &cw721_base::msg::InstantiateMsg {
-                minter: "ekez".to_string(),
+                minter: Some(addr_str("ekez")),
                 symbol: "token".to_string(),
                 name: "ekez token best token".to_string(),
+                collection_info_extension: None,
+                creator: None,
+                withdraw_address: None,
             },
             &[],
             "nft-staking",
@@ -190,7 +194,7 @@ pub fn _instantiate_with_staked_cw721_governance(
     let core_addr = app
         .instantiate_contract(
             core_contract_id,
-            Addr::unchecked(CREATOR_ADDR),
+            addr(CREATOR_ADDR),
             &instantiate_core,
             &[],
             "DAO DAO",
@@ -210,9 +214,9 @@ pub fn _instantiate_with_staked_cw721_governance(
     for Cw20Coin { address, amount } in initial_balances {
         for i in 0..amount.u128() {
             app.execute_contract(
-                Addr::unchecked("ekez"),
+                addr("ekez"),
                 nft_address.clone(),
-                &cw721_base::msg::ExecuteMsg::<Option<Empty>, Empty>::Mint {
+                &cw721_base::msg::ExecuteMsg::Mint {
                     token_id: format!("{address}_{i}"),
                     owner: address.clone(),
                     token_uri: None,
@@ -224,7 +228,7 @@ pub fn _instantiate_with_staked_cw721_governance(
             app.execute_contract(
                 Addr::unchecked(address.clone()),
                 nft_address.clone(),
-                &cw721_base::msg::ExecuteMsg::<Option<Empty>, Empty>::SendNft {
+                &cw721_base::msg::ExecuteMsg::SendNft {
                     contract: staking_addr.to_string(),
                     token_id: format!("{address}_{i}"),
                     msg: to_json_binary("").unwrap(),
@@ -250,7 +254,7 @@ pub fn instantiate_with_native_staked_balances_governance(
 
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![Cw20Coin {
-            address: CREATOR_ADDR.to_string(),
+            address: addr_str(CREATOR_ADDR),
             amount: Uint128::new(100_000_000),
         }]
     });
@@ -312,7 +316,7 @@ pub fn instantiate_with_native_staked_balances_governance(
     let core_addr = app
         .instantiate_contract(
             core_contract_id,
-            Addr::unchecked(CREATOR_ADDR),
+            addr(CREATOR_ADDR),
             &instantiate_core,
             &[],
             "DAO DAO",
@@ -369,7 +373,7 @@ pub fn instantiate_with_cw20_balances_governance(
 
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![Cw20Coin {
-            address: CREATOR_ADDR.to_string(),
+            address: addr_str(CREATOR_ADDR),
             amount: Uint128::new(100_000_000),
         }]
     });
@@ -432,7 +436,7 @@ pub fn instantiate_with_cw20_balances_governance(
 
     app.instantiate_contract(
         core_id,
-        Addr::unchecked(CREATOR_ADDR),
+        addr(CREATOR_ADDR),
         &governance_instantiate,
         &[],
         "DAO DAO",
@@ -450,7 +454,7 @@ pub fn instantiate_with_staked_balances_governance(
 
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![Cw20Coin {
-            address: CREATOR_ADDR.to_string(),
+            address: addr_str(CREATOR_ADDR),
             amount: Uint128::new(100_000_000),
         }]
     });
@@ -524,7 +528,7 @@ pub fn instantiate_with_staked_balances_governance(
     let core_addr = app
         .instantiate_contract(
             core_contract_id,
-            Addr::unchecked(CREATOR_ADDR),
+            addr(CREATOR_ADDR),
             &instantiate_core,
             &[],
             "DAO DAO",
@@ -587,11 +591,11 @@ pub fn instantiate_with_multiple_staked_balances_governance(
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![
             Cw20Coin {
-                address: CREATOR_ADDR.to_string(),
+                address: addr_str(CREATOR_ADDR),
                 amount: Uint128::new(100_000_000),
             },
             Cw20Coin {
-                address: ALTERNATIVE_ADDR.to_string(),
+                address: addr_str(ALTERNATIVE_ADDR),
                 amount: Uint128::new(100_000_000),
             },
         ]
@@ -668,7 +672,7 @@ pub fn instantiate_with_multiple_staked_balances_governance(
     let core_addr = app
         .instantiate_contract(
             core_contract_id,
-            Addr::unchecked(CREATOR_ADDR),
+            addr(CREATOR_ADDR),
             &instantiate_core,
             &[],
             "DAO DAO",
@@ -735,7 +739,7 @@ pub fn instantiate_with_staking_active_threshold(
 
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![Cw20Coin {
-            address: CREATOR_ADDR.to_string(),
+            address: addr_str(CREATOR_ADDR),
             amount: Uint128::new(100_000_000),
         }]
     });
@@ -787,7 +791,7 @@ pub fn instantiate_with_staking_active_threshold(
 
     app.instantiate_contract(
         core_id,
-        Addr::unchecked(CREATOR_ADDR),
+        addr(CREATOR_ADDR),
         &governance_instantiate,
         &[],
         "DAO DAO",
@@ -808,7 +812,7 @@ pub fn _instantiate_with_cw4_groups_governance(
 
     let initial_weights = initial_weights.unwrap_or_else(|| {
         vec![Cw20Coin {
-            address: CREATOR_ADDR.to_string(),
+            address: addr_str(CREATOR_ADDR),
             amount: Uint128::new(1),
         }]
     });
@@ -871,7 +875,7 @@ pub fn _instantiate_with_cw4_groups_governance(
     let addr = app
         .instantiate_contract(
             core_id,
-            Addr::unchecked(CREATOR_ADDR),
+            addr(CREATOR_ADDR),
             &governance_instantiate,
             &[],
             "DAO DAO",

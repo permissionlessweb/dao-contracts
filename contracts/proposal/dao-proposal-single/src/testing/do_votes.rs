@@ -18,7 +18,7 @@ use dao_voting::{
 use crate::{
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
     query::{ProposalResponse, VoteInfo, VoteResponse},
-    testing::{instantiate::*, queries::query_deposit_config_and_pre_propose_module},
+    testing::{addr_str, instantiate::*, queries::query_deposit_config_and_pre_propose_module},
 };
 
 pub(crate) fn do_votes_staked_balances(
@@ -101,7 +101,7 @@ where
     // Mint some ujuno so that it exists for native staking tests
     // Otherwise denom validation will fail
     app.sudo(SudoMsg::Bank(BankSudo::Mint {
-        to_address: "sodenomexists".to_string(),
+        to_address: addr_str("sodenomexists"),
         amount: vec![Coin {
             amount: Uint128::new(10),
             denom: "ujuno".to_string(),
@@ -112,7 +112,7 @@ where
     let mut initial_balances = votes
         .iter()
         .map(|TestSingleChoiceVote { voter, weight, .. }| Cw20Coin {
-            address: voter.to_string(),
+            address: addr_str(voter),
             amount: *weight,
         })
         .collect::<Vec<Cw20Coin>>();
@@ -120,7 +120,7 @@ where
     let to_fill = total_supply.map(|total_supply| total_supply - initial_balances_supply);
     if let Some(fill) = to_fill {
         initial_balances.push(Cw20Coin {
-            address: "filler".to_string(),
+            address: addr_str("filler"),
             amount: fill,
         })
     }
@@ -128,7 +128,7 @@ where
     let pre_propose_info = get_pre_propose_info(&mut app, deposit_info, false);
 
     let proposer = match votes.first() {
-        Some(vote) => vote.voter.clone(),
+        Some(vote) => addr_str(&vote.voter),
         None => panic!("do_test_votes must have at least one vote."),
     };
 
@@ -223,9 +223,10 @@ where
             weight,
             should_execute,
         } = vote;
+        let voter_bech32 = addr_str(&voter);
         // Vote on the proposal.
         let res = app.execute_contract(
-            Addr::unchecked(voter.clone()),
+            Addr::unchecked(&voter_bech32),
             proposal_single.clone(),
             &ExecuteMsg::Vote {
                 proposal_id: 1,
@@ -244,7 +245,7 @@ where
                         proposal_single.clone(),
                         &QueryMsg::GetVote {
                             proposal_id: 1,
-                            voter: voter.clone(),
+                            voter: voter_bech32.clone(),
                         },
                     )
                     .unwrap();
@@ -254,7 +255,7 @@ where
                         denom: CheckedDenom::Cw20(_),
                         ..
                     }) => {
-                        if proposer == voter {
+                        if proposer == voter_bech32 {
                             weight - amount
                         } else {
                             weight
@@ -267,7 +268,7 @@ where
                 let expected = VoteResponse {
                     vote: Some(VoteInfo {
                         rationale: None,
-                        voter: Addr::unchecked(&voter),
+                        voter: Addr::unchecked(&voter_bech32),
                         vote: position,
                         power: expected_power,
                         individual_power: expected_power,

@@ -1,4 +1,4 @@
-use cosmwasm_std::{testing::mock_dependencies, Addr, StdError};
+use cosmwasm_std::{testing::{mock_dependencies, MockApi}, Addr, StdError};
 
 use crate::{LoadedItem, SnapshotVectorMap};
 
@@ -13,8 +13,8 @@ fn test_basic() {
         "svm__active__changelog",
         "svm__active__last_update",
     );
-    let k1 = &Addr::unchecked("haon");
-    let k2 = &Addr::unchecked("ekez");
+    let k1 = &MockApi::default().addr_make("haon");
+    let k2 = &MockApi::default().addr_make("ekez");
 
     // add 1, 2, 3 to k1 at corresponding blocks
     svm.push(storage, k1, &1, 1, None).unwrap();
@@ -128,7 +128,7 @@ fn test_expiration() {
         "svm__active__changelog",
         "svm__active__last_update",
     );
-    let k1 = &Addr::unchecked("haon");
+    let k1 = &MockApi::default().addr_make("haon");
 
     svm.push(storage, k1, &1, 1, Some(3)).unwrap();
     svm.push(storage, k1, &4, 4, None).unwrap();
@@ -444,7 +444,7 @@ fn test_update() {
         "svm__active__changelog",
         "svm__active__last_update",
     );
-    let k1 = &Addr::unchecked("bekauz");
+    let k1 = &MockApi::default().addr_make("bekauz");
     let item_1_value = 13;
     let item_2_value = 23;
 
@@ -564,7 +564,7 @@ fn test_update_before_last_update() {
         "svm__active__changelog",
         "svm__active__last_update",
     );
-    let k1 = &Addr::unchecked("bekauz");
+    let k1 = &MockApi::default().addr_make("bekauz");
 
     // push an item at block #1
     let ((item_id, _), _) = svm.push(storage, k1, &69, 1, None).unwrap();
@@ -586,7 +586,7 @@ fn test_update_in_past() {
         "svm__active__changelog",
         "svm__active__last_update",
     );
-    let k1 = &Addr::unchecked("bekauz");
+    let k1 = &MockApi::default().addr_make("bekauz");
 
     // push an item at block #1
     let ((item_id, _), _) = svm.push(storage, k1, &69, 1, None).unwrap();
@@ -613,7 +613,7 @@ fn test_update_non_existent_item() {
         "svm__active__last_update",
     );
 
-    let k1 = &Addr::unchecked("bekauz");
+    let k1 = &MockApi::default().addr_make("bekauz");
 
     // attempt to update non-existent item when vector is empty
     svm.update(storage, k1, 0, 1, |v| *v += 1, None).unwrap();
@@ -630,7 +630,7 @@ fn test_update_expired_item_creates_new_entry() {
         "svm__active__changelog",
         "svm__active__last_update",
     );
-    let k1 = &Addr::unchecked("bekauz");
+    let k1 = &MockApi::default().addr_make("bekauz");
 
     // at block #1, push item that expires in 4 blocks (at block #5)
     let ((expired_id, _), _) = svm.push(storage, k1, &24, 1, Some(4)).unwrap();

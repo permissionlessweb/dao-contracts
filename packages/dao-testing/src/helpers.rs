@@ -1,4 +1,4 @@
-use cosmwasm_std::{to_json_binary, Addr, Binary, Uint128};
+use cosmwasm_std::{testing::MockApi, to_json_binary, Addr, Binary, Uint128};
 use cw20::Cw20Coin;
 use cw_multi_test::{App, Executor};
 use cw_utils::Duration;
@@ -25,7 +25,7 @@ pub fn instantiate_with_cw20_balances_governance(
 
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![Cw20Coin {
-            address: CREATOR_ADDR.to_string(),
+            address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
             amount: Uint128::new(100_000_000),
         }]
     });
@@ -88,7 +88,7 @@ pub fn instantiate_with_cw20_balances_governance(
 
     app.instantiate_contract(
         core_id,
-        Addr::unchecked(CREATOR_ADDR),
+        MockApi::default().addr_make(CREATOR_ADDR),
         &governance_instantiate,
         &[],
         "DAO DAO",
@@ -105,7 +105,7 @@ pub fn instantiate_with_staked_balances_governance(
 ) -> Addr {
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![Cw20Coin {
-            address: CREATOR_ADDR.to_string(),
+            address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
             amount: Uint128::new(100_000_000),
         }]
     });
@@ -179,7 +179,7 @@ pub fn instantiate_with_staked_balances_governance(
     let core_addr = app
         .instantiate_contract(
             core_contract_id,
-            Addr::unchecked(CREATOR_ADDR),
+            MockApi::default().addr_make(CREATOR_ADDR),
             &instantiate_core,
             &[],
             "DAO DAO",
@@ -304,7 +304,7 @@ pub fn instantiate_with_staking_active_threshold(
 
     app.instantiate_contract(
         governance_id,
-        Addr::unchecked(CREATOR_ADDR),
+        MockApi::default().addr_make(CREATOR_ADDR),
         &governance_instantiate,
         &[],
         "DAO DAO",
@@ -383,7 +383,7 @@ pub fn instantiate_with_cw4_groups_governance(
     let addr = app
         .instantiate_contract(
             core_id,
-            Addr::unchecked(CREATOR_ADDR),
+            MockApi::default().addr_make(CREATOR_ADDR),
             &governance_instantiate,
             &[],
             "DAO DAO",

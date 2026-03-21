@@ -70,7 +70,7 @@ pub enum MigrationMsgs {
     DaoProposalSingle(dao_proposal_single::msg::MigrateMsg),
     DaoVotingCw4(dao_voting_cw4::msg::MigrateMsg),
     Cw20Stake(cw20_stake::msg::MigrateMsg),
-    DaoVotingCw20Staked(dao_voting_cw20_staked::msg::MigrateMsg),
+    // DaoVotingCw20Staked(dao_voting_cw20_staked::msg::MigrateMsg),
 }
 
 /// Module data we need for migrations and tests.

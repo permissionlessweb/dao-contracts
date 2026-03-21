@@ -7,10 +7,10 @@ use dao_interface::query::SubDao;
 use dao_testing::contracts::{
     cw20_base_contract, cw20_stake_contract, cw4_group_contract, dao_dao_core_contract,
     dao_proposal_single_contract, dao_voting_cw20_staked_contract, dao_voting_cw4_contract,
-    v1::{
-        cw20_stake_v1_contract, cw4_voting_v1_contract, cw_core_v1_contract,
-        cw_proposal_single_v1_contract,
-    },
+    // v1::{
+    //     cw20_stake_v1_contract, cw4_voting_v1_contract, cw_core_v1_contract,
+    //     cw_proposal_single_v1_contract,
+    // },
 };
 
 use crate::{

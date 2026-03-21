@@ -1,4 +1,6 @@
-use cosmwasm_std::{to_json_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Uint128, WasmMsg};
+use cosmwasm_std::{
+    testing::MockApi, to_json_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Uint128, WasmMsg,
+};
 use cw_ownable::OwnershipError;
 use cw_protobuf_registry::protobuf::base64_encode_protobuf;
 use dao_interface::{
@@ -253,8 +255,8 @@ fn test_update_owner() {
     let existing_owner = suite.get_ownership().owner.unwrap();
     assert_eq!(existing_owner, suite.core_addr);
 
-    let new_owner = "new_owner";
-    suite.update_owner(existing_owner, new_owner);
+    let new_owner = MockApi::default().addr_make("new_owner");
+    suite.update_owner(existing_owner, &new_owner);
 
     let owner = suite.get_ownership().owner.unwrap();
     assert_eq!(owner, new_owner);
@@ -277,7 +279,7 @@ fn test_update_dao() {
     let current_dao = suite.get_dao();
 
     // Update to a new DAO address
-    let new_dao = "new_dao_address";
+    let new_dao = MockApi::default().addr_make("new_dao_address");
     suite.update_dao(&dao, new_dao.to_string());
 
     // Verify the DAO was updated
@@ -915,7 +917,7 @@ fn test_action_execution() {
 
     let actions = suite.list_actions(None, None, None).actions;
     assert_eq!(actions.len(), 1);
-    assert_eq!(actions[0].addr, ADDR0);
+    assert_eq!(actions[0].addr.as_str(), ADDR0);
     assert_eq!(actions[0].role_id, role_id);
     assert_eq!(actions[0].authorization_id, authorization_id);
     assert_eq!(actions[0].msg, action_msg);
@@ -1382,22 +1384,28 @@ fn test_list_queries() {
     assert_eq!(assignments_with_limit.assignments.len(), 1);
 
     // Test list addresses with role
+    // Addresses are stored in lexicographic order in the map.
+    let (first_addr, second_addr) = if ADDR0 < ADDR1 {
+        (ADDR0, ADDR1)
+    } else {
+        (ADDR1, ADDR0)
+    };
     let addr_with_role1 = suite.list_addresses_with_role(role_id1, None, None);
     assert_eq!(addr_with_role1.addresses.len(), 2);
-    assert_eq!(addr_with_role1.addresses[0], ADDR0.to_string());
-    assert_eq!(addr_with_role1.addresses[1], ADDR1.to_string());
+    assert_eq!(addr_with_role1.addresses[0].as_str(), first_addr);
+    assert_eq!(addr_with_role1.addresses[1].as_str(), second_addr);
 
     let addr_with_role1_with_start_after =
-        suite.list_addresses_with_role(role_id1, Some(ADDR0.to_string()), None);
+        suite.list_addresses_with_role(role_id1, Some(first_addr.to_string()), None);
     assert_eq!(addr_with_role1_with_start_after.addresses.len(), 1);
     assert_eq!(
-        addr_with_role1_with_start_after.addresses[0],
-        ADDR1.to_string()
+        addr_with_role1_with_start_after.addresses[0].as_str(),
+        second_addr
     );
 
     let addr_with_role1_with_limit = suite.list_addresses_with_role(role_id1, None, Some(1));
     assert_eq!(addr_with_role1_with_limit.addresses.len(), 1);
-    assert_eq!(addr_with_role1_with_limit.addresses[0], ADDR0.to_string());
+    assert_eq!(addr_with_role1_with_limit.addresses[0].as_str(), first_addr);
 
     // Test list roles for address
     let addr0_roles = suite.list_roles_for_address(ADDR0.to_string(), None, None);
@@ -1945,7 +1953,7 @@ fn test_action_execution_with_multiple_actions() {
 
     // Verify they're all from ADDR0 with role 1 and auth 1
     for action in &logged_actions.actions {
-        assert_eq!(action.addr, ADDR0);
+        assert_eq!(action.addr.as_str(), ADDR0);
         assert_eq!(action.role_id, role_id);
         assert_eq!(action.authorization_id, authorization_id);
     }
@@ -2031,11 +2039,11 @@ fn test_action_execution_with_multiple_actions() {
         }
     );
 
-    // Set filter contract to invalid address.
+    // Set filter contract to a valid bech32 address that is not a real contract.
     suite.update_filter(
         &dao,
         ModuleUpdate::Existing {
-            address: "invalid_address".to_string(),
+            address: MockApi::default().addr_make("invalid_address").to_string(),
         },
     );
 

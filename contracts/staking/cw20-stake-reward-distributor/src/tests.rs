@@ -1,15 +1,14 @@
-use cosmwasm_std::{to_json_binary, Addr, Uint128, WasmMsg};
+use cosmwasm_std::testing::MockApi;
+use cosmwasm_std::{Addr, Uint128};
 use cw20::Cw20Coin;
-use cw20_stake_reward_distributor_v1 as v1;
 use cw_multi_test::{next_block, App, Executor};
 use cw_ownable::{Action, Expiration, Ownership, OwnershipError};
 use dao_testing::contracts::{
     cw20_base_contract, cw20_stake_contract, cw20_stake_reward_distributor_contract,
-    v1::cw20_stake_reward_distributor_v1_contract,
 };
 
 use crate::{
-    msg::{ExecuteMsg, InfoResponse, InstantiateMsg, MigrateMsg, QueryMsg},
+    msg::{ExecuteMsg, InfoResponse, InstantiateMsg, QueryMsg},
     state::Config,
 };
 use cw20_stake_reward_distributor::ContractError;
@@ -28,20 +27,20 @@ fn instantiate_cw20(app: &mut App, initial_balances: Vec<Cw20Coin>) -> Addr {
         marketing: None,
     };
 
-    app.instantiate_contract(cw20_id, Addr::unchecked(OWNER), &msg, &[], "cw20", None)
+    app.instantiate_contract(cw20_id, MockApi::default().addr_make(OWNER), &msg, &[], "cw20", None)
         .unwrap()
 }
 
 fn instantiate_staking(app: &mut App, cw20_addr: Addr) -> Addr {
     let staking_id = app.store_code(cw20_stake_contract());
     let msg = cw20_stake::msg::InstantiateMsg {
-        owner: Some(OWNER.to_string()),
+        owner: Some(MockApi::default().addr_make(OWNER).to_string()),
         token_address: cw20_addr.to_string(),
         unstaking_duration: None,
     };
     app.instantiate_contract(
         staking_id,
-        Addr::unchecked(OWNER),
+        MockApi::default().addr_make(OWNER),
         &msg,
         &[],
         "staking",
@@ -54,7 +53,7 @@ fn instantiate_distributor(app: &mut App, msg: InstantiateMsg) -> Addr {
     let code_id = app.store_code(cw20_stake_reward_distributor_contract());
     app.instantiate_contract(
         code_id,
-        Addr::unchecked(OWNER),
+        MockApi::default().addr_make(OWNER),
         &msg,
         &[],
         "distributor",
@@ -97,7 +96,7 @@ fn test_instantiate() {
     let staking_addr = instantiate_staking(&mut app, cw20_addr.clone());
 
     let msg = InstantiateMsg {
-        owner: OWNER.to_string(),
+        owner: MockApi::default().addr_make(OWNER).to_string(),
         staking_addr: staking_addr.to_string(),
         reward_rate: Uint128::new(1),
         reward_token: cw20_addr.to_string(),
@@ -123,7 +122,7 @@ fn test_instantiate() {
     assert_eq!(
         ownership,
         Ownership::<Addr> {
-            owner: Some(Addr::unchecked(OWNER)),
+            owner: Some(MockApi::default().addr_make(OWNER)),
             pending_owner: None,
             pending_expiry: None
         }
@@ -138,7 +137,7 @@ fn test_update_config() {
     let staking_addr = instantiate_staking(&mut app, cw20_addr.clone());
 
     let msg = InstantiateMsg {
-        owner: OWNER.to_string(),
+        owner: MockApi::default().addr_make(OWNER).to_string(),
         staking_addr: staking_addr.to_string(),
         reward_rate: Uint128::new(1),
         reward_token: cw20_addr.to_string(),
@@ -151,7 +150,7 @@ fn test_update_config() {
         reward_token: cw20_addr.to_string(),
     };
 
-    app.execute_contract(Addr::unchecked(OWNER), distributor_addr.clone(), &msg, &[])
+    app.execute_contract(MockApi::default().addr_make(OWNER), distributor_addr.clone(), &msg, &[])
         .unwrap();
 
     let response: InfoResponse = app
@@ -176,7 +175,7 @@ fn test_update_config() {
 
     // non-owner may not update config.
     let err: ContractError = app
-        .execute_contract(Addr::unchecked("notowner"), distributor_addr, &msg, &[])
+        .execute_contract(MockApi::default().addr_make("notowner"), distributor_addr, &msg, &[])
         .unwrap_err()
         .downcast()
         .unwrap();
@@ -191,14 +190,14 @@ fn test_distribute() {
     let cw20_addr = instantiate_cw20(
         &mut app,
         vec![cw20::Cw20Coin {
-            address: OWNER.to_string(),
+            address: MockApi::default().addr_make(OWNER).to_string(),
             amount: Uint128::from(1000u64),
         }],
     );
     let staking_addr = instantiate_staking(&mut app, cw20_addr.clone());
 
     let msg = InstantiateMsg {
-        owner: OWNER.to_string(),
+        owner: MockApi::default().addr_make(OWNER).to_string(),
         staking_addr: staking_addr.to_string(),
         reward_rate: Uint128::new(1),
         reward_token: cw20_addr.to_string(),
@@ -209,12 +208,12 @@ fn test_distribute() {
         recipient: distributor_addr.to_string(),
         amount: Uint128::from(1000u128),
     };
-    app.execute_contract(Addr::unchecked(OWNER), cw20_addr.clone(), &msg, &[])
+    app.execute_contract(MockApi::default().addr_make(OWNER), cw20_addr.clone(), &msg, &[])
         .unwrap();
 
     app.update_block(|block| block.height += 10);
     app.execute_contract(
-        Addr::unchecked(OWNER),
+        MockApi::default().addr_make(OWNER),
         distributor_addr.clone(),
         &ExecuteMsg::Distribute {},
         &[],
@@ -230,7 +229,7 @@ fn test_distribute() {
 
     app.update_block(|block| block.height += 500);
     app.execute_contract(
-        Addr::unchecked(OWNER),
+        MockApi::default().addr_make(OWNER),
         distributor_addr.clone(),
         &ExecuteMsg::Distribute {},
         &[],
@@ -246,7 +245,7 @@ fn test_distribute() {
 
     app.update_block(|block| block.height += 1000);
     app.execute_contract(
-        Addr::unchecked(OWNER),
+        MockApi::default().addr_make(OWNER),
         distributor_addr.clone(),
         &ExecuteMsg::Distribute {},
         &[],
@@ -265,7 +264,7 @@ fn test_distribute() {
     app.update_block(|block| block.height += 1100);
     let err: ContractError = app
         .execute_contract(
-            Addr::unchecked(OWNER),
+            MockApi::default().addr_make(OWNER),
             distributor_addr.clone(),
             &ExecuteMsg::Distribute {},
             &[],
@@ -287,7 +286,7 @@ fn test_distribute() {
     app.update_block(|block| block.height -= 2000);
     let err: ContractError = app
         .execute_contract(
-            Addr::unchecked(OWNER),
+            MockApi::default().addr_make(OWNER),
             distributor_addr,
             &ExecuteMsg::Distribute {},
             &[],
@@ -304,24 +303,25 @@ fn test_instantiate_invalid_addrs() {
     let cw20_addr = instantiate_cw20(
         &mut app,
         vec![cw20::Cw20Coin {
-            address: OWNER.to_string(),
+            address: MockApi::default().addr_make(OWNER).to_string(),
             amount: Uint128::from(1000u64),
         }],
     );
     let staking_addr = instantiate_staking(&mut app, cw20_addr.clone());
 
+    let api = MockApi::default();
     let msg = InstantiateMsg {
-        owner: OWNER.to_string(),
+        owner: api.addr_make(OWNER).to_string(),
         staking_addr: staking_addr.to_string(),
         reward_rate: Uint128::new(1),
-        reward_token: "invalid_cw20".to_string(),
+        reward_token: api.addr_make("not_a_cw20").to_string(),
     };
 
     let code_id = app.store_code(cw20_stake_reward_distributor_contract());
     let err: ContractError = app
         .instantiate_contract(
             code_id,
-            Addr::unchecked(OWNER),
+            api.addr_make(OWNER),
             &msg,
             &[],
             "distributor",
@@ -334,15 +334,15 @@ fn test_instantiate_invalid_addrs() {
     assert_eq!(err, ContractError::InvalidCw20 {});
 
     let msg = InstantiateMsg {
-        owner: OWNER.to_string(),
-        staking_addr: "invalid_staking".to_string(),
+        owner: api.addr_make(OWNER).to_string(),
+        staking_addr: api.addr_make("not_a_staking").to_string(),
         reward_rate: Uint128::new(1),
         reward_token: cw20_addr.to_string(),
     };
     let err: ContractError = app
         .instantiate_contract(
             code_id,
-            Addr::unchecked(OWNER),
+            MockApi::default().addr_make(OWNER),
             &msg,
             &[],
             "distributor",
@@ -357,12 +357,13 @@ fn test_instantiate_invalid_addrs() {
 #[test]
 fn test_update_config_invalid_addrs() {
     let mut app = App::default();
+    let api = MockApi::default();
 
     let cw20_addr = instantiate_cw20(&mut app, vec![]);
     let staking_addr = instantiate_staking(&mut app, cw20_addr.clone());
 
     let msg = InstantiateMsg {
-        owner: OWNER.to_string(),
+        owner: api.addr_make(OWNER).to_string(),
         staking_addr: staking_addr.to_string(),
         reward_rate: Uint128::new(1),
         reward_token: cw20_addr.to_string(),
@@ -372,24 +373,24 @@ fn test_update_config_invalid_addrs() {
     let msg = ExecuteMsg::UpdateConfig {
         staking_addr: staking_addr.to_string(),
         reward_rate: Uint128::new(5),
-        reward_token: "invalid_cw20".to_string(),
+        reward_token: api.addr_make("not_a_cw20").to_string(),
     };
 
     let err: ContractError = app
-        .execute_contract(Addr::unchecked(OWNER), distributor_addr.clone(), &msg, &[])
+        .execute_contract(api.addr_make(OWNER), distributor_addr.clone(), &msg, &[])
         .unwrap_err()
         .downcast()
         .unwrap();
     assert_eq!(err, ContractError::InvalidCw20 {});
 
     let msg = ExecuteMsg::UpdateConfig {
-        staking_addr: "invalid_staking".to_string(),
+        staking_addr: api.addr_make("not_a_staking").to_string(),
         reward_rate: Uint128::new(5),
         reward_token: staking_addr.to_string(),
     };
 
     let err: ContractError = app
-        .execute_contract(Addr::unchecked(OWNER), distributor_addr, &msg, &[])
+        .execute_contract(api.addr_make(OWNER), distributor_addr, &msg, &[])
         .unwrap_err()
         .downcast()
         .unwrap();
@@ -403,14 +404,14 @@ fn test_withdraw() {
     let cw20_addr = instantiate_cw20(
         &mut app,
         vec![cw20::Cw20Coin {
-            address: OWNER.to_string(),
+            address: MockApi::default().addr_make(OWNER).to_string(),
             amount: Uint128::from(1000u64),
         }],
     );
     let staking_addr = instantiate_staking(&mut app, cw20_addr.clone());
 
     let msg = InstantiateMsg {
-        owner: OWNER.to_string(),
+        owner: MockApi::default().addr_make(OWNER).to_string(),
         staking_addr: staking_addr.to_string(),
         reward_rate: Uint128::new(1),
         reward_token: cw20_addr.to_string(),
@@ -421,12 +422,12 @@ fn test_withdraw() {
         recipient: distributor_addr.to_string(),
         amount: Uint128::from(1000u128),
     };
-    app.execute_contract(Addr::unchecked(OWNER), cw20_addr.clone(), &msg, &[])
+    app.execute_contract(MockApi::default().addr_make(OWNER), cw20_addr.clone(), &msg, &[])
         .unwrap();
 
     app.update_block(|block| block.height += 10);
     app.execute_contract(
-        Addr::unchecked(OWNER),
+        MockApi::default().addr_make(OWNER),
         distributor_addr.clone(),
         &ExecuteMsg::Distribute {},
         &[],
@@ -443,7 +444,7 @@ fn test_withdraw() {
     // Unauthorized user cannot withdraw funds
     let err = app
         .execute_contract(
-            Addr::unchecked("notowner"),
+            MockApi::default().addr_make("notowner"),
             distributor_addr.clone(),
             &ExecuteMsg::Withdraw {},
             &[],
@@ -457,14 +458,14 @@ fn test_withdraw() {
 
     // Withdraw funds
     app.execute_contract(
-        Addr::unchecked(OWNER),
+        MockApi::default().addr_make(OWNER),
         distributor_addr,
         &ExecuteMsg::Withdraw {},
         &[],
     )
     .unwrap();
 
-    let owner_balance = get_balance_cw20(&app, cw20_addr, Addr::unchecked(OWNER));
+    let owner_balance = get_balance_cw20(&app, cw20_addr, MockApi::default().addr_make(OWNER));
     assert_eq!(owner_balance, Uint128::new(990));
 }
 
@@ -478,14 +479,14 @@ fn test_dao_deploy() {
     let cw20_addr = instantiate_cw20(
         &mut app,
         vec![cw20::Cw20Coin {
-            address: OWNER.to_string(),
+            address: MockApi::default().addr_make(OWNER).to_string(),
             amount: Uint128::from(1000u64),
         }],
     );
     let staking_addr = instantiate_staking(&mut app, cw20_addr.clone());
 
     let msg = InstantiateMsg {
-        owner: OWNER.to_string(),
+        owner: MockApi::default().addr_make(OWNER).to_string(),
         staking_addr: staking_addr.to_string(),
         reward_rate: Uint128::new(0),
         reward_token: cw20_addr.to_string(),
@@ -497,19 +498,19 @@ fn test_dao_deploy() {
         reward_rate: Uint128::new(1),
         reward_token: cw20_addr.to_string(),
     };
-    app.execute_contract(Addr::unchecked(OWNER), distributor_addr.clone(), &msg, &[])
+    app.execute_contract(MockApi::default().addr_make(OWNER), distributor_addr.clone(), &msg, &[])
         .unwrap();
 
     let msg = cw20::Cw20ExecuteMsg::Transfer {
         recipient: distributor_addr.to_string(),
         amount: Uint128::from(1000u128),
     };
-    app.execute_contract(Addr::unchecked(OWNER), cw20_addr.clone(), &msg, &[])
+    app.execute_contract(MockApi::default().addr_make(OWNER), cw20_addr.clone(), &msg, &[])
         .unwrap();
 
     app.update_block(|block| block.height += 10);
     app.execute_contract(
-        Addr::unchecked(OWNER),
+        MockApi::default().addr_make(OWNER),
         distributor_addr.clone(),
         &ExecuteMsg::Distribute {},
         &[],
@@ -530,13 +531,13 @@ fn test_ownership() {
     let cw20_addr = instantiate_cw20(
         &mut app,
         vec![cw20::Cw20Coin {
-            address: OWNER.to_string(),
+            address: MockApi::default().addr_make(OWNER).to_string(),
             amount: Uint128::from(1000u64),
         }],
     );
     let staking_addr = instantiate_staking(&mut app, cw20_addr.clone());
     let msg = InstantiateMsg {
-        owner: OWNER.to_string(),
+        owner: MockApi::default().addr_make(OWNER).to_string(),
         staking_addr: staking_addr.to_string(),
         reward_rate: Uint128::new(0),
         reward_token: cw20_addr.to_string(),
@@ -544,10 +545,10 @@ fn test_ownership() {
     let distributor_addr = instantiate_distributor(&mut app, msg);
 
     app.execute_contract(
-        Addr::unchecked(OWNER),
+        MockApi::default().addr_make(OWNER),
         distributor_addr.clone(),
         &ExecuteMsg::UpdateOwnership(Action::TransferOwnership {
-            new_owner: OWNER2.to_string(),
+            new_owner: MockApi::default().addr_make(OWNER2).to_string(),
             expiry: None,
         }),
         &[],
@@ -558,14 +559,14 @@ fn test_ownership() {
     assert_eq!(
         ownership,
         Ownership::<Addr> {
-            owner: Some(Addr::unchecked(OWNER)),
-            pending_owner: Some(Addr::unchecked(OWNER2)),
+            owner: Some(MockApi::default().addr_make(OWNER)),
+            pending_owner: Some(MockApi::default().addr_make(OWNER2)),
             pending_expiry: None
         }
     );
 
     app.execute_contract(
-        Addr::unchecked(OWNER2),
+        MockApi::default().addr_make(OWNER2),
         distributor_addr.clone(),
         &ExecuteMsg::UpdateOwnership(Action::AcceptOwnership),
         &[],
@@ -576,7 +577,7 @@ fn test_ownership() {
     assert_eq!(
         ownership,
         Ownership::<Addr> {
-            owner: Some(Addr::unchecked(OWNER2)),
+            owner: Some(MockApi::default().addr_make(OWNER2)),
             pending_owner: None,
             pending_expiry: None
         }
@@ -589,13 +590,13 @@ fn test_ownership_expiry() {
     let cw20_addr = instantiate_cw20(
         &mut app,
         vec![cw20::Cw20Coin {
-            address: OWNER.to_string(),
+            address: MockApi::default().addr_make(OWNER).to_string(),
             amount: Uint128::from(1000u64),
         }],
     );
     let staking_addr = instantiate_staking(&mut app, cw20_addr.clone());
     let msg = InstantiateMsg {
-        owner: OWNER.to_string(),
+        owner: MockApi::default().addr_make(OWNER).to_string(),
         staking_addr: staking_addr.to_string(),
         reward_rate: Uint128::new(0),
         reward_token: cw20_addr.to_string(),
@@ -603,10 +604,10 @@ fn test_ownership_expiry() {
     let distributor_addr = instantiate_distributor(&mut app, msg);
 
     app.execute_contract(
-        Addr::unchecked(OWNER),
+        MockApi::default().addr_make(OWNER),
         distributor_addr.clone(),
         &ExecuteMsg::UpdateOwnership(Action::TransferOwnership {
-            new_owner: OWNER2.to_string(),
+            new_owner: MockApi::default().addr_make(OWNER2).to_string(),
             expiry: Some(Expiration::AtHeight(app.block_info().height + 1)),
         }),
         &[],
@@ -617,8 +618,8 @@ fn test_ownership_expiry() {
     assert_eq!(
         ownership,
         Ownership::<Addr> {
-            owner: Some(Addr::unchecked(OWNER)),
-            pending_owner: Some(Addr::unchecked(OWNER2)),
+            owner: Some(MockApi::default().addr_make(OWNER)),
+            pending_owner: Some(MockApi::default().addr_make(OWNER2)),
             pending_expiry: Some(Expiration::AtHeight(app.block_info().height + 1)),
         }
     );
@@ -627,7 +628,7 @@ fn test_ownership_expiry() {
 
     let err: ContractError = app
         .execute_contract(
-            Addr::unchecked(OWNER2),
+            MockApi::default().addr_make(OWNER2),
             distributor_addr,
             &ExecuteMsg::UpdateOwnership(Action::AcceptOwnership),
             &[],
@@ -641,84 +642,5 @@ fn test_ownership_expiry() {
     )
 }
 
-#[test]
-fn test_migrate_from_v1() {
-    let mut app = App::default();
-    let sender = Addr::unchecked("sender");
-
-    let cw20_addr = instantiate_cw20(
-        &mut app,
-        vec![cw20::Cw20Coin {
-            address: sender.to_string(),
-            amount: Uint128::from(1000u64),
-        }],
-    );
-    let staking_addr = instantiate_staking(&mut app, cw20_addr.clone());
-
-    let v1_code = app.store_code(cw20_stake_reward_distributor_v1_contract());
-    let v2_code = app.store_code(cw20_stake_reward_distributor_contract());
-    let distributor = app
-        .instantiate_contract(
-            v1_code,
-            sender.clone(),
-            &v1::msg::InstantiateMsg {
-                owner: sender.to_string(),
-                staking_addr: staking_addr.to_string(),
-                reward_rate: Uint128::new(1),
-                reward_token: cw20_addr.to_string(),
-            },
-            &[],
-            "distributor",
-            Some(sender.to_string()),
-        )
-        .unwrap();
-    app.execute(
-        sender.clone(),
-        WasmMsg::Migrate {
-            contract_addr: distributor.to_string(),
-            new_code_id: v2_code,
-            msg: to_json_binary(&MigrateMsg::FromV1 {}).unwrap(),
-        }
-        .into(),
-    )
-    .unwrap();
-
-    let ownership = get_owner(&app, &distributor);
-    assert_eq!(
-        ownership,
-        Ownership::<Addr> {
-            owner: Some(sender.clone()),
-            pending_owner: None,
-            pending_expiry: None,
-        }
-    );
-
-    let info = get_info(&app, &distributor);
-    assert_eq!(
-        info,
-        InfoResponse {
-            config: Config {
-                staking_addr,
-                reward_rate: Uint128::new(1),
-                reward_token: cw20_addr
-            },
-            last_payment_block: app.block_info().height,
-            balance: Uint128::zero()
-        }
-    );
-
-    let err: ContractError = app
-        .execute(
-            sender,
-            WasmMsg::Migrate {
-                contract_addr: distributor.to_string(),
-                new_code_id: v2_code,
-                msg: to_json_binary(&MigrateMsg::FromV1 {}).unwrap(),
-            }
-            .into(),
-        )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(err, ContractError::AlreadyMigrated {});
-}
+// v1 migration test removed: MigrateMsg::FromV1 variant was removed along
+// with the v1 migration code path due to cosmwasm-std v1/v2 type conflicts.

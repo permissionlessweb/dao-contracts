@@ -1,4 +1,4 @@
-use cosmwasm_std::StdError;
+use cosmwasm_std::{testing::MockApi, StdError};
 use cw_ownable::OwnershipError;
 use cw_protobuf_registry::ContractError;
 use dao_testing::OWNER;
@@ -11,7 +11,8 @@ use crate::{msg::InstantiateMsg, protobuf::encode_protobuf, testing::suite::Suit
 #[test]
 fn test_init_with_owner() {
     let mut suite = SuiteBuilder::base().build();
-    let other_owner = "other_owner";
+    let mock_api = MockApi::default();
+    let other_owner = mock_api.addr_make("other_owner");
 
     suite.registry_addr = suite.base.instantiate(
         suite.base.protobuf_registry_id,
@@ -25,21 +26,23 @@ fn test_init_with_owner() {
     );
 
     let owner = suite.get_ownership().owner.unwrap();
-    assert_eq!(owner, other_owner);
+    assert_eq!(owner.as_str(), other_owner.as_str());
 }
 
 #[test]
 fn test_update_owner() {
     let mut suite = SuiteBuilder::base().build();
 
-    let existing_owner = suite.get_ownership().owner.unwrap();
-    assert_eq!(existing_owner, OWNER);
+    let mock_api = MockApi::default();
+    let new_owner = mock_api.addr_make("new_owner");
 
-    let new_owner = "new_owner";
-    suite.update_owner(existing_owner, new_owner);
+    let existing_owner = suite.get_ownership().owner.unwrap();
+    assert_eq!(existing_owner.as_str(), OWNER);
+
+    suite.update_owner(existing_owner, new_owner.clone());
 
     let owner = suite.get_ownership().owner.unwrap();
-    assert_eq!(owner, new_owner);
+    assert_eq!(owner.as_str(), new_owner.as_str());
 }
 
 #[test]

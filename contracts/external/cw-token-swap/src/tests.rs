@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    testing::{mock_dependencies, mock_env},
+    testing::{mock_dependencies, mock_env, MockApi},
     to_json_binary, Addr, Coin, Uint128,
 };
 use cw20::Cw20Coin;
@@ -28,13 +28,13 @@ fn test_simple_escrow() {
     let cw20 = app
         .instantiate_contract(
             cw20_code,
-            Addr::unchecked(DAO2),
+            MockApi::default().addr_make(DAO2),
             &cw20_base::msg::InstantiateMsg {
                 name: "coin coin".to_string(),
                 symbol: "coin".to_string(),
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
-                    address: DAO2.to_string(),
+                    address: MockApi::default().addr_make(DAO2).to_string(),
                     amount: Uint128::new(100),
                 }],
                 mint: None,
@@ -49,17 +49,17 @@ fn test_simple_escrow() {
     let escrow = app
         .instantiate_contract(
             escrow_code,
-            Addr::unchecked(DAO1),
+            MockApi::default().addr_make(DAO1),
             &InstantiateMsg {
                 counterparty_one: Counterparty {
-                    address: DAO1.to_string(),
+                    address: MockApi::default().addr_make(DAO1).to_string(),
                     promise: TokenInfo::Native {
                         denom: "ujuno".to_string(),
                         amount: Uint128::new(100),
                     },
                 },
                 counterparty_two: Counterparty {
-                    address: DAO2.to_string(),
+                    address: MockApi::default().addr_make(DAO2).to_string(),
                     promise: TokenInfo::Cw20 {
                         contract_addr: cw20.to_string(),
                         amount: Uint128::new(100),
@@ -73,7 +73,7 @@ fn test_simple_escrow() {
         .unwrap();
 
     app.execute_contract(
-        Addr::unchecked(DAO2),
+        MockApi::default().addr_make(DAO2),
         cw20.clone(),
         &cw20::Cw20ExecuteMsg::Send {
             contract: escrow.to_string(),
@@ -85,7 +85,7 @@ fn test_simple_escrow() {
     .unwrap();
 
     app.sudo(SudoMsg::Bank(BankSudo::Mint {
-        to_address: DAO1.to_string(),
+        to_address: MockApi::default().addr_make(DAO1).to_string(),
         amount: vec![Coin {
             amount: Uint128::new(100),
             denom: "ujuno".to_string(),
@@ -94,7 +94,7 @@ fn test_simple_escrow() {
     .unwrap();
 
     app.execute_contract(
-        Addr::unchecked(DAO1),
+        MockApi::default().addr_make(DAO1),
         escrow,
         &ExecuteMsg::Fund {},
         &[Coin {
@@ -109,13 +109,13 @@ fn test_simple_escrow() {
         .query_wasm_smart(
             cw20,
             &cw20::Cw20QueryMsg::Balance {
-                address: DAO1.to_string(),
+                address: MockApi::default().addr_make(DAO1).to_string(),
             },
         )
         .unwrap();
     assert_eq!(dao1_balance.balance, Uint128::new(100));
 
-    let dao2_balance = app.wrap().query_balance(DAO2, "ujuno").unwrap();
+    let dao2_balance = app.wrap().query_balance(MockApi::default().addr_make(DAO2), "ujuno").unwrap();
     assert_eq!(dao2_balance.amount, Uint128::new(100))
 }
 
@@ -129,13 +129,13 @@ fn test_withdraw() {
     let cw20 = app
         .instantiate_contract(
             cw20_code,
-            Addr::unchecked(DAO2),
+            MockApi::default().addr_make(DAO2),
             &cw20_base::msg::InstantiateMsg {
                 name: "coin coin".to_string(),
                 symbol: "coin".to_string(),
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
-                    address: DAO2.to_string(),
+                    address: MockApi::default().addr_make(DAO2).to_string(),
                     amount: Uint128::new(100),
                 }],
                 mint: None,
@@ -150,17 +150,17 @@ fn test_withdraw() {
     let escrow = app
         .instantiate_contract(
             escrow_code,
-            Addr::unchecked(DAO1),
+            MockApi::default().addr_make(DAO1),
             &InstantiateMsg {
                 counterparty_one: Counterparty {
-                    address: DAO1.to_string(),
+                    address: MockApi::default().addr_make(DAO1).to_string(),
                     promise: TokenInfo::Native {
                         denom: "ujuno".to_string(),
                         amount: Uint128::new(100),
                     },
                 },
                 counterparty_two: Counterparty {
-                    address: DAO2.to_string(),
+                    address: MockApi::default().addr_make(DAO2).to_string(),
                     promise: TokenInfo::Cw20 {
                         contract_addr: cw20.to_string(),
                         amount: Uint128::new(100),
@@ -176,7 +176,7 @@ fn test_withdraw() {
     // Can't withdraw before you provide.
     let err: ContractError = app
         .execute_contract(
-            Addr::unchecked(DAO2),
+            MockApi::default().addr_make(DAO2),
             escrow.clone(),
             &ExecuteMsg::Withdraw {},
             &[],
@@ -187,7 +187,7 @@ fn test_withdraw() {
     assert_eq!(err, ContractError::NoProvision {});
 
     app.execute_contract(
-        Addr::unchecked(DAO2),
+        MockApi::default().addr_make(DAO2),
         cw20.clone(),
         &cw20::Cw20ExecuteMsg::Send {
             contract: escrow.to_string(),
@@ -200,7 +200,7 @@ fn test_withdraw() {
 
     // Change our minds.
     app.execute_contract(
-        Addr::unchecked(DAO2),
+        MockApi::default().addr_make(DAO2),
         escrow.clone(),
         &ExecuteMsg::Withdraw {},
         &[],
@@ -212,14 +212,14 @@ fn test_withdraw() {
         .query_wasm_smart(
             cw20.clone(),
             &cw20::Cw20QueryMsg::Balance {
-                address: DAO2.to_string(),
+                address: MockApi::default().addr_make(DAO2).to_string(),
             },
         )
         .unwrap();
     assert_eq!(dao2_balance.balance, Uint128::new(100));
 
     app.sudo(SudoMsg::Bank(BankSudo::Mint {
-        to_address: DAO1.to_string(),
+        to_address: MockApi::default().addr_make(DAO1).to_string(),
         amount: vec![Coin {
             amount: Uint128::new(100),
             denom: "ujuno".to_string(),
@@ -228,7 +228,7 @@ fn test_withdraw() {
     .unwrap();
 
     app.execute_contract(
-        Addr::unchecked(DAO1),
+        MockApi::default().addr_make(DAO1),
         escrow.clone(),
         &ExecuteMsg::Fund {},
         &[Coin {
@@ -246,7 +246,7 @@ fn test_withdraw() {
         status,
         StatusResponse {
             counterparty_one: CheckedCounterparty {
-                address: Addr::unchecked(DAO1),
+                address: MockApi::default().addr_make(DAO1),
                 promise: CheckedTokenInfo::Native {
                     denom: "ujuno".to_string(),
                     amount: Uint128::new(100)
@@ -254,7 +254,7 @@ fn test_withdraw() {
                 provided: true,
             },
             counterparty_two: CheckedCounterparty {
-                address: Addr::unchecked(DAO2),
+                address: MockApi::default().addr_make(DAO2),
                 promise: CheckedTokenInfo::Cw20 {
                     contract_addr: cw20.clone(),
                     amount: Uint128::new(100)
@@ -266,14 +266,14 @@ fn test_withdraw() {
 
     // Change our minds.
     app.execute_contract(
-        Addr::unchecked(DAO1),
+        MockApi::default().addr_make(DAO1),
         escrow.clone(),
         &ExecuteMsg::Withdraw {},
         &[],
     )
     .unwrap();
 
-    let dao1_balance = app.wrap().query_balance(DAO1, "ujuno").unwrap();
+    let dao1_balance = app.wrap().query_balance(MockApi::default().addr_make(DAO1), "ujuno").unwrap();
     assert_eq!(dao1_balance.amount, Uint128::new(100));
 
     let status: StatusResponse = app
@@ -284,7 +284,7 @@ fn test_withdraw() {
         status,
         StatusResponse {
             counterparty_one: CheckedCounterparty {
-                address: Addr::unchecked(DAO1),
+                address: MockApi::default().addr_make(DAO1),
                 promise: CheckedTokenInfo::Native {
                     denom: "ujuno".to_string(),
                     amount: Uint128::new(100)
@@ -292,7 +292,7 @@ fn test_withdraw() {
                 provided: false,
             },
             counterparty_two: CheckedCounterparty {
-                address: Addr::unchecked(DAO2),
+                address: MockApi::default().addr_make(DAO2),
                 promise: CheckedTokenInfo::Cw20 {
                     contract_addr: cw20,
                     amount: Uint128::new(100)
@@ -313,13 +313,13 @@ fn test_withdraw_post_completion() {
     let cw20 = app
         .instantiate_contract(
             cw20_code,
-            Addr::unchecked(DAO2),
+            MockApi::default().addr_make(DAO2),
             &cw20_base::msg::InstantiateMsg {
                 name: "coin coin".to_string(),
                 symbol: "coin".to_string(),
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
-                    address: DAO2.to_string(),
+                    address: MockApi::default().addr_make(DAO2).to_string(),
                     amount: Uint128::new(100),
                 }],
                 mint: None,
@@ -334,17 +334,17 @@ fn test_withdraw_post_completion() {
     let escrow = app
         .instantiate_contract(
             escrow_code,
-            Addr::unchecked(DAO1),
+            MockApi::default().addr_make(DAO1),
             &InstantiateMsg {
                 counterparty_one: Counterparty {
-                    address: DAO1.to_string(),
+                    address: MockApi::default().addr_make(DAO1).to_string(),
                     promise: TokenInfo::Native {
                         denom: "ujuno".to_string(),
                         amount: Uint128::new(100),
                     },
                 },
                 counterparty_two: Counterparty {
-                    address: DAO2.to_string(),
+                    address: MockApi::default().addr_make(DAO2).to_string(),
                     promise: TokenInfo::Cw20 {
                         contract_addr: cw20.to_string(),
                         amount: Uint128::new(100),
@@ -358,7 +358,7 @@ fn test_withdraw_post_completion() {
         .unwrap();
 
     app.execute_contract(
-        Addr::unchecked(DAO2),
+        MockApi::default().addr_make(DAO2),
         cw20.clone(),
         &cw20::Cw20ExecuteMsg::Send {
             contract: escrow.to_string(),
@@ -370,7 +370,7 @@ fn test_withdraw_post_completion() {
     .unwrap();
 
     app.sudo(SudoMsg::Bank(BankSudo::Mint {
-        to_address: DAO1.to_string(),
+        to_address: MockApi::default().addr_make(DAO1).to_string(),
         amount: vec![Coin {
             amount: Uint128::new(100),
             denom: "ujuno".to_string(),
@@ -379,7 +379,7 @@ fn test_withdraw_post_completion() {
     .unwrap();
 
     app.execute_contract(
-        Addr::unchecked(DAO1),
+        MockApi::default().addr_make(DAO1),
         escrow.clone(),
         &ExecuteMsg::Fund {},
         &[Coin {
@@ -394,17 +394,17 @@ fn test_withdraw_post_completion() {
         .query_wasm_smart(
             cw20,
             &cw20::Cw20QueryMsg::Balance {
-                address: DAO1.to_string(),
+                address: MockApi::default().addr_make(DAO1).to_string(),
             },
         )
         .unwrap();
     assert_eq!(dao1_balance.balance, Uint128::new(100));
 
-    let dao2_balance = app.wrap().query_balance(DAO2, "ujuno").unwrap();
+    let dao2_balance = app.wrap().query_balance(MockApi::default().addr_make(DAO2), "ujuno").unwrap();
     assert_eq!(dao2_balance.amount, Uint128::new(100));
 
     let err: ContractError = app
-        .execute_contract(Addr::unchecked(DAO1), escrow, &ExecuteMsg::Withdraw {}, &[])
+        .execute_contract(MockApi::default().addr_make(DAO1), escrow, &ExecuteMsg::Withdraw {}, &[])
         .unwrap_err()
         .downcast()
         .unwrap();
@@ -421,13 +421,13 @@ fn test_invalid_instantiate() {
     let cw20 = app
         .instantiate_contract(
             cw20_code,
-            Addr::unchecked(DAO2),
+            MockApi::default().addr_make(DAO2),
             &cw20_base::msg::InstantiateMsg {
                 name: "coin coin".to_string(),
                 symbol: "coin".to_string(),
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
-                    address: DAO2.to_string(),
+                    address: MockApi::default().addr_make(DAO2).to_string(),
                     amount: Uint128::new(100),
                 }],
                 mint: None,
@@ -443,17 +443,17 @@ fn test_invalid_instantiate() {
     let err: ContractError = app
         .instantiate_contract(
             escrow_code,
-            Addr::unchecked(DAO1),
+            MockApi::default().addr_make(DAO1),
             &InstantiateMsg {
                 counterparty_one: Counterparty {
-                    address: DAO1.to_string(),
+                    address: MockApi::default().addr_make(DAO1).to_string(),
                     promise: TokenInfo::Native {
                         denom: "ujuno".to_string(),
                         amount: Uint128::new(0),
                     },
                 },
                 counterparty_two: Counterparty {
-                    address: DAO2.to_string(),
+                    address: MockApi::default().addr_make(DAO2).to_string(),
                     promise: TokenInfo::Cw20 {
                         contract_addr: cw20.to_string(),
                         amount: Uint128::new(100),
@@ -474,17 +474,17 @@ fn test_invalid_instantiate() {
     let err: ContractError = app
         .instantiate_contract(
             escrow_code,
-            Addr::unchecked(DAO1),
+            MockApi::default().addr_make(DAO1),
             &InstantiateMsg {
                 counterparty_one: Counterparty {
-                    address: DAO1.to_string(),
+                    address: MockApi::default().addr_make(DAO1).to_string(),
                     promise: TokenInfo::Native {
                         denom: "ujuno".to_string(),
                         amount: Uint128::new(100),
                     },
                 },
                 counterparty_two: Counterparty {
-                    address: DAO2.to_string(),
+                    address: MockApi::default().addr_make(DAO2).to_string(),
                     promise: TokenInfo::Cw20 {
                         contract_addr: cw20.to_string(),
                         amount: Uint128::new(0),
@@ -512,17 +512,17 @@ fn test_non_distincy_counterparties() {
     let err: ContractError = app
         .instantiate_contract(
             escrow_code,
-            Addr::unchecked(DAO1),
+            MockApi::default().addr_make(DAO1),
             &InstantiateMsg {
                 counterparty_one: Counterparty {
-                    address: DAO1.to_string(),
+                    address: MockApi::default().addr_make(DAO1).to_string(),
                     promise: TokenInfo::Native {
                         denom: "ujuno".to_string(),
                         amount: Uint128::new(110),
                     },
                 },
                 counterparty_two: Counterparty {
-                    address: DAO1.to_string(),
+                    address: MockApi::default().addr_make(DAO1).to_string(),
                     promise: TokenInfo::Native {
                         denom: "ujuno".to_string(),
                         amount: Uint128::new(10),
@@ -550,13 +550,13 @@ fn test_fund_non_counterparty() {
     let cw20 = app
         .instantiate_contract(
             cw20_code,
-            Addr::unchecked(DAO2),
+            MockApi::default().addr_make(DAO2),
             &cw20_base::msg::InstantiateMsg {
                 name: "coin coin".to_string(),
                 symbol: "coin".to_string(),
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
-                    address: "noah".to_string(),
+                    address: MockApi::default().addr_make("noah").to_string(),
                     amount: Uint128::new(100),
                 }],
                 mint: None,
@@ -571,17 +571,17 @@ fn test_fund_non_counterparty() {
     let escrow = app
         .instantiate_contract(
             escrow_code,
-            Addr::unchecked(DAO1),
+            MockApi::default().addr_make(DAO1),
             &InstantiateMsg {
                 counterparty_one: Counterparty {
-                    address: DAO1.to_string(),
+                    address: MockApi::default().addr_make(DAO1).to_string(),
                     promise: TokenInfo::Native {
                         denom: "ujuno".to_string(),
                         amount: Uint128::new(100),
                     },
                 },
                 counterparty_two: Counterparty {
-                    address: DAO2.to_string(),
+                    address: MockApi::default().addr_make(DAO2).to_string(),
                     promise: TokenInfo::Cw20 {
                         contract_addr: cw20.to_string(),
                         amount: Uint128::new(100),
@@ -596,7 +596,7 @@ fn test_fund_non_counterparty() {
 
     let err: ContractError = app
         .execute_contract(
-            Addr::unchecked("noah"),
+            MockApi::default().addr_make("noah"),
             cw20,
             &cw20::Cw20ExecuteMsg::Send {
                 contract: escrow.to_string(),
@@ -612,7 +612,7 @@ fn test_fund_non_counterparty() {
     assert!(matches!(err, ContractError::Unauthorized {}));
 
     app.sudo(SudoMsg::Bank(BankSudo::Mint {
-        to_address: "noah".to_string(),
+        to_address: MockApi::default().addr_make("noah").to_string(),
         amount: vec![Coin {
             amount: Uint128::new(100),
             denom: "ujuno".to_string(),
@@ -622,7 +622,7 @@ fn test_fund_non_counterparty() {
 
     let err: ContractError = app
         .execute_contract(
-            Addr::unchecked("noah"),
+            MockApi::default().addr_make("noah"),
             escrow,
             &ExecuteMsg::Fund {},
             &[Coin {
@@ -647,13 +647,13 @@ fn test_fund_twice() {
     let cw20 = app
         .instantiate_contract(
             cw20_code,
-            Addr::unchecked(DAO2),
+            MockApi::default().addr_make(DAO2),
             &cw20_base::msg::InstantiateMsg {
                 name: "coin coin".to_string(),
                 symbol: "coin".to_string(),
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
-                    address: DAO2.to_string(),
+                    address: MockApi::default().addr_make(DAO2).to_string(),
                     amount: Uint128::new(200),
                 }],
                 mint: None,
@@ -668,17 +668,17 @@ fn test_fund_twice() {
     let escrow = app
         .instantiate_contract(
             escrow_code,
-            Addr::unchecked(DAO1),
+            MockApi::default().addr_make(DAO1),
             &InstantiateMsg {
                 counterparty_one: Counterparty {
-                    address: DAO1.to_string(),
+                    address: MockApi::default().addr_make(DAO1).to_string(),
                     promise: TokenInfo::Native {
                         denom: "ujuno".to_string(),
                         amount: Uint128::new(100),
                     },
                 },
                 counterparty_two: Counterparty {
-                    address: DAO2.to_string(),
+                    address: MockApi::default().addr_make(DAO2).to_string(),
                     promise: TokenInfo::Cw20 {
                         contract_addr: cw20.to_string(),
                         amount: Uint128::new(100),
@@ -692,7 +692,7 @@ fn test_fund_twice() {
         .unwrap();
 
     app.execute_contract(
-        Addr::unchecked(DAO2),
+        MockApi::default().addr_make(DAO2),
         cw20.clone(),
         &cw20::Cw20ExecuteMsg::Send {
             contract: escrow.to_string(),
@@ -704,7 +704,7 @@ fn test_fund_twice() {
     .unwrap();
 
     app.sudo(SudoMsg::Bank(BankSudo::Mint {
-        to_address: DAO1.to_string(),
+        to_address: MockApi::default().addr_make(DAO1).to_string(),
         amount: vec![Coin {
             amount: Uint128::new(200),
             denom: "ujuno".to_string(),
@@ -713,7 +713,7 @@ fn test_fund_twice() {
     .unwrap();
 
     app.execute_contract(
-        Addr::unchecked(DAO1),
+        MockApi::default().addr_make(DAO1),
         escrow.clone(),
         &ExecuteMsg::Fund {},
         &[Coin {
@@ -725,7 +725,7 @@ fn test_fund_twice() {
 
     let err: ContractError = app
         .execute_contract(
-            Addr::unchecked(DAO1),
+            MockApi::default().addr_make(DAO1),
             escrow.clone(),
             &ExecuteMsg::Fund {},
             &[Coin {
@@ -741,7 +741,7 @@ fn test_fund_twice() {
 
     let err: ContractError = app
         .execute_contract(
-            Addr::unchecked(DAO2),
+            MockApi::default().addr_make(DAO2),
             cw20,
             &cw20::Cw20ExecuteMsg::Send {
                 contract: escrow.into_string(),
@@ -767,13 +767,13 @@ fn test_fund_invalid_amount() {
     let cw20 = app
         .instantiate_contract(
             cw20_code,
-            Addr::unchecked(DAO2),
+            MockApi::default().addr_make(DAO2),
             &cw20_base::msg::InstantiateMsg {
                 name: "coin coin".to_string(),
                 symbol: "coin".to_string(),
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
-                    address: DAO2.to_string(),
+                    address: MockApi::default().addr_make(DAO2).to_string(),
                     amount: Uint128::new(200),
                 }],
                 mint: None,
@@ -788,17 +788,17 @@ fn test_fund_invalid_amount() {
     let escrow = app
         .instantiate_contract(
             escrow_code,
-            Addr::unchecked(DAO1),
+            MockApi::default().addr_make(DAO1),
             &InstantiateMsg {
                 counterparty_one: Counterparty {
-                    address: DAO1.to_string(),
+                    address: MockApi::default().addr_make(DAO1).to_string(),
                     promise: TokenInfo::Native {
                         denom: "ujuno".to_string(),
                         amount: Uint128::new(100),
                     },
                 },
                 counterparty_two: Counterparty {
-                    address: DAO2.to_string(),
+                    address: MockApi::default().addr_make(DAO2).to_string(),
                     promise: TokenInfo::Cw20 {
                         contract_addr: cw20.to_string(),
                         amount: Uint128::new(100),
@@ -813,7 +813,7 @@ fn test_fund_invalid_amount() {
 
     let err: ContractError = app
         .execute_contract(
-            Addr::unchecked(DAO2),
+            MockApi::default().addr_make(DAO2),
             cw20,
             &cw20::Cw20ExecuteMsg::Send {
                 contract: escrow.to_string(),
@@ -833,7 +833,7 @@ fn test_fund_invalid_amount() {
     assert_eq!(err, expected);
 
     app.sudo(SudoMsg::Bank(BankSudo::Mint {
-        to_address: DAO1.to_string(),
+        to_address: MockApi::default().addr_make(DAO1).to_string(),
         amount: vec![Coin {
             amount: Uint128::new(200),
             denom: "ujuno".to_string(),
@@ -843,7 +843,7 @@ fn test_fund_invalid_amount() {
 
     let err: ContractError = app
         .execute_contract(
-            Addr::unchecked(DAO1),
+            MockApi::default().addr_make(DAO1),
             escrow,
             &ExecuteMsg::Fund {},
             &[Coin {
@@ -871,17 +871,17 @@ fn test_fund_invalid_denom() {
     let escrow = app
         .instantiate_contract(
             escrow_code,
-            Addr::unchecked(DAO1),
+            MockApi::default().addr_make(DAO1),
             &InstantiateMsg {
                 counterparty_one: Counterparty {
-                    address: DAO1.to_string(),
+                    address: MockApi::default().addr_make(DAO1).to_string(),
                     promise: TokenInfo::Native {
                         denom: "ujuno".to_string(),
                         amount: Uint128::new(100),
                     },
                 },
                 counterparty_two: Counterparty {
-                    address: DAO2.to_string(),
+                    address: MockApi::default().addr_make(DAO2).to_string(),
                     promise: TokenInfo::Native {
                         denom: "uekez".to_string(),
                         amount: Uint128::new(100),
@@ -897,7 +897,7 @@ fn test_fund_invalid_denom() {
     // Coutnerparty one tries to fund in the denom of counterparty
     // two.
     app.sudo(SudoMsg::Bank(BankSudo::Mint {
-        to_address: DAO1.to_string(),
+        to_address: MockApi::default().addr_make(DAO1).to_string(),
         amount: vec![Coin {
             amount: Uint128::new(100),
             denom: "uekez".to_string(),
@@ -907,7 +907,7 @@ fn test_fund_invalid_denom() {
 
     let err: ContractError = app
         .execute_contract(
-            Addr::unchecked(DAO1),
+            MockApi::default().addr_make(DAO1),
             escrow,
             &ExecuteMsg::Fund {},
             &[Coin {
@@ -932,13 +932,13 @@ fn test_fund_invalid_cw20() {
     let cw20 = app
         .instantiate_contract(
             cw20_code,
-            Addr::unchecked(DAO2),
+            MockApi::default().addr_make(DAO2),
             &cw20_base::msg::InstantiateMsg {
                 name: "coin coin".to_string(),
                 symbol: "coin".to_string(),
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
-                    address: DAO1.to_string(),
+                    address: MockApi::default().addr_make(DAO1).to_string(),
                     amount: Uint128::new(100),
                 }],
                 mint: None,
@@ -953,13 +953,13 @@ fn test_fund_invalid_cw20() {
     let bad_cw20 = app
         .instantiate_contract(
             cw20_code,
-            Addr::unchecked(DAO2),
+            MockApi::default().addr_make(DAO2),
             &cw20_base::msg::InstantiateMsg {
                 name: "coin coin".to_string(),
                 symbol: "coin".to_string(),
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
-                    address: DAO2.to_string(),
+                    address: MockApi::default().addr_make(DAO2).to_string(),
                     amount: Uint128::new(100),
                 }],
                 mint: None,
@@ -974,17 +974,17 @@ fn test_fund_invalid_cw20() {
     let escrow = app
         .instantiate_contract(
             escrow_code,
-            Addr::unchecked(DAO1),
+            MockApi::default().addr_make(DAO1),
             &InstantiateMsg {
                 counterparty_one: Counterparty {
-                    address: DAO1.to_string(),
+                    address: MockApi::default().addr_make(DAO1).to_string(),
                     promise: TokenInfo::Native {
                         denom: "ujuno".to_string(),
                         amount: Uint128::new(100),
                     },
                 },
                 counterparty_two: Counterparty {
-                    address: DAO2.to_string(),
+                    address: MockApi::default().addr_make(DAO2).to_string(),
                     promise: TokenInfo::Cw20 {
                         contract_addr: cw20.to_string(),
                         amount: Uint128::new(100),
@@ -1000,7 +1000,7 @@ fn test_fund_invalid_cw20() {
     // Try and fund the contract with the wrong cw20.
     let err: ContractError = app
         .execute_contract(
-            Addr::unchecked(DAO2),
+            MockApi::default().addr_make(DAO2),
             bad_cw20,
             &cw20::Cw20ExecuteMsg::Send {
                 contract: escrow.to_string(),
@@ -1019,7 +1019,7 @@ fn test_fund_invalid_cw20() {
     // provider.
     let err: ContractError = app
         .execute_contract(
-            Addr::unchecked(DAO1),
+            MockApi::default().addr_make(DAO1),
             cw20,
             &cw20::Cw20ExecuteMsg::Send {
                 contract: escrow.to_string(),

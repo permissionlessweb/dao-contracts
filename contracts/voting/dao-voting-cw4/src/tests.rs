@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    testing::{mock_dependencies, mock_env},
+    testing::{mock_dependencies, mock_env, MockApi},
     to_json_binary, Addr, CosmosMsg, Uint128, WasmMsg,
 };
 use cw2::ContractVersion;
@@ -24,7 +24,7 @@ const ADDR4: &str = "addr4";
 fn instantiate_voting(app: &mut App, voting_id: u64, msg: InstantiateMsg) -> Addr {
     app.instantiate_contract(
         voting_id,
-        Addr::unchecked(DAO_ADDR),
+        MockApi::default().addr_make(DAO_ADDR),
         &msg,
         &[],
         "voting module",
@@ -39,19 +39,19 @@ fn setup_test_case(app: &mut App) -> Addr {
 
     let members = vec![
         cw4::Member {
-            addr: ADDR1.to_string(),
+            addr: MockApi::default().addr_make(ADDR1).to_string(),
             weight: 1,
         },
         cw4::Member {
-            addr: ADDR2.to_string(),
+            addr: MockApi::default().addr_make(ADDR2).to_string(),
             weight: 1,
         },
         cw4::Member {
-            addr: ADDR3.to_string(),
+            addr: MockApi::default().addr_make(ADDR3).to_string(),
             weight: 1,
         },
         cw4::Member {
-            addr: ADDR4.to_string(),
+            addr: MockApi::default().addr_make(ADDR4).to_string(),
             weight: 0,
         },
     ];
@@ -87,7 +87,7 @@ fn test_instantiate() {
     let _err = app
         .instantiate_contract(
             voting_id,
-            Addr::unchecked(DAO_ADDR),
+            MockApi::default().addr_make(DAO_ADDR),
             &msg,
             &[],
             "voting module",
@@ -101,15 +101,15 @@ fn test_instantiate() {
             cw4_group_code_id: cw4_id,
             initial_members: vec![
                 cw4::Member {
-                    addr: ADDR1.to_string(),
+                    addr: MockApi::default().addr_make(ADDR1).to_string(),
                     weight: 0,
                 },
                 cw4::Member {
-                    addr: ADDR2.to_string(),
+                    addr: MockApi::default().addr_make(ADDR2).to_string(),
                     weight: 0,
                 },
                 cw4::Member {
-                    addr: ADDR3.to_string(),
+                    addr: MockApi::default().addr_make(ADDR3).to_string(),
                     weight: 0,
                 },
             ],
@@ -119,7 +119,7 @@ fn test_instantiate() {
     let _err = app
         .instantiate_contract(
             voting_id,
-            Addr::unchecked(DAO_ADDR),
+            MockApi::default().addr_make(DAO_ADDR),
             &msg,
             &[],
             "voting module",
@@ -139,9 +139,9 @@ pub fn test_instantiate_existing_contract() {
     let cw4_addr = app
         .instantiate_contract(
             cw4_id,
-            Addr::unchecked(DAO_ADDR),
+            MockApi::default().addr_make(DAO_ADDR),
             &cw4_group::msg::InstantiateMsg {
-                admin: Some(DAO_ADDR.to_string()),
+                admin: Some(MockApi::default().addr_make(DAO_ADDR).to_string()),
                 members: vec![],
             },
             &[],
@@ -153,7 +153,7 @@ pub fn test_instantiate_existing_contract() {
     let err: ContractError = app
         .instantiate_contract(
             voting_id,
-            Addr::unchecked(DAO_ADDR),
+            MockApi::default().addr_make(DAO_ADDR),
             &InstantiateMsg {
                 group_contract: GroupContract::Existing {
                     address: cw4_addr.to_string(),
@@ -171,11 +171,11 @@ pub fn test_instantiate_existing_contract() {
     let cw4_addr = app
         .instantiate_contract(
             cw4_id,
-            Addr::unchecked(DAO_ADDR),
+            MockApi::default().addr_make(DAO_ADDR),
             &cw4_group::msg::InstantiateMsg {
-                admin: Some(DAO_ADDR.to_string()),
+                admin: Some(MockApi::default().addr_make(DAO_ADDR).to_string()),
                 members: vec![cw4::Member {
-                    addr: ADDR1.to_string(),
+                    addr: MockApi::default().addr_make(ADDR1).to_string(),
                     weight: 1,
                 }],
             },
@@ -194,7 +194,7 @@ pub fn test_instantiate_existing_contract() {
     let _err = app
         .instantiate_contract(
             voting_id,
-            Addr::unchecked(DAO_ADDR),
+            MockApi::default().addr_make(DAO_ADDR),
             &msg,
             &[],
             "voting module",
@@ -206,12 +206,12 @@ pub fn test_instantiate_existing_contract() {
     let msg = cw4_group::msg::ExecuteMsg::UpdateMembers {
         remove: vec![],
         add: vec![cw4::Member {
-            addr: ADDR1.to_string(),
+            addr: MockApi::default().addr_make(ADDR1).to_string(),
             weight: 2,
         }],
     };
 
-    app.execute_contract(Addr::unchecked(DAO_ADDR), cw4_addr.clone(), &msg, &[])
+    app.execute_contract(MockApi::default().addr_make(DAO_ADDR), cw4_addr.clone(), &msg, &[])
         .unwrap();
 
     // Same should be true about the groups contract.
@@ -220,7 +220,7 @@ pub fn test_instantiate_existing_contract() {
         .query_wasm_smart(
             cw4_addr,
             &cw4::Cw4QueryMsg::Member {
-                addr: ADDR1.to_string(),
+                addr: MockApi::default().addr_make(ADDR1).to_string(),
                 at_height: None,
             },
         )
@@ -257,7 +257,7 @@ fn test_contract_info() {
         .wrap()
         .query_wasm_smart(voting_addr, &QueryMsg::Dao {})
         .unwrap();
-    assert_eq!(dao_contract, Addr::unchecked(DAO_ADDR));
+    assert_eq!(dao_contract, MockApi::default().addr_make(DAO_ADDR));
 }
 
 #[test]
@@ -276,7 +276,7 @@ fn test_power_at_height() {
         .query_wasm_smart(
             voting_addr.clone(),
             &QueryMsg::VotingPowerAtHeight {
-                address: ADDR1.to_string(),
+                address: MockApi::default().addr_make(ADDR1).to_string(),
                 height: None,
             },
         )
@@ -298,7 +298,7 @@ fn test_power_at_height() {
     let msg = cw4_group::msg::ExecuteMsg::UpdateMembers {
         remove: vec![],
         add: vec![cw4::Member {
-            addr: ADDR1.to_string(),
+            addr: MockApi::default().addr_make(ADDR1).to_string(),
             weight: 2,
         }],
     };
@@ -310,7 +310,7 @@ fn test_power_at_height() {
         .query_wasm_smart(
             voting_addr.clone(),
             &QueryMsg::VotingPowerAtHeight {
-                address: ADDR1.to_string(),
+                address: MockApi::default().addr_make(ADDR1).to_string(),
                 height: None,
             },
         )
@@ -323,14 +323,14 @@ fn test_power_at_height() {
         .query_wasm_smart(
             cw4_addr.clone(),
             &cw4::Cw4QueryMsg::Member {
-                addr: ADDR1.to_string(),
+                addr: MockApi::default().addr_make(ADDR1).to_string(),
                 at_height: None,
             },
         )
         .unwrap();
     assert_eq!(cw4_power.weight.unwrap(), 1);
 
-    app.execute_contract(Addr::unchecked(DAO_ADDR), cw4_addr.clone(), &msg, &[])
+    app.execute_contract(MockApi::default().addr_make(DAO_ADDR), cw4_addr.clone(), &msg, &[])
         .unwrap();
     app.update_block(next_block);
 
@@ -340,7 +340,7 @@ fn test_power_at_height() {
         .query_wasm_smart(
             voting_addr.clone(),
             &QueryMsg::VotingPowerAtHeight {
-                address: ADDR1.to_string(),
+                address: MockApi::default().addr_make(ADDR1).to_string(),
                 height: None,
             },
         )
@@ -354,7 +354,7 @@ fn test_power_at_height() {
         .query_wasm_smart(
             voting_addr.clone(),
             &QueryMsg::VotingPowerAtHeight {
-                address: ADDR1.to_string(),
+                address: MockApi::default().addr_make(ADDR1).to_string(),
                 height: Some(app.block_info().height - 1),
             },
         )
@@ -390,12 +390,12 @@ fn test_power_at_height() {
     let msg = cw4_group::msg::ExecuteMsg::UpdateMembers {
         remove: vec![],
         add: vec![cw4::Member {
-            addr: ADDR1.to_string(),
+            addr: MockApi::default().addr_make(ADDR1).to_string(),
             weight: 1,
         }],
     };
 
-    app.execute_contract(Addr::unchecked(DAO_ADDR), cw4_addr.clone(), &msg, &[])
+    app.execute_contract(MockApi::default().addr_make(DAO_ADDR), cw4_addr.clone(), &msg, &[])
         .unwrap();
     app.update_block(next_block);
 
@@ -405,7 +405,7 @@ fn test_power_at_height() {
         .query_wasm_smart(
             voting_addr.clone(),
             &QueryMsg::VotingPowerAtHeight {
-                address: ADDR1.to_string(),
+                address: MockApi::default().addr_make(ADDR1).to_string(),
                 height: None,
             },
         )
@@ -439,11 +439,11 @@ fn test_power_at_height() {
 
     // Remove address 2 completely
     let msg = cw4_group::msg::ExecuteMsg::UpdateMembers {
-        remove: vec![ADDR2.to_string()],
+        remove: vec![MockApi::default().addr_make(ADDR2).to_string()],
         add: vec![],
     };
 
-    app.execute_contract(Addr::unchecked(DAO_ADDR), cw4_addr.clone(), &msg, &[])
+    app.execute_contract(MockApi::default().addr_make(DAO_ADDR), cw4_addr.clone(), &msg, &[])
         .unwrap();
     app.update_block(next_block);
 
@@ -453,7 +453,7 @@ fn test_power_at_height() {
         .query_wasm_smart(
             voting_addr.clone(),
             &QueryMsg::VotingPowerAtHeight {
-                address: ADDR2.to_string(),
+                address: MockApi::default().addr_make(ADDR2).to_string(),
                 height: None,
             },
         )
@@ -489,12 +489,12 @@ fn test_power_at_height() {
     let msg = cw4_group::msg::ExecuteMsg::UpdateMembers {
         remove: vec![],
         add: vec![cw4::Member {
-            addr: ADDR2.to_string(),
+            addr: MockApi::default().addr_make(ADDR2).to_string(),
             weight: 10,
         }],
     };
 
-    app.execute_contract(Addr::unchecked(DAO_ADDR), cw4_addr, &msg, &[])
+    app.execute_contract(MockApi::default().addr_make(DAO_ADDR), cw4_addr, &msg, &[])
         .unwrap();
     app.update_block(next_block);
 
@@ -504,7 +504,7 @@ fn test_power_at_height() {
         .query_wasm_smart(
             voting_addr.clone(),
             &QueryMsg::VotingPowerAtHeight {
-                address: ADDR2.to_string(),
+                address: MockApi::default().addr_make(ADDR2).to_string(),
                 height: None,
             },
         )
@@ -543,15 +543,15 @@ fn test_migrate() {
 
     let initial_members = vec![
         cw4::Member {
-            addr: ADDR1.to_string(),
+            addr: MockApi::default().addr_make(ADDR1).to_string(),
             weight: 1,
         },
         cw4::Member {
-            addr: ADDR2.to_string(),
+            addr: MockApi::default().addr_make(ADDR2).to_string(),
             weight: 1,
         },
         cw4::Member {
-            addr: ADDR3.to_string(),
+            addr: MockApi::default().addr_make(ADDR3).to_string(),
             weight: 1,
         },
     ];
@@ -569,11 +569,11 @@ fn test_migrate() {
     let voting_addr = app
         .instantiate_contract(
             voting_id,
-            Addr::unchecked(DAO_ADDR),
+            MockApi::default().addr_make(DAO_ADDR),
             &msg,
             &[],
             "voting module",
-            Some(DAO_ADDR.to_string()),
+            Some(MockApi::default().addr_make(DAO_ADDR).to_string()),
         )
         .unwrap();
 
@@ -582,14 +582,14 @@ fn test_migrate() {
         .query_wasm_smart(
             voting_addr.clone(),
             &QueryMsg::VotingPowerAtHeight {
-                address: ADDR1.to_string(),
+                address: MockApi::default().addr_make(ADDR1).to_string(),
                 height: None,
             },
         )
         .unwrap();
 
     app.execute(
-        Addr::unchecked(DAO_ADDR),
+        MockApi::default().addr_make(DAO_ADDR),
         CosmosMsg::Wasm(WasmMsg::Migrate {
             contract_addr: voting_addr.to_string(),
             new_code_id: voting_id,
@@ -603,7 +603,7 @@ fn test_migrate() {
         .query_wasm_smart(
             voting_addr,
             &QueryMsg::VotingPowerAtHeight {
-                address: ADDR1.to_string(),
+                address: MockApi::default().addr_make(ADDR1).to_string(),
                 height: None,
             },
         )
@@ -625,19 +625,19 @@ fn test_duplicate_member() {
             cw4_group_code_id: cw4_id,
             initial_members: vec![
                 cw4::Member {
-                    addr: ADDR3.to_string(), // same address above
+                    addr: MockApi::default().addr_make(ADDR3).to_string(), // same address above
                     weight: 19,
                 },
                 cw4::Member {
-                    addr: ADDR1.to_string(),
+                    addr: MockApi::default().addr_make(ADDR1).to_string(),
                     weight: 25,
                 },
                 cw4::Member {
-                    addr: ADDR2.to_string(),
+                    addr: MockApi::default().addr_make(ADDR2).to_string(),
                     weight: 25,
                 },
                 cw4::Member {
-                    addr: ADDR3.to_string(),
+                    addr: MockApi::default().addr_make(ADDR3).to_string(),
                     weight: 19,
                 },
             ],
@@ -650,7 +650,7 @@ fn test_duplicate_member() {
     let _voting_addr = app
         .instantiate_contract(
             voting_id,
-            Addr::unchecked(DAO_ADDR),
+            MockApi::default().addr_make(DAO_ADDR),
             &msg,
             &[],
             "voting module",
@@ -676,7 +676,7 @@ fn test_zero_voting_power() {
         .query_wasm_smart(
             voting_addr.clone(),
             &QueryMsg::VotingPowerAtHeight {
-                address: ADDR4.to_string(),
+                address: MockApi::default().addr_make(ADDR4).to_string(),
                 height: None,
             },
         )
@@ -688,11 +688,11 @@ fn test_zero_voting_power() {
     let msg = cw4_group::msg::ExecuteMsg::UpdateMembers {
         remove: vec![],
         add: vec![cw4::Member {
-            addr: ADDR1.to_string(),
+            addr: MockApi::default().addr_make(ADDR1).to_string(),
             weight: 0,
         }],
     };
-    app.execute_contract(Addr::unchecked(DAO_ADDR), cw4_addr, &msg, &[])
+    app.execute_contract(MockApi::default().addr_make(DAO_ADDR), cw4_addr, &msg, &[])
         .unwrap();
 
     // Check ADDR1's power is now 0
@@ -701,7 +701,7 @@ fn test_zero_voting_power() {
         .query_wasm_smart(
             voting_addr.clone(),
             &QueryMsg::VotingPowerAtHeight {
-                address: ADDR1.to_string(),
+                address: MockApi::default().addr_make(ADDR1).to_string(),
                 height: None,
             },
         )

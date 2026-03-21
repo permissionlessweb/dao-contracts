@@ -1,30 +1,50 @@
-use cosmwasm_std::{to_json_binary, Addr, Binary};
+use cosmwasm_std::{testing::MockApi, to_json_binary, Addr, Binary};
 use cw4::{HooksResponse, Member, MemberListResponse, MemberResponse, TotalWeightResponse};
-use cw721::{NftInfoResponse, OwnerOfResponse};
+use cw721::msg::{NftInfoResponse, OwnerOfResponse};
 use cw_multi_test::{App, Executor};
-use dao_cw721_extensions::roles::{ExecuteExt, MetadataExt, QueryExt};
+use dao_cw721_extensions::roles::{MetadataExt, QueryExt};
 use dao_testing::contracts::{cw721_roles_contract, dao_voting_cw721_staked_contract};
 use dao_voting_cw721_staked::msg::{InstantiateMsg as Cw721StakedInstantiateMsg, NftContract};
 
 use crate::error::RolesContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use dao_cw721_extensions::roles::ExecuteExt;
 
 const ALICE: &str = "alice";
 const BOB: &str = "bob";
 const DAO: &str = "dao";
 
-pub fn setup() -> (App, Addr) {
+struct TestAccounts {
+    alice: Addr,
+    bob: Addr,
+    dao: Addr,
+}
+
+fn test_accounts() -> TestAccounts {
+    let api = MockApi::default();
+    TestAccounts {
+        alice: api.addr_make(ALICE),
+        bob: api.addr_make(BOB),
+        dao: api.addr_make(DAO),
+    }
+}
+
+pub fn setup() -> (App, Addr, TestAccounts) {
     let mut app = App::default();
+    let accts = test_accounts();
 
     let cw721_id = app.store_code(cw721_roles_contract());
     let cw721_addr = app
         .instantiate_contract(
             cw721_id,
-            Addr::unchecked(DAO),
+            accts.dao.clone(),
             &InstantiateMsg {
                 name: "bad kids".to_string(),
                 symbol: "bad kids".to_string(),
-                minter: DAO.to_string(),
+                minter: Some(accts.dao.to_string()),
+                collection_info_extension: None,
+                creator: Some(accts.dao.to_string()),
+                withdraw_address: Some(accts.dao.to_string()),
             },
             &[],
             "cw721_roles".to_string(),
@@ -32,14 +52,14 @@ pub fn setup() -> (App, Addr) {
         )
         .unwrap();
 
-    (app, cw721_addr)
+    (app, cw721_addr, accts)
 }
 
 pub fn query_nft_owner(
     app: &App,
     nft: &Addr,
     token_id: &str,
-) -> Result<cw721::OwnerOfResponse, RolesContractError> {
+) -> Result<cw721::msg::OwnerOfResponse, RolesContractError> {
     let owner = app.wrap().query_wasm_smart(
         nft,
         &QueryMsg::OwnerOf {
@@ -98,19 +118,19 @@ pub fn query_token_info(
 
 #[test]
 fn test_minting_and_burning() {
-    let (mut app, cw721_addr) = setup();
+    let (mut app, cw721_addr, accts) = setup();
 
     // Mint token
     let msg = ExecuteMsg::Mint {
         token_id: "1".to_string(),
-        owner: ALICE.to_string(),
+        owner: accts.alice.to_string(),
         token_uri: Some("ipfs://xyz...".to_string()),
         extension: MetadataExt {
             role: None,
             weight: 1,
         },
     };
-    app.execute_contract(Addr::unchecked(DAO), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.dao.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap();
 
     // Token was created successfully
@@ -120,27 +140,27 @@ fn test_minting_and_burning() {
     // Create another token for alice to give her even more total weight
     let msg = ExecuteMsg::Mint {
         token_id: "2".to_string(),
-        owner: ALICE.to_string(),
+        owner: accts.alice.to_string(),
         token_uri: Some("ipfs://xyz...".to_string()),
         extension: MetadataExt {
             role: None,
             weight: 1,
         },
     };
-    app.execute_contract(Addr::unchecked(DAO), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.dao.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap();
 
     // Create a token for bob
     let msg = ExecuteMsg::Mint {
         token_id: "3".to_string(),
-        owner: BOB.to_string(),
+        owner: accts.bob.to_string(),
         token_uri: Some("ipfs://xyz...".to_string()),
         extension: MetadataExt {
             role: None,
             weight: 1,
         },
     };
-    app.execute_contract(Addr::unchecked(DAO), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.dao.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap();
 
     // Query list of members
@@ -161,11 +181,11 @@ fn test_minting_and_burning() {
         MemberListResponse {
             members: vec![
                 Member {
-                    addr: ALICE.to_string(),
+                    addr: accts.alice.to_string(),
                     weight: 2
                 },
                 Member {
-                    addr: BOB.to_string(),
+                    addr: accts.bob.to_string(),
                     weight: 1
                 }
             ]
@@ -173,7 +193,8 @@ fn test_minting_and_burning() {
     );
 
     // Member query returns total weight for alice
-    let member: MemberResponse = query_member(&app, &cw721_addr, ALICE, None).unwrap();
+    let member: MemberResponse =
+        query_member(&app, &cw721_addr, accts.alice.as_str(), None).unwrap();
     assert_eq!(member.weight, Some(2));
 
     // Total weight is now 3
@@ -184,26 +205,27 @@ fn test_minting_and_burning() {
     let msg = ExecuteMsg::Burn {
         token_id: "2".to_string(),
     };
-    app.execute_contract(Addr::unchecked(DAO), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.dao.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap();
 
     // Token is now gone
     let res = query_token_info(&app, &cw721_addr, "2");
     assert!(res.is_err());
 
-    // Alice's weight has been update acordingly
-    let member: MemberResponse = query_member(&app, &cw721_addr, ALICE, None).unwrap();
+    // Alice's weight has been updated accordingly
+    let member: MemberResponse =
+        query_member(&app, &cw721_addr, accts.alice.as_str(), None).unwrap();
     assert_eq!(member.weight, Some(1));
 }
 
 #[test]
 fn test_minting_and_transfer_permissions() {
-    let (mut app, cw721_addr) = setup();
+    let (mut app, cw721_addr, accts) = setup();
 
     // Mint token
     let msg = ExecuteMsg::Mint {
         token_id: "1".to_string(),
-        owner: ALICE.to_string(),
+        owner: accts.alice.to_string(),
         token_uri: Some("ipfs://xyz...".to_string()),
         extension: MetadataExt {
             role: Some("member".to_string()),
@@ -212,37 +234,37 @@ fn test_minting_and_transfer_permissions() {
     };
 
     // Non-minter can't mint
-    app.execute_contract(Addr::unchecked(ALICE), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.alice.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap_err();
 
     // DAO can mint successfully as the minter
-    app.execute_contract(Addr::unchecked(DAO), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.dao.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap();
 
     // Non-minter can't transfer
     let msg = ExecuteMsg::TransferNft {
-        recipient: BOB.to_string(),
+        recipient: accts.bob.to_string(),
         token_id: "1".to_string(),
     };
-    app.execute_contract(Addr::unchecked(ALICE), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.alice.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap_err();
 
     // DAO can transfer
-    app.execute_contract(Addr::unchecked(DAO), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.dao.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap();
 
     let owner: OwnerOfResponse = query_nft_owner(&app, &cw721_addr, "1").unwrap();
-    assert_eq!(owner.owner, BOB);
+    assert_eq!(owner.owner, accts.bob.to_string());
 }
 
 #[test]
 fn test_send_permissions() {
-    let (mut app, cw721_addr) = setup();
+    let (mut app, cw721_addr, accts) = setup();
 
     // Mint token
     let msg = ExecuteMsg::Mint {
         token_id: "1".to_string(),
-        owner: ALICE.to_string(),
+        owner: accts.alice.to_string(),
         token_uri: Some("ipfs://xyz...".to_string()),
         extension: MetadataExt {
             role: Some("member".to_string()),
@@ -250,7 +272,7 @@ fn test_send_permissions() {
         },
     };
     // DAO can mint successfully as the minter
-    app.execute_contract(Addr::unchecked(DAO), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.dao.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap();
 
     // Instantiate an NFT staking voting contract for testing SendNft
@@ -258,7 +280,7 @@ fn test_send_permissions() {
     let cw721_staked_addr = app
         .instantiate_contract(
             dao_voting_cw721_staked_id,
-            Addr::unchecked(DAO),
+            accts.dao.clone(),
             &Cw721StakedInstantiateMsg {
                 nft_contract: NftContract::Existing {
                     address: cw721_addr.to_string(),
@@ -278,11 +300,11 @@ fn test_send_permissions() {
         token_id: "1".to_string(),
         msg: to_json_binary(&Binary::default()).unwrap(),
     };
-    app.execute_contract(Addr::unchecked(ALICE), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.alice.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap_err();
 
     // DAO can send
-    app.execute_contract(Addr::unchecked(DAO), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.dao.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap();
 
     // Staking contract now owns the NFT
@@ -292,22 +314,22 @@ fn test_send_permissions() {
 
 #[test]
 fn test_update_token_role() {
-    let (mut app, cw721_addr) = setup();
+    let (mut app, cw721_addr, accts) = setup();
 
     // Mint token
     let msg = ExecuteMsg::Mint {
         token_id: "1".to_string(),
-        owner: ALICE.to_string(),
+        owner: accts.alice.to_string(),
         token_uri: Some("ipfs://xyz...".to_string()),
         extension: MetadataExt {
             role: None,
             weight: 1,
         },
     };
-    app.execute_contract(Addr::unchecked(DAO), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.dao.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap();
 
-    let msg = ExecuteMsg::Extension {
+    let msg = ExecuteMsg::UpdateExtension {
         msg: ExecuteExt::UpdateTokenRole {
             token_id: "1".to_string(),
             role: Some("queen".to_string()),
@@ -315,11 +337,11 @@ fn test_update_token_role() {
     };
 
     // Only admin / minter can update role
-    app.execute_contract(Addr::unchecked(ALICE), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.alice.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap_err();
 
     // Update token role
-    app.execute_contract(Addr::unchecked(DAO), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.dao.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap();
 
     // Token was updated successfully
@@ -328,9 +350,9 @@ fn test_update_token_role() {
 
     // Can set to None
     app.execute_contract(
-        Addr::unchecked(DAO),
+        accts.dao.clone(),
         cw721_addr.clone(),
-        &ExecuteMsg::Extension {
+        &ExecuteMsg::UpdateExtension {
             msg: ExecuteExt::UpdateTokenRole {
                 token_id: "1".to_string(),
                 role: None,
@@ -343,22 +365,22 @@ fn test_update_token_role() {
 
 #[test]
 fn test_update_token_uri() {
-    let (mut app, cw721_addr) = setup();
+    let (mut app, cw721_addr, accts) = setup();
 
     // Mint token
     let msg = ExecuteMsg::Mint {
         token_id: "1".to_string(),
-        owner: ALICE.to_string(),
+        owner: accts.alice.to_string(),
         token_uri: Some("ipfs://xyz...".to_string()),
         extension: MetadataExt {
             role: None,
             weight: 1,
         },
     };
-    app.execute_contract(Addr::unchecked(DAO), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.dao.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap();
 
-    let msg = ExecuteMsg::Extension {
+    let msg = ExecuteMsg::UpdateExtension {
         msg: ExecuteExt::UpdateTokenUri {
             token_id: "1".to_string(),
             token_uri: Some("ipfs://abc...".to_string()),
@@ -366,11 +388,11 @@ fn test_update_token_uri() {
     };
 
     // Only admin / minter can update token_uri
-    app.execute_contract(Addr::unchecked(ALICE), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.alice.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap_err();
 
     // Update token_uri
-    app.execute_contract(Addr::unchecked(DAO), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.dao.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap();
 
     // Token was updated successfully
@@ -380,22 +402,22 @@ fn test_update_token_uri() {
 
 #[test]
 fn test_update_token_weight() {
-    let (mut app, cw721_addr) = setup();
+    let (mut app, cw721_addr, accts) = setup();
 
     // Mint token
     let msg = ExecuteMsg::Mint {
         token_id: "1".to_string(),
-        owner: ALICE.to_string(),
+        owner: accts.alice.to_string(),
         token_uri: Some("ipfs://xyz...".to_string()),
         extension: MetadataExt {
             role: None,
             weight: 1,
         },
     };
-    app.execute_contract(Addr::unchecked(DAO), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.dao.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap();
 
-    let msg = ExecuteMsg::Extension {
+    let msg = ExecuteMsg::UpdateExtension {
         msg: ExecuteExt::UpdateTokenWeight {
             token_id: "1".to_string(),
             weight: 2,
@@ -403,11 +425,11 @@ fn test_update_token_weight() {
     };
 
     // Only admin / minter can update token weight
-    app.execute_contract(Addr::unchecked(ALICE), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.alice.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap_err();
 
     // Update token weight
-    app.execute_contract(Addr::unchecked(DAO), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.dao.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap();
 
     // Token was updated successfully
@@ -415,14 +437,15 @@ fn test_update_token_weight() {
     assert_eq!(info.extension.weight, 2);
 
     // New value should be reflected in member's voting weight
-    let member: MemberResponse = query_member(&app, &cw721_addr, ALICE, None).unwrap();
+    let member: MemberResponse =
+        query_member(&app, &cw721_addr, accts.alice.as_str(), None).unwrap();
     assert_eq!(member.weight, Some(2));
 
     // Update weight to a smaller value
     app.execute_contract(
-        Addr::unchecked(DAO),
+        accts.dao.clone(),
         cw721_addr.clone(),
-        &ExecuteMsg::Extension {
+        &ExecuteMsg::UpdateExtension {
             msg: ExecuteExt::UpdateTokenWeight {
                 token_id: "1".to_string(),
                 weight: 1,
@@ -432,33 +455,33 @@ fn test_update_token_weight() {
     )
     .unwrap();
 
-    // New value should be reflected in member's voting weight
-    let member: MemberResponse = query_member(&app, &cw721_addr, ALICE, None).unwrap();
+    let member: MemberResponse =
+        query_member(&app, &cw721_addr, accts.alice.as_str(), None).unwrap();
     assert_eq!(member.weight, Some(1));
 
     // Create another token for alice to give her even more total weight
     let msg = ExecuteMsg::Mint {
         token_id: "2".to_string(),
-        owner: ALICE.to_string(),
+        owner: accts.alice.to_string(),
         token_uri: Some("ipfs://xyz...".to_string()),
         extension: MetadataExt {
             role: None,
             weight: 10,
         },
     };
-    app.execute_contract(Addr::unchecked(DAO), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.dao.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap();
 
     // Alice's weight should be updated to include both tokens
-    let member: MemberResponse = query_member(&app, &cw721_addr, ALICE, None).unwrap();
+    let member: MemberResponse =
+        query_member(&app, &cw721_addr, accts.alice.as_str(), None).unwrap();
     assert_eq!(member.weight, Some(11));
 
     // Update Alice's second token to 0 weight
-    // Update weight to a smaller value
     app.execute_contract(
-        Addr::unchecked(DAO),
+        accts.dao.clone(),
         cw721_addr.clone(),
-        &ExecuteMsg::Extension {
+        &ExecuteMsg::UpdateExtension {
             msg: ExecuteExt::UpdateTokenWeight {
                 token_id: "2".to_string(),
                 weight: 0,
@@ -469,25 +492,26 @@ fn test_update_token_weight() {
     .unwrap();
 
     // Alice's voting value should be 1
-    let member: MemberResponse = query_member(&app, &cw721_addr, ALICE, None).unwrap();
+    let member: MemberResponse =
+        query_member(&app, &cw721_addr, accts.alice.as_str(), None).unwrap();
     assert_eq!(member.weight, Some(1));
 }
 
 #[test]
 fn test_zero_weight_token() {
-    let (mut app, cw721_addr) = setup();
+    let (mut app, cw721_addr, accts) = setup();
 
     // Mint token with zero weight
     let msg = ExecuteMsg::Mint {
         token_id: "1".to_string(),
-        owner: ALICE.to_string(),
+        owner: accts.alice.to_string(),
         token_uri: Some("ipfs://xyz...".to_string()),
         extension: MetadataExt {
             role: None,
             weight: 0,
         },
     };
-    app.execute_contract(Addr::unchecked(DAO), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.dao.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap();
 
     // Token was created successfully
@@ -495,39 +519,40 @@ fn test_zero_weight_token() {
     assert_eq!(info.extension.weight, 0);
 
     // Member query returns total weight for alice
-    let member: MemberResponse = query_member(&app, &cw721_addr, ALICE, None).unwrap();
+    let member: MemberResponse =
+        query_member(&app, &cw721_addr, accts.alice.as_str(), None).unwrap();
     assert_eq!(member.weight, Some(0));
 }
 
 #[test]
 fn test_hooks() {
-    let (mut app, cw721_addr) = setup();
+    let (mut app, cw721_addr, accts) = setup();
 
     // Mint initial NFT
     let msg = ExecuteMsg::Mint {
         token_id: "1".to_string(),
-        owner: ALICE.to_string(),
+        owner: accts.alice.to_string(),
         token_uri: Some("ipfs://xyz...".to_string()),
         extension: MetadataExt {
             role: None,
             weight: 1,
         },
     };
-    app.execute_contract(Addr::unchecked(DAO), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.dao.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap();
 
-    let msg = ExecuteMsg::Extension {
+    let msg = ExecuteMsg::UpdateExtension {
         msg: ExecuteExt::AddHook {
-            addr: DAO.to_string(),
+            addr: accts.dao.to_string(),
         },
     };
 
     // Hook can't be added by non-minter
-    app.execute_contract(Addr::unchecked(ALICE), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.alice.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap_err();
 
     // Hook can be added by the owner / minter
-    app.execute_contract(Addr::unchecked(DAO), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.dao.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap();
 
     // Query hooks
@@ -543,14 +568,14 @@ fn test_hooks() {
     assert_eq!(
         hooks,
         HooksResponse {
-            hooks: vec![DAO.to_string()]
+            hooks: vec![accts.dao.to_string()]
         }
     );
 
     // Test hook fires when a new member is added
     let msg = ExecuteMsg::Mint {
         token_id: "2".to_string(),
-        owner: ALICE.to_string(),
+        owner: accts.alice.to_string(),
         token_uri: Some("ipfs://xyz...".to_string()),
         extension: MetadataExt {
             role: None,
@@ -558,37 +583,37 @@ fn test_hooks() {
         },
     };
     // Should error as the DAO is not a contract, meaning hooks fired
-    app.execute_contract(Addr::unchecked(DAO), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.dao.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap_err();
 
     // Should also error for burn, as this also fires hooks
     let msg = ExecuteMsg::Burn {
         token_id: "1".to_string(),
     };
-    app.execute_contract(Addr::unchecked(DAO), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.dao.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap_err();
 
-    let msg = ExecuteMsg::Extension {
+    let msg = ExecuteMsg::UpdateExtension {
         msg: ExecuteExt::RemoveHook {
-            addr: DAO.to_string(),
+            addr: accts.dao.to_string(),
         },
     };
 
     // Hook can't be removed by non-minter
-    app.execute_contract(Addr::unchecked(ALICE), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.alice.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap_err();
 
     // Hook can be removed by the owner / minter
-    app.execute_contract(Addr::unchecked(DAO), cw721_addr.clone(), &msg, &[])
+    app.execute_contract(accts.dao.clone(), cw721_addr.clone(), &msg, &[])
         .unwrap();
 
-    // Minting should now work again as there are no hooks to dead
+    // Minting should now work again as there are no hooks to fire
     app.execute_contract(
-        Addr::unchecked(DAO),
+        accts.dao.clone(),
         cw721_addr,
         &ExecuteMsg::Mint {
             token_id: "2".to_string(),
-            owner: ALICE.to_string(),
+            owner: accts.alice.to_string(),
             token_uri: Some("ipfs://xyz...".to_string()),
             extension: MetadataExt {
                 role: None,

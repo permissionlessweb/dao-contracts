@@ -7,6 +7,7 @@ use crate::testing::instantiate::{
 use crate::testing::queries::{
     query_balance_cw20, query_dao_token, query_multiple_proposal_module, query_proposal,
 };
+use super::{addr, addr_str};
 use crate::testing::tests::{get_pre_propose_info, ALTERNATIVE_ADDR, CREATOR_ADDR};
 use cosmwasm_std::{to_json_binary, Addr, CosmosMsg, Decimal, Uint128, WasmMsg};
 use cw20::Cw20Coin;
@@ -36,7 +37,7 @@ fn setup_test(_messages: Vec<CosmosMsg>) -> CommonTest {
     let gov_token = query_dao_token(&app, &core_addr);
 
     // Mint some tokens to pay the proposal deposit.
-    mint_cw20s(&mut app, &gov_token, &core_addr, CREATOR_ADDR, 10_000_000);
+    mint_cw20s(&mut app, &gov_token, &core_addr, &addr_str(CREATOR_ADDR), 10_000_000);
 
     let options = vec![
         MultipleChoiceOption {
@@ -53,7 +54,7 @@ fn setup_test(_messages: Vec<CosmosMsg>) -> CommonTest {
 
     let mc_options = MultipleChoiceOptions { options };
 
-    let proposal_id = make_proposal(&mut app, &proposal_module, CREATOR_ADDR, mc_options, None);
+    let proposal_id = make_proposal(&mut app, &proposal_module, &addr_str(CREATOR_ADDR), mc_options, None);
 
     CommonTest {
         app,
@@ -82,7 +83,7 @@ fn test_execute_proposal_open() {
     // attempt to execute and assert that it fails
     let err = app
         .execute_contract(
-            Addr::unchecked(CREATOR_ADDR),
+            addr(CREATOR_ADDR),
             proposal_module,
             &ExecuteMsg::Execute { proposal_id },
             &[],
@@ -114,7 +115,7 @@ fn test_execute_proposal_rejected_closed() {
     // Vote on both options to reject the proposal
     let vote = MultipleChoiceVote { option_id: 0 };
     app.execute_contract(
-        Addr::unchecked(CREATOR_ADDR),
+        addr(CREATOR_ADDR),
         proposal_module.clone(),
         &ExecuteMsg::Vote {
             proposal_id,
@@ -127,7 +128,7 @@ fn test_execute_proposal_rejected_closed() {
 
     let vote = MultipleChoiceVote { option_id: 1 };
     app.execute_contract(
-        Addr::unchecked(ALTERNATIVE_ADDR),
+        addr(ALTERNATIVE_ADDR),
         proposal_module.clone(),
         &ExecuteMsg::Vote {
             proposal_id,
@@ -146,7 +147,7 @@ fn test_execute_proposal_rejected_closed() {
     // attempt to execute and assert that it fails
     let err = app
         .execute_contract(
-            Addr::unchecked(CREATOR_ADDR),
+            addr(CREATOR_ADDR),
             proposal_module.clone(),
             &ExecuteMsg::Execute { proposal_id },
             &[],
@@ -161,7 +162,7 @@ fn test_execute_proposal_rejected_closed() {
 
     // close the proposal
     app.execute_contract(
-        Addr::unchecked(CREATOR_ADDR),
+        addr(CREATOR_ADDR),
         proposal_module.clone(),
         &ExecuteMsg::Close { proposal_id },
         &[],
@@ -174,7 +175,7 @@ fn test_execute_proposal_rejected_closed() {
 
     let err = app
         .execute_contract(
-            Addr::unchecked(CREATOR_ADDR),
+            addr(CREATOR_ADDR),
             proposal_module,
             &ExecuteMsg::Execute { proposal_id },
             &[],
@@ -200,7 +201,7 @@ fn test_execute_proposal_more_than_once() {
     // get the proposal to pass
     let vote = MultipleChoiceVote { option_id: 0 };
     app.execute_contract(
-        Addr::unchecked(CREATOR_ADDR),
+        addr(CREATOR_ADDR),
         proposal_module.clone(),
         &ExecuteMsg::Vote {
             proposal_id,
@@ -211,7 +212,7 @@ fn test_execute_proposal_more_than_once() {
     )
     .unwrap();
     app.execute_contract(
-        Addr::unchecked(ALTERNATIVE_ADDR),
+        addr(ALTERNATIVE_ADDR),
         proposal_module.clone(),
         &ExecuteMsg::Vote {
             proposal_id,
@@ -229,7 +230,7 @@ fn test_execute_proposal_more_than_once() {
 
     // execute the proposal
     app.execute_contract(
-        Addr::unchecked(CREATOR_ADDR),
+        addr(CREATOR_ADDR),
         proposal_module.clone(),
         &ExecuteMsg::Execute { proposal_id },
         &[],
@@ -243,7 +244,7 @@ fn test_execute_proposal_more_than_once() {
 
     let err = app
         .execute_contract(
-            Addr::unchecked(CREATOR_ADDR),
+            addr(CREATOR_ADDR),
             proposal_module,
             &ExecuteMsg::Execute { proposal_id },
             &[],
@@ -291,11 +292,11 @@ pub fn test_allow_voting_after_proposal_execution_pre_expiration_cw20() {
         instantiate,
         Some(vec![
             Cw20Coin {
-                address: CREATOR_ADDR.to_string(),
+                address: addr_str(CREATOR_ADDR),
                 amount: Uint128::new(100_000_000),
             },
             Cw20Coin {
-                address: ALTERNATIVE_ADDR.to_string(),
+                address: addr_str(ALTERNATIVE_ADDR),
                 amount: Uint128::new(50_000_000),
             },
         ]),
@@ -304,11 +305,11 @@ pub fn test_allow_voting_after_proposal_execution_pre_expiration_cw20() {
     let gov_token = query_dao_token(&app, &core_addr);
 
     // Mint some tokens to pay the proposal deposit.
-    mint_cw20s(&mut app, &gov_token, &core_addr, CREATOR_ADDR, 10_000_000);
+    mint_cw20s(&mut app, &gov_token, &core_addr, &addr_str(CREATOR_ADDR), 10_000_000);
 
     // Option 0 would mint 100_000_000 tokens for CREATOR_ADDR
     let msg = cw20::Cw20ExecuteMsg::Mint {
-        recipient: CREATOR_ADDR.to_string(),
+        recipient: addr_str(CREATOR_ADDR),
         amount: Uint128::new(100_000_000),
     };
     let binary_msg = to_json_binary(&msg).unwrap();
@@ -333,10 +334,10 @@ pub fn test_allow_voting_after_proposal_execution_pre_expiration_cw20() {
 
     let mc_options = MultipleChoiceOptions { options };
 
-    let proposal_id = make_proposal(&mut app, &proposal_module, CREATOR_ADDR, mc_options, None);
+    let proposal_id = make_proposal(&mut app, &proposal_module, &addr_str(CREATOR_ADDR), mc_options, None);
 
     // assert initial CREATOR_ADDR address balance is 0
-    let balance = query_balance_cw20(&app, gov_token.to_string(), CREATOR_ADDR);
+    let balance = query_balance_cw20(&app, gov_token.to_string(), addr_str(CREATOR_ADDR));
     assert_eq!(balance, Uint128::zero());
 
     app.update_block(next_block);
@@ -345,7 +346,7 @@ pub fn test_allow_voting_after_proposal_execution_pre_expiration_cw20() {
 
     // someone votes enough to pass the proposal
     app.execute_contract(
-        Addr::unchecked(CREATOR_ADDR),
+        addr(CREATOR_ADDR),
         proposal_module.clone(),
         &ExecuteMsg::Vote {
             proposal_id,
@@ -368,7 +369,7 @@ pub fn test_allow_voting_after_proposal_execution_pre_expiration_cw20() {
     // opinion (not affecting the result of proposal)
     let vote = MultipleChoiceVote { option_id: 1 };
     app.execute_contract(
-        Addr::unchecked(ALTERNATIVE_ADDR),
+        addr(ALTERNATIVE_ADDR),
         proposal_module.clone(),
         &ExecuteMsg::Vote {
             proposal_id,
@@ -389,7 +390,7 @@ pub fn test_allow_voting_after_proposal_execution_pre_expiration_cw20() {
 
     // execute the proposal expecting
     app.execute_contract(
-        Addr::unchecked(CREATOR_ADDR),
+        addr(CREATOR_ADDR),
         proposal_module.clone(),
         &ExecuteMsg::Execute { proposal_id: 1 },
         &[],
@@ -397,6 +398,6 @@ pub fn test_allow_voting_after_proposal_execution_pre_expiration_cw20() {
     .unwrap();
 
     // assert option 0 message executed as expected changed as expected
-    let balance = query_balance_cw20(&app, gov_token.to_string(), CREATOR_ADDR);
+    let balance = query_balance_cw20(&app, gov_token.to_string(), addr_str(CREATOR_ADDR));
     assert_eq!(balance, Uint128::new(110_000_000));
 }

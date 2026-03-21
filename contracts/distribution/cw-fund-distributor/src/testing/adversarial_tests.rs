@@ -1,6 +1,6 @@
 use crate::msg::ExecuteMsg::ClaimAll;
 use crate::msg::{ExecuteMsg, InstantiateMsg};
-use cosmwasm_std::{to_json_binary, Addr, Binary, Coin, Uint128};
+use cosmwasm_std::{testing::MockApi, to_json_binary, Addr, Binary, Coin, Uint128};
 use cw20::{BalanceResponse, Cw20Coin};
 use cw_multi_test::{next_block, App, BankSudo, Executor, SudoMsg};
 use cw_utils::Duration;
@@ -49,7 +49,7 @@ fn setup_test(initial_balances: Vec<Cw20Coin>) -> BaseTest {
     let voting_address = app
         .instantiate_contract(
             voting_id,
-            Addr::unchecked(CREATOR_ADDR),
+            MockApi::default().addr_make(CREATOR_ADDR),
             &dao_voting_cw20_staked::msg::InstantiateMsg {
                 active_threshold: None,
                 token_info: dao_voting_cw20_staked::msg::TokenInfo::New {
@@ -108,7 +108,7 @@ fn setup_test(initial_balances: Vec<Cw20Coin>) -> BaseTest {
     let distribution_contract = app
         .instantiate_contract(
             distributor_id,
-            Addr::unchecked(CREATOR_ADDR),
+            MockApi::default().addr_make(CREATOR_ADDR),
             &InstantiateMsg {
                 voting_contract: voting_address.to_string(),
                 funding_period: Duration::Height(10),
@@ -135,11 +135,11 @@ pub fn test_claim_lots_of_native_tokens() {
         distributor_address,
     } = setup_test(vec![
         Cw20Coin {
-            address: "bekauz".to_string(),
+            address: MockApi::default().addr_make("bekauz").to_string(),
             amount: Uint128::new(10),
         },
         Cw20Coin {
-            address: "ekez".to_string(),
+            address: MockApi::default().addr_make("ekez").to_string(),
             amount: Uint128::new(20),
         },
     ]);
@@ -152,7 +152,7 @@ pub fn test_claim_lots_of_native_tokens() {
     for n in 1..token_count {
         let denom = FEE_DENOM.to_owned() + &n.to_string();
         app.sudo(SudoMsg::Bank(BankSudo::Mint {
-            to_address: CREATOR_ADDR.to_string(),
+            to_address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
             amount: vec![Coin {
                 amount,
                 denom: denom.clone(),
@@ -161,7 +161,7 @@ pub fn test_claim_lots_of_native_tokens() {
         .unwrap();
 
         app.execute_contract(
-            Addr::unchecked(CREATOR_ADDR),
+            MockApi::default().addr_make(CREATOR_ADDR),
             distributor_address.clone(),
             &ExecuteMsg::FundNative {},
             &[Coin {
@@ -175,7 +175,7 @@ pub fn test_claim_lots_of_native_tokens() {
     app.update_block(|block| block.height += 11);
 
     app.execute_contract(
-        Addr::unchecked("bekauz"),
+        MockApi::default().addr_make("bekauz"),
         distributor_address,
         &ClaimAll {},
         &[],
@@ -188,7 +188,7 @@ pub fn test_claim_lots_of_native_tokens() {
         let expected_balance = Uint128::new(166666);
         let user_balance_after_claim = app
             .wrap()
-            .query_balance("bekauz".to_string(), denom)
+            .query_balance(MockApi::default().addr_make("bekauz").to_string(), denom)
             .unwrap();
         assert_eq!(expected_balance, user_balance_after_claim.amount);
     }
@@ -204,11 +204,11 @@ pub fn test_claim_lots_of_cw20s() {
         distributor_address,
     } = setup_test(vec![
         Cw20Coin {
-            address: "bekauz".to_string(),
+            address: MockApi::default().addr_make("bekauz").to_string(),
             amount: Uint128::new(10),
         },
         Cw20Coin {
-            address: "ekez".to_string(),
+            address: MockApi::default().addr_make("ekez").to_string(),
             amount: Uint128::new(20),
         },
     ]);
@@ -222,16 +222,16 @@ pub fn test_claim_lots_of_cw20s() {
             let name = FEE_DENOM.to_owned() + &n.to_string();
             let cw20_addr = instantiate_cw20(
                 &mut app,
-                Addr::unchecked(CREATOR_ADDR),
+                MockApi::default().addr_make(CREATOR_ADDR),
                 vec![Cw20Coin {
-                    address: CREATOR_ADDR.to_string(),
+                    address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
                     amount,
                 }],
                 name,
                 "shitcoin".to_string(),
             );
             app.execute_contract(
-                Addr::unchecked(CREATOR_ADDR),
+                MockApi::default().addr_make(CREATOR_ADDR),
                 cw20_addr.clone(),
                 &cw20::Cw20ExecuteMsg::Send {
                     contract: distributor_address.to_string(),
@@ -248,7 +248,7 @@ pub fn test_claim_lots_of_cw20s() {
     app.update_block(|block| block.height += 11);
 
     app.execute_contract(
-        Addr::unchecked("bekauz"),
+        MockApi::default().addr_make("bekauz"),
         distributor_address,
         &ClaimAll {},
         &[],
@@ -264,7 +264,7 @@ pub fn test_claim_lots_of_cw20s() {
             .query_wasm_smart(
                 addr,
                 &cw20::Cw20QueryMsg::Balance {
-                    address: "bekauz".to_string(),
+                    address: MockApi::default().addr_make("bekauz").to_string(),
                 },
             )
             .unwrap();

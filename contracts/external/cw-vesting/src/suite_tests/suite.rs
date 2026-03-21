@@ -1,5 +1,7 @@
 use cosmwasm_std::{
-    coins, testing::mock_env, Addr, BlockInfo, Decimal, Timestamp, Uint128, Uint64, Validator,
+    coins,
+    testing::{mock_env, MockApi},
+    Addr, BlockInfo, Decimal, Timestamp, Uint128, Uint64, Validator,
 };
 use cw_multi_test::{App, BankSudo, Executor, StakingInfo, StakingSudo};
 use dao_testing::contracts::cw_vesting_contract;
@@ -29,8 +31,8 @@ impl Default for SuiteBuilder {
 
         Self {
             instantiate: InstantiateMsg {
-                owner: Some("owner".to_string()),
-                recipient: "recipient".to_string(),
+                owner: Some(MockApi::default().addr_make("owner").to_string()),
+                recipient: MockApi::default().addr_make("recipient").to_string(),
                 title: "title".to_string(),
                 description: Some("description".to_string()),
                 total: Uint128::new(100_000_000),
@@ -53,12 +55,12 @@ impl SuiteBuilder {
                     api,
                     storage,
                     &mock_env().block,
-                    Validator {
-                        address: "validator".to_string(),
-                        commission: Decimal::zero(), // zero percent comission to keep math simple.
-                        max_commission: Decimal::percent(10),
-                        max_change_rate: Decimal::percent(2),
-                    },
+                    Validator::create(
+                        "validator".to_string(),
+                        Decimal::zero(), // zero percent comission to keep math simple.
+                        Decimal::percent(10),
+                        Decimal::percent(2),
+                    ),
                 )
                 .unwrap();
             router
@@ -67,12 +69,12 @@ impl SuiteBuilder {
                     api,
                     storage,
                     &mock_env().block,
-                    Validator {
-                        address: "otherone".to_string(),
-                        commission: Decimal::zero(), // zero percent comission to keep math simple.
-                        max_commission: Decimal::percent(10),
-                        max_change_rate: Decimal::percent(2),
-                    },
+                    Validator::create(
+                        "otherone".to_string(),
+                        Decimal::zero(), // zero percent comission to keep math simple.
+                        Decimal::percent(10),
+                        Decimal::percent(2),
+                    ),
                 )
                 .unwrap();
         });
@@ -81,7 +83,7 @@ impl SuiteBuilder {
             let funds = coins(self.instantiate.total.u128(), denom);
             app.sudo(
                 BankSudo::Mint {
-                    to_address: "owner".to_string(),
+                    to_address: MockApi::default().addr_make("owner").to_string(),
                     amount: funds.clone(),
                 }
                 .into(),
@@ -96,7 +98,7 @@ impl SuiteBuilder {
         let vesting = app
             .instantiate_contract(
                 vesting_id,
-                Addr::unchecked("owner"),
+                MockApi::default().addr_make("owner"),
                 &self.instantiate,
                 &funds,
                 "cw_vesting",
@@ -106,7 +108,7 @@ impl SuiteBuilder {
 
         Suite {
             app,
-            owner: self.instantiate.owner.map(Addr::unchecked),
+            owner: self.instantiate.owner.map(|o| Addr::unchecked(o)),
             total: self.instantiate.total,
             receiver: Addr::unchecked(self.instantiate.recipient),
             vesting,
@@ -271,7 +273,7 @@ impl Suite {
         self.app
             .execute_contract(
                 // anyone may call this method on a canceled vesting contract
-                Addr::unchecked("random"),
+                MockApi::default().addr_make("random"),
                 self.vesting.clone(),
                 &ExecuteMsg::WithdrawCanceledPayment { amount },
                 &[],

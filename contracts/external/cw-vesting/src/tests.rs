@@ -1,4 +1,4 @@
-use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+use cosmwasm_std::testing::{mock_dependencies, mock_env, message_info, MockApi};
 use cosmwasm_std::{coins, to_json_binary, Addr, Coin, Decimal, Uint128, Validator};
 use cw20::{Cw20Coin, Cw20ExecuteMsg, Cw20ReceiveMsg};
 use cw_denom::{CheckedDenom, UncheckedDenom};
@@ -51,21 +51,21 @@ pub fn setup_app() -> App {
     // Mint Alice and Bob native tokens
     app.sudo(SudoMsg::Bank({
         BankSudo::Mint {
-            to_address: ALICE.to_string(),
+            to_address: MockApi::default().addr_make(ALICE).to_string(),
             amount: coins(INITIAL_BALANCE, NATIVE_DENOM),
         }
     }))
     .unwrap();
     app.sudo(SudoMsg::Bank({
         BankSudo::Mint {
-            to_address: BOB.to_string(),
+            to_address: MockApi::default().addr_make(BOB).to_string(),
             amount: coins(INITIAL_BALANCE, NATIVE_DENOM),
         }
     }))
     .unwrap();
     app.sudo(SudoMsg::Bank({
         BankSudo::Mint {
-            to_address: OWNER.to_string(),
+            to_address: MockApi::default().addr_make(OWNER).to_string(),
             amount: coins(INITIAL_BALANCE, NATIVE_DENOM),
         }
     }))
@@ -82,22 +82,22 @@ pub fn setup_contracts(app: &mut App) -> (Addr, u64, u64) {
     let cw20_addr = app
         .instantiate_contract(
             cw20_code_id,
-            Addr::unchecked(OWNER),
+            MockApi::default().addr_make(OWNER),
             &cw20_base::msg::InstantiateMsg {
                 name: "cw20 token".to_string(),
                 symbol: "cwtwenty".to_string(),
                 decimals: 6,
                 initial_balances: vec![
                     Cw20Coin {
-                        address: ALICE.to_string(),
+                        address: MockApi::default().addr_make(ALICE).to_string(),
                         amount: Uint128::new(INITIAL_BALANCE),
                     },
                     Cw20Coin {
-                        address: BOB.to_string(),
+                        address: MockApi::default().addr_make(BOB).to_string(),
                         amount: Uint128::new(INITIAL_BALANCE),
                     },
                     Cw20Coin {
-                        address: OWNER.to_string(),
+                        address: MockApi::default().addr_make(OWNER).to_string(),
                         amount: Uint128::new(INITIAL_BALANCE),
                     },
                 ],
@@ -117,8 +117,8 @@ pub fn setup_contracts(app: &mut App) -> (Addr, u64, u64) {
 impl Default for InstantiateMsg {
     fn default() -> Self {
         Self {
-            owner: Some(OWNER.to_string()),
-            recipient: BOB.to_string(),
+            owner: Some(MockApi::default().addr_make(OWNER).to_string()),
+            recipient: MockApi::default().addr_make(BOB).to_string(),
             title: "title".to_string(),
             description: Some("desc".to_string()),
             total: Uint128::new(TOTAL_VEST),
@@ -143,10 +143,16 @@ fn setup_test_case(app: &mut App, msg: InstantiateMsg, funds: &[Coin]) -> TestCa
     let (cw20_addr, _, cw_vesting_code_id) = setup_contracts(app);
 
     // Instantiate cw-vesting contract
+    let mut msg = msg;
+    if let UncheckedDenom::Cw20(s) = &mut msg.denom {
+        if *s == "contract0" {
+            *s = cw20_addr.to_string();
+        }
+    }
     let cw_vesting_addr = app
         .instantiate_contract(
             cw_vesting_code_id,
-            Addr::unchecked(OWNER),
+            MockApi::default().addr_make(OWNER),
             &msg,
             funds,
             "cw-vesting",
@@ -162,7 +168,7 @@ fn setup_test_case(app: &mut App, msg: InstantiateMsg, funds: &[Coin]) -> TestCa
                 msg: to_json_binary(&ReceiveMsg::Fund {}).unwrap(),
             };
             app.execute_contract(
-                Addr::unchecked(OWNER),
+                MockApi::default().addr_make(OWNER),
                 Addr::unchecked(cw20_addr.clone()),
                 &msg,
                 &[],
@@ -237,13 +243,13 @@ fn test_happy_cw20_path() {
 
     // Owner has funded the contract and down
     assert_eq!(
-        get_balance_cw20(&app, cw20_addr.clone(), OWNER),
+        get_balance_cw20(&app, cw20_addr.clone(), MockApi::default().addr_make(OWNER)),
         Uint128::new(INITIAL_BALANCE - TOTAL_VEST)
     );
 
     // Bob has claimed vested funds and is up
     assert_eq!(
-        get_balance_cw20(&app, cw20_addr, BOB),
+        get_balance_cw20(&app, cw20_addr, MockApi::default().addr_make(BOB)),
         Uint128::new(INITIAL_BALANCE) + Uint128::new(TOTAL_VEST / 2)
     );
 }
@@ -306,24 +312,24 @@ fn test_happy_native_path() {
 
     // Owner has funded the contract and down 1000
     assert_eq!(
-        get_balance_native(&app, OWNER, NATIVE_DENOM),
+        get_balance_native(&app, MockApi::default().addr_make(OWNER), NATIVE_DENOM),
         Uint128::new(INITIAL_BALANCE - TOTAL_VEST)
     );
     // Bob has claimed vested funds and is up 250
     assert_eq!(
-        get_balance_native(&app, BOB, NATIVE_DENOM),
+        get_balance_native(&app, MockApi::default().addr_make(BOB), NATIVE_DENOM),
         Uint128::new(INITIAL_BALANCE) + Uint128::new(TOTAL_VEST / 2)
     );
 }
 
 #[test]
 fn test_staking_rewards_go_to_receiver() {
-    let validator = Validator {
-        address: "testvaloper1".to_string(),
-        commission: Decimal::percent(1),
-        max_commission: Decimal::percent(100),
-        max_change_rate: Decimal::percent(1),
-    };
+    let validator = Validator::create(
+        "testvaloper1".to_string(),
+        Decimal::percent(1),
+        Decimal::percent(100),
+        Decimal::percent(1),
+    );
 
     let mut app = AppBuilder::default().build(|router, api, storage| {
         router
@@ -346,7 +352,7 @@ fn test_staking_rewards_go_to_receiver() {
 
     let vesting_id = app.store_code(cw_vesting_contract());
     app.sudo(SudoMsg::Bank(BankSudo::Mint {
-        to_address: OWNER.to_string(),
+        to_address: MockApi::default().addr_make(OWNER).to_string(),
         amount: coins(100, NATIVE_DENOM),
     }))
     .unwrap();
@@ -360,7 +366,7 @@ fn test_staking_rewards_go_to_receiver() {
     let vesting = app
         .instantiate_contract(
             vesting_id,
-            Addr::unchecked(OWNER),
+            MockApi::default().addr_make(OWNER),
             &msg,
             &coins(100, NATIVE_DENOM),
             "cw-vesting",
@@ -370,7 +376,7 @@ fn test_staking_rewards_go_to_receiver() {
 
     // delegate all of the tokens to the validaor.
     app.execute_contract(
-        Addr::unchecked(BOB),
+        MockApi::default().addr_make(BOB),
         vesting.clone(),
         &ExecuteMsg::Delegate {
             validator: "testvaloper1".to_string(),
@@ -380,14 +386,14 @@ fn test_staking_rewards_go_to_receiver() {
     )
     .unwrap();
 
-    let balance = get_balance_native(&app, BOB, NATIVE_DENOM);
+    let balance = get_balance_native(&app, MockApi::default().addr_make(BOB), NATIVE_DENOM);
     assert_eq!(balance.u128(), 0);
 
     // A year passes.
     app.update_block(|block| block.time = block.time.plus_seconds(60 * 60 * 24 * 365));
 
     app.execute_contract(
-        Addr::unchecked(BOB),
+        MockApi::default().addr_make(BOB),
         vesting,
         &ExecuteMsg::WithdrawDelegatorReward {
             validator: "testvaloper1".to_string(),
@@ -396,7 +402,7 @@ fn test_staking_rewards_go_to_receiver() {
     )
     .unwrap();
 
-    let balance = get_balance_native(&app, BOB, NATIVE_DENOM);
+    let balance = get_balance_native(&app, MockApi::default().addr_make(BOB), NATIVE_DENOM);
     assert_eq!(balance.u128(), 9); // 10% APY, 1% comission, 100 staked, one year elapsed.
 }
 
@@ -405,13 +411,15 @@ fn test_cancel_vesting() {
     let mut app = setup_app();
 
     let TestCase {
-        cw_vesting_addr, ..
+        cw20_addr,
+        cw_vesting_addr,
+        ..
     } = setup_test_case(&mut app, InstantiateMsg::default(), &[]);
 
     // Non-owner can't cancel
     let err: cw_vesting::ContractError = app
         .execute_contract(
-            Addr::unchecked(ALICE),
+            MockApi::default().addr_make(ALICE),
             cw_vesting_addr.clone(),
             &ExecuteMsg::Cancel {},
             &[],
@@ -432,7 +440,7 @@ fn test_cancel_vesting() {
     // Owner DAO cancels vesting contract. All tokens are liquid so
     // everything settles instantly.
     app.execute_contract(
-        Addr::unchecked(OWNER),
+        MockApi::default().addr_make(OWNER),
         cw_vesting_addr.clone(),
         &ExecuteMsg::Cancel {},
         &[],
@@ -442,7 +450,7 @@ fn test_cancel_vesting() {
     // Can't distribute as tokens are already distributed.
     let err: cw_vesting::ContractError = app
         .execute_contract(
-            Addr::unchecked(BOB),
+            MockApi::default().addr_make(BOB),
             cw_vesting_addr,
             &ExecuteMsg::Distribute { amount: None },
             &[],
@@ -457,12 +465,20 @@ fn test_cancel_vesting() {
 
     // Unvested funds have been returned to contract owner
     assert_eq!(
-        get_balance_cw20(&app, "contract0", OWNER),
+        get_balance_cw20(
+            &app,
+            cw20_addr.to_string(),
+            MockApi::default().addr_make(OWNER)
+        ),
         Uint128::new(INITIAL_BALANCE - TOTAL_VEST / 2)
     );
     // Bob has gets the funds vest up until cancelation
     assert_eq!(
-        get_balance_cw20(&app, "contract0", BOB),
+        get_balance_cw20(
+            &app,
+            cw20_addr.to_string(),
+            MockApi::default().addr_make(BOB)
+        ),
         Uint128::new(INITIAL_BALANCE + TOTAL_VEST / 2)
     );
 }
@@ -473,20 +489,22 @@ fn test_catch_imposter_cw20() {
     let (_, cw20_code_id, _) = setup_contracts(&mut app);
 
     let TestCase {
-        cw_vesting_addr, ..
+        cw20_addr,
+        cw_vesting_addr,
+        ..
     } = setup_test_case(&mut app, InstantiateMsg::default(), &[]);
 
     // Create imposter cw20
     let cw20_imposter_addr = app
         .instantiate_contract(
             cw20_code_id,
-            Addr::unchecked(OWNER),
+            MockApi::default().addr_make(OWNER),
             &cw20_base::msg::InstantiateMsg {
                 name: "cw20 token".to_string(),
                 symbol: "cwtwenty".to_string(),
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
-                    address: OWNER.to_string(),
+                    address: MockApi::default().addr_make(OWNER).to_string(),
                     amount: Uint128::new(INITIAL_BALANCE),
                 }],
                 mint: None,
@@ -507,7 +525,7 @@ fn test_catch_imposter_cw20() {
     // Errors that cw20 does not match what was expected
     let error: cw_vesting::ContractError = app
         .execute_contract(
-            Addr::unchecked(OWNER),
+            MockApi::default().addr_make(OWNER),
             Addr::unchecked(cw20_imposter_addr),
             &msg,
             &[],
@@ -529,7 +547,7 @@ fn test_incorrect_native_funding_amount() {
         ..Default::default()
     };
 
-    let alice = Addr::unchecked(ALICE);
+    let alice = MockApi::default().addr_make(ALICE);
 
     let (_, _, cw_vesting_code_id) = setup_contracts(&mut app);
 
@@ -559,7 +577,6 @@ fn test_incorrect_native_funding_amount() {
 #[test]
 fn test_execution_rejection_recv() {
     let env = mock_env;
-    let info = |sender| mock_info(sender, &[]);
     let mut deps = mock_dependencies();
 
     PAYMENT
@@ -570,20 +587,25 @@ fn test_execution_rejection_recv() {
                 schedule: Schedule::SaturatingLinear,
                 start_time: env().block.time,
                 duration_seconds: 60 * 60 * 24 * 7,
-                denom: CheckedDenom::Cw20(Addr::unchecked("cw20")),
-                recipient: Addr::unchecked("recipient"),
+                denom: CheckedDenom::Cw20(MockApi::default().addr_make("cw20")),
+                recipient: MockApi::default().addr_make("recipient"),
                 title: "title".to_string(),
                 description: Some("description".to_string()),
             },
         )
         .unwrap();
     let mut deps = deps.as_mut();
-    cw_ownable::initialize_owner(deps.storage, deps.api, Some("owner")).unwrap();
+    cw_ownable::initialize_owner(
+        deps.storage,
+        deps.api,
+        Some(MockApi::default().addr_make("owner").as_str()),
+    )
+    .unwrap();
 
     let err = execute_receive_cw20(
         env(),
         deps.branch(),
-        info("notcw20"),
+        message_info(&MockApi::default().addr_make("notcw20"), &[]),
         Cw20ReceiveMsg {
             sender: "random".to_string(),
             amount: Uint128::new(100),
@@ -596,7 +618,7 @@ fn test_execution_rejection_recv() {
     let err = execute_receive_cw20(
         env(),
         deps.branch(),
-        info("cw20"),
+        message_info(&MockApi::default().addr_make("cw20"), &[]),
         Cw20ReceiveMsg {
             sender: "random".to_string(),
             amount: Uint128::new(101),
@@ -628,15 +650,20 @@ fn test_illiquid_when_unfunfed() {
                 schedule: Schedule::SaturatingLinear,
                 start_time: env().block.time,
                 duration_seconds: 60 * 60 * 24 * 7,
-                denom: CheckedDenom::Cw20(Addr::unchecked("cw20")),
-                recipient: Addr::unchecked("recipient"),
+                denom: CheckedDenom::Cw20(MockApi::default().addr_make("cw20")),
+                recipient: MockApi::default().addr_make("recipient"),
                 title: "title".to_string(),
                 description: Some("description".to_string()),
             },
         )
         .unwrap();
     let deps = deps.as_mut();
-    cw_ownable::initialize_owner(deps.storage, deps.api, Some("owner")).unwrap();
+    cw_ownable::initialize_owner(
+        deps.storage,
+        deps.api,
+        Some(MockApi::default().addr_make("owner").as_str()),
+    )
+    .unwrap();
 
     // nothing is liquid in the unfunded state.
     assert_eq!(
@@ -666,15 +693,20 @@ fn test_update_owner() {
                 schedule: Schedule::SaturatingLinear,
                 start_time: env().block.time,
                 duration_seconds: 60 * 60 * 24 * 7,
-                denom: CheckedDenom::Cw20(Addr::unchecked("cw20")),
-                recipient: Addr::unchecked("recipient"),
+                denom: CheckedDenom::Cw20(MockApi::default().addr_make("cw20")),
+                recipient: MockApi::default().addr_make("recipient"),
                 title: "title".to_string(),
                 description: Some("description".to_string()),
             },
         )
         .unwrap();
     let deps = deps.as_mut();
-    cw_ownable::initialize_owner(deps.storage, deps.api, Some("owner")).unwrap();
+    cw_ownable::initialize_owner(
+        deps.storage,
+        deps.api,
+        Some(MockApi::default().addr_make("owner").as_str()),
+    )
+    .unwrap();
     PAYMENT
         .on_delegate(
             deps.storage,
@@ -684,12 +716,16 @@ fn test_update_owner() {
         )
         .unwrap();
     PAYMENT
-        .cancel(deps.storage, env().block.time, &Addr::unchecked("owner"))
+        .cancel(
+            deps.storage,
+            env().block.time,
+            &MockApi::default().addr_make("owner"),
+        )
         .unwrap();
     let err = execute(
         deps,
         env(),
-        mock_info("owner", &[]),
+        message_info(&MockApi::default().addr_make("owner"), &[]),
         ExecuteMsg::UpdateOwnership(Action::RenounceOwnership),
     )
     .unwrap_err();

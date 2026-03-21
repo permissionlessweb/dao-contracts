@@ -18,7 +18,7 @@ use crate::{
 };
 use dao_proposal_single::ContractError;
 
-use super::{queries::query_pre_proposal_single_config, CREATOR_ADDR};
+use super::{addr, addr_str, queries::query_pre_proposal_single_config, CREATOR_ADDR};
 
 // Creates a proposal then checks that the proposal was created with
 // the specified messages and returns the ID of the proposal.
@@ -298,7 +298,7 @@ pub(crate) fn instantiate_cw20_base_default(app: &mut App) -> Addr {
         symbol: "cwtwenty".to_string(),
         decimals: 6,
         initial_balances: vec![cw20::Cw20Coin {
-            address: CREATOR_ADDR.to_string(),
+            address: addr_str(CREATOR_ADDR),
             amount: Uint128::new(10_000_000),
         }],
         mint: None,
@@ -306,7 +306,7 @@ pub(crate) fn instantiate_cw20_base_default(app: &mut App) -> Addr {
     };
     app.instantiate_contract(
         cw20_id,
-        Addr::unchecked("ekez"),
+        addr("ekez"),
         &cw20_instantiate,
         &[],
         "cw20-base",

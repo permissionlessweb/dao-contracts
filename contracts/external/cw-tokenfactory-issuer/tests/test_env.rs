@@ -7,7 +7,7 @@ use cosmwasm_std::Uint128;
 use cosmwasm_std::{Addr, Coin};
 
 #[cfg(any(feature = "osmosis_tokenfactory", feature = "cosmwasm_tokenfactory"))]
-use cw_tokenfactory_issuer::msg::Metadata;
+use cosmwasm_std::DenomMetadata;
 
 use cw_tokenfactory_issuer::msg::{AllowlistResponse, DenylistResponse, MigrateMsg};
 use cw_tokenfactory_issuer::{
@@ -210,7 +210,7 @@ impl TokenfactoryIssuer {
     #[cfg(any(feature = "osmosis_tokenfactory", feature = "cosmwasm_tokenfactory"))]
     pub fn set_denom_metadata(
         &self,
-        metadata: Metadata,
+        metadata: DenomMetadata,
         signer: &SigningAccount,
     ) -> RunnerExecuteResult<MsgExecuteContractResponse> {
         self.execute(&ExecuteMsg::SetDenomMetadata { metadata }, &[], signer)

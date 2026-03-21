@@ -324,7 +324,7 @@ impl DaoTestingSuiteBase {
             .unwrap();
 
         // get proposal modules
-        let proposal_modules: Vec<dao_interface::state::ProposalModule> = self
+        let mut proposal_modules: Vec<dao_interface::state::ProposalModule> = self
             .app
             .wrap()
             .query_wasm_smart(
@@ -335,6 +335,11 @@ impl DaoTestingSuiteBase {
                 },
             )
             .unwrap();
+
+        // sort by prefix to maintain instantiation order (A=0, B=1, etc.)
+        // since the map query returns modules sorted by address which may
+        // differ from instantiation order with bech32 addresses
+        proposal_modules.sort_by(|a, b| a.prefix.cmp(&b.prefix));
 
         let proposal_modules = proposal_modules
             .into_iter()

@@ -1,4 +1,4 @@
-use cosmwasm_std::testing::{mock_dependencies, mock_env};
+use cosmwasm_std::testing::{mock_dependencies, mock_env, MockApi};
 use cosmwasm_std::{coin, coins, to_json_binary, Addr, Timestamp};
 use cosmwasm_std::{Uint128, Uint256};
 use cw2::ContractVersion;
@@ -1411,7 +1411,7 @@ fn test_withdraw_finished_rewards_period() {
 
 #[test]
 fn test_withdraw_alternative_destination_address() {
-    let subdao_addr = "some_subdao_maybe".to_string();
+    let subdao_addr = MockApi::default().addr_make("some_subdao_maybe").to_string();
     let mut suite = SuiteBuilder::base(super::suite::DaoType::Native)
         .with_withdraw_destination(Some(subdao_addr.to_string()))
         .build();
@@ -2372,8 +2372,8 @@ fn test_update_continuous() {
 fn test_update_owner() {
     let mut suite = SuiteBuilder::base(super::suite::DaoType::Native).build();
 
-    let new_owner = "new_owner";
-    suite.update_owner(new_owner);
+    let new_owner = MockApi::default().addr_make("new_owner").to_string();
+    suite.update_owner(&new_owner);
 
     let owner = suite.get_owner().to_string();
     assert_eq!(owner, new_owner);
@@ -2395,22 +2395,22 @@ fn test_update_vp_contract() {
 fn test_update_hook_caller() {
     let mut suite = SuiteBuilder::base(super::suite::DaoType::Native).build();
 
-    let new_hook_caller = "new_hook_caller";
-    suite.update_hook_caller(1, new_hook_caller);
+    let new_hook_caller = MockApi::default().addr_make("new_hook_caller").to_string();
+    suite.update_hook_caller(1, &new_hook_caller);
 
     let distribution = suite.get_distribution(1);
-    assert_eq!(distribution.hook_caller, new_hook_caller);
+    assert_eq!(distribution.hook_caller.to_string(), new_hook_caller);
 }
 
 #[test]
 fn test_update_withdraw_destination() {
     let mut suite = SuiteBuilder::base(super::suite::DaoType::Native).build();
 
-    let new_withdraw_destination = "new_withdraw_destination";
-    suite.update_withdraw_destination(1, new_withdraw_destination);
+    let new_withdraw_destination = MockApi::default().addr_make("new_withdraw_destination").to_string();
+    suite.update_withdraw_destination(1, &new_withdraw_destination);
 
     let distribution = suite.get_distribution(1);
-    assert_eq!(distribution.withdraw_destination, new_withdraw_destination);
+    assert_eq!(distribution.withdraw_destination.to_string(), new_withdraw_destination);
 }
 
 #[test]

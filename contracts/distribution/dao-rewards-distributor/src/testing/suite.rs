@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, to_json_binary, Addr, Coin, Timestamp, Uint128};
+use cosmwasm_std::{coin, testing::MockApi, to_json_binary, Addr, Coin, Timestamp, Uint128};
 use cw20::{Cw20Coin, Expiration, UncheckedDenom};
 use cw4::{Member, MemberListResponse};
 use cw_multi_test::{BankSudo, Executor, SudoMsg};
@@ -999,7 +999,7 @@ impl Suite {
         self.base
             .app
             .execute_contract(
-                Addr::unchecked("no_one"),
+                MockApi::default().addr_make("no_one"),
                 self.distribution_contract.clone(),
                 &msg,
                 &[],

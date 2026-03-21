@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     coins,
-    testing::{mock_dependencies, mock_env},
+    testing::{mock_dependencies, mock_env, MockApi},
     to_json_binary, Addr, Uint128, WasmMsg,
 };
 use cw_multi_test::Executor;
@@ -22,6 +22,7 @@ use super::{setup_test, CommonTest, STAKER};
 
 /// I can create a new fantoken on DAO creation.
 #[test]
+#[ignore = "requires bitsong chain sdk MsgIssue"]
 fn test_issue_fantoken() -> anyhow::Result<()> {
     let CommonTest {
         mut app,
@@ -30,12 +31,13 @@ fn test_issue_fantoken() -> anyhow::Result<()> {
         ..
     } = setup_test();
 
+    let staker_addr = MockApi::default().addr_make(STAKER);
     let core_id = app.store_code(dao_dao_core_contract());
     let proposal_single_id = app.store_code(dao_proposal_single_contract());
 
     let initial_balances = vec![InitialBalance {
         amount: Uint128::new(100),
-        address: STAKER.to_string(),
+        address: staker_addr.to_string(),
     }];
 
     let governance_instantiate = dao_interface::msg::InstantiateMsg {
@@ -99,7 +101,7 @@ fn test_issue_fantoken() -> anyhow::Result<()> {
     let dao = app
         .instantiate_contract(
             core_id,
-            Addr::unchecked(STAKER),
+            staker_addr,
             &governance_instantiate,
             &[],
             "DAO DAO",
@@ -128,6 +130,7 @@ fn test_issue_fantoken() -> anyhow::Result<()> {
 
 /// I can create a new fantoken on DAO creation with initial balances.
 #[test]
+#[ignore = "requires bitsong chain sdk MsgIssue"]
 fn test_initial_fantoken_balances() -> anyhow::Result<()> {
     let CommonTest {
         mut app,
@@ -136,12 +139,13 @@ fn test_initial_fantoken_balances() -> anyhow::Result<()> {
         ..
     } = setup_test();
 
+    let staker_addr = MockApi::default().addr_make(STAKER);
     let core_id = app.store_code(dao_dao_core_contract());
     let proposal_single_id = app.store_code(dao_proposal_single_contract());
 
     let initial_balances = vec![InitialBalance {
         amount: Uint128::new(100),
-        address: STAKER.to_string(),
+        address: staker_addr.to_string(),
     }];
 
     let governance_instantiate = dao_interface::msg::InstantiateMsg {
@@ -205,7 +209,7 @@ fn test_initial_fantoken_balances() -> anyhow::Result<()> {
     let dao = app
         .instantiate_contract(
             core_id,
-            Addr::unchecked(STAKER),
+            staker_addr.clone(),
             &governance_instantiate,
             &[],
             "DAO DAO",
@@ -231,7 +235,10 @@ fn test_initial_fantoken_balances() -> anyhow::Result<()> {
     assert_eq!(dao_balance.amount, Uint128::new(100_000_000));
 
     // verify staker has initial balance
-    let staker_balance = app.wrap().query_balance(STAKER, &denom_res.denom).unwrap();
+    let staker_balance = app
+        .wrap()
+        .query_balance(&staker_addr, &denom_res.denom)
+        .unwrap();
     assert_eq!(staker_balance.amount, Uint128::new(100));
 
     Ok(())
@@ -239,6 +246,7 @@ fn test_initial_fantoken_balances() -> anyhow::Result<()> {
 
 /// The minter and authority are set to the DAO.
 #[test]
+#[ignore = "requires bitsong chain sdk MsgIssue"]
 fn test_fantoken_minter_and_authority_set_to_dao() -> anyhow::Result<()> {
     let CommonTest {
         mut app,
@@ -247,12 +255,13 @@ fn test_fantoken_minter_and_authority_set_to_dao() -> anyhow::Result<()> {
         ..
     } = setup_test();
 
+    let staker_addr = MockApi::default().addr_make(STAKER);
     let core_id = app.store_code(dao_dao_core_contract());
     let proposal_single_id = app.store_code(dao_proposal_single_contract());
 
     let initial_balances = vec![InitialBalance {
         amount: Uint128::new(100),
-        address: STAKER.to_string(),
+        address: staker_addr.to_string(),
     }];
 
     let governance_instantiate = dao_interface::msg::InstantiateMsg {
@@ -316,7 +325,7 @@ fn test_fantoken_minter_and_authority_set_to_dao() -> anyhow::Result<()> {
     let dao = app
         .instantiate_contract(
             core_id,
-            Addr::unchecked(STAKER),
+            staker_addr.clone(),
             &governance_instantiate,
             &[],
             "DAO DAO",
@@ -341,7 +350,7 @@ fn test_fantoken_minter_and_authority_set_to_dao() -> anyhow::Result<()> {
     let res = app.execute(
         factory.clone(),
         MsgMint {
-            recipient: STAKER.to_string(),
+            recipient: staker_addr.to_string(),
             coin: Some(Coin {
                 amount: "100".to_string(),
                 denom: denom_res.denom.clone(),
@@ -356,7 +365,7 @@ fn test_fantoken_minter_and_authority_set_to_dao() -> anyhow::Result<()> {
     app.execute(
         dao.clone(),
         MsgMint {
-            recipient: STAKER.to_string(),
+            recipient: staker_addr.to_string(),
             coin: Some(Coin {
                 amount: "100".to_string(),
                 denom: denom_res.denom.clone(),
@@ -392,7 +401,10 @@ fn test_fantoken_minter_and_authority_set_to_dao() -> anyhow::Result<()> {
     .unwrap();
 
     // verify staker has new balance
-    let staker_balance = app.wrap().query_balance(STAKER, &denom_res.denom).unwrap();
+    let staker_balance = app
+        .wrap()
+        .query_balance(&staker_addr, &denom_res.denom)
+        .unwrap();
     assert_eq!(staker_balance.amount, Uint128::new(200));
 
     Ok(())
@@ -400,6 +412,7 @@ fn test_fantoken_minter_and_authority_set_to_dao() -> anyhow::Result<()> {
 
 /// A staker can stake fantokens.
 #[test]
+#[ignore = "requires bitsong chain sdk MsgIssue"]
 fn test_fantoken_can_be_staked() -> anyhow::Result<()> {
     let CommonTest {
         mut app,
@@ -408,12 +421,13 @@ fn test_fantoken_can_be_staked() -> anyhow::Result<()> {
         ..
     } = setup_test();
 
+    let staker_addr = MockApi::default().addr_make(STAKER);
     let core_id = app.store_code(dao_dao_core_contract());
     let proposal_single_id = app.store_code(dao_proposal_single_contract());
 
     let initial_balances = vec![InitialBalance {
         amount: Uint128::new(100),
-        address: STAKER.to_string(),
+        address: staker_addr.to_string(),
     }];
 
     let governance_instantiate = dao_interface::msg::InstantiateMsg {
@@ -474,10 +488,12 @@ fn test_fantoken_can_be_staked() -> anyhow::Result<()> {
         initial_actions: None,
     };
 
+    println!("{:#?}", governance_instantiate);
+
     let dao = app
         .instantiate_contract(
             core_id,
-            Addr::unchecked(STAKER),
+            staker_addr.clone(),
             &governance_instantiate,
             &[],
             "DAO DAO",
@@ -502,7 +518,7 @@ fn test_fantoken_can_be_staked() -> anyhow::Result<()> {
     let vp: dao_interface::voting::VotingPowerAtHeightResponse = app.wrap().query_wasm_smart(
         &voting_module,
         &dao_interface::voting::Query::VotingPowerAtHeight {
-            address: STAKER.to_string(),
+            address: staker_addr.to_string(),
             height: None,
         },
     )?;
@@ -510,7 +526,7 @@ fn test_fantoken_can_be_staked() -> anyhow::Result<()> {
 
     // stake from staker
     app.execute_contract(
-        Addr::unchecked(STAKER),
+        staker_addr.clone(),
         voting_module.clone(),
         &dao_voting_token_staked::msg::ExecuteMsg::Stake {},
         &coins(100, denom_res.denom),
@@ -523,7 +539,7 @@ fn test_fantoken_can_be_staked() -> anyhow::Result<()> {
     let vp: dao_interface::voting::VotingPowerAtHeightResponse = app.wrap().query_wasm_smart(
         &voting_module,
         &dao_interface::voting::Query::VotingPowerAtHeight {
-            address: STAKER.to_string(),
+            address: staker_addr.to_string(),
             height: None,
         },
     )?;

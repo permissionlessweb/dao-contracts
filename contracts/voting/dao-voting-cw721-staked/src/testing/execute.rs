@@ -1,5 +1,5 @@
-use cosmwasm_std::{Addr, Binary, Empty};
-use cw721::Cw721ExecuteMsg;
+use cosmwasm_std::testing::MockApi;
+use cosmwasm_std::{Addr, Binary};
 use cw_multi_test::{App, AppResponse, Executor};
 
 use anyhow::Result as AnyResult;
@@ -7,10 +7,10 @@ use cw_utils::Duration;
 
 use crate::msg::{ClaimType, ExecuteMsg};
 
-// Shorthand for an unchecked address.
+// Shorthand for a properly made address.
 macro_rules! addr {
     ($x:expr ) => {
-        Addr::unchecked($x)
+        MockApi::default().addr_make($x)
     };
 }
 
@@ -25,7 +25,7 @@ pub fn send_nft(
     app.execute_contract(
         addr!(sender),
         cw721.clone(),
-        &Cw721ExecuteMsg::SendNft {
+        &cw721_base::msg::ExecuteMsg::SendNft {
             contract: receiver.to_string(),
             token_id: token_id.to_string(),
             msg,
@@ -44,11 +44,11 @@ pub fn mint_nft(
     app.execute_contract(
         addr!(sender),
         cw721.clone(),
-        &cw721_base::ExecuteMsg::Mint::<Empty, Empty> {
+        &cw721_base::msg::ExecuteMsg::Mint {
             token_id: token_id.to_string(),
-            owner: receiver.to_string(),
+            owner: MockApi::default().addr_make(receiver).to_string(),
             token_uri: None,
-            extension: Empty::default(),
+            extension: None,
         },
         &[],
     )
@@ -133,23 +133,23 @@ pub fn claim_specific_nfts(
     )
 }
 
-pub fn claim_legacy_nfts(app: &mut App, module: &Addr, sender: &str) -> AnyResult<AppResponse> {
-    app.execute_contract(
-        addr!(sender),
-        module.clone(),
-        &ExecuteMsg::ClaimNfts {
-            r#type: ClaimType::Legacy,
-        },
-        &[],
-    )
-}
+// pub fn claim_legacy_nfts(app: &mut App, module: &Addr, sender: &str) -> AnyResult<AppResponse> {
+//     app.execute_contract(
+//         addr!(sender),
+//         module.clone(),
+//         &ExecuteMsg::ClaimNfts {
+//             r#type: ClaimType::Legacy,
+//         },
+//         &[],
+//     )
+// }
 
 pub fn add_hook(app: &mut App, module: &Addr, sender: &str, hook: &str) -> AnyResult<AppResponse> {
     app.execute_contract(
         addr!(sender),
         module.clone(),
         &ExecuteMsg::AddHook {
-            addr: hook.to_string(),
+            addr: MockApi::default().addr_make(hook).to_string(),
         },
         &[],
     )
@@ -165,7 +165,7 @@ pub fn remove_hook(
         addr!(sender),
         module.clone(),
         &ExecuteMsg::RemoveHook {
-            addr: hook.to_string(),
+            addr: MockApi::default().addr_make(hook).to_string(),
         },
         &[],
     )

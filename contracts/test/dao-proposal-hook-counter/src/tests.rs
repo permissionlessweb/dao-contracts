@@ -1,4 +1,4 @@
-use cosmwasm_std::{to_json_binary, Addr, Uint128};
+use cosmwasm_std::{testing::MockApi, to_json_binary, Addr, Uint128};
 use cw20::Cw20Coin;
 use cw_hooks::HooksResponse;
 use cw_multi_test::{App, Executor};
@@ -27,7 +27,7 @@ fn instantiate_governance(
 ) -> Addr {
     app.instantiate_contract(
         code_id,
-        Addr::unchecked(CREATOR_ADDR),
+        MockApi::default().addr_make(CREATOR_ADDR),
         &msg,
         &[],
         "cw-governance",
@@ -48,7 +48,7 @@ fn instantiate_with_default_governance(
 
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![Cw20Coin {
-            address: CREATOR_ADDR.to_string(),
+            address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
             amount: Uint128::new(100_000_000),
         }]
     });
@@ -146,7 +146,7 @@ fn test_counters() {
     let counters: Addr = app
         .instantiate_contract(
             counters_id,
-            Addr::unchecked(CREATOR_ADDR),
+            MockApi::default().addr_make(CREATOR_ADDR),
             &InstantiateMsg {
                 should_error: false,
             },
@@ -158,7 +158,7 @@ fn test_counters() {
     let failing_counters: Addr = app
         .instantiate_contract(
             counters_id,
-            Addr::unchecked(CREATOR_ADDR),
+            MockApi::default().addr_make(CREATOR_ADDR),
             &InstantiateMsg { should_error: true },
             &[],
             "failing counters",
@@ -213,7 +213,7 @@ fn test_counters() {
 
     // Create a new proposal.
     app.execute_contract(
-        Addr::unchecked(CREATOR_ADDR),
+        MockApi::default().addr_make(CREATOR_ADDR),
         govmod_single.clone(),
         &dao_proposal_single::msg::ExecuteMsg::Propose(ProposeMsg {
             title: "A simple text proposal".to_string(),
@@ -249,7 +249,7 @@ fn test_counters() {
 
     // Vote
     app.execute_contract(
-        Addr::unchecked(CREATOR_ADDR),
+        MockApi::default().addr_make(CREATOR_ADDR),
         govmod_single.clone(),
         &dao_proposal_single::msg::ExecuteMsg::Vote {
             proposal_id: 1,
@@ -314,7 +314,7 @@ fn test_counters() {
 
     // Create a new proposal.
     app.execute_contract(
-        Addr::unchecked(CREATOR_ADDR),
+        MockApi::default().addr_make(CREATOR_ADDR),
         govmod_single.clone(),
         &dao_proposal_single::msg::ExecuteMsg::Propose(ProposeMsg {
             title: "A simple text proposal 2nd".to_string(),
@@ -370,7 +370,7 @@ fn test_counters() {
 
     // Vote on the new proposal to fail the other hook
     app.execute_contract(
-        Addr::unchecked(CREATOR_ADDR),
+        MockApi::default().addr_make(CREATOR_ADDR),
         govmod_single.clone(),
         &dao_proposal_single::msg::ExecuteMsg::Vote {
             rationale: None,

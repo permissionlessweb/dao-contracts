@@ -1,4 +1,4 @@
-use cosmwasm_std::{testing::mock_dependencies, Addr, Timestamp, Uint128};
+use cosmwasm_std::{testing::{mock_dependencies, MockApi}, Addr, Timestamp, Uint128};
 use cw_denom::CheckedDenom;
 use wynd_utils::CurveError;
 
@@ -16,7 +16,7 @@ impl Default for VestInit {
             start_time: Timestamp::from_seconds(0),
             duration_seconds: 100,
             denom: CheckedDenom::Native("native".to_string()),
-            recipient: Addr::unchecked("recv"),
+            recipient: MockApi::default().addr_make("recv"),
             title: "title".to_string(),
             description: Some("desc".to_string()),
         }
@@ -103,7 +103,7 @@ fn test_distribute() {
             .get_vest(storage)
             .unwrap()
             .denom
-            .get_transfer_to_message(&Addr::unchecked("recv"), Uint128::new(3))
+            .get_transfer_to_message(&MockApi::default().addr_make("recv"), Uint128::new(3))
             .unwrap()
     );
     assert_eq!(payment.get_vest(storage).unwrap().claimed, Uint128::new(3));
@@ -182,7 +182,7 @@ fn test_complex_close() {
         start_time: time,
         duration_seconds: 100,
         denom: CheckedDenom::Native("ujuno".to_string()),
-        recipient: Addr::unchecked("recv"),
+        recipient: MockApi::default().addr_make("recv"),
         title: "t".to_string(),
         description: Some("d".to_string()),
     };
@@ -206,7 +206,7 @@ fn test_complex_close() {
     assert_eq!(vest.vested(time), Uint128::new(50));
 
     payment
-        .cancel(storage, time, &Addr::unchecked("owner"))
+        .cancel(storage, time, &MockApi::default().addr_make("owner"))
         .unwrap();
 
     let vest = payment.get_vest(storage).unwrap();
@@ -225,7 +225,7 @@ fn test_complex_close() {
 
     payment.distribute(storage, time, None).unwrap();
     payment
-        .withdraw_canceled_payment(storage, time, None, &Addr::unchecked("owner"))
+        .withdraw_canceled_payment(storage, time, None, &MockApi::default().addr_make("owner"))
         .unwrap();
 
     let vest = payment.get_vest(storage).unwrap();
@@ -243,7 +243,7 @@ fn test_complex_close() {
         .unwrap();
     time = time.plus_seconds(25);
     payment
-        .withdraw_canceled_payment(storage, time, None, &Addr::unchecked("owner"))
+        .withdraw_canceled_payment(storage, time, None, &MockApi::default().addr_make("owner"))
         .unwrap();
     let vest = payment.get_vest(storage).unwrap();
     assert_eq!(
@@ -332,7 +332,7 @@ fn test_redelegate_should_increase_cardinality() {
         start_time: time,
         duration_seconds: 100,
         denom: CheckedDenom::Native("ujuno".to_string()),
-        recipient: Addr::unchecked("recv"),
+        recipient: MockApi::default().addr_make("recv"),
         title: "t".to_string(),
         description: Some("d".to_string()),
     };

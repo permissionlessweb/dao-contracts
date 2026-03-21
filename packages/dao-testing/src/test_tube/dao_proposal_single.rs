@@ -25,7 +25,7 @@ impl<'a> DaoProposalSingle<'a> {
         signer: &SigningAccount,
     ) -> Result<Self, RunnerError> {
         let wasm = Wasm::new(app);
-        let token_creation_fee = Coin::new(10000000, "uosmo");
+        let token_creation_fee = Coin::new(10000000u64, "uosmo");
 
         let code_id = wasm
             .store_code(&Self::get_wasm_byte_code(), None, signer)?

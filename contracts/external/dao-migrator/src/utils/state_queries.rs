@@ -2,6 +2,7 @@ use cosmwasm_std::{Addr, Deps, StdResult, Uint128};
 
 use crate::{types::SingleProposalData, ContractError};
 
+#[cfg(feature = "v1")]
 use super::query_helpers::{
     v1_expiration_to_v2, v1_status_to_v2, v1_threshold_to_v2, v1_votes_to_v2,
 };

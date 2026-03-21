@@ -1,3 +1,4 @@
+use cosmwasm_std::testing::MockApi;
 use cosmwasm_std::{coins, from_json, to_json_binary, Addr, Coin, Empty, Uint128};
 use cw2::ContractVersion;
 use cw20::Cw20Coin;
@@ -24,6 +25,14 @@ use dao_voting::{
 
 use crate::state::Proposal;
 use crate::{contract::*, msg::*};
+
+fn addr(name: &str) -> Addr {
+    MockApi::default().addr_make(name)
+}
+
+fn addr_str(name: &str) -> String {
+    addr(name).to_string()
+}
 
 fn dao_proposal_multiple_contract() -> Box<dyn Contract<Empty>> {
     let contract = ContractWrapper::new(
@@ -82,7 +91,7 @@ fn get_default_proposal_module_instantiate(
                     deposit_info,
                     submission_policy,
                     extension: InstantiateExt {
-                        approver: "approver".to_string(),
+                        approver: addr_str("approver"),
                     },
                 })
                 .unwrap(),
@@ -105,7 +114,7 @@ fn instantiate_cw20_base_default(app: &mut App) -> Addr {
         symbol: "cwtwenty".to_string(),
         decimals: 6,
         initial_balances: vec![Cw20Coin {
-            address: "ekez".to_string(),
+            address: addr_str("ekez"),
             amount: Uint128::new(10),
         }],
         mint: None,
@@ -113,7 +122,7 @@ fn instantiate_cw20_base_default(app: &mut App) -> Addr {
     };
     app.instantiate_contract(
         cw20_id,
-        Addr::unchecked("ekez"),
+        addr("ekez"),
         &cw20_instantiate,
         &[],
         "cw20-base",
@@ -144,11 +153,11 @@ fn setup_default_test(
         to_json_binary(&proposal_module_instantiate).unwrap(),
         Some(vec![
             cw20::Cw20Coin {
-                address: "ekez".to_string(),
+                address: addr_str("ekez"),
                 amount: Uint128::new(9),
             },
             cw20::Cw20Coin {
-                address: "keze".to_string(),
+                address: addr_str("keze"),
                 amount: Uint128::new(8),
             },
         ]),
@@ -513,19 +522,19 @@ fn test_native_permutation(
         false,
     );
 
-    mint_natives(&mut app, "ekez", coins(10, "ujuno"));
+    mint_natives(&mut app, &addr_str("ekez"), coins(10, "ujuno"));
     let pre_propose_id =
-        make_pre_proposal(&mut app, pre_propose.clone(), "ekez", &coins(10, "ujuno"));
+        make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &coins(10, "ujuno"));
 
     // Make sure it went away.
-    let balance = get_balance_native(&app, "ekez", "ujuno");
+    let balance = get_balance_native(&app, &addr_str("ekez"), "ujuno");
     assert_eq!(balance, Uint128::zero());
 
     // Approver approves or rejects proposal
     match approval_status {
         ApprovalStatus::Approved => {
             // Approver approves, new proposal id is returned
-            let id = approve_proposal(&mut app, pre_propose, "approver", pre_propose_id);
+            let id = approve_proposal(&mut app, pre_propose, &addr_str("approver"), pre_propose_id);
 
             // Voting happens on newly created proposal
             #[allow(clippy::type_complexity)]
@@ -538,16 +547,16 @@ fn test_native_permutation(
                 EndStatus::PassedB => (1, Status::Passed, execute_proposal),
                 EndStatus::Failed => (2, Status::Rejected, close_proposal),
             };
-            let new_status = vote(&mut app, proposal_multiple.clone(), "ekez", id, position);
+            let new_status = vote(&mut app, proposal_multiple.clone(), &addr_str("ekez"), id, position);
             assert_eq!(new_status, expected_status);
 
             // Close or execute the proposal to trigger a refund.
-            trigger_refund(&mut app, proposal_multiple, "ekez", id);
+            trigger_refund(&mut app, proposal_multiple, &addr_str("ekez"), id);
         }
         ApprovalStatus::Rejected => {
             // Proposal is rejected by approver
             // No proposal is created so there is no voting
-            reject_proposal(&mut app, pre_propose, "approver", pre_propose_id);
+            reject_proposal(&mut app, pre_propose, &addr_str("approver"), pre_propose_id);
         }
     };
 
@@ -556,7 +565,7 @@ fn test_native_permutation(
         RefundReceiver::Dao => (10, 0),
     };
 
-    let proposer_balance = get_balance_native(&app, "ekez", "ujuno");
+    let proposer_balance = get_balance_native(&app, &addr_str("ekez"), "ujuno");
     let dao_balance = get_balance_native(&app, core_addr.as_str(), "ujuno");
     assert_eq!(proposer_expected, proposer_balance.u128());
     assert_eq!(dao_expected, dao_balance.u128())
@@ -590,22 +599,22 @@ fn test_cw20_permutation(
 
     increase_allowance(
         &mut app,
-        "ekez",
+        &addr_str("ekez"),
         &pre_propose,
         cw20_address.clone(),
         Uint128::new(10),
     );
-    let pre_propose_id = make_pre_proposal(&mut app, pre_propose.clone(), "ekez", &[]);
+    let pre_propose_id = make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &[]);
 
     // Make sure it went await.
-    let balance = get_balance_cw20(&app, cw20_address.clone(), "ekez");
+    let balance = get_balance_cw20(&app, cw20_address.clone(), &addr_str("ekez"));
     assert_eq!(balance, Uint128::zero());
 
     // Approver approves or rejects proposal
     match approval_status {
         ApprovalStatus::Approved => {
             // Approver approves, new proposal id is returned
-            let id = approve_proposal(&mut app, pre_propose.clone(), "approver", pre_propose_id);
+            let id = approve_proposal(&mut app, pre_propose.clone(), &addr_str("approver"), pre_propose_id);
 
             // Voting happens on newly created proposal
             #[allow(clippy::type_complexity)]
@@ -618,16 +627,16 @@ fn test_cw20_permutation(
                 EndStatus::PassedB => (1, Status::Passed, execute_proposal),
                 EndStatus::Failed => (2, Status::Rejected, close_proposal),
             };
-            let new_status = vote(&mut app, proposal_multiple.clone(), "ekez", id, position);
+            let new_status = vote(&mut app, proposal_multiple.clone(), &addr_str("ekez"), id, position);
             assert_eq!(new_status, expected_status);
 
             // Close or execute the proposal to trigger a refund.
-            trigger_refund(&mut app, proposal_multiple, "ekez", id);
+            trigger_refund(&mut app, proposal_multiple, &addr_str("ekez"), id);
         }
         ApprovalStatus::Rejected => {
             // Proposal is rejected by approver
             // No proposal is created so there is no voting
-            reject_proposal(&mut app, pre_propose.clone(), "approver", pre_propose_id);
+            reject_proposal(&mut app, pre_propose.clone(), &addr_str("approver"), pre_propose_id);
         }
     };
 
@@ -636,7 +645,7 @@ fn test_cw20_permutation(
         RefundReceiver::Dao => (10, 0),
     };
 
-    let proposer_balance = get_balance_cw20(&app, &cw20_address, "ekez");
+    let proposer_balance = get_balance_cw20(&app, &cw20_address, &addr_str("ekez"));
     let dao_balance = get_balance_cw20(&app, &cw20_address, core_addr);
     assert_eq!(proposer_expected, proposer_balance.u128());
     assert_eq!(dao_expected, dao_balance.u128())
@@ -842,58 +851,58 @@ fn test_multiple_open_proposals() {
         false,
     );
 
-    mint_natives(&mut app, "ekez", coins(20, "ujuno"));
+    mint_natives(&mut app, &addr_str("ekez"), coins(20, "ujuno"));
     let first_pre_propose_id =
-        make_pre_proposal(&mut app, pre_propose.clone(), "ekez", &coins(10, "ujuno"));
-    let balance = get_balance_native(&app, "ekez", "ujuno");
+        make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &coins(10, "ujuno"));
+    let balance = get_balance_native(&app, &addr_str("ekez"), "ujuno");
     assert_eq!(10, balance.u128());
 
     // Approver approves prop, balance remains the same
     let first_id = approve_proposal(
         &mut app,
         pre_propose.clone(),
-        "approver",
+        &addr_str("approver"),
         first_pre_propose_id,
     );
-    let balance = get_balance_native(&app, "ekez", "ujuno");
+    let balance = get_balance_native(&app, &addr_str("ekez"), "ujuno");
     assert_eq!(10, balance.u128());
 
     let second_pre_propose_id =
-        make_pre_proposal(&mut app, pre_propose.clone(), "ekez", &coins(10, "ujuno"));
-    let balance = get_balance_native(&app, "ekez", "ujuno");
+        make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &coins(10, "ujuno"));
+    let balance = get_balance_native(&app, &addr_str("ekez"), "ujuno");
     assert_eq!(0, balance.u128());
 
     // Approver approves prop, balance remains the same
-    let second_id = approve_proposal(&mut app, pre_propose, "approver", second_pre_propose_id);
-    let balance = get_balance_native(&app, "ekez", "ujuno");
+    let second_id = approve_proposal(&mut app, pre_propose, &addr_str("approver"), second_pre_propose_id);
+    let balance = get_balance_native(&app, &addr_str("ekez"), "ujuno");
     assert_eq!(0, balance.u128());
 
     // Finish up the first proposal.
-    let new_status = vote(&mut app, proposal_multiple.clone(), "ekez", first_id, 0);
+    let new_status = vote(&mut app, proposal_multiple.clone(), &addr_str("ekez"), first_id, 0);
     assert_eq!(Status::Passed, new_status);
 
     // Still zero.
-    let balance = get_balance_native(&app, "ekez", "ujuno");
+    let balance = get_balance_native(&app, &addr_str("ekez"), "ujuno");
     assert_eq!(0, balance.u128());
 
-    execute_proposal(&mut app, proposal_multiple.clone(), "ekez", first_id);
+    execute_proposal(&mut app, proposal_multiple.clone(), &addr_str("ekez"), first_id);
 
     // First proposal refunded.
-    let balance = get_balance_native(&app, "ekez", "ujuno");
+    let balance = get_balance_native(&app, &addr_str("ekez"), "ujuno");
     assert_eq!(10, balance.u128());
 
     // Finish up the second proposal.
-    let new_status = vote(&mut app, proposal_multiple.clone(), "ekez", second_id, 2);
+    let new_status = vote(&mut app, proposal_multiple.clone(), &addr_str("ekez"), second_id, 2);
     assert_eq!(Status::Rejected, new_status);
 
     // Still zero.
-    let balance = get_balance_native(&app, "ekez", "ujuno");
+    let balance = get_balance_native(&app, &addr_str("ekez"), "ujuno");
     assert_eq!(10, balance.u128());
 
-    close_proposal(&mut app, proposal_multiple, "ekez", second_id);
+    close_proposal(&mut app, proposal_multiple, &addr_str("ekez"), second_id);
 
     // All deposits have been refunded.
-    let balance = get_balance_native(&app, "ekez", "ujuno");
+    let balance = get_balance_native(&app, &addr_str("ekez"), "ujuno");
     assert_eq!(20, balance.u128());
 }
 
@@ -917,9 +926,9 @@ fn test_pending_proposal_queries() {
         false,
     );
 
-    mint_natives(&mut app, "ekez", coins(20, "ujuno"));
-    make_pre_proposal(&mut app, pre_propose.clone(), "ekez", &coins(10, "ujuno"));
-    make_pre_proposal(&mut app, pre_propose.clone(), "ekez", &coins(10, "ujuno"));
+    mint_natives(&mut app, &addr_str("ekez"), coins(20, "ujuno"));
+    make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &coins(10, "ujuno"));
+    make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &coins(10, "ujuno"));
 
     // Query for individual proposal
     let prop1: Proposal = app
@@ -1000,9 +1009,9 @@ fn test_completed_proposal_queries() {
         false,
     );
 
-    mint_natives(&mut app, "ekez", coins(20, "ujuno"));
-    let approve_id = make_pre_proposal(&mut app, pre_propose.clone(), "ekez", &coins(10, "ujuno"));
-    let reject_id = make_pre_proposal(&mut app, pre_propose.clone(), "ekez", &coins(10, "ujuno"));
+    mint_natives(&mut app, &addr_str("ekez"), coins(20, "ujuno"));
+    let approve_id = make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &coins(10, "ujuno"));
+    let reject_id = make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &coins(10, "ujuno"));
 
     let is_pending: bool = app
         .wrap()
@@ -1016,8 +1025,8 @@ fn test_completed_proposal_queries() {
     assert!(is_pending);
 
     let created_approved_id =
-        approve_proposal(&mut app, pre_propose.clone(), "approver", approve_id);
-    reject_proposal(&mut app, pre_propose.clone(), "approver", reject_id);
+        approve_proposal(&mut app, pre_propose.clone(), &addr_str("approver"), approve_id);
+    reject_proposal(&mut app, pre_propose.clone(), &addr_str("approver"), reject_id);
 
     let is_pending: bool = app
         .wrap()
@@ -1197,7 +1206,7 @@ fn test_permissions() {
     // disabled.
     let err: PreProposeError = app
         .execute_contract(
-            Addr::unchecked("nonmember"),
+            addr("nonmember"),
             pre_propose,
             &ExecuteMsg::Propose {
                 msg: ProposeMessage::Propose {
@@ -1251,18 +1260,18 @@ fn test_approval_and_rejection_permissions() {
     );
 
     // Non-member proposes.
-    mint_natives(&mut app, "nonmember", coins(10, "ujuno"));
+    mint_natives(&mut app, &addr_str("nonmember"), coins(10, "ujuno"));
     let pre_propose_id = make_pre_proposal(
         &mut app,
         pre_propose.clone(),
-        "nonmember",
+        &addr_str("nonmember"),
         &coins(10, "ujuno"),
     );
 
     // Only approver can approve
     let err: PreProposeError = app
         .execute_contract(
-            Addr::unchecked("nonapprover"),
+            addr("nonapprover"),
             pre_propose.clone(),
             &ExecuteMsg::Extension {
                 msg: ExecuteExt::Approve { id: pre_propose_id },
@@ -1277,7 +1286,7 @@ fn test_approval_and_rejection_permissions() {
     // Only approver can reject
     let err: PreProposeError = app
         .execute_contract(
-            Addr::unchecked("nonapprover"),
+            addr("nonapprover"),
             pre_propose.clone(),
             &ExecuteMsg::Extension {
                 msg: ExecuteExt::Reject { id: pre_propose_id },
@@ -1292,11 +1301,11 @@ fn test_approval_and_rejection_permissions() {
     // Updating approver after proposal created does not change old proposal's
     // approver
     app.execute_contract(
-        Addr::unchecked("approver"),
+        addr("approver"),
         pre_propose.clone(),
         &ExecuteMsg::Extension {
             msg: ExecuteExt::UpdateApprover {
-                address: "newapprover".to_string(),
+                address: addr_str("newapprover"),
             },
         },
         &[],
@@ -1305,7 +1314,7 @@ fn test_approval_and_rejection_permissions() {
 
     let err: PreProposeError = app
         .execute_contract(
-            Addr::unchecked("newapprover"),
+            addr("newapprover"),
             pre_propose.clone(),
             &ExecuteMsg::Extension {
                 msg: ExecuteExt::Approve { id: pre_propose_id },
@@ -1319,7 +1328,7 @@ fn test_approval_and_rejection_permissions() {
 
     // Old approver can still approve.
     app.execute_contract(
-        Addr::unchecked("approver"),
+        addr("approver"),
         pre_propose.clone(),
         &ExecuteMsg::Extension {
             msg: ExecuteExt::Approve { id: pre_propose_id },
@@ -1329,18 +1338,18 @@ fn test_approval_and_rejection_permissions() {
     .unwrap();
 
     // Non-member proposes.
-    mint_natives(&mut app, "nonmember", coins(10, "ujuno"));
+    mint_natives(&mut app, &addr_str("nonmember"), coins(10, "ujuno"));
     let pre_propose_id = make_pre_proposal(
         &mut app,
         pre_propose.clone(),
-        "nonmember",
+        &addr_str("nonmember"),
         &coins(10, "ujuno"),
     );
 
     // Old approver cannot approve nor reject.
     let err: PreProposeError = app
         .execute_contract(
-            Addr::unchecked("approver"),
+            addr("approver"),
             pre_propose.clone(),
             &ExecuteMsg::Extension {
                 msg: ExecuteExt::Approve { id: pre_propose_id },
@@ -1354,7 +1363,7 @@ fn test_approval_and_rejection_permissions() {
 
     let err: PreProposeError = app
         .execute_contract(
-            Addr::unchecked("approver"),
+            addr("approver"),
             pre_propose.clone(),
             &ExecuteMsg::Extension {
                 msg: ExecuteExt::Reject { id: pre_propose_id },
@@ -1368,7 +1377,7 @@ fn test_approval_and_rejection_permissions() {
 
     // New approver can now approve.
     app.execute_contract(
-        Addr::unchecked("newapprover"),
+        addr("newapprover"),
         pre_propose.clone(),
         &ExecuteMsg::Extension {
             msg: ExecuteExt::Approve { id: pre_propose_id },
@@ -1398,19 +1407,19 @@ fn test_propose_open_proposal_submission() {
     );
 
     // Non-member proposes.
-    mint_natives(&mut app, "nonmember", coins(10, "ujuno"));
+    mint_natives(&mut app, &addr_str("nonmember"), coins(10, "ujuno"));
     let pre_propose_id = make_pre_proposal(
         &mut app,
         pre_propose.clone(),
-        "nonmember",
+        &addr_str("nonmember"),
         &coins(10, "ujuno"),
     );
 
     // Approver approves
-    let id = approve_proposal(&mut app, pre_propose, "approver", pre_propose_id);
+    let id = approve_proposal(&mut app, pre_propose, &addr_str("approver"), pre_propose_id);
 
     // Member votes.
-    let new_status = vote(&mut app, proposal_multiple, "ekez", id, 0);
+    let new_status = vote(&mut app, proposal_multiple, &addr_str("ekez"), id, 0);
     assert_eq!(Status::Passed, new_status)
 }
 
@@ -1426,13 +1435,13 @@ fn test_no_deposit_required_open_submission() {
     );
 
     // Non-member proposes.
-    let pre_propose_id = make_pre_proposal(&mut app, pre_propose.clone(), "nonmember", &[]);
+    let pre_propose_id = make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("nonmember"), &[]);
 
     // Approver approves
-    let id = approve_proposal(&mut app, pre_propose, "approver", pre_propose_id);
+    let id = approve_proposal(&mut app, pre_propose, &addr_str("approver"), pre_propose_id);
 
     // Member votes.
-    let new_status = vote(&mut app, proposal_multiple, "ekez", id, 0);
+    let new_status = vote(&mut app, proposal_multiple, &addr_str("ekez"), id, 0);
     assert_eq!(Status::Passed, new_status)
 }
 
@@ -1450,7 +1459,7 @@ fn test_no_deposit_required_members_submission() {
     // Non-member proposes and this fails.
     let err: PreProposeError = app
         .execute_contract(
-            Addr::unchecked("nonmember"),
+            addr("nonmember"),
             pre_propose.clone(),
             &ExecuteMsg::Propose {
                 msg: ProposeMessage::Propose {
@@ -1483,12 +1492,12 @@ fn test_no_deposit_required_members_submission() {
         PreProposeError::SubmissionPolicy(PreProposeSubmissionPolicyError::Unauthorized {})
     );
 
-    let pre_propose_id = make_pre_proposal(&mut app, pre_propose.clone(), "ekez", &[]);
+    let pre_propose_id = make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &[]);
 
     // Approver approves
-    let id = approve_proposal(&mut app, pre_propose, "approver", pre_propose_id);
+    let id = approve_proposal(&mut app, pre_propose, &addr_str("approver"), pre_propose_id);
 
-    let new_status = vote(&mut app, proposal_multiple, "ekez", id, 0);
+    let new_status = vote(&mut app, proposal_multiple, &addr_str("ekez"), id, 0);
     assert_eq!(Status::Passed, new_status)
 }
 
@@ -1512,8 +1521,8 @@ fn test_anyone_denylist() {
     let rando = "rando";
 
     // Proposal succeeds when anyone can propose.
-    assert!(query_can_propose(&app, pre_propose.clone(), rando));
-    make_pre_proposal(&mut app, pre_propose.clone(), rando, &[]);
+    assert!(query_can_propose(&app, pre_propose.clone(), &addr_str(rando)));
+    make_pre_proposal(&mut app, pre_propose.clone(), &addr_str(rando), &[]);
 
     update_config(
         &mut app,
@@ -1521,15 +1530,15 @@ fn test_anyone_denylist() {
         core_addr.as_str(),
         None,
         PreProposeSubmissionPolicy::Anyone {
-            denylist: vec![Addr::unchecked(rando)],
+            denylist: vec![addr(rando)],
         },
     );
 
     // Proposing fails if on denylist.
-    assert!(!query_can_propose(&app, pre_propose.clone(), rando));
+    assert!(!query_can_propose(&app, pre_propose.clone(), &addr_str(rando)));
     let err: PreProposeError = app
         .execute_contract(
-            Addr::unchecked(rando),
+            addr(rando),
             pre_propose.clone(),
             &ExecuteMsg::Propose {
                 msg: ProposeMessage::Propose {
@@ -1563,8 +1572,8 @@ fn test_anyone_denylist() {
     );
 
     // Proposing succeeds if not on denylist.
-    assert!(query_can_propose(&app, pre_propose.clone(), "ekez"));
-    make_pre_proposal(&mut app, pre_propose, "ekez", &[]);
+    assert!(query_can_propose(&app, pre_propose.clone(), &addr_str("ekez")));
+    make_pre_proposal(&mut app, pre_propose, &addr_str("ekez"), &[]);
 }
 
 #[test]
@@ -1589,16 +1598,16 @@ fn test_specific_allowlist_denylist() {
     );
 
     // Proposal succeeds for member.
-    assert!(query_can_propose(&app, pre_propose.clone(), "ekez"));
-    make_pre_proposal(&mut app, pre_propose.clone(), "ekez", &[]);
+    assert!(query_can_propose(&app, pre_propose.clone(), &addr_str("ekez")));
+    make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &[]);
 
     let rando = "rando";
 
     // Proposing fails for non-member.
-    assert!(!query_can_propose(&app, pre_propose.clone(), rando));
+    assert!(!query_can_propose(&app, pre_propose.clone(), &addr_str(rando)));
     let err: PreProposeError = app
         .execute_contract(
-            Addr::unchecked(rando),
+            addr(rando),
             pre_propose.clone(),
             &ExecuteMsg::Propose {
                 msg: ProposeMessage::Propose {
@@ -1638,14 +1647,14 @@ fn test_specific_allowlist_denylist() {
         None,
         PreProposeSubmissionPolicy::Specific {
             dao_members: true,
-            allowlist: vec![Addr::unchecked(rando)],
+            allowlist: vec![addr(rando)],
             denylist: vec![],
         },
     );
 
     // Proposal succeeds if on allowlist.
-    assert!(query_can_propose(&app, pre_propose.clone(), rando));
-    make_pre_proposal(&mut app, pre_propose.clone(), rando, &[]);
+    assert!(query_can_propose(&app, pre_propose.clone(), &addr_str(rando)));
+    make_pre_proposal(&mut app, pre_propose.clone(), &addr_str(rando), &[]);
 
     update_config(
         &mut app,
@@ -1654,16 +1663,16 @@ fn test_specific_allowlist_denylist() {
         None,
         PreProposeSubmissionPolicy::Specific {
             dao_members: true,
-            allowlist: vec![Addr::unchecked(rando)],
-            denylist: vec![Addr::unchecked("ekez")],
+            allowlist: vec![addr(rando)],
+            denylist: vec![addr("ekez")],
         },
     );
 
     // Proposing fails if on denylist.
-    assert!(!query_can_propose(&app, pre_propose.clone(), "ekez"));
+    assert!(!query_can_propose(&app, pre_propose.clone(), &addr_str("ekez")));
     let err: PreProposeError = app
         .execute_contract(
-            Addr::unchecked("ekez"),
+            addr("ekez"),
             pre_propose.clone(),
             &ExecuteMsg::Propose {
                 msg: ProposeMessage::Propose {
@@ -1703,16 +1712,16 @@ fn test_specific_allowlist_denylist() {
         None,
         PreProposeSubmissionPolicy::Specific {
             dao_members: false,
-            allowlist: vec![Addr::unchecked(rando)],
+            allowlist: vec![addr(rando)],
             denylist: vec![],
         },
     );
 
     // Proposing fails if members not allowed.
-    assert!(!query_can_propose(&app, pre_propose.clone(), "ekez"));
+    assert!(!query_can_propose(&app, pre_propose.clone(), &addr_str("ekez")));
     let err: PreProposeError = app
         .execute_contract(
-            Addr::unchecked("ekez"),
+            addr("ekez"),
             pre_propose.clone(),
             &ExecuteMsg::Propose {
                 msg: ProposeMessage::Propose {
@@ -1746,8 +1755,8 @@ fn test_specific_allowlist_denylist() {
     );
 
     // Proposal succeeds if on allowlist.
-    assert!(query_can_propose(&app, pre_propose.clone(), rando));
-    make_pre_proposal(&mut app, pre_propose.clone(), rando, &[]);
+    assert!(query_can_propose(&app, pre_propose.clone(), &addr_str(rando)));
+    make_pre_proposal(&mut app, pre_propose.clone(), &addr_str(rando), &[]);
 }
 
 #[test]
@@ -1785,7 +1794,7 @@ fn test_instantiate_with_zero_native_deposit() {
                             denylist: vec![],
                         },
                         extension: InstantiateExt {
-                            approver: "approver".to_string(),
+                            approver: addr_str("approver"),
                         },
                     })
                     .unwrap(),
@@ -1808,11 +1817,11 @@ fn test_instantiate_with_zero_native_deposit() {
         to_json_binary(&proposal_module_instantiate).unwrap(),
         Some(vec![
             cw20::Cw20Coin {
-                address: "ekez".to_string(),
+                address: addr_str("ekez"),
                 amount: Uint128::new(9),
             },
             cw20::Cw20Coin {
-                address: "keze".to_string(),
+                address: addr_str("keze"),
                 amount: Uint128::new(8),
             },
         ]),
@@ -1856,7 +1865,7 @@ fn test_instantiate_with_zero_cw20_deposit() {
                             denylist: vec![],
                         },
                         extension: InstantiateExt {
-                            approver: "approver".to_string(),
+                            approver: addr_str("approver"),
                         },
                     })
                     .unwrap(),
@@ -1879,11 +1888,11 @@ fn test_instantiate_with_zero_cw20_deposit() {
         to_json_binary(&proposal_module_instantiate).unwrap(),
         Some(vec![
             cw20::Cw20Coin {
-                address: "ekez".to_string(),
+                address: addr_str("ekez"),
                 amount: Uint128::new(9),
             },
             cw20::Cw20Coin {
-                address: "keze".to_string(),
+                address: addr_str("keze"),
                 amount: Uint128::new(8),
             },
         ]),
@@ -1912,10 +1921,10 @@ fn test_update_config() {
         }
     );
 
-    let pre_propose_id = make_pre_proposal(&mut app, pre_propose.clone(), "ekez", &[]);
+    let pre_propose_id = make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &[]);
 
     // Approver approves
-    let id = approve_proposal(&mut app, pre_propose.clone(), "approver", pre_propose_id);
+    let id = approve_proposal(&mut app, pre_propose.clone(), &addr_str("approver"), pre_propose_id);
 
     update_config(
         &mut app,
@@ -1950,20 +1959,20 @@ fn test_update_config() {
         info,
         DepositInfoResponse {
             deposit_info: None,
-            proposer: Addr::unchecked("ekez"),
+            proposer: addr("ekez"),
         }
     );
 
     // New proposals should have the new deposit info.
-    mint_natives(&mut app, "ekez", coins(10, "ujuno"));
+    mint_natives(&mut app, &addr_str("ekez"), coins(10, "ujuno"));
     let new_pre_propose_id =
-        make_pre_proposal(&mut app, pre_propose.clone(), "ekez", &coins(10, "ujuno"));
+        make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &coins(10, "ujuno"));
 
     // Approver approves
     let new_id = approve_proposal(
         &mut app,
         pre_propose.clone(),
-        "approver",
+        &addr_str("approver"),
         new_pre_propose_id,
     );
 
@@ -1976,17 +1985,17 @@ fn test_update_config() {
                 amount: Uint128::new(10),
                 refund_policy: DepositRefundPolicy::Never
             }),
-            proposer: Addr::unchecked("ekez"),
+            proposer: addr("ekez"),
         }
     );
 
     // Both proposals should be allowed to complete.
-    vote(&mut app, proposal_multiple.clone(), "ekez", id, 0);
-    vote(&mut app, proposal_multiple.clone(), "ekez", new_id, 0);
-    execute_proposal(&mut app, proposal_multiple.clone(), "ekez", id);
-    execute_proposal(&mut app, proposal_multiple.clone(), "ekez", new_id);
+    vote(&mut app, proposal_multiple.clone(), &addr_str("ekez"), id, 0);
+    vote(&mut app, proposal_multiple.clone(), &addr_str("ekez"), new_id, 0);
+    execute_proposal(&mut app, proposal_multiple.clone(), &addr_str("ekez"), id);
+    execute_proposal(&mut app, proposal_multiple.clone(), &addr_str("ekez"), new_id);
     // Deposit should not have been refunded (never policy in use).
-    let balance = get_balance_native(&app, "ekez", "ujuno");
+    let balance = get_balance_native(&app, &addr_str("ekez"), "ujuno");
     assert_eq!(balance, Uint128::new(0));
 
     // Only the core module can update the config.
@@ -2024,8 +2033,8 @@ fn test_update_config() {
         None,
         PreProposeSubmissionPolicy::Specific {
             dao_members: false,
-            allowlist: vec![Addr::unchecked("ekez")],
-            denylist: vec![Addr::unchecked("ekez")],
+            allowlist: vec![addr("ekez")],
+            denylist: vec![addr("ekez")],
         },
     );
     assert_eq!(
@@ -2057,10 +2066,10 @@ fn test_update_submission_policy() {
     // Only the core module can update the submission policy.
     let err: PreProposeError = app
         .execute_contract(
-            Addr::unchecked("ekez"),
+            addr("ekez"),
             pre_propose.clone(),
             &ExecuteMsg::UpdateSubmissionPolicy {
-                denylist_add: Some(vec!["ekez".to_string()]),
+                denylist_add: Some(vec![addr_str("ekez")]),
                 denylist_remove: None,
                 set_dao_members: None,
                 allowlist_add: None,
@@ -2078,7 +2087,7 @@ fn test_update_submission_policy() {
         core_addr.clone(),
         pre_propose.clone(),
         &ExecuteMsg::UpdateSubmissionPolicy {
-            denylist_add: Some(vec!["ekez".to_string(), "ekez".to_string()]),
+            denylist_add: Some(vec![addr_str("ekez"), addr_str("ekez")]),
             denylist_remove: None,
             set_dao_members: None,
             allowlist_add: None,
@@ -2094,7 +2103,7 @@ fn test_update_submission_policy() {
         Config {
             deposit_info: None,
             submission_policy: PreProposeSubmissionPolicy::Anyone {
-                denylist: vec![Addr::unchecked("ekez")],
+                denylist: vec![addr("ekez")],
             },
         }
     );
@@ -2104,8 +2113,8 @@ fn test_update_submission_policy() {
         core_addr.clone(),
         pre_propose.clone(),
         &ExecuteMsg::UpdateSubmissionPolicy {
-            denylist_add: Some(vec!["someone".to_string(), "else".to_string()]),
-            denylist_remove: Some(vec!["ekez".to_string()]),
+            denylist_add: Some(vec![addr_str("someone"), addr_str("else")]),
+            denylist_remove: Some(vec![addr_str("ekez")]),
             set_dao_members: None,
             allowlist_add: None,
             allowlist_remove: None,
@@ -2120,7 +2129,7 @@ fn test_update_submission_policy() {
         Config {
             deposit_info: None,
             submission_policy: PreProposeSubmissionPolicy::Anyone {
-                denylist: vec![Addr::unchecked("else"), Addr::unchecked("someone")],
+                denylist: vec![addr("else"), addr("someone")],
             },
         }
     );
@@ -2131,7 +2140,7 @@ fn test_update_submission_policy() {
         pre_propose.clone(),
         &ExecuteMsg::UpdateSubmissionPolicy {
             denylist_add: None,
-            denylist_remove: Some(vec!["someone".to_string(), "else".to_string()]),
+            denylist_remove: Some(vec![addr_str("someone"), addr_str("else")]),
             set_dao_members: None,
             allowlist_add: None,
             allowlist_remove: None,
@@ -2180,7 +2189,7 @@ fn test_update_submission_policy() {
                 denylist_add: None,
                 denylist_remove: None,
                 set_dao_members: None,
-                allowlist_add: Some(vec!["ekez".to_string()]),
+                allowlist_add: Some(vec![addr_str("ekez")]),
                 allowlist_remove: None,
             },
             &[],
@@ -2203,7 +2212,7 @@ fn test_update_submission_policy() {
                 denylist_remove: None,
                 set_dao_members: None,
                 allowlist_add: None,
-                allowlist_remove: Some(vec!["ekez".to_string()]),
+                allowlist_remove: Some(vec![addr_str("ekez")]),
             },
             &[],
         )
@@ -2251,7 +2260,7 @@ fn test_update_submission_policy() {
         core_addr.clone(),
         pre_propose.clone(),
         &ExecuteMsg::UpdateSubmissionPolicy {
-            denylist_add: Some(vec!["ekez".to_string(), "ekez".to_string()]),
+            denylist_add: Some(vec![addr_str("ekez"), addr_str("ekez")]),
             denylist_remove: None,
             set_dao_members: None,
             allowlist_add: None,
@@ -2269,7 +2278,7 @@ fn test_update_submission_policy() {
             submission_policy: PreProposeSubmissionPolicy::Specific {
                 dao_members: true,
                 allowlist: vec![],
-                denylist: vec![Addr::unchecked("ekez")],
+                denylist: vec![addr("ekez")],
             },
         }
     );
@@ -2279,8 +2288,8 @@ fn test_update_submission_policy() {
         core_addr.clone(),
         pre_propose.clone(),
         &ExecuteMsg::UpdateSubmissionPolicy {
-            denylist_add: Some(vec!["someone".to_string(), "else".to_string()]),
-            denylist_remove: Some(vec!["ekez".to_string()]),
+            denylist_add: Some(vec![addr_str("someone"), addr_str("else")]),
+            denylist_remove: Some(vec![addr_str("ekez")]),
             set_dao_members: None,
             allowlist_add: None,
             allowlist_remove: None,
@@ -2297,7 +2306,7 @@ fn test_update_submission_policy() {
             submission_policy: PreProposeSubmissionPolicy::Specific {
                 dao_members: true,
                 allowlist: vec![],
-                denylist: vec![Addr::unchecked("else"), Addr::unchecked("someone")],
+                denylist: vec![addr("else"), addr("someone")],
             },
         }
     );
@@ -2308,7 +2317,7 @@ fn test_update_submission_policy() {
         pre_propose.clone(),
         &ExecuteMsg::UpdateSubmissionPolicy {
             denylist_add: None,
-            denylist_remove: Some(vec!["someone".to_string(), "else".to_string()]),
+            denylist_remove: Some(vec![addr_str("someone"), addr_str("else")]),
             set_dao_members: None,
             allowlist_add: None,
             allowlist_remove: None,
@@ -2338,7 +2347,7 @@ fn test_update_submission_policy() {
             denylist_add: None,
             denylist_remove: None,
             set_dao_members: None,
-            allowlist_add: Some(vec!["ekez".to_string(), "ekez".to_string()]),
+            allowlist_add: Some(vec![addr_str("ekez"), addr_str("ekez")]),
             allowlist_remove: None,
         },
         &[],
@@ -2352,7 +2361,7 @@ fn test_update_submission_policy() {
             deposit_info: None,
             submission_policy: PreProposeSubmissionPolicy::Specific {
                 dao_members: true,
-                allowlist: vec![Addr::unchecked("ekez")],
+                allowlist: vec![addr("ekez")],
                 denylist: vec![],
             },
         }
@@ -2366,8 +2375,8 @@ fn test_update_submission_policy() {
             denylist_add: None,
             denylist_remove: None,
             set_dao_members: None,
-            allowlist_add: Some(vec!["someone".to_string(), "else".to_string()]),
-            allowlist_remove: Some(vec!["ekez".to_string()]),
+            allowlist_add: Some(vec![addr_str("someone"), addr_str("else")]),
+            allowlist_remove: Some(vec![addr_str("ekez")]),
         },
         &[],
     )
@@ -2380,7 +2389,7 @@ fn test_update_submission_policy() {
             deposit_info: None,
             submission_policy: PreProposeSubmissionPolicy::Specific {
                 dao_members: true,
-                allowlist: vec![Addr::unchecked("else"), Addr::unchecked("someone")],
+                allowlist: vec![addr("else"), addr("someone")],
                 denylist: vec![],
             },
         }
@@ -2395,7 +2404,7 @@ fn test_update_submission_policy() {
             denylist_remove: None,
             set_dao_members: None,
             allowlist_add: None,
-            allowlist_remove: Some(vec!["someone".to_string(), "else".to_string()]),
+            allowlist_remove: Some(vec![addr_str("someone"), addr_str("else")]),
         },
         &[],
     )
@@ -2444,7 +2453,7 @@ fn test_update_submission_policy() {
             denylist_add: None,
             denylist_remove: None,
             set_dao_members: Some(false),
-            allowlist_add: Some(vec!["ekez".to_string()]),
+            allowlist_add: Some(vec![addr_str("ekez")]),
             allowlist_remove: None,
         },
         &[],
@@ -2458,7 +2467,7 @@ fn test_update_submission_policy() {
             deposit_info: None,
             submission_policy: PreProposeSubmissionPolicy::Specific {
                 dao_members: false,
-                allowlist: vec![Addr::unchecked("ekez")],
+                allowlist: vec![addr("ekez")],
                 denylist: vec![]
             },
         }
@@ -2470,7 +2479,7 @@ fn test_update_submission_policy() {
             core_addr.clone(),
             pre_propose.clone(),
             &ExecuteMsg::UpdateSubmissionPolicy {
-                denylist_add: Some(vec!["ekez".to_string()]),
+                denylist_add: Some(vec![addr_str("ekez")]),
                 denylist_remove: None,
                 set_dao_members: None,
                 allowlist_add: None,
@@ -2556,15 +2565,15 @@ fn test_withdraw() {
     assert_eq!(balance, Uint128::new(20));
 
     // Make a proposal with the native tokens to put some in the system.
-    mint_natives(&mut app, "ekez", coins(10, "ujuno"));
+    mint_natives(&mut app, &addr_str("ekez"), coins(10, "ujuno"));
     let native_pre_propose_id =
-        make_pre_proposal(&mut app, pre_propose.clone(), "ekez", &coins(10, "ujuno"));
+        make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &coins(10, "ujuno"));
 
     // Approver approves
     let native_id = approve_proposal(
         &mut app,
         pre_propose.clone(),
-        "approver",
+        &addr_str("approver"),
         native_pre_propose_id,
     );
 
@@ -2590,18 +2599,18 @@ fn test_withdraw() {
 
     increase_allowance(
         &mut app,
-        "ekez",
+        &addr_str("ekez"),
         &pre_propose,
         cw20_address.clone(),
         Uint128::new(10),
     );
-    let cw20_pre_propose_id = make_pre_proposal(&mut app, pre_propose.clone(), "ekez", &[]);
+    let cw20_pre_propose_id = make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &[]);
 
     // Approver approves
     let cw20_id = approve_proposal(
         &mut app,
         pre_propose.clone(),
-        "approver",
+        &addr_str("approver"),
         cw20_pre_propose_id,
     );
 
@@ -2617,8 +2626,8 @@ fn test_withdraw() {
 
     // Proposal should still be executable! We just get removed from
     // the proposal module's hook receiver list.
-    vote(&mut app, proposal_multiple.clone(), "ekez", cw20_id, 1);
-    execute_proposal(&mut app, proposal_multiple.clone(), "ekez", cw20_id);
+    vote(&mut app, proposal_multiple.clone(), &addr_str("ekez"), cw20_id, 1);
+    execute_proposal(&mut app, proposal_multiple.clone(), &addr_str("ekez"), cw20_id);
 
     // Make sure the proposal module has fallen back to anyone can
     // propose becuase of our malfunction.
@@ -2633,8 +2642,8 @@ fn test_withdraw() {
     assert_eq!(proposal_creation_policy, ProposalCreationPolicy::Anyone {});
 
     // Close out the native proposal and it's deposit as well.
-    vote(&mut app, proposal_multiple.clone(), "ekez", native_id, 2);
-    close_proposal(&mut app, proposal_multiple.clone(), "ekez", native_id);
+    vote(&mut app, proposal_multiple.clone(), &addr_str("ekez"), native_id, 2);
+    close_proposal(&mut app, proposal_multiple.clone(), &addr_str("ekez"), native_id);
     withdraw(
         &mut app,
         pre_propose.clone(),
