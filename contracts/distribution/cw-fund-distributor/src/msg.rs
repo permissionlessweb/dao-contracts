@@ -13,6 +13,7 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
+#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
     Receive(cw20::Cw20ReceiveMsg),
     FundNative {},
@@ -22,6 +23,7 @@ pub enum ExecuteMsg {
 }
 
 #[cw_serde]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 pub enum QueryMsg {
     TotalPower {},
     VotingContract {},

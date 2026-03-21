@@ -159,6 +159,8 @@ pub struct InstantiateMsg {
 /// Custom contracts can define `type MyExecuteMsg = ExecuteMsg<MyMetadata>`.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
+#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
+
 pub enum ExecuteMsg<TMetadata = Empty> {
     CreateEvent {
         title: String,
@@ -229,6 +231,7 @@ pub enum ExecuteMsg<TMetadata = Empty> {
 /// Custom contracts override at the handler level to return their typed extension.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, QueryResponses)]
 #[serde(rename_all = "snake_case")]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 pub enum QueryMsg {
     #[returns(EventResponse)]
     Event {

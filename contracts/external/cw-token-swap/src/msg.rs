@@ -44,6 +44,7 @@ pub enum ExecuteMsg {
 
 #[cw_serde]
 #[derive(QueryResponses)]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 pub enum QueryMsg {
     // Gets the current status of the escrow transaction.
     #[returns(crate::msg::StatusResponse)]

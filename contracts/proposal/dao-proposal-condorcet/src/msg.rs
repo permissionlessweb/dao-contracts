@@ -13,6 +13,7 @@ pub struct Choice {
 }
 
 #[cw_serde]
+#[cfg_attr(feature = "interface", cw_orch::ExecuteFn)]
 pub enum ExecuteMsg {
     Propose { choices: Vec<Choice> },
     Vote { proposal_id: u32, vote: Vec<u32> },
@@ -24,6 +25,7 @@ pub enum ExecuteMsg {
 #[proposal_module_query]
 #[cw_serde]
 #[derive(QueryResponses)]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 pub enum QueryMsg {
     #[returns(crate::proposal::ProposalResponse)]
     Proposal { id: u32 },

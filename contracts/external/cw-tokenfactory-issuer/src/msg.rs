@@ -1,8 +1,9 @@
 use crate::state::BeforeSendHookInfo;
 use cosmwasm_schema::{cw_serde, QueryResponses};
+#[cfg(any(feature = "osmosis_tokenfactory", feature = "cosmwasm_tokenfactory"))]
+use cosmwasm_std::DenomMetadata;
 use cosmwasm_std::{Coin, Uint128};
 
-pub use dao_interface::token::{DenomUnit, Metadata};
 
 /// The message used to create a new instance of this smart contract.
 #[cw_serde]
@@ -89,7 +90,7 @@ pub enum ExecuteMsg {
 
     /// Set denom metadata. see: https://docs.cosmos.network/main/modules/bank#denom-metadata.
     #[cfg(any(feature = "osmosis_tokenfactory", feature = "cosmwasm_tokenfactory"))]
-    SetDenomMetadata { metadata: Metadata },
+    SetDenomMetadata { metadata: DenomMetadata },
 
     /// Grant/revoke mint allowance.
     SetMinterAllowance { address: String, allowance: Uint128 },
@@ -118,6 +119,7 @@ pub struct MigrateMsg {}
 /// Queries supported by this smart contract.
 #[cw_serde]
 #[derive(QueryResponses)]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 pub enum QueryMsg {
     /// Returns if token transfer is disabled. Response: IsFrozenResponse
     #[returns(IsFrozenResponse)]

@@ -16,6 +16,7 @@ pub struct InstantiateMsg {
 
 #[cw_ownable_execute]
 #[cw_serde]
+#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
     /// Update the protobuf registry.
     UpdateProtobufRegistry {
@@ -26,6 +27,7 @@ pub enum ExecuteMsg {
 #[cw_ownable_query]
 #[cw_serde]
 #[derive(QueryResponses)]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 pub enum QueryMsg {
     #[returns(InfoResponse)]
     Info {},

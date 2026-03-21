@@ -13,6 +13,7 @@ pub struct InstantiateMsg {
 
 #[cw_ownable_execute]
 #[cw_serde]
+#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteMsg))]
 pub enum ExecuteMsg {
     /// Register protobuf file descriptor sets.
     Register {
@@ -46,6 +47,7 @@ pub enum ExecuteMsg {
 #[cw_ownable_query]
 #[cw_serde]
 #[derive(QueryResponses)]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 pub enum QueryMsg {
     #[returns(InfoResponse)]
     Info {},

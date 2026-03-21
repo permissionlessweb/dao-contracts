@@ -47,6 +47,7 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
+#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
     /// Used to stake NFTs. To stake a NFT send a cw721 send message
     /// to this contract with the NFT you would like to stake. The
@@ -76,8 +77,8 @@ pub enum ExecuteMsg {
 
 #[cw_serde]
 pub enum ClaimType {
-    /// Claims all legacy claims.
-    Legacy,
+    // /// Claims all legacy claims.
+    // Legacy,
     /// Claims all non-legacy claims.
     All,
     /// Claims specific non-legacy NFTs.
@@ -88,6 +89,7 @@ pub enum ClaimType {
 #[voting_module_query]
 #[cw_serde]
 #[derive(QueryResponses)]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 pub enum QueryMsg {
     #[returns(crate::state::Config)]
     Config {},

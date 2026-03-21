@@ -21,6 +21,7 @@ pub struct InstantiateMsg {
 
 #[cw_ownable_execute]
 #[cw_serde]
+#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
     Receive(Cw20ReceiveMsg),
     Unstake { amount: Uint128 },
@@ -38,6 +39,7 @@ pub enum ReceiveMsg {
 
 #[cw_serde]
 #[derive(QueryResponses)]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 pub enum QueryMsg {
     #[returns(StakedBalanceAtHeightResponse)]
     StakedBalanceAtHeight {

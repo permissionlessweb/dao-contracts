@@ -37,6 +37,7 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
+#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
     /// Stakes tokens with the contract to get voting power in the DAO
     Stake {},
@@ -63,6 +64,7 @@ pub enum ExecuteMsg {
 #[voting_module_query]
 #[cw_serde]
 #[derive(QueryResponses)]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 pub enum QueryMsg {
     #[returns(crate::state::Config)]
     GetConfig {},

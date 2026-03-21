@@ -32,6 +32,7 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
+#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {}
 
 #[cw20_token_query]
