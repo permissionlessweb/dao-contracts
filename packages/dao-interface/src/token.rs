@@ -1,9 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Binary, Uint128};
-
-// These are Cosmos Proto types used for Denom Metadata.
-// We re-export them here for convenience.
-pub use osmosis_std::types::cosmos::bank::v1beta1::{DenomUnit, Metadata};
+use cosmwasm_std::{Binary, DenomUnit, Uint128};
 
 use crate::state::ModuleInstantiateCallback;
 

@@ -11,6 +11,9 @@ pub enum ContractError {
 
     #[error("Initial governance token balances must not be empty")]
     InitialBalancesError {},
+    
+    #[error("ReplyParseError: {err}")]
+    ReplyParseError { err: String },
 
     #[error("Can not change the contract's token after it has been set")]
     DuplicateToken {},

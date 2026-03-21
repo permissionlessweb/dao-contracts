@@ -8,6 +8,9 @@ pub enum ContractError {
 
     #[error("Unauthorized")]
     Unauthorized {},
+    
+    #[error("ReplyParseError: {err}")]
+    ReplyParseError { err: String },
 
     #[error("Initial governance token balances must not be empty")]
     InitialBalancesError {},

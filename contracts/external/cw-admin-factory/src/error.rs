@@ -10,6 +10,9 @@ pub enum ContractError {
     #[error("Unauthorized")]
     Unauthorized {},
 
+    #[error("ReplyParseError: {err}")]
+    ReplyParseError { err: String },
+
     #[error("{0}")]
     ParseReplyError(#[from] ParseReplyError),
 

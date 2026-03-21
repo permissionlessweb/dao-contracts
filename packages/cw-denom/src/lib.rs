@@ -202,7 +202,7 @@ impl fmt::Display for CheckedDenom {
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::{
-        testing::{mock_dependencies, MockQuerier},
+        testing::{mock_dependencies, MockApi, MockQuerier},
         to_json_binary, Addr, ContractResult, QuerierResult, StdError, SystemError, Uint128,
         WasmQuery,
     };
@@ -211,11 +211,16 @@ mod tests {
 
     const CW20_ADDR: &str = "cw20";
 
+    fn cw20_addr() -> Addr {
+        MockApi::default().addr_make(CW20_ADDR)
+    }
+
     fn token_info_mock_querier(works: bool) -> impl Fn(&WasmQuery) -> QuerierResult {
+        let cw20 = cw20_addr().to_string();
         move |query: &WasmQuery| -> QuerierResult {
             match query {
                 WasmQuery::Smart { contract_addr, .. } => {
-                    if *contract_addr == CW20_ADDR {
+                    if *contract_addr == cw20 {
                         if works {
                             QuerierResult::Ok(ContractResult::Ok(
                                 to_json_binary(&cw20::TokenInfoResponse {
@@ -227,9 +232,7 @@ mod tests {
                                 .unwrap(),
                             ))
                         } else {
-                            QuerierResult::Err(SystemError::NoSuchContract {
-                                addr: CW20_ADDR.to_string(),
-                            })
+                            QuerierResult::Err(SystemError::NoSuchContract { addr: cw20.clone() })
                         }
                     } else {
                         unimplemented!()
@@ -248,10 +251,10 @@ mod tests {
         let mut deps = mock_dependencies();
         deps.querier = querier;
 
-        let unchecked = UncheckedDenom::Cw20(CW20_ADDR.to_string());
+        let unchecked = UncheckedDenom::Cw20(cw20_addr().to_string());
         let checked = unchecked.into_checked(deps.as_ref()).unwrap();
 
-        assert_eq!(checked, CheckedDenom::Cw20(Addr::unchecked(CW20_ADDR)))
+        assert_eq!(checked, CheckedDenom::Cw20(cw20_addr()))
     }
 
     #[test]
@@ -262,14 +265,15 @@ mod tests {
         let mut deps = mock_dependencies();
         deps.querier = querier;
 
-        let unchecked = UncheckedDenom::Cw20(CW20_ADDR.to_string());
+        let cw20 = cw20_addr();
+        let unchecked = UncheckedDenom::Cw20(cw20.to_string());
         let err = unchecked.into_checked(deps.as_ref()).unwrap_err();
         assert_eq!(
             err,
             DenomError::InvalidCw20 {
-                err: StdError::GenericErr {
-                    msg: format!("Querier system error: No such contract: {CW20_ADDR}",)
-                }
+                err: StdError::generic_err(format!(
+                    "Querier system error: No such contract: {cw20}",
+                ))
             }
         )
     }
@@ -286,9 +290,7 @@ mod tests {
         let err = unchecked.into_checked(deps.as_ref()).unwrap_err();
         assert_eq!(
             err,
-            DenomError::Std(StdError::GenericErr {
-                msg: "Invalid input: address not normalized".to_string()
-            })
+            DenomError::Std(StdError::generic_err("Error decoding bech32"))
         )
     }
 
@@ -363,7 +365,8 @@ mod tests {
     fn test_display() {
         let denom = CheckedDenom::Native("hello".to_string());
         assert_eq!(denom.to_string(), "hello".to_string());
-        let denom = CheckedDenom::Cw20(Addr::unchecked("hello"));
-        assert_eq!(denom.to_string(), "hello".to_string());
+        let hello_addr = MockApi::default().addr_make("hello");
+        let denom = CheckedDenom::Cw20(hello_addr.clone());
+        assert_eq!(denom.to_string(), hello_addr.to_string());
     }
 }

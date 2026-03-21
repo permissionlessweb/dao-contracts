@@ -13,6 +13,9 @@ pub enum ContractError {
     #[error(transparent)]
     Payment(#[from] PaymentError),
 
+    #[error("ReplyParseError: {err}")]
+    ReplyParseError { err: String },
+
     #[error(transparent)]
     Ownership(#[from] OwnershipError),
 

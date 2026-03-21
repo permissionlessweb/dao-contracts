@@ -29,6 +29,9 @@ pub enum ContractError {
     #[error("Initial governance token balances must not be empty")]
     InitialBalancesError {},
 
+    #[error("InstantiateError: {e}")]
+    InstantiateError {e: String},
+
     #[error("Can only unstake less than or equal to the amount you have staked")]
     InvalidUnstakeAmount {},
 

@@ -10,8 +10,6 @@ mod tokenfactory_msg {
     };
 
     pub use crate::osmosis::MsgCreateDenomResponse;
-    pub use dao_interface::token::Metadata;
-
     pub fn msg_create_denom(sender: String, subdenom: String) -> MsgCreateDenom {
         MsgCreateDenom { sender, subdenom }
     }
@@ -43,7 +41,7 @@ mod tokenfactory_msg {
         }
     }
 
-    pub fn msg_set_denom_metadata(sender: String, metadata: Metadata) -> MsgSetDenomMetadata {
+    pub fn msg_set_denom_metadata(sender: String, metadata: cosmwasm_std::DenomMetadata) -> MsgSetDenomMetadata {
         MsgSetDenomMetadata {
             sender,
             metadata: Some(OsmosisMetadata {
