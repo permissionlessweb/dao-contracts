@@ -11,11 +11,13 @@ version = { workspace = true }
 crate-type = ["cdylib", "rlib"]
 
 [features]
+interface = ["cw-orch"]
 
 # use library feature to disable all instantiate/execute/query exports
 library = []
 
 [dependencies]
+cw-orch = { workspace = true, optional = true }
 cosmwasm-std = { workspace = true }
 cosmwasm-schema = { workspace = true }
 cw-storage-plus = { workspace = true }

@@ -18,11 +18,13 @@ library = []
 test-tube = []
 # when writing tests you may wish to enable test-tube as a default feature
 # default = ["test-tube"]
-
+interface = ["cw-orch"]
 
 [dependencies]
+cw-orch = { workspace = true, optional = true }
 cosmwasm-std = { workspace = true }
 cosmwasm-schema = { workspace = true }
+cw-reply-helper = { workspace = true }
 cw-storage-plus = { workspace = true }
 cw-controllers = { workspace = true }
 cw-hooks = { workspace = true }

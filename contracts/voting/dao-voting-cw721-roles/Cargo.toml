@@ -12,11 +12,14 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 library = []
+interface = ["cw-orch"]
 
 [dependencies]
+cw-orch = { workspace = true, optional = true }
 cosmwasm-std = { workspace = true }
 cosmwasm-schema = { workspace = true }
 cw-storage-plus = { workspace = true }
+cw-reply-helper = { workspace = true }
 dao-cw721-extensions = { workspace = true }
 dao-dao-macros = { workspace = true }
 dao-interface = { workspace = true }

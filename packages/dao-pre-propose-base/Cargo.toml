@@ -13,9 +13,11 @@ crate-type = ["cdylib", "rlib"]
 [features]
 # use library feature to disable all instantiate/execute/query WASM exports
 library = []
+interface = ["cw-orch"]
 
 [dependencies]
 cosmwasm-std = { workspace = true }
+cw-orch = { workspace = true, optional = true }
 cosmwasm-schema = { workspace = true }
 cw2 = { workspace = true }
 cw-denom = { workspace = true }

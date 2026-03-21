@@ -11,8 +11,10 @@ version = { workspace = true }
 crate-type = ["cdylib", "rlib"]
 
 [features]
+interface = ["cw-orch"]
 
 [dependencies]
+cw-orch = { workspace = true,optional = true }
 cosmwasm-std = { workspace = true }
 cosmwasm-schema = { workspace = true }
 cw2 = { workspace = true }

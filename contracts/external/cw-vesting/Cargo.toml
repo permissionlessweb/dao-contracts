@@ -31,8 +31,10 @@ library = []
 # enable staking features on chains that support staking. most do, so this is a
 # default. Neutron does not, for example.
 staking = ["cosmwasm-std/staking"]
-
+interface = ["cw-orch"]
 [dependencies]
+
+cw-orch = { workspace = true, optional = true }
 cosmwasm-schema = { workspace = true }
 cosmwasm-std = { workspace = true }
 cw-denom = { workspace = true }
@@ -50,6 +52,6 @@ wynd-utils = { workspace = true }
 [dev-dependencies]
 cw-vesting = { workspace = true }
 anyhow = { workspace = true }
-cw-multi-test = { workspace = true }
+cw-multi-test = { workspace = true, features = ["staking"] }
 cw20-base = { workspace = true }
 dao-testing = { workspace = true }

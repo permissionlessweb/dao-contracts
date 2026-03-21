@@ -19,8 +19,9 @@ crate-type = ["cdylib", "rlib"]
 
 # use library feature to disable all instantiate/execute/query exports
 library = []
-
+interface = ["cw-orch"]
 [dependencies]
+cw-orch = { workspace = true, optional = true }
 cosmwasm-std = { workspace = true }
 cosmwasm-schema = { workspace = true }
 cw2 = { workspace = true }
@@ -43,6 +44,11 @@ cw-denom = { workspace = true }
 dao-interface = { workspace = true }
 dao-testing = { workspace = true }
 dao-hooks = { workspace = true }
+
+# v2.4.1-compatible base dependencies
+cosmwasm-std-v1 = { workspace = true }
+cw4-v241 = { workspace = true }
+cw-utils-v241 = { workspace = true }
 
 # v2.4.1 migration
 dao-dao-core-v241 = { workspace = true }

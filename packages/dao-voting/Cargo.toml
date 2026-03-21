@@ -7,8 +7,12 @@ license = { workspace = true }
 repository = { workspace = true }
 version = { workspace = true }
 
+[features]
+interface = ["cw-orch"]
+
 [dependencies]
 cosmwasm-std = { workspace = true }
+cw-orch = { workspace = true, optional = true }
 cosmwasm-schema = { workspace = true }
 thiserror = { workspace = true }
 cw20 = { workspace = true }

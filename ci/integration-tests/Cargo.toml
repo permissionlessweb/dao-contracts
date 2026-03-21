@@ -3,6 +3,13 @@ name = "integration-tests"
 version = "0.1.0"
 edition = { workspace = true }
 
+[features]
+# Enable this feature once cosm-tome and cosmos-sdk-proto agree on the same
+# prost version. Until then, cw_vesting_test is excluded from compilation
+# because QueryValidatorsRequest/Response implement prost 0.13's Message trait
+# while cosm-tome expects prost 0.11's Message trait.
+prost_compat = []
+
 # This crate depends on rand. These are not featured in
 # wasm builds of cosmwasm. Despite this crate only being used as a dev
 # dependency, because it is part of the workspace it will always be

@@ -54,6 +54,8 @@ cw721-roles = { workspace = true }
 cw-tokenfactory-issuer = { workspace = true }
 dao-dao-core = { workspace = true }
 dao-interface = { workspace = true }
+dao-cw-orch = { workspace = true }
+cw-orch = { workspace = true }
 dao-migrator = { workspace = true }
 dao-pre-propose-approver = { workspace = true }
 dao-pre-propose-multiple = { workspace = true }
@@ -97,3 +99,7 @@ dao-proposal-single-v241 = { workspace = true }
 dao-proposal-multiple-v241 = { workspace = true }
 dao-voting-cw4-v241 = { workspace = true }
 dao-voting-v241 = { workspace = true }
+
+[[bin]]
+name = "suite_api"
+path = "src/bin/suite_api.rs"

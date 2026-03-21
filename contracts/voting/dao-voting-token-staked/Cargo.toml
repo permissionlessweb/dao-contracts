@@ -42,12 +42,14 @@ test-tube = []
 osmosis_tokenfactory = ["cw-tokenfactory-issuer/osmosis_tokenfactory"]
 cosmwasm_tokenfactory = ["cw-tokenfactory-issuer/cosmwasm_tokenfactory"]
 thorchain_tokenfactory = ["cw-tokenfactory-issuer/thorchain_tokenfactory"]
-
+interface = ["cw-orch"]
 [dependencies]
+cw-orch = { workspace = true, optional = true }
 cosmwasm-std = { workspace = true }
 cosmwasm-schema = { workspace = true }
 cw-ownable = { workspace = true }
 cw-storage-plus = { workspace = true }
+cw-reply-helper = { workspace = true }
 cw2 = { workspace = true }
 cw-utils = { workspace = true }
 cw-controllers = { workspace = true }
