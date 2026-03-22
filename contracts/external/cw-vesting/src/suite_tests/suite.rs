@@ -1,7 +1,7 @@
 use cosmwasm_std::{
     coins,
     testing::{mock_env, MockApi},
-    Addr, BlockInfo, Decimal, Timestamp, Uint128, Uint64, Validator,
+    Addr, BlockInfo, Decimal, StdResult, Timestamp, Uint128, Uint256, Uint64, Validator,
 };
 use cw_multi_test::{App, BankSudo, Executor, StakingInfo, StakingSudo};
 use dao_testing::contracts::cw_vesting_contract;
@@ -35,7 +35,7 @@ impl Default for SuiteBuilder {
                 recipient: MockApi::default().addr_make("recipient").to_string(),
                 title: "title".to_string(),
                 description: Some("description".to_string()),
-                total: Uint128::new(100_000_000),
+                total: Uint256::new(100_000_000),
                 denom: cw_denom::UncheckedDenom::Native(staking_defaults.bonded_denom),
                 schedule: Schedule::SaturatingLinear,
                 start_time: None,
@@ -79,8 +79,9 @@ impl SuiteBuilder {
                 .unwrap();
         });
 
+        let total_u128: u128 = Uint128::try_from(self.instantiate.total).unwrap().u128();
         let funds = if let cw_denom::UncheckedDenom::Native(ref denom) = self.instantiate.denom {
-            let funds = coins(self.instantiate.total.u128(), denom);
+            let funds = coins(total_u128, denom);
             app.sudo(
                 BankSudo::Mint {
                     to_address: MockApi::default().addr_make("owner").to_string(),
@@ -109,7 +110,7 @@ impl SuiteBuilder {
         Suite {
             app,
             owner: self.instantiate.owner.map(|o| Addr::unchecked(o)),
-            total: self.instantiate.total,
+            total: Uint128::try_from(self.instantiate.total).unwrap(),
             receiver: Addr::unchecked(self.instantiate.recipient),
             vesting,
         }
@@ -164,7 +165,7 @@ impl Suite {
             .sudo(
                 StakingSudo::Slash {
                     validator: "validator".to_string(),
-                    percentage: Decimal::percent(percent),
+                    percentage: Decimal::percent(percent).into(),
                 }
                 .into(),
             )
@@ -182,18 +183,18 @@ impl Suite {
         &mut self,
         sender: S,
         amount: Option<Uint128>,
-    ) -> anyhow::Result<()> {
+    ) -> StdResult<()> {
         self.app
             .execute_contract(
                 Addr::unchecked(sender),
                 self.vesting.clone(),
-                &ExecuteMsg::Distribute { amount },
+                &ExecuteMsg::Distribute { amount: amount.map(|a| a.into()) },
                 &[],
             )
             .map(|_| ())
     }
 
-    pub fn cancel<S: Into<String>>(&mut self, sender: S) -> anyhow::Result<()> {
+    pub fn cancel<S: Into<String>>(&mut self, sender: S) -> StdResult<()> {
         self.app
             .execute_contract(
                 Addr::unchecked(sender),
@@ -204,21 +205,21 @@ impl Suite {
             .map(|_| ())
     }
 
-    pub fn delegate(&mut self, amount: Uint128) -> anyhow::Result<()> {
+    pub fn delegate(&mut self, amount: Uint128) -> StdResult<()> {
         self.app
             .execute_contract(
                 self.receiver.clone(),
                 self.vesting.clone(),
                 &ExecuteMsg::Delegate {
                     validator: "validator".to_string(),
-                    amount,
+                    amount: amount.into(),
                 },
                 &[],
             )
             .map(|_| ())
     }
 
-    pub fn redelegate(&mut self, amount: Uint128, to_other_one: bool) -> anyhow::Result<()> {
+    pub fn redelegate(&mut self, amount: Uint128, to_other_one: bool) -> StdResult<()> {
         let (src_validator, dst_validator) = if to_other_one {
             ("validator".to_string(), "otherone".to_string())
         } else {
@@ -231,7 +232,7 @@ impl Suite {
                 &ExecuteMsg::Redelegate {
                     src_validator,
                     dst_validator,
-                    amount,
+                    amount: amount.into(),
                 },
                 &[],
             )
@@ -242,21 +243,21 @@ impl Suite {
         &mut self,
         sender: S,
         amount: Uint128,
-    ) -> anyhow::Result<()> {
+    ) -> StdResult<()> {
         self.app
             .execute_contract(
                 Addr::unchecked(sender),
                 self.vesting.clone(),
                 &ExecuteMsg::Undelegate {
                     validator: "validator".to_string(),
-                    amount,
+                    amount: amount.into(),
                 },
                 &[],
             )
             .map(|_| ())
     }
 
-    pub fn withdraw_delegator_reward(&mut self, validator: &str) -> anyhow::Result<()> {
+    pub fn withdraw_delegator_reward(&mut self, validator: &str) -> StdResult<()> {
         self.app
             .execute_contract(
                 self.receiver.clone(),
@@ -269,13 +270,13 @@ impl Suite {
             .map(|_| ())
     }
 
-    pub fn withdraw_canceled(&mut self, amount: Option<Uint128>) -> anyhow::Result<()> {
+    pub fn withdraw_canceled(&mut self, amount: Option<Uint128>) -> StdResult<()> {
         self.app
             .execute_contract(
                 // anyone may call this method on a canceled vesting contract
                 MockApi::default().addr_make("random"),
                 self.vesting.clone(),
-                &ExecuteMsg::WithdrawCanceledPayment { amount },
+                &ExecuteMsg::WithdrawCanceledPayment { amount: amount.map(|a| a.into()) },
                 &[],
             )
             .map(|_| ())
@@ -285,7 +286,7 @@ impl Suite {
         &mut self,
         sender: S,
         receiver: S,
-    ) -> anyhow::Result<()> {
+    ) -> StdResult<()> {
         self.app
             .execute_contract(
                 Addr::unchecked(sender),
@@ -303,7 +304,7 @@ impl Suite {
         sender: S,
         amount: Uint128,
         time: Timestamp,
-    ) -> anyhow::Result<()> {
+    ) -> StdResult<()> {
         self.app
             .execute_contract(
                 Addr::unchecked(sender),
@@ -311,7 +312,7 @@ impl Suite {
                 &ExecuteMsg::RegisterSlash {
                     validator: "validator".to_string(),
                     time,
-                    amount,
+                    amount: amount.into(),
                     during_unbonding: false,
                 },
                 &[],
@@ -324,7 +325,7 @@ impl Suite {
         sender: S,
         amount: Uint128,
         time: Timestamp,
-    ) -> anyhow::Result<()> {
+    ) -> StdResult<()> {
         self.app
             .execute_contract(
                 Addr::unchecked(sender),
@@ -332,7 +333,7 @@ impl Suite {
                 &ExecuteMsg::RegisterSlash {
                     validator: "validator".to_string(),
                     time,
-                    amount,
+                    amount: amount.into(),
                     during_unbonding: true,
                 },
                 &[],
@@ -351,10 +352,11 @@ impl Suite {
     }
 
     pub fn query_distributable(&self) -> Uint128 {
-        self.app
+        let val: Uint256 = self.app
             .wrap()
             .query_wasm_smart(&self.vesting, &QueryMsg::Distributable { t: None })
-            .unwrap()
+            .unwrap();
+        Uint128::try_from(val).unwrap()
     }
 
     pub fn query_receiver_vesting_token_balance(&self) -> Uint128 {
@@ -364,30 +366,34 @@ impl Suite {
 
     pub fn query_vesting_token_balance<S: Into<String>>(&self, who: S) -> Uint128 {
         let vest = self.query_vest();
-        vest.denom
+        let balance: Uint256 = vest.denom
             .query_balance(&self.app.wrap(), &Addr::unchecked(who.into()))
-            .unwrap()
+            .unwrap();
+        Uint128::try_from(balance).unwrap()
     }
 
     pub fn query_stake(&self, q: StakeTrackerQuery) -> Uint128 {
-        self.app
+        let val: Uint256 = self.app
             .wrap()
             .query_wasm_smart(&self.vesting, &QueryMsg::Stake(q))
-            .unwrap()
+            .unwrap();
+        Uint128::try_from(val).unwrap()
     }
 
     pub fn query_vested(&self, t: Option<Timestamp>) -> Uint128 {
-        self.app
+        let val: Uint256 = self.app
             .wrap()
             .query_wasm_smart(&self.vesting, &QueryMsg::Vested { t })
-            .unwrap()
+            .unwrap();
+        Uint128::try_from(val).unwrap()
     }
 
     pub fn query_total_to_vest(&self) -> Uint128 {
-        self.app
+        let val: Uint256 = self.app
             .wrap()
             .query_wasm_smart(&self.vesting, &QueryMsg::TotalToVest {})
-            .unwrap()
+            .unwrap();
+        Uint128::try_from(val).unwrap()
     }
 
     pub fn query_duration(&self) -> Option<Uint64> {

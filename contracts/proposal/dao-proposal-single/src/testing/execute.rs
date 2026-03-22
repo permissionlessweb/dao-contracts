@@ -1,4 +1,4 @@
-use cosmwasm_std::{coins, Addr, Coin, CosmosMsg, Uint128};
+use cosmwasm_std::{coins, Addr, Coin, CosmosMsg, StdError, Uint128, Uint256};
 use cw_multi_test::{App, BankSudo, Executor};
 
 use cw_denom::CheckedDenom;
@@ -16,7 +16,6 @@ use crate::{
     query::ProposalResponse,
     testing::queries::{query_creation_policy, query_next_proposal_id},
 };
-use dao_proposal_single::ContractError;
 
 use super::{addr, addr_str, queries::query_pre_proposal_single_config, CREATOR_ADDR};
 
@@ -47,7 +46,7 @@ pub(crate) fn make_proposal(
                     amount,
                     refund_policy: _,
                 }) => match denom {
-                    CheckedDenom::Native(denom) => coins(amount.u128(), denom),
+                    CheckedDenom::Native(denom) => coins(Uint128::try_from(amount).unwrap().u128(), denom),
                     CheckedDenom::Cw20(addr) => {
                         // Give an allowance, no funds.
                         app.execute_contract(
@@ -144,7 +143,7 @@ pub(crate) fn vote_on_proposal_should_fail(
     sender: &str,
     proposal_id: u64,
     vote: Vote,
-) -> ContractError {
+) -> StdError {
     app.execute_contract(
         Addr::unchecked(sender),
         proposal_single.clone(),
@@ -156,8 +155,6 @@ pub(crate) fn vote_on_proposal_should_fail(
         &[],
     )
     .unwrap_err()
-    .downcast()
-    .unwrap()
 }
 
 pub(crate) fn execute_proposal_should_fail(
@@ -165,7 +162,7 @@ pub(crate) fn execute_proposal_should_fail(
     proposal_single: &Addr,
     sender: &str,
     proposal_id: u64,
-) -> ContractError {
+) -> StdError {
     app.execute_contract(
         Addr::unchecked(sender),
         proposal_single.clone(),
@@ -173,8 +170,6 @@ pub(crate) fn execute_proposal_should_fail(
         &[],
     )
     .unwrap_err()
-    .downcast()
-    .unwrap()
 }
 
 pub(crate) fn vote_on_proposal_with_rationale(
@@ -237,7 +232,7 @@ pub(crate) fn close_proposal_should_fail(
     proposal_single: &Addr,
     sender: &str,
     proposal_id: u64,
-) -> ContractError {
+) -> StdError {
     app.execute_contract(
         Addr::unchecked(sender),
         proposal_single.clone(),
@@ -245,8 +240,6 @@ pub(crate) fn close_proposal_should_fail(
         &[],
     )
     .unwrap_err()
-    .downcast()
-    .unwrap()
 }
 
 pub(crate) fn close_proposal(
@@ -284,7 +277,7 @@ pub(crate) fn mint_cw20s(
         cw20_contract.clone(),
         &cw20::Cw20ExecuteMsg::Mint {
             recipient: receiver.to_string(),
-            amount: Uint128::new(amount),
+            amount: Uint256::from(amount),
         },
         &[],
     )
@@ -299,7 +292,7 @@ pub(crate) fn instantiate_cw20_base_default(app: &mut App) -> Addr {
         decimals: 6,
         initial_balances: vec![cw20::Cw20Coin {
             address: addr_str(CREATOR_ADDR),
-            amount: Uint128::new(10_000_000),
+            amount: Uint256::from(10_000_000u128),
         }],
         mint: None,
         marketing: None,
@@ -337,7 +330,7 @@ pub(crate) fn add_proposal_hook_should_fail(
     proposal_module: &Addr,
     sender: &str,
     hook_addr: &str,
-) -> ContractError {
+) -> StdError {
     app.execute_contract(
         Addr::unchecked(sender),
         proposal_module.clone(),
@@ -347,8 +340,6 @@ pub(crate) fn add_proposal_hook_should_fail(
         &[],
     )
     .unwrap_err()
-    .downcast()
-    .unwrap()
 }
 
 pub(crate) fn remove_proposal_hook(
@@ -373,7 +364,7 @@ pub(crate) fn remove_proposal_hook_should_fail(
     proposal_module: &Addr,
     sender: &str,
     hook_addr: &str,
-) -> ContractError {
+) -> StdError {
     app.execute_contract(
         Addr::unchecked(sender),
         proposal_module.clone(),
@@ -383,8 +374,6 @@ pub(crate) fn remove_proposal_hook_should_fail(
         &[],
     )
     .unwrap_err()
-    .downcast()
-    .unwrap()
 }
 
 pub(crate) fn add_vote_hook(app: &mut App, proposal_module: &Addr, sender: &str, hook_addr: &str) {
@@ -404,7 +393,7 @@ pub(crate) fn add_vote_hook_should_fail(
     proposal_module: &Addr,
     sender: &str,
     hook_addr: &str,
-) -> ContractError {
+) -> StdError {
     app.execute_contract(
         Addr::unchecked(sender),
         proposal_module.clone(),
@@ -414,8 +403,6 @@ pub(crate) fn add_vote_hook_should_fail(
         &[],
     )
     .unwrap_err()
-    .downcast()
-    .unwrap()
 }
 
 pub(crate) fn remove_vote_hook(
@@ -440,7 +427,7 @@ pub(crate) fn remove_vote_hook_should_fail(
     proposal_module: &Addr,
     sender: &str,
     hook_addr: &str,
-) -> ContractError {
+) -> StdError {
     app.execute_contract(
         Addr::unchecked(sender),
         proposal_module.clone(),
@@ -450,6 +437,4 @@ pub(crate) fn remove_vote_hook_should_fail(
         &[],
     )
     .unwrap_err()
-    .downcast()
-    .unwrap()
 }

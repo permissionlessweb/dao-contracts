@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{to_json_binary, Addr, CosmosMsg, Deps, DepsMut, SubMsg, WasmMsg};
+use cosmwasm_std::{to_json_binary, Addr, CosmosMsg, Deps, DepsMut, StdError, SubMsg, WasmMsg};
 use cw_protobuf_registry::protobuf::get_protobuf_messages;
 
 use crate::{
@@ -33,10 +33,10 @@ pub struct Authorization {
     /// Optional metadata for the authorization. This should either be a JSON
     /// object or IPFS hash.
     pub metadata: Option<String>,
-    /// Optional `cw-jsonfilter` filter. If no filter is provided, no messages
-    /// will be allowed, making it simply a symbolic authorization (which may be
-    /// useful for external systems).
-    pub filter: Option<serde_json::Value>,
+    /// Optional `cw-jsonfilter` filter (JSON-encoded string). If no filter is
+    /// provided, no messages will be allowed, making it simply a symbolic
+    /// authorization (which may be useful for external systems).
+    pub filter: Option<String>,
     /// Whether or not the authorization is enabled.
     pub enabled: bool,
 }
@@ -107,7 +107,7 @@ impl Authorization {
         role_id: u64,
         name: String,
         metadata: Option<String>,
-        filter: Option<serde_json::Value>,
+        filter: Option<String>,
         enabled: bool,
     ) -> Result<(Authorization, Vec<SubMsg>), ContractError> {
         let authorization = Authorization {
@@ -140,7 +140,7 @@ impl Authorization {
     pub fn filter_allows(
         deps: &Deps,
         filter_contract: &Addr,
-        filter: serde_json::Value,
+        filter: String,
         msg: CosmosMsg,
         ignore_filter_error: bool,
     ) -> Result<bool, ContractError> {
@@ -184,8 +184,11 @@ impl Authorization {
         protobuf_registry: &Option<Addr>,
     ) -> Result<Vec<SubMsg>, ContractError> {
         if let Some(filter) = &self.filter {
+            // Parse the JSON-encoded filter string.
+            let filter_value: serde_json::Value = serde_json::from_str(filter)
+                .map_err(|e| StdError::msg(format!("invalid filter JSON: {}", e)))?;
             // Get the protobuf messages referenced by the filter.
-            let protobuf_messages = get_protobuf_messages(filter)
+            let protobuf_messages = get_protobuf_messages(&filter_value)
                 .into_iter()
                 .collect::<Vec<_>>();
 

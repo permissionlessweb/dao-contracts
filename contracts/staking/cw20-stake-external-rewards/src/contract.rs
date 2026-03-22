@@ -14,10 +14,9 @@ use crate::ContractError::{
 use cosmwasm_std::entry_point;
 
 use cosmwasm_std::{
-    from_json, to_json_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Empty, Env,
-    MessageInfo, Response, StdError, StdResult, Uint128, Uint256, WasmMsg,
+    Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, MigrateInfo, Response, StdError, StdResult, Uint128, Uint256, WasmMsg, from_json, to_json_binary
 };
-use cw2::{get_contract_version, set_contract_version, ContractVersion};
+use cw2::set_contract_version;
 use cw20::{Cw20ReceiveMsg, Denom};
 use dao_hooks::stake::StakeChangedHookMsg;
 
@@ -83,8 +82,8 @@ pub fn instantiate(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    return Err(ContractError::Std(cosmwasm_std::StdError::generic_err(
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg, _info: MigrateInfo) -> Result<Response, ContractError> {
+    return Err(ContractError::Std(cosmwasm_std::StdError::msg(
         "cannot migrate from v1 -> v3. DAOs must first migrate to  =< v2.8.0-alpha.2",
     )));
 }
@@ -121,7 +120,7 @@ pub fn execute_receive(
         return Err(InvalidCw20 {});
     };
     match msg {
-        ReceiveMsg::Fund {} => execute_fund(deps, env, sender, wrapper.amount),
+        ReceiveMsg::Fund {} => execute_fund(deps, env, sender, wrapper.amount.try_into().unwrap()),
     }
 }
 
@@ -134,7 +133,7 @@ pub fn execute_fund_native(
 
     match config.reward_token {
         Denom::Native(denom) => {
-            let amount = cw_utils::must_pay(&info, &denom).map_err(|_| InvalidFunds {})?;
+            let amount: Uint128 = cw_utils::must_pay(&info, &denom).map_err(|_| InvalidFunds {})?.try_into().unwrap();
             execute_fund(deps, env, info.sender, amount)
         }
         Cw20(_) => Err(InvalidFunds {}),
@@ -158,7 +157,7 @@ pub fn execute_fund(
         period_finish: env.block.height + reward_config.reward_duration,
         reward_rate: amount
             .checked_div(Uint128::from(reward_config.reward_duration))
-            .map_err(StdError::divide_by_zero)?,
+            .map_err(|e| StdError::msg(e.to_string()))?,
         // As we're not changing the value and changing the value
         // validates that the duration is non-zero we don't need to
         // check here.
@@ -247,13 +246,13 @@ pub fn get_transfer_msg(recipient: Addr, amount: Uint128, denom: Denom) -> StdRe
     match denom {
         Denom::Native(denom) => Ok(BankMsg::Send {
             to_address: recipient.into_string(),
-            amount: vec![Coin { denom, amount }],
+            amount: vec![Coin { denom, amount: amount.into() }],
         }
         .into()),
         Denom::Cw20(addr) => {
             let cw20_msg = to_json_binary(&cw20::Cw20ExecuteMsg::Transfer {
                 recipient: recipient.into_string(),
-                amount,
+                amount: amount.into(),
             })?;
             Ok(WasmMsg::Execute {
                 contract_addr: addr.into_string(),
@@ -293,7 +292,7 @@ pub fn get_reward_per_token(deps: Deps, env: &Env, staking_contract: &Addr) -> S
     let last_time_reward_applicable = get_last_time_reward_applicable(deps, env)?;
     let last_update_block = LAST_UPDATE_BLOCK.load(deps.storage).unwrap_or_default();
     let prev_reward_per_token = REWARD_PER_TOKEN.load(deps.storage).unwrap_or_default();
-    let additional_reward_per_token = if total_staked == Uint128::zero() {
+    let additional_reward_per_token = if total_staked == Uint256::zero() {
         Uint256::zero()
     } else {
         // It is impossible for this to overflow as total rewards can never exceed max value of
@@ -335,14 +334,14 @@ fn get_last_time_reward_applicable(deps: Deps, env: &Env) -> StdResult<u64> {
     Ok(min(env.block.height, reward_config.period_finish))
 }
 
-fn get_total_staked(deps: Deps, contract_addr: &Addr) -> StdResult<Uint128> {
+fn get_total_staked(deps: Deps, contract_addr: &Addr) -> StdResult<Uint256> {
     let msg = cw20_stake::msg::QueryMsg::TotalStakedAtHeight { height: None };
     let resp: cw20_stake::msg::TotalStakedAtHeightResponse =
         deps.querier.query_wasm_smart(contract_addr, &msg)?;
     Ok(resp.total)
 }
 
-fn get_staked_balance(deps: Deps, contract_addr: &Addr, addr: &Addr) -> StdResult<Uint128> {
+fn get_staked_balance(deps: Deps, contract_addr: &Addr, addr: &Addr) -> StdResult<Uint256> {
     let msg = cw20_stake::msg::QueryMsg::StakedBalanceAtHeight {
         address: addr.into(),
         height: None,

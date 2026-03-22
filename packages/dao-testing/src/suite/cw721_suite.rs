@@ -206,7 +206,7 @@ impl DaoTestingSuite<Cw721DaoExtra> for DaoTestingSuiteCw721<'_> {
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::Uint128;
+    use cosmwasm_std::Uint256;
 
     use super::*;
 
@@ -255,7 +255,7 @@ mod tests {
             .unwrap();
         assert_eq!(
             total_weight.power,
-            Uint128::from(suite.initial_nfts.len() as u128)
+            Uint256::from(suite.initial_nfts.len() as u128)
         );
     }
 }

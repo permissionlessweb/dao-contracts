@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Uint128;
+use cosmwasm_std::Uint256;
 
 use crate::state::CheckedCounterparty;
 
@@ -7,11 +7,11 @@ use crate::state::CheckedCounterparty;
 #[cw_serde]
 pub enum TokenInfo {
     /// A native token.
-    Native { denom: String, amount: Uint128 },
+    Native { denom: String, amount: Uint256 },
     /// A cw20 token.
     Cw20 {
         contract_addr: String,
-        amount: Uint128,
+        amount: Uint256,
     },
 }
 

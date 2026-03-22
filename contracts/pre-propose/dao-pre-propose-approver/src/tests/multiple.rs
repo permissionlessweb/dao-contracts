@@ -1,5 +1,5 @@
 use cosmwasm_std::testing::MockApi;
-use cosmwasm_std::{coins, from_json, to_json_binary, Addr, Coin, Empty, Uint128};
+use cosmwasm_std::{coins, from_json, to_json_binary, Addr, Coin, Empty, MigrateInfo, StdError, Uint128};
 use cw2::ContractVersion;
 use cw20::Cw20Coin;
 use cw_denom::UncheckedDenom;
@@ -9,7 +9,7 @@ use dao_proposal_multiple::query::{ProposalListResponse, ProposalResponse};
 use dao_voting::multiple_choice::{
     MultipleChoiceOption, MultipleChoiceOptions, MultipleChoiceVote, VotingStrategy,
 };
-use dao_voting::pre_propose::{PreProposeSubmissionPolicy, PreProposeSubmissionPolicyError};
+use dao_voting::pre_propose::PreProposeSubmissionPolicy;
 
 use dao_interface::state::ProposalModule;
 use dao_interface::state::{Admin, ModuleInstantiateInfo};
@@ -19,7 +19,7 @@ use dao_pre_propose_approval_multiple::{
     },
     state::Proposal,
 };
-use dao_pre_propose_base::{error::PreProposeError, msg::DepositInfoResponse, state::Config};
+use dao_pre_propose_base::{msg::DepositInfoResponse, state::Config};
 use dao_proposal_multiple as dpm;
 use dao_proposal_single as dps;
 use dao_testing::helpers::instantiate_with_cw4_groups_governance;
@@ -47,13 +47,20 @@ fn addr_str(name: &str) -> String {
     addr(name).to_string()
 }
 
+fn dummy_migrate_info() -> MigrateInfo {
+    MigrateInfo {
+        sender: Addr::unchecked(""),
+        old_migrate_version: None,
+    }
+}
+
 fn dao_proposal_single_contract() -> Box<dyn Contract<Empty>> {
     let contract = ContractWrapper::new(
         dps::contract::execute,
         dps::contract::instantiate,
         dps::contract::query,
     )
-    .with_migrate(dps::contract::migrate)
+    .with_migrate(|deps, env, msg| dps::contract::migrate(deps, env, msg, dummy_migrate_info()))
     .with_reply(dps::contract::reply);
     Box::new(contract)
 }
@@ -64,7 +71,7 @@ fn dao_proposal_multiple_contract() -> Box<dyn Contract<Empty>> {
         dpm::contract::instantiate,
         dpm::contract::query,
     )
-    .with_migrate(dpm::contract::migrate)
+    .with_migrate(|deps, env, msg| dpm::contract::migrate(deps, env, msg, dummy_migrate_info()))
     .with_reply(dpm::contract::reply);
     Box::new(contract)
 }
@@ -124,11 +131,11 @@ fn discover_approver_core_addr(with_cw20: bool) -> String {
         Some(vec![
             cw20::Cw20Coin {
                 address: addr_str("ekez"),
-                amount: Uint128::new(9),
+                amount: Uint128::new(9).into(),
             },
             cw20::Cw20Coin {
                 address: addr_str("keze"),
-                amount: Uint128::new(8),
+                amount: Uint128::new(8).into(),
             },
         ]),
     );
@@ -157,11 +164,11 @@ fn discover_approver_core_addr(with_cw20: bool) -> String {
         Some(vec![
             cw20::Cw20Coin {
                 address: addr_str("ekez"),
-                amount: Uint128::new(9),
+                amount: Uint128::new(9).into(),
             },
             cw20::Cw20Coin {
                 address: addr_str("keze"),
-                amount: Uint128::new(8),
+                amount: Uint128::new(8).into(),
             },
         ]),
     );
@@ -261,7 +268,7 @@ fn instantiate_cw20_base_default(app: &mut App) -> Addr {
         decimals: 6,
         initial_balances: vec![Cw20Coin {
             address: addr_str("ekez"),
-            amount: Uint128::new(10),
+            amount: Uint128::new(10).into(),
         }],
         mint: None,
         marketing: None,
@@ -312,11 +319,11 @@ fn setup_default_test(
         Some(vec![
             cw20::Cw20Coin {
                 address: addr_str("ekez"),
-                amount: Uint128::new(9),
+                amount: Uint128::new(9).into(),
             },
             cw20::Cw20Coin {
                 address: addr_str("keze"),
-                amount: Uint128::new(8),
+                amount: Uint128::new(8).into(),
             },
         ]),
     );
@@ -366,11 +373,11 @@ fn setup_default_test(
         Some(vec![
             cw20::Cw20Coin {
                 address: addr_str("ekez"),
-                amount: Uint128::new(9),
+                amount: Uint128::new(9).into(),
             },
             cw20::Cw20Coin {
                 address: addr_str("keze"),
-                amount: Uint128::new(8),
+                amount: Uint128::new(8).into(),
             },
         ]),
     );
@@ -489,7 +496,7 @@ fn increase_allowance(app: &mut App, sender: &str, receiver: &Addr, cw20: Addr, 
         cw20,
         &cw20::Cw20ExecuteMsg::IncreaseAllowance {
             spender: receiver.to_string(),
-            amount,
+            amount: amount.into(),
             expires: None,
         },
         &[],
@@ -506,12 +513,12 @@ fn get_balance_cw20<T: Into<String>, U: Into<String>>(
         address: address.into(),
     };
     let result: cw20::BalanceResponse = app.wrap().query_wasm_smart(contract_addr, &msg).unwrap();
-    result.balance
+    Uint128::try_from(result.balance).unwrap()
 }
 
 fn get_balance_native(app: &App, who: &str, denom: &str) -> Uint128 {
     let res = app.wrap().query_balance(who, denom).unwrap();
-    res.amount
+    Uint128::try_from(res.amount).unwrap()
 }
 
 fn vote_single(app: &mut App, module: Addr, sender: &str, id: u64, position: Vote) -> Status {
@@ -668,7 +675,7 @@ fn update_config_should_fail(
     sender: &str,
     deposit_info: Option<UncheckedDepositInfo>,
     submission_policy: PreProposeSubmissionPolicy,
-) -> PreProposeError {
+) -> StdError {
     app.execute_contract(
         Addr::unchecked(sender),
         module,
@@ -679,8 +686,6 @@ fn update_config_should_fail(
         &[],
     )
     .unwrap_err()
-    .downcast()
-    .unwrap()
 }
 
 fn withdraw(app: &mut App, module: Addr, sender: &str, denom: Option<UncheckedDenom>) {
@@ -698,7 +703,7 @@ fn withdraw_should_fail(
     module: Addr,
     sender: &str,
     denom: Option<UncheckedDenom>,
-) -> PreProposeError {
+) -> StdError {
     app.execute_contract(
         Addr::unchecked(sender),
         module,
@@ -706,8 +711,6 @@ fn withdraw_should_fail(
         &[],
     )
     .unwrap_err()
-    .downcast()
-    .unwrap()
 }
 
 fn close_proposal(app: &mut App, module: Addr, sender: &str, proposal_id: u64) {
@@ -776,7 +779,7 @@ fn test_native_permutation(
             denom: DepositToken::Token {
                 denom: UncheckedDenom::Native("ujuno".to_string()),
             },
-            amount: Uint128::new(10),
+            amount: Uint128::new(10).into(),
             refund_policy,
         }),
         false,
@@ -885,7 +888,7 @@ fn test_cw20_permutation(
             denom: DepositToken::Token {
                 denom: UncheckedDenom::Cw20(cw20_address.to_string()),
             },
-            amount: Uint128::new(10),
+            amount: Uint128::new(10).into(),
             refund_policy,
         }),
         false,
@@ -1178,7 +1181,7 @@ fn test_multiple_open_proposals() {
             denom: DepositToken::Token {
                 denom: UncheckedDenom::Native("ujuno".to_string()),
             },
-            amount: Uint128::new(10),
+            amount: Uint128::new(10).into(),
             refund_policy: DepositRefundPolicy::Always,
         }),
         false,
@@ -1263,7 +1266,7 @@ fn test_set_version() {
             denom: DepositToken::Token {
                 denom: UncheckedDenom::Native("ujuno".to_string()),
             },
-            amount: Uint128::new(10),
+            amount: Uint128::new(10).into(),
             refund_policy: DepositRefundPolicy::Always,
         }),
         false,
@@ -1305,13 +1308,13 @@ fn test_permissions() {
             denom: DepositToken::Token {
                 denom: UncheckedDenom::Native("ujuno".to_string()),
             },
-            amount: Uint128::new(10),
+            amount: Uint128::new(10).into(),
             refund_policy: DepositRefundPolicy::Always,
         }),
         false, // no open proposal submission.
     );
 
-    let err: PreProposeError = app
+    let err = app
         .execute_contract(
             core_addr,
             pre_propose.clone(),
@@ -1321,14 +1324,12 @@ fn test_permissions() {
             },
             &[],
         )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(err, PreProposeError::NotModule {});
+        .unwrap_err();
+    assert!(err.to_string().contains("Message sender is not proposal module"));
 
     // Non-members may not propose when open_propose_submission is
     // disabled.
-    let err: PreProposeError = app
+    let err = app
         .execute_contract(
             MockApi::default().addr_make("nonmember"),
             pre_propose,
@@ -1355,13 +1356,8 @@ fn test_permissions() {
             },
             &[],
         )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(
-        err,
-        PreProposeError::SubmissionPolicy(PreProposeSubmissionPolicyError::Unauthorized {})
-    );
+        .unwrap_err();
+    assert!(err.to_string().contains("You are not allowed to submit proposals"));
 }
 
 #[test]
@@ -1384,7 +1380,7 @@ fn test_approval_and_rejection_permissions() {
             denom: DepositToken::Token {
                 denom: UncheckedDenom::Native("ujuno".to_string()),
             },
-            amount: Uint128::new(10),
+            amount: Uint128::new(10).into(),
             refund_policy: DepositRefundPolicy::Always,
         }),
         true, // yes, open proposal submission.
@@ -1400,7 +1396,7 @@ fn test_approval_and_rejection_permissions() {
     );
 
     // Only approver can propose
-    let err: PreProposeError = app
+    let err = app
         .execute_contract(
             MockApi::default().addr_make("nonmember"),
             pre_propose.clone(),
@@ -1409,13 +1405,11 @@ fn test_approval_and_rejection_permissions() {
             },
             &[],
         )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(err, PreProposeError::Unauthorized {});
+        .unwrap_err();
+    assert!(err.to_string().contains("Unauthorized"));
 
     // Only approver can propose
-    let err: PreProposeError = app
+    let err = app
         .execute_contract(
             MockApi::default().addr_make("nonmember"),
             pre_propose,
@@ -1424,10 +1418,8 @@ fn test_approval_and_rejection_permissions() {
             },
             &[],
         )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(err, PreProposeError::Unauthorized {});
+        .unwrap_err();
+    assert!(err.to_string().contains("Unauthorized"));
 }
 
 #[test]
@@ -1450,7 +1442,7 @@ fn test_propose_open_proposal_submission() {
             denom: DepositToken::Token {
                 denom: UncheckedDenom::Native("ujuno".to_string()),
             },
-            amount: Uint128::new(10),
+            amount: Uint128::new(10).into(),
             refund_policy: DepositRefundPolicy::Always,
         }),
         true, // yes, open proposal submission.
@@ -1545,7 +1537,7 @@ fn test_update_config() {
             denom: DepositToken::Token {
                 denom: UncheckedDenom::Native("ujuno".to_string()),
             },
-            amount: Uint128::new(10),
+            amount: Uint128::new(10).into(),
             refund_policy: DepositRefundPolicy::Never,
         }),
         PreProposeSubmissionPolicy::Anyone { denylist: vec![] },
@@ -1557,7 +1549,7 @@ fn test_update_config() {
         Config {
             deposit_info: Some(CheckedDepositInfo {
                 denom: cw_denom::CheckedDenom::Native("ujuno".to_string()),
-                amount: Uint128::new(10),
+                amount: Uint128::new(10).into(),
                 refund_policy: DepositRefundPolicy::Never
             }),
             submission_policy: PreProposeSubmissionPolicy::Anyone { denylist: vec![] },
@@ -1595,7 +1587,7 @@ fn test_update_config() {
         DepositInfoResponse {
             deposit_info: Some(CheckedDepositInfo {
                 denom: cw_denom::CheckedDenom::Native("ujuno".to_string()),
-                amount: Uint128::new(10),
+                amount: Uint128::new(10).into(),
                 refund_policy: DepositRefundPolicy::Never
             }),
             proposer: MockApi::default().addr_make("ekez"),
@@ -1619,7 +1611,7 @@ fn test_update_config() {
         None,
         PreProposeSubmissionPolicy::Anyone { denylist: vec![] },
     );
-    assert_eq!(err, PreProposeError::NotDao {});
+    assert!(err.to_string().contains("Message sender is not dao"));
 
     // Errors when no one is authorized to create proposals.
     let err = update_config_should_fail(
@@ -1633,10 +1625,7 @@ fn test_update_config() {
             denylist: vec![],
         },
     );
-    assert_eq!(
-        err,
-        PreProposeError::SubmissionPolicy(PreProposeSubmissionPolicyError::NoOneAllowed {})
-    );
+    assert!(err.to_string().contains("doesn't allow anyone to submit proposals"));
 
     // Errors when allowlist and denylist overlap.
     let err = update_config_should_fail(
@@ -1650,12 +1639,7 @@ fn test_update_config() {
             denylist: vec![MockApi::default().addr_make("ekez")],
         },
     );
-    assert_eq!(
-        err,
-        PreProposeError::SubmissionPolicy(
-            PreProposeSubmissionPolicyError::DenylistAllowlistOverlap {}
-        )
-    );
+    assert!(err.to_string().contains("Denylist cannot contain addresses in the allowlist"));
 }
 
 #[test]
@@ -1684,7 +1668,7 @@ fn test_approver_unsupported_update_config() {
             denylist: vec![],
         },
     );
-    assert_eq!(err, PreProposeError::Unsupported {});
+    assert!(err.to_string().contains("Unsupported"));
 }
 
 #[test]
@@ -1702,7 +1686,7 @@ fn test_approver_unsupported_update_submission_policy() {
 
     // Should fail because submission policy is not supported for the approver
     // pre-propose contract.
-    let err: PreProposeError = app
+    let err = app
         .execute_contract(
             core_addr,
             pre_propose_approver,
@@ -1715,10 +1699,8 @@ fn test_approver_unsupported_update_submission_policy() {
             },
             &[],
         )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(err, PreProposeError::Unsupported {});
+        .unwrap_err();
+    assert!(err.to_string().contains("Unsupported"));
 }
 
 #[test]
@@ -1769,7 +1751,7 @@ fn test_withdraw() {
         proposal_multiple.as_str(),
         Some(UncheckedDenom::Native("ujuno".to_string())),
     );
-    assert_eq!(err, PreProposeError::NotDao {});
+    assert!(err.to_string().contains("Message sender is not dao"));
 
     let err = withdraw_should_fail(
         &mut app,
@@ -1777,10 +1759,10 @@ fn test_withdraw() {
         core_addr.as_str(),
         Some(UncheckedDenom::Native("ujuno".to_string())),
     );
-    assert_eq!(err, PreProposeError::NothingToWithdraw {});
+    assert!(err.to_string().contains("Nothing to withdraw"));
 
     let err = withdraw_should_fail(&mut app, pre_propose.clone(), core_addr.as_str(), None);
-    assert_eq!(err, PreProposeError::NoWithdrawalDenom {});
+    assert!(err.to_string().contains("No denomination for withdrawal"));
 
     // Turn on native deposits.
     update_config(
@@ -1791,7 +1773,7 @@ fn test_withdraw() {
             denom: DepositToken::Token {
                 denom: UncheckedDenom::Native("ujuno".to_string()),
             },
-            amount: Uint128::new(10),
+            amount: Uint128::new(10).into(),
             refund_policy: DepositRefundPolicy::Always,
         }),
         PreProposeSubmissionPolicy::Specific {
@@ -1844,7 +1826,7 @@ fn test_withdraw() {
             denom: DepositToken::Token {
                 denom: UncheckedDenom::Cw20(cw20_address.to_string()),
             },
-            amount: Uint128::new(10),
+            amount: Uint128::new(10).into(),
             refund_policy: DepositRefundPolicy::Always,
         }),
         PreProposeSubmissionPolicy::Specific {
@@ -1928,7 +1910,7 @@ fn test_reset_approver() {
             denom: DepositToken::Token {
                 denom: UncheckedDenom::Native("ujuno".to_string()),
             },
-            amount: Uint128::new(10),
+            amount: Uint128::new(10).into(),
             refund_policy: DepositRefundPolicy::Always,
         }),
         false,
@@ -1947,7 +1929,7 @@ fn test_reset_approver() {
     assert_eq!(approver, pre_propose_approver);
 
     // Fail to change approver by non-approver.
-    let err: PreProposeError = app
+    let err = app
         .execute_contract(
             MockApi::default().addr_make("someone"),
             pre_propose.clone(),
@@ -1958,13 +1940,11 @@ fn test_reset_approver() {
             },
             &[],
         )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(err, PreProposeError::Unauthorized {});
+        .unwrap_err();
+    assert!(err.to_string().contains("Unauthorized"));
 
     // Fail to reset approver back to approver DAO by non-approver.
-    let err: PreProposeError = app
+    let err = app
         .execute_contract(
             MockApi::default().addr_make("someone"),
             pre_propose_approver.clone(),
@@ -1973,10 +1953,8 @@ fn test_reset_approver() {
             },
             &[],
         )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(err, PreProposeError::Unauthorized {});
+        .unwrap_err();
+    assert!(err.to_string().contains("Unauthorized"));
 
     // Reset approver back to approver DAO.
     app.execute_contract(

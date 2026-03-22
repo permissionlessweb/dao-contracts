@@ -1,8 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Addr, Attribute, Binary, Deps, DepsMut, Env, MessageInfo, Order, Reply,
-    Response, StdResult, Storage, SubMsg, WasmMsg,
+    Addr, Attribute, Binary, Deps, DepsMut, Env, MessageInfo, MigrateInfo, Order, Reply, Response, StdResult, Storage, SubMsg, Uint128, WasmMsg, to_json_binary
 };
 use cw2::{get_contract_version, set_contract_version, ContractVersion};
 use cw_hooks::Hooks;
@@ -509,7 +508,7 @@ pub fn execute_vote(
         return Err(ContractError::Expired { id: proposal_id });
     }
 
-    let vote_power = get_voting_power_with_delegation(
+    let vote_power_raw = get_voting_power_with_delegation(
         deps.as_ref(),
         &env.contract.address,
         &prop.delegation_module,
@@ -518,6 +517,10 @@ pub fn execute_vote(
         proposal_id,
         prop.start_height,
     )?;
+    let vote_power = crate::proposal::VotePower {
+        total: Uint128::try_from(vote_power_raw.total).unwrap(),
+        individual: Uint128::try_from(vote_power_raw.individual).unwrap(),
+    };
     if vote_power.individual.is_zero() {
         return Err(ContractError::NotRegistered {});
     }
@@ -1041,13 +1044,13 @@ pub fn query_info(deps: Deps) -> StdResult<Binary> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg, _info: MigrateInfo) -> Result<Response, ContractError> {
     let ContractVersion {  .. } = get_contract_version(deps.storage)?;
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     match msg {
         MigrateMsg::FromV1 { .. } => {
-            return Err(ContractError::Std(cosmwasm_std::StdError::generic_err(
+            return Err(ContractError::Std(cosmwasm_std::StdError::msg(
                 "cannot migrate from v1 -> v3. DAOs must first migrate to  =< v2.8.0-alpha.2",
             )));
         }

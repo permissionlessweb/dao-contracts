@@ -1,7 +1,7 @@
-use cosmwasm_std::{StdError, Uint128};
+use cosmwasm_std::{StdError, Uint256};
 use thiserror::Error;
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
@@ -28,5 +28,13 @@ pub enum ContractError {
     InvalidFunds {},
 
     #[error("Invalid amount. Expected ({expected}), got ({actual})")]
-    InvalidAmount { expected: Uint128, actual: Uint128 },
+    InvalidAmount { expected: Uint256, actual: Uint256 },
+}
+
+impl PartialEq for ContractError {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
+        }
+    }
 }

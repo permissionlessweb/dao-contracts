@@ -2,7 +2,9 @@ use std::cmp::min;
 
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_json_binary, Addr, CosmosMsg, StdError, Uint128, WasmMsg};
+use cosmwasm_std::{
+    to_json_binary, Addr, CosmosMsg, MigrateInfo, StdError, Uint128, Uint256, WasmMsg,
+};
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InfoResponse, InstantiateMsg, MigrateMsg, QueryMsg};
@@ -156,9 +158,9 @@ fn get_distribution_msg(deps: Deps, env: &Env) -> Result<CosmosMsg, ContractErro
         },
     )?;
 
-    let amount = min(balance_info.balance, pending_rewards);
+    let amount = min(balance_info.balance, pending_rewards.into());
 
-    if amount == Uint128::zero() {
+    if amount == Uint256::zero() {
         return Err(ContractError::ZeroRewards {});
     }
 
@@ -229,8 +231,13 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
-    return Err(ContractError::Std(cosmwasm_std::StdError::generic_err(
+pub fn migrate(
+    _deps: DepsMut,
+    _env: Env,
+    _msg: MigrateMsg,
+    _info: MigrateInfo,
+) -> Result<Response, ContractError> {
+    return Err(ContractError::Std(cosmwasm_std::StdError::msg(
         "cannot migrate from v1 -> v3. DAOs must first migrate to  =< v2.8.0-alpha.2",
     )));
     // let ContractVersion { version, .. } = get_contract_version(deps.storage)?;

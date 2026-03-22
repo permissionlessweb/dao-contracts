@@ -1,5 +1,6 @@
 use cosmwasm_std::testing::{mock_dependencies, mock_env, MockApi};
-use cosmwasm_std::{to_json_binary, Addr, Coin, Decimal, Empty, Uint128, WasmMsg};
+use cosmwasm_std::MigrateInfo;
+use cosmwasm_std::{to_json_binary, Coin, Decimal, Empty, StdResult, Uint256, WasmMsg};
 use cw721_base::msg::{ExecuteMsg as Cw721ExecuteMsg, InstantiateMsg as Cw721InstantiateMsg};
 use cw_multi_test::{next_block, App, BankSudo, Executor, SudoMsg};
 use cw_utils::Duration;
@@ -32,7 +33,7 @@ use super::{
 
 // I can create new NFT collection when creating a dao-voting-cw721-staked contract
 #[test]
-fn test_instantiate_with_new_cw721_collection() -> anyhow::Result<()> {
+fn test_instantiate_with_new_cw721_collection() -> StdResult<()> {
     let mut app = App::default();
     let module_id = app.store_code(dao_voting_cw721_staked_contract());
     let cw721_id = app.store_code(cw721_base_contract());
@@ -83,7 +84,7 @@ fn test_instantiate_with_new_cw721_collection() -> anyhow::Result<()> {
 // I can stake tokens, voting power and total power is updated one
 // block later.
 #[test]
-fn test_stake_tokens() -> anyhow::Result<()> {
+fn test_stake_tokens() -> StdResult<()> {
     let CommonTest {
         mut app,
         module,
@@ -93,10 +94,10 @@ fn test_stake_tokens() -> anyhow::Result<()> {
     let total_power = query_total_power(&app, &module, None)?;
     let voting_power = query_voting_power(&app, &module, CREATOR_ADDR, None)?;
 
-    assert_eq!(total_power.power, Uint128::zero());
+    assert_eq!(total_power.power, Uint256::zero());
     assert_eq!(total_power.height, app.block_info().height);
 
-    assert_eq!(voting_power.power, Uint128::zero());
+    assert_eq!(voting_power.power, Uint256::zero());
     assert_eq!(voting_power.height, app.block_info().height);
 
     mint_and_stake_nft(&mut app, &nft, &module, CREATOR_ADDR, "1")?;
@@ -109,8 +110,8 @@ fn test_stake_tokens() -> anyhow::Result<()> {
     app.update_block(next_block);
 
     let (total, personal) = query_total_and_voting_power(&app, &module, CREATOR_ADDR, None)?;
-    assert_eq!(total, Uint128::new(1));
-    assert_eq!(personal, Uint128::new(1));
+    assert_eq!(total, Uint256::new(1));
+    assert_eq!(personal, Uint256::new(1));
 
     Ok(())
 }
@@ -120,7 +121,7 @@ fn test_stake_tokens() -> anyhow::Result<()> {
 // another addresses' token. Voting power and total power is updated
 // when I unstake.
 #[test]
-fn test_unstake_tokens_no_claims() -> anyhow::Result<()> {
+fn test_unstake_tokens_no_claims() -> StdResult<()> {
     let CommonTest {
         mut app,
         module,
@@ -141,20 +142,20 @@ fn test_unstake_tokens_no_claims() -> anyhow::Result<()> {
     app.update_block(next_block);
 
     let (total, personal) = query_total_and_voting_power(&app, &module, CREATOR_ADDR, None)?;
-    assert_eq!(total, Uint128::new(5));
-    assert_eq!(personal, Uint128::new(3));
+    assert_eq!(total, Uint256::new(5));
+    assert_eq!(personal, Uint256::new(3));
 
     unstake_nfts(&mut app, &module, CREATOR_ADDR, &["1", "2"])?;
 
     // Voting power is updated when I unstake. Waits a block as it's a
     // snapshot map.
     let (total, personal) = query_total_and_voting_power(&app, &module, CREATOR_ADDR, None)?;
-    assert_eq!(total, Uint128::new(5));
-    assert_eq!(personal, Uint128::new(3));
+    assert_eq!(total, Uint256::new(5));
+    assert_eq!(personal, Uint256::new(3));
     app.update_block(next_block);
     let (total, personal) = query_total_and_voting_power(&app, &module, CREATOR_ADDR, None)?;
-    assert_eq!(total, Uint128::new(3));
-    assert_eq!(personal, Uint128::new(1));
+    assert_eq!(total, Uint256::new(3));
+    assert_eq!(personal, Uint256::new(1));
 
     // I can not unstake tokens I do not own. Anyhow can't figure out
     // how to downcast this error so we check for the expected string.
@@ -178,7 +179,7 @@ fn test_unstake_tokens_no_claims() -> anyhow::Result<()> {
 // may do this. I can unset the owner. Updating the unstaking duration
 // does not impact outstanding claims.
 #[test]
-fn test_update_config() -> anyhow::Result<()> {
+fn test_update_config() -> StdResult<()> {
     let CommonTest {
         mut app,
         module,
@@ -205,7 +206,7 @@ fn test_update_config() -> anyhow::Result<()> {
     // Update config to invalid duration fails
     let err = update_config(&mut app, &module, CREATOR_ADDR, Some(Duration::Time(0))).unwrap_err();
     assert_eq!(
-        err.root_cause().to_string(),
+        err.to_string(),
         "Invalid unstaking duration, unstaking duration cannot be 0".to_string()
     );
 
@@ -268,7 +269,7 @@ fn test_update_config() -> anyhow::Result<()> {
 // claim results in an error. Attempting to claim with tokens to claim
 // results in me owning those tokens.
 #[test]
-fn test_claims() -> anyhow::Result<()> {
+fn test_claims() -> StdResult<()> {
     let CommonTest {
         mut app,
         module,
@@ -314,11 +315,11 @@ fn test_claims() -> anyhow::Result<()> {
 // Legacy claims test has been disabled because ClaimType::Legacy was removed
 // during the cw721-base 0.21.0 migration.
 // #[test]
-// pub fn test_legacy_claims_work() -> anyhow::Result<()> { ... }
+// pub fn test_legacy_claims_work() -> StdResult<()> { ... }
 
 // I can list all of the currently staked NFTs for an address.
 #[test]
-fn test_list_staked_nfts() -> anyhow::Result<()> {
+fn test_list_staked_nfts() -> StdResult<()> {
     let CommonTest {
         mut app,
         module,
@@ -367,7 +368,7 @@ fn test_list_staked_nfts() -> anyhow::Result<()> {
 }
 
 #[test]
-fn test_info_query_works() -> anyhow::Result<()> {
+fn test_info_query_works() -> StdResult<()> {
     let CommonTest { app, module, .. } = setup_test(None);
     let info = query_info(&app, &module)?;
     assert_eq!(info.info.version, env!("CARGO_PKG_VERSION").to_string());
@@ -376,7 +377,7 @@ fn test_info_query_works() -> anyhow::Result<()> {
 
 // The owner may add and remove hooks.
 #[test]
-fn test_add_remove_hooks() -> anyhow::Result<()> {
+fn test_add_remove_hooks() -> StdResult<()> {
     let CommonTest {
         mut app,
         module,
@@ -452,7 +453,7 @@ fn test_instantiate_with_invalid_duration_fails() {
         )
         .unwrap_err();
     assert_eq!(
-        err.root_cause().to_string(),
+        err.to_string(),
         "New NFT contract must be instantiated with at least one NFT".to_string()
     );
 }
@@ -491,7 +492,7 @@ fn test_instantiate_zero_active_threshold_count() {
             },
             unstaking_duration: None,
             active_threshold: Some(ActiveThreshold::AbsoluteCount {
-                count: Uint128::zero(),
+                count: Uint256::zero(),
             }),
         },
         &[],
@@ -535,7 +536,7 @@ fn test_instantiate_invalid_active_threshold_count_new_nft() {
             },
             unstaking_duration: None,
             active_threshold: Some(ActiveThreshold::AbsoluteCount {
-                count: Uint128::new(100),
+                count: Uint256::new(100),
             }),
         },
         &[],
@@ -561,7 +562,7 @@ fn test_instantiate_invalid_active_threshold_count_existing_nft() {
             },
             unstaking_duration: None,
             active_threshold: Some(ActiveThreshold::AbsoluteCount {
-                count: Uint128::new(100),
+                count: Uint256::new(100),
             }),
         },
         &[],
@@ -621,7 +622,7 @@ fn test_active_threshold_absolute_count() {
                 },
                 unstaking_duration: None,
                 active_threshold: Some(ActiveThreshold::AbsoluteCount {
-                    count: Uint128::new(3),
+                    count: Uint256::new(3),
                 }),
             },
             &[],
@@ -689,7 +690,7 @@ fn test_active_threshold_percent() {
                 },
                 unstaking_duration: None,
                 active_threshold: Some(ActiveThreshold::Percentage {
-                    percent: Decimal::percent(20),
+                    percent: Decimal::percent(20).into(),
                 }),
             },
             &[],
@@ -784,7 +785,7 @@ fn test_active_threshold_percent_rounds_up() {
                 },
                 unstaking_duration: None,
                 active_threshold: Some(ActiveThreshold::Percentage {
-                    percent: Decimal::percent(50),
+                    percent: Decimal::percent(50).into(),
                 }),
             },
             &[],
@@ -875,7 +876,7 @@ fn test_update_active_threshold() {
 
     let msg = ExecuteMsg::UpdateActiveThreshold {
         new_threshold: Some(ActiveThreshold::AbsoluteCount {
-            count: Uint128::new(1),
+            count: Uint256::new(1),
         }),
     };
 
@@ -899,7 +900,7 @@ fn test_update_active_threshold() {
     assert_eq!(
         resp.active_threshold,
         Some(ActiveThreshold::AbsoluteCount {
-            count: Uint128::new(1)
+            count: Uint256::new(1)
         })
     );
 }
@@ -940,7 +941,7 @@ fn test_active_threshold_percentage_gt_100() {
             },
             unstaking_duration: None,
             active_threshold: Some(ActiveThreshold::Percentage {
-                percent: Decimal::percent(120),
+                percent: Decimal::percent(120).into(),
             }),
         },
         &[],
@@ -986,7 +987,7 @@ fn test_active_threshold_percentage_lte_0() {
             },
             unstaking_duration: None,
             active_threshold: Some(ActiveThreshold::Percentage {
-                percent: Decimal::percent(0),
+                percent: Decimal::percent(0).into(),
             }),
         },
         &[],
@@ -1022,7 +1023,7 @@ fn test_invalid_instantiate_msg() {
                 },
                 unstaking_duration: None,
                 active_threshold: Some(ActiveThreshold::AbsoluteCount {
-                    count: Uint128::new(1),
+                    count: Uint256::new(1),
                 }),
             },
             &[],
@@ -1031,7 +1032,7 @@ fn test_invalid_instantiate_msg() {
         )
         .unwrap_err();
     assert_eq!(
-        err.root_cause().to_string(),
+        err.to_string(),
         "Error instantiating NFT contract".to_string()
     );
 }
@@ -1074,7 +1075,7 @@ fn test_invalid_initial_nft_msg() {
         )
         .unwrap_err();
     assert_eq!(
-        err.root_cause().to_string(),
+        err.to_string(),
         "New NFT contract must be instantiated with at least one NFT".to_string()
     );
 }
@@ -1119,7 +1120,7 @@ fn test_invalid_initial_nft_msg_wrong_absolute_count() {
                 },
                 unstaking_duration: None,
                 active_threshold: Some(ActiveThreshold::AbsoluteCount {
-                    count: Uint128::new(2),
+                    count: Uint256::new(2),
                 }),
             },
             &[],
@@ -1128,7 +1129,7 @@ fn test_invalid_initial_nft_msg_wrong_absolute_count() {
         )
         .unwrap_err();
     assert_eq!(
-        err.root_cause().to_string(),
+        err.to_string(),
         "Absolute count threshold cannot be greater than the total token supply".to_string()
     );
 }
@@ -1161,7 +1162,7 @@ fn test_no_initial_nfts_fails() {
                 },
                 unstaking_duration: None,
                 active_threshold: Some(ActiveThreshold::Percentage {
-                    percent: Decimal::percent(1),
+                    percent: Decimal::percent(1).into(),
                 }),
             },
             &[],
@@ -1170,7 +1171,7 @@ fn test_no_initial_nfts_fails() {
         )
         .unwrap_err();
     assert_eq!(
-        err.root_cause().to_string(),
+        err.to_string(),
         "New NFT contract must be instantiated with at least one NFT".to_string()
     );
 }
@@ -1221,7 +1222,7 @@ fn test_factory() {
             ),
             unstaking_duration: None,
             active_threshold: Some(ActiveThreshold::Percentage {
-                percent: Decimal::percent(1),
+                percent: Decimal::percent(1).into(),
             }),
         },
         &[],
@@ -1243,7 +1244,7 @@ fn test_factory_with_funds_pass_through() {
         to_address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
         amount: vec![Coin {
             denom: "ujuno".to_string(),
-            amount: Uint128::new(10000),
+            amount: Uint256::new(10000),
         }],
     }))
     .unwrap();
@@ -1297,7 +1298,7 @@ fn test_factory_with_funds_pass_through() {
             ),
             unstaking_duration: None,
             active_threshold: Some(ActiveThreshold::Percentage {
-                percent: Decimal::percent(1),
+                percent: Decimal::percent(1).into(),
             }),
         },
         &[],
@@ -1309,7 +1310,7 @@ fn test_factory_with_funds_pass_through() {
     // Instantiate using factory succeeds
     let funds = vec![Coin {
         denom: "ujuno".to_string(),
-        amount: Uint128::new(100),
+        amount: Uint256::new(100),
     }];
     app.instantiate_contract(
         module_id,
@@ -1347,7 +1348,7 @@ fn test_factory_with_funds_pass_through() {
             ),
             unstaking_duration: None,
             active_threshold: Some(ActiveThreshold::Percentage {
-                percent: Decimal::percent(1),
+                percent: Decimal::percent(1).into(),
             }),
         },
         &funds,
@@ -1393,7 +1394,7 @@ fn test_unsupported_factory_msg() {
             ),
             unstaking_duration: None,
             active_threshold: Some(ActiveThreshold::Percentage {
-                percent: Decimal::percent(1),
+                percent: Decimal::percent(1).into(),
             }),
         },
         &[],
@@ -1443,7 +1444,7 @@ fn test_factory_wrong_callback() {
             ),
             unstaking_duration: None,
             active_threshold: Some(ActiveThreshold::Percentage {
-                percent: Decimal::percent(1),
+                percent: Decimal::percent(1).into(),
             }),
         },
         &[],
@@ -1491,7 +1492,7 @@ fn test_factory_no_callback() {
             ),
             unstaking_duration: None,
             active_threshold: Some(ActiveThreshold::Percentage {
-                percent: Decimal::percent(1),
+                percent: Decimal::percent(1).into(),
             }),
         },
         &[],
@@ -1505,7 +1506,10 @@ fn test_factory_no_callback() {
 pub fn test_migrate_update_version() {
     let mut deps = mock_dependencies();
     cw2::set_contract_version(&mut deps.storage, "my-contract", "1.0.0").unwrap();
-    migrate(deps.as_mut(), mock_env(), MigrateMsg {}).unwrap();
+    migrate(deps.as_mut(), mock_env(), MigrateMsg {}, MigrateInfo {
+        sender: MockApi::default().addr_make(CREATOR_ADDR),
+        old_migrate_version: None,
+    }).unwrap();
     let version = cw2::get_contract_version(&deps.storage).unwrap();
     assert_eq!(version.version, CONTRACT_VERSION);
     assert_eq!(version.contract, CONTRACT_NAME);

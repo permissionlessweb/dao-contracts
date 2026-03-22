@@ -1,6 +1,6 @@
 use crate::state::Config;
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{Uint128, Uint256};
 
 use cw_ownable::cw_ownable_execute;
 
@@ -44,7 +44,7 @@ pub enum QueryMsg {
 pub struct InfoResponse {
     pub config: Config,
     pub last_payment_block: u64,
-    pub balance: Uint128,
+    pub balance: Uint256,
 }
 
 #[cw_serde]

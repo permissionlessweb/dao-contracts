@@ -2,7 +2,7 @@ use cosmwasm_std::Addr;
 use cw_multi_test::{App, AppResponse, Executor};
 use dao_cw721_extensions::roles::{ExecuteExt, MetadataExt};
 
-use anyhow::Result as AnyResult;
+use anyhow::{Error, Result as AnyResult};
 
 /// Note: `sender` and `receiver` must already be valid bech32 addresses.
 pub fn mint_nft(
@@ -26,4 +26,5 @@ pub fn mint_nft(
         },
         &[],
     )
+    .map_err(|e| Error::msg(e.to_string()))
 }

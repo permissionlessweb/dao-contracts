@@ -13,7 +13,6 @@ use cosmwasm_std::{to_json_binary, Addr, CosmosMsg, Decimal, Uint128, WasmMsg};
 use cw20::Cw20Coin;
 use cw_multi_test::{next_block, App, Executor};
 use cw_utils::Duration;
-use dao_proposal_multiple::ContractError;
 use dao_voting::{
     deposit::{DepositRefundPolicy, UncheckedDepositInfo, VotingModuleTokenType},
     multiple_choice::{
@@ -88,11 +87,9 @@ fn test_execute_proposal_open() {
             &ExecuteMsg::Execute { proposal_id },
             &[],
         )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
+        .unwrap_err();
 
-    assert!(matches!(err, ContractError::NotPassed {}))
+    assert!(err.to_string().contains("NotPassed"))
 }
 
 // A proposal can be executed if and only if it passed.
@@ -152,11 +149,9 @@ fn test_execute_proposal_rejected_closed() {
             &ExecuteMsg::Execute { proposal_id },
             &[],
         )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
+        .unwrap_err();
 
-    assert!(matches!(err, ContractError::NotPassed {}));
+    assert!(err.to_string().contains("NotPassed"));
 
     app.update_block(next_block);
 
@@ -180,10 +175,8 @@ fn test_execute_proposal_rejected_closed() {
             &ExecuteMsg::Execute { proposal_id },
             &[],
         )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert!(matches!(err, ContractError::NotPassed {}));
+        .unwrap_err();
+    assert!(err.to_string().contains("NotPassed"));
 }
 
 // A proposal can only be executed once. Any subsequent
@@ -249,10 +242,8 @@ fn test_execute_proposal_more_than_once() {
             &ExecuteMsg::Execute { proposal_id },
             &[],
         )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert!(matches!(err, ContractError::NotPassed {}));
+        .unwrap_err();
+    assert!(err.to_string().contains("NotPassed"));
 }
 
 // Users should be able to submit votes past the proposal
@@ -277,7 +268,7 @@ pub fn test_allow_voting_after_proposal_execution_pre_expiration_cw20() {
                 denom: dao_voting::deposit::DepositToken::VotingModuleToken {
                     token_type: VotingModuleTokenType::Cw20,
                 },
-                amount: Uint128::new(10_000_000),
+                amount: Uint128::new(10_000_000).into(),
                 refund_policy: DepositRefundPolicy::OnlyPassed,
             }),
             false,
@@ -293,11 +284,11 @@ pub fn test_allow_voting_after_proposal_execution_pre_expiration_cw20() {
         Some(vec![
             Cw20Coin {
                 address: addr_str(CREATOR_ADDR),
-                amount: Uint128::new(100_000_000),
+                amount: Uint128::new(100_000_000).into(),
             },
             Cw20Coin {
                 address: addr_str(ALTERNATIVE_ADDR),
-                amount: Uint128::new(50_000_000),
+                amount: Uint128::new(50_000_000).into(),
             },
         ]),
     );
@@ -310,7 +301,7 @@ pub fn test_allow_voting_after_proposal_execution_pre_expiration_cw20() {
     // Option 0 would mint 100_000_000 tokens for CREATOR_ADDR
     let msg = cw20::Cw20ExecuteMsg::Mint {
         recipient: addr_str(CREATOR_ADDR),
-        amount: Uint128::new(100_000_000),
+        amount: Uint128::new(100_000_000).into(),
     };
     let binary_msg = to_json_binary(&msg).unwrap();
 
@@ -362,8 +353,8 @@ pub fn test_allow_voting_after_proposal_execution_pre_expiration_cw20() {
     // assert proposal is passed with expected votes
     let prop = query_proposal(&app, &proposal_module, proposal_id);
     assert_eq!(prop.proposal.status, Status::Passed);
-    assert_eq!(prop.proposal.votes.get_id(0), Uint128::new(100000000));
-    assert_eq!(prop.proposal.votes.get_id(1), Uint128::new(0));
+    assert_eq!(prop.proposal.votes.get_id(0), cosmwasm_std::Uint256::from(100000000u128));
+    assert_eq!(prop.proposal.votes.get_id(1), cosmwasm_std::Uint256::zero());
 
     // someone wakes up and casts their vote to express their
     // opinion (not affecting the result of proposal)
@@ -385,8 +376,8 @@ pub fn test_allow_voting_after_proposal_execution_pre_expiration_cw20() {
     // assert proposal is passed with expected votes
     let prop = query_proposal(&app, &proposal_module, proposal_id);
     assert_eq!(prop.proposal.status, Status::Passed);
-    assert_eq!(prop.proposal.votes.get_id(0), Uint128::new(100000000));
-    assert_eq!(prop.proposal.votes.get_id(1), Uint128::new(50000000));
+    assert_eq!(prop.proposal.votes.get_id(0), cosmwasm_std::Uint256::from(100000000u128));
+    assert_eq!(prop.proposal.votes.get_id(1), cosmwasm_std::Uint256::from(50000000u128));
 
     // execute the proposal expecting
     app.execute_contract(

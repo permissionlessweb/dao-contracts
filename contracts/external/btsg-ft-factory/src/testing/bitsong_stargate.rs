@@ -1,10 +1,9 @@
-use anyhow::Error;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    from_json, to_json_binary, Addr, Api, Binary, BlockInfo, Coin, CustomMsg, CustomQuery, Querier,
-    Storage, Uint64,
+    Addr, Api, Binary, BlockInfo, Coin, CustomMsg, CustomQuery, Querier, StdError, StdResult,
+    Storage, Uint64, from_json, to_json_binary,
 };
-use cw_multi_test::{error::AnyResult, AppResponse, BankSudo, CosmosRouter, Stargate, SudoMsg};
+use cw_multi_test::{AppResponse, BankSudo, CosmosRouter, Stargate, SudoMsg};
 use prost::Message;
 use serde::de::DeserializeOwned;
 
@@ -41,7 +40,7 @@ impl Stargate for StargateKeeper {
         sender: Addr,
         type_url: String,
         value: Binary,
-    ) -> AnyResult<AppResponse>
+    ) -> StdResult<AppResponse>
     where
         ExecC: CustomMsg + DeserializeOwned + 'static,
         QueryC: CustomQuery + DeserializeOwned + 'static,
@@ -70,7 +69,6 @@ impl Stargate for StargateKeeper {
             return Ok(AppResponse {
                 events: vec![],
                 data: Some(Binary::from(MsgIssueResponse { denom })),
-                msg_responses: vec![],
             });
         }
         if type_url == *"/bitsong.fantoken.MsgMint" {
@@ -84,7 +82,7 @@ impl Stargate for StargateKeeper {
                 from_json(serialized_ft.unwrap()).expect("Failed to deserialize FanToken");
 
             if sender.as_str() != fantoken.minter || msg.minter != fantoken.minter {
-                return Err(Error::msg("Minter unauthorized"));
+                return Err(StdError::msg("Minter unauthorized"));
             }
 
             router.sudo(
@@ -93,14 +91,16 @@ impl Stargate for StargateKeeper {
                 block,
                 SudoMsg::Bank(BankSudo::Mint {
                     to_address: msg.recipient.clone(),
-                    amount: vec![Coin::new(coin.amount.parse::<u128>().unwrap(), coin.denom.clone())],
+                    amount: vec![Coin::new(
+                        coin.amount.parse::<u128>().unwrap(),
+                        coin.denom.clone(),
+                    )],
                 }),
-            )?;
+            ).map_err(|e| StdError::msg(e.to_string()))?;
 
             return Ok(AppResponse {
                 events: vec![],
                 data: Some(Binary::from(MsgMintResponse {})),
-                msg_responses: vec![],
             });
         }
         if type_url == *"/bitsong.fantoken.MsgSetMinter" {
@@ -112,11 +112,11 @@ impl Stargate for StargateKeeper {
                 from_json(serialized_ft.unwrap()).expect("Failed to deserialize FanToken");
 
             if sender.as_str() != fantoken.minter {
-                return Err(Error::msg("Unauthorized"));
+                return Err(StdError::msg("Unauthorized"));
             }
 
             if msg.old_minter != fantoken.minter {
-                return Err(Error::msg("Old minter does not match"));
+                return Err(StdError::msg("Old minter does not match"));
             }
 
             fantoken.minter = msg.new_minter;
@@ -125,7 +125,6 @@ impl Stargate for StargateKeeper {
             return Ok(AppResponse {
                 events: vec![],
                 data: Some(Binary::from(MsgSetMinterResponse {})),
-                msg_responses: vec![],
             });
         }
         if type_url == *"/bitsong.fantoken.MsgSetAuthority" {
@@ -137,11 +136,11 @@ impl Stargate for StargateKeeper {
                 from_json(serialized_ft.unwrap()).expect("Failed to deserialize FanToken");
 
             if sender.as_str() != fantoken.authority {
-                return Err(Error::msg("Unauthorized"));
+                return Err(StdError::msg("Unauthorized"));
             }
 
             if msg.old_authority != fantoken.authority {
-                return Err(Error::msg("Old authority does not match"));
+                return Err(StdError::msg("Old authority does not match"));
             }
 
             fantoken.authority = msg.new_authority;
@@ -150,7 +149,6 @@ impl Stargate for StargateKeeper {
             return Ok(AppResponse {
                 events: vec![],
                 data: Some(Binary::from(MsgSetMinterResponse {})),
-                msg_responses: vec![],
             });
         }
         if type_url == *"/bitsong.fantoken.MsgSetUri" {
@@ -162,7 +160,7 @@ impl Stargate for StargateKeeper {
                 from_json(serialized_ft.unwrap()).expect("Failed to deserialize FanToken");
 
             if sender.as_str() != fantoken.authority || msg.authority != fantoken.authority {
-                return Err(Error::msg("Authority unauthorized"));
+                return Err(StdError::msg("Authority unauthorized"));
             }
 
             fantoken.uri = msg.uri;
@@ -171,7 +169,6 @@ impl Stargate for StargateKeeper {
             return Ok(AppResponse {
                 events: vec![],
                 data: Some(Binary::from(MsgSetUriResponse {})),
-                msg_responses: vec![],
             });
         }
         Ok(AppResponse::default())
@@ -185,7 +182,7 @@ impl Stargate for StargateKeeper {
         _block: &BlockInfo,
         _path: String,
         data: Binary,
-    ) -> AnyResult<Binary> {
+    ) -> StdResult<Binary> {
         Ok(data)
     }
 }

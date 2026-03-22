@@ -11,7 +11,7 @@ use crate::testing::{
     },
     queries::{query_balance_cw20, query_dao_token, query_proposal, query_single_proposal_module},
 };
-use cosmwasm_std::{to_json_binary, Addr, CosmosMsg, Decimal, Uint128, WasmMsg};
+use cosmwasm_std::{to_json_binary, Addr, CosmosMsg, Decimal, Uint128, Uint256, WasmMsg};
 use cw20::Cw20Coin;
 use cw_multi_test::{next_block, App};
 use cw_utils::Duration;
@@ -24,7 +24,6 @@ use dao_voting::{
 
 use super::{addr_str, CREATOR_ADDR};
 use crate::query::ProposalResponse;
-use dao_proposal_single::ContractError;
 
 struct CommonTest {
     app: App,
@@ -68,7 +67,7 @@ fn test_execute_proposal_open() {
 
     // attempt to execute and assert that it fails
     let err = execute_proposal_should_fail(&mut app, &proposal_module, &addr_str(CREATOR_ADDR), proposal_id);
-    assert!(matches!(err, ContractError::NotPassed {}))
+    assert!(err.to_string().contains("not in 'passed' state"))
 }
 
 // A proposal can be executed if and only if it passed.
@@ -101,7 +100,7 @@ fn test_execute_proposal_rejected_closed() {
 
     // Attempt to execute
     let err = execute_proposal_should_fail(&mut app, &proposal_module, &addr_str(CREATOR_ADDR), proposal_id);
-    assert!(matches!(err, ContractError::NotPassed {}));
+    assert!(err.to_string().contains("not in 'passed' state"));
 
     app.update_block(next_block);
 
@@ -112,7 +111,7 @@ fn test_execute_proposal_rejected_closed() {
 
     // Attempt to execute
     let err = execute_proposal_should_fail(&mut app, &proposal_module, &addr_str(CREATOR_ADDR), proposal_id);
-    assert!(matches!(err, ContractError::NotPassed {}))
+    assert!(err.to_string().contains("not in 'passed' state"))
 }
 
 // A proposal can only be executed once. Any subsequent
@@ -148,9 +147,9 @@ fn test_execute_proposal_more_than_once() {
     // assert proposal executed and attempt to execute it again
     let proposal = query_proposal(&app, &proposal_module, proposal_id);
     assert_eq!(proposal.proposal.status, Status::Executed);
-    let err: ContractError =
+    let err =
         execute_proposal_should_fail(&mut app, &proposal_module, &addr_str(CREATOR_ADDR), proposal_id);
-    assert!(matches!(err, ContractError::NotPassed {}));
+    assert!(err.to_string().contains("not in 'passed' state"));
 }
 
 // After proposal is executed, no subsequent votes
@@ -175,7 +174,7 @@ pub fn test_executed_prop_state_remains_after_vote_swing() {
                 denom: dao_voting::deposit::DepositToken::VotingModuleToken {
                     token_type: VotingModuleTokenType::Cw20,
                 },
-                amount: Uint128::new(10_000_000),
+                amount: Uint256::from(10_000_000u128),
                 refund_policy: DepositRefundPolicy::OnlyPassed,
             }),
             false,
@@ -190,15 +189,15 @@ pub fn test_executed_prop_state_remains_after_vote_swing() {
         Some(vec![
             Cw20Coin {
                 address: addr_str("threshold"),
-                amount: Uint128::new(20),
+                amount: Uint256::from(20u128),
             },
             Cw20Coin {
                 address: addr_str(CREATOR_ADDR),
-                amount: Uint128::new(50),
+                amount: Uint256::from(50u128),
             },
             Cw20Coin {
                 address: addr_str("overslept_vote"),
-                amount: Uint128::new(30),
+                amount: Uint256::from(30u128),
             },
         ]),
     );
@@ -275,7 +274,7 @@ pub fn test_passed_prop_state_remains_after_vote_swing() {
                 denom: dao_voting::deposit::DepositToken::VotingModuleToken {
                     token_type: VotingModuleTokenType::Cw20,
                 },
-                amount: Uint128::new(10_000_000),
+                amount: Uint256::from(10_000_000u128),
                 refund_policy: DepositRefundPolicy::OnlyPassed,
             }),
             false,
@@ -290,15 +289,15 @@ pub fn test_passed_prop_state_remains_after_vote_swing() {
         Some(vec![
             Cw20Coin {
                 address: addr_str("threshold"),
-                amount: Uint128::new(20),
+                amount: Uint256::from(20u128),
             },
             Cw20Coin {
                 address: addr_str(CREATOR_ADDR),
-                amount: Uint128::new(50),
+                amount: Uint256::from(50u128),
             },
             Cw20Coin {
                 address: addr_str("overslept_vote"),
-                amount: Uint128::new(30),
+                amount: Uint256::from(30u128),
             },
         ]),
     );
@@ -308,7 +307,7 @@ pub fn test_passed_prop_state_remains_after_vote_swing() {
     // if the proposal passes, it should mint 100_000_000 tokens to "threshold"
     let msg = cw20::Cw20ExecuteMsg::Mint {
         recipient: addr_str("threshold"),
-        amount: Uint128::new(100_000_000),
+        amount: Uint256::from(100_000_000u128),
     };
     let binary_msg = to_json_binary(&msg).unwrap();
 

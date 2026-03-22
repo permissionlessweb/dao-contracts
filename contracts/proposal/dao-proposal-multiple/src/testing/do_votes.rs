@@ -103,7 +103,7 @@ where
         .iter()
         .map(|TestMultipleChoiceVote { voter, weight, .. }| Cw20Coin {
             address: voter.to_string(),
-            amount: *weight,
+            amount: (*weight).into(),
         })
         .collect::<Vec<Cw20Coin>>();
     let initial_balances_supply = votes.iter().fold(Uint128::zero(), |p, n| p + n.weight);
@@ -111,7 +111,7 @@ where
     if let Some(fill) = to_fill {
         initial_balances.push(Cw20Coin {
             address: addr_str("filler"),
-            amount: fill,
+            amount: fill.into(),
         })
     }
 
@@ -184,10 +184,10 @@ where
         // Mint the needed tokens to create the deposit.
         app.sudo(cw_multi_test::SudoMsg::Bank(BankSudo::Mint {
             to_address: proposer.clone(),
-            amount: coins(amount.u128(), denom),
+            amount: coins(Uint128::try_from(amount).unwrap().u128(), denom),
         }))
         .unwrap();
-        coins(amount.u128(), denom)
+        coins(Uint128::try_from(amount).unwrap().u128(), denom)
     } else {
         vec![]
     };
@@ -264,7 +264,7 @@ where
                         ..
                     }) => {
                         if proposer == voter {
-                            weight - amount
+                            weight - Uint128::try_from(amount).unwrap()
                         } else {
                             weight
                         }

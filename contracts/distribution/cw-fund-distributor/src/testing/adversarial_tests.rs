@@ -1,6 +1,6 @@
 use crate::msg::ExecuteMsg::ClaimAll;
 use crate::msg::{ExecuteMsg, InstantiateMsg};
-use cosmwasm_std::{testing::MockApi, to_json_binary, Addr, Binary, Coin, Uint128};
+use cosmwasm_std::{testing::MockApi, to_json_binary, Addr, Binary, Coin, Uint256};
 use cw20::{BalanceResponse, Cw20Coin};
 use cw_multi_test::{next_block, App, BankSudo, Executor, SudoMsg};
 use cw_utils::Duration;
@@ -136,15 +136,15 @@ pub fn test_claim_lots_of_native_tokens() {
     } = setup_test(vec![
         Cw20Coin {
             address: MockApi::default().addr_make("bekauz").to_string(),
-            amount: Uint128::new(10),
+            amount: Uint256::new(10),
         },
         Cw20Coin {
             address: MockApi::default().addr_make("ekez").to_string(),
-            amount: Uint128::new(20),
+            amount: Uint256::new(20),
         },
     ]);
 
-    let amount = Uint128::new(500000);
+    let amount = Uint256::new(500000);
 
     let token_count = 500;
     // mint and fund the distributor contract with
@@ -154,7 +154,7 @@ pub fn test_claim_lots_of_native_tokens() {
         app.sudo(SudoMsg::Bank(BankSudo::Mint {
             to_address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
             amount: vec![Coin {
-                amount,
+                amount: amount.into(),
                 denom: denom.clone(),
             }],
         }))
@@ -185,7 +185,7 @@ pub fn test_claim_lots_of_native_tokens() {
     // assert that all the claims succeeded
     for n in 1..token_count {
         let denom = FEE_DENOM.to_owned() + &n.to_string();
-        let expected_balance = Uint128::new(166666);
+        let expected_balance = Uint256::new(166666);
         let user_balance_after_claim = app
             .wrap()
             .query_balance(MockApi::default().addr_make("bekauz").to_string(), denom)
@@ -205,15 +205,15 @@ pub fn test_claim_lots_of_cw20s() {
     } = setup_test(vec![
         Cw20Coin {
             address: MockApi::default().addr_make("bekauz").to_string(),
-            amount: Uint128::new(10),
+            amount: Uint256::new(10),
         },
         Cw20Coin {
             address: MockApi::default().addr_make("ekez").to_string(),
-            amount: Uint128::new(20),
+            amount: Uint256::new(20),
         },
     ]);
 
-    let amount = Uint128::new(500000);
+    let amount = Uint256::new(500000);
 
     // mint and fund (spam) the distributor contract with
     // a bunch of tokens
@@ -255,7 +255,7 @@ pub fn test_claim_lots_of_cw20s() {
     )
     .unwrap();
 
-    let expected_balance = Uint128::new(166666);
+    let expected_balance = Uint256::new(166666);
 
     // assert that all the claims succeeded
     cw20_addresses.into_iter().for_each(|addr| {

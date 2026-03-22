@@ -1,7 +1,7 @@
 use super::chain::Chain;
 use anyhow::Result;
 use cosm_orc::orchestrator::SigningKey;
-use cosmwasm_std::{to_json_binary, CosmosMsg, Decimal, Empty, Uint128};
+use cosmwasm_std::{to_json_binary, CosmosMsg, Decimal, Empty, Uint128, Uint256};
 use cw20::Cw20Coin;
 use cw_utils::Duration;
 use dao_interface::query::DumpStateResponse;
@@ -49,7 +49,7 @@ pub fn create_dao(
                     decimals: 6,
                     initial_balances: vec![Cw20Coin {
                         address: user_addr,
-                        amount: Uint128::new(100_000_000),
+                        amount: Uint128::new(100_000_000).into(),
                     }],
                     marketing: None,
                     staking_code_id: chain.orc.contract_map.code_id("cw20_stake")?,
@@ -58,7 +58,7 @@ pub fn create_dao(
                     initial_dao_balance: None,
                 },
                 active_threshold: None,
-            })?,
+            }).map_err(|e| anyhow::anyhow!("{}", e))?,
             admin: Some(Admin::CoreModule {}),
             label: "DAO DAO Voting Module".to_string(),
             funds: None,
@@ -84,7 +84,7 @@ pub fn create_dao(
                                 denom: DepositToken::VotingModuleToken {
                                     token_type: VotingModuleTokenType::Cw20,
                                 },
-                                amount: DEPOSIT_AMOUNT,
+                                amount: Uint256::from(DEPOSIT_AMOUNT),
                                 refund_policy: DepositRefundPolicy::OnlyPassed,
                             }),
                             submission_policy: PreProposeSubmissionPolicy::Specific {
@@ -103,7 +103,7 @@ pub fn create_dao(
                 },
                 veto: None,
                 delegation_module: None,
-            })?,
+            }).map_err(|e| anyhow::anyhow!("{}", e))?,
             admin: Some(Admin::CoreModule {}),
             funds: None,
             label: "DAO DAO Proposal Module".to_string(),
@@ -200,7 +200,7 @@ pub fn stake_tokens(chain: &mut Chain, how_many: u128, key: &SigningKey) {
             "send_and_stake_cw20",
             &cw20::Cw20ExecuteMsg::Send {
                 contract: chain.orc.contract_map.address("cw20_stake").unwrap(),
-                amount: Uint128::new(how_many),
+                amount: Uint128::new(how_many).into(),
                 msg: to_json_binary(&cw20_stake::msg::ReceiveMsg::Stake {}).unwrap(),
             },
             key,
@@ -240,7 +240,7 @@ pub fn create_proposal(
                     .contract_map
                     .address("dao_pre_propose_single")
                     .unwrap(),
-                amount: DEPOSIT_AMOUNT,
+                amount: DEPOSIT_AMOUNT.into(),
                 expires: None,
             },
             key,

@@ -1,10 +1,10 @@
 use std::borrow::BorrowMut;
 
 use cosmwasm_std::testing::MockApi;
-use cosmwasm_std::{coin, to_json_binary, Addr, Uint128};
+use cosmwasm_std::{Addr, Uint128, Uint256, coin, to_json_binary};
 use cw20::{Cw20Coin, Cw20ExecuteMsg, Denom};
 use cw_multi_test::{next_block, App, BankSudo, Executor, SudoMsg};
-use cw_ownable::{Action, Ownership, OwnershipError};
+use cw_ownable::{Action, Ownership};
 use cw_utils::Duration;
 use dao_testing::contracts::{
     cw20_base_contract, cw20_stake_contract, cw20_stake_external_rewards_contract,
@@ -13,7 +13,7 @@ use dao_testing::contracts::{
 use crate::msg::{
     ExecuteMsg, InfoResponse, PendingRewardsResponse, QueryMsg, ReceiveMsg,
 };
-use cw20_stake_external_rewards::ContractError;
+
 
 const OWNER: &str = "owner";
 const ADDR1: &str = "addr1";
@@ -57,16 +57,16 @@ fn instantiate_staking(app: &mut App, cw20: Addr, unstaking_duration: Option<Dur
     .unwrap()
 }
 
-fn stake_tokens<T: Into<String>>(
+fn stake_tokens<T: Into<String>, A: Into<Uint256>>(
     app: &mut App,
     staking_addr: &Addr,
     cw20_addr: &Addr,
     sender: T,
-    amount: u128,
+    amount: A,
 ) {
     let msg = cw20::Cw20ExecuteMsg::Send {
         contract: staking_addr.to_string(),
-        amount: Uint128::new(amount),
+        amount: amount.into(),
         msg: to_json_binary(&cw20_stake::msg::ReceiveMsg::Stake {}).unwrap(),
     };
     app.execute_contract(Addr::unchecked(sender), cw20_addr.clone(), &msg, &[])
@@ -75,7 +75,7 @@ fn stake_tokens<T: Into<String>>(
 
 fn unstake_tokens(app: &mut App, staking_addr: &Addr, address: &str, amount: u128) {
     let msg = cw20_stake::msg::ExecuteMsg::Unstake {
-        amount: Uint128::new(amount),
+        amount: Uint128::new(amount).into(),
     };
     app.execute_contract(MockApi::default().addr_make(address), staking_addr.clone(), &msg, &[])
         .unwrap();
@@ -94,7 +94,7 @@ fn setup_staking_contract(app: &mut App, initial_balances: Vec<Cw20Coin>) -> (Ad
             &staking_addr,
             &cw20_addr,
             coin.address,
-            coin.amount.u128(),
+            coin.amount,
         );
     }
     (staking_addr, cw20_addr)
@@ -129,7 +129,7 @@ fn get_balance_cw20<T: Into<String>, U: Into<String>>(
     app: &App,
     contract_addr: T,
     address: U,
-) -> Uint128 {
+) -> Uint256 {
     let msg = cw20::Cw20QueryMsg::Balance {
         address: address.into(),
     };
@@ -141,7 +141,7 @@ fn get_balance_native<T: Into<String>, U: Into<String>>(
     app: &App,
     address: T,
     denom: U,
-) -> Uint128 {
+) -> Uint256 {
     app.wrap().query_balance(address, denom).unwrap().amount
 }
 
@@ -182,7 +182,7 @@ fn fund_rewards_cw20(
     let fund_sub_msg = to_json_binary(&ReceiveMsg::Fund {}).unwrap();
     let fund_msg = Cw20ExecuteMsg::Send {
         contract: reward_addr.clone().into_string(),
-        amount: Uint128::new(amount),
+        amount: Uint256::new(amount),
         msg: fund_sub_msg,
     };
     let _res = app
@@ -216,12 +216,10 @@ fn test_zero_rewards_duration() {
         reward_token,
         reward_duration: 0,
     };
-    let err: ContractError = app
+    let err = app
         .instantiate_contract(reward_code_id, owner, &msg, &[], "reward", None)
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(err, ContractError::ZeroRewardDuration {})
+        .unwrap_err();
+    assert!(err.to_string().contains("Reward duration can not be zero"))
 }
 
 #[test]
@@ -232,15 +230,15 @@ fn test_native_rewards() {
     let initial_balances = vec![
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR1).to_string(),
-            amount: Uint128::new(100),
+            amount: Uint256::new(100),
         },
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR2).to_string(),
-            amount: Uint128::new(50),
+            amount: Uint256::new(50),
         },
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR3).to_string(),
-            amount: Uint128::new(50),
+            amount: Uint256::new(50),
         },
     ];
     let denom = "utest".to_string();
@@ -304,9 +302,9 @@ fn test_native_rewards() {
     assert_pending_rewards(&mut app, &reward_addr, ADDR2, 1000);
     assert_pending_rewards(&mut app, &reward_addr, ADDR3, 1000);
 
-    assert_eq!(get_balance_native(&app, MockApi::default().addr_make(ADDR1), &denom), Uint128::zero());
+    assert_eq!(get_balance_native(&app, MockApi::default().addr_make(ADDR1), &denom), Uint256::zero());
     claim_rewards(&mut app, reward_addr.clone(), ADDR1);
-    assert_eq!(get_balance_native(&app, MockApi::default().addr_make(ADDR1), &denom), Uint128::new(2000));
+    assert_eq!(get_balance_native(&app, MockApi::default().addr_make(ADDR1), &denom), Uint256::new(2000));
     assert_pending_rewards(&mut app, &reward_addr, ADDR1, 0);
 
     app.borrow_mut().update_block(|b| b.height += 10);
@@ -323,13 +321,13 @@ fn test_native_rewards() {
     assert_pending_rewards(&mut app, &reward_addr, ADDR3, 3500);
 
     claim_rewards(&mut app, reward_addr.clone(), ADDR1);
-    assert_eq!(get_balance_native(&app, MockApi::default().addr_make(ADDR1), &denom), Uint128::new(17000));
+    assert_eq!(get_balance_native(&app, MockApi::default().addr_make(ADDR1), &denom), Uint256::new(17000));
 
     claim_rewards(&mut app, reward_addr.clone(), ADDR2);
-    assert_eq!(get_balance_native(&app, MockApi::default().addr_make(ADDR2), &denom), Uint128::new(3500));
+    assert_eq!(get_balance_native(&app, MockApi::default().addr_make(ADDR2), &denom), Uint256::new(3500));
 
-    stake_tokens(&mut app, &staking_addr, &cw20_addr, MockApi::default().addr_make(ADDR2), 50);
-    stake_tokens(&mut app, &staking_addr, &cw20_addr, MockApi::default().addr_make(ADDR3), 50);
+    stake_tokens(&mut app, &staking_addr, &cw20_addr, MockApi::default().addr_make(ADDR2), Uint256::new(50));
+    stake_tokens(&mut app, &staking_addr, &cw20_addr, MockApi::default().addr_make(ADDR3), Uint256::new(50));
 
     app.borrow_mut().update_block(|b| b.height += 10);
     assert_pending_rewards(&mut app, &reward_addr, ADDR1, 5000);
@@ -354,16 +352,16 @@ fn test_native_rewards() {
     claim_rewards(&mut app, reward_addr.clone(), ADDR2);
     assert_eq!(
         get_balance_native(&app, MockApi::default().addr_make(ADDR1), &denom),
-        Uint128::new(50005000)
+        Uint256::new(50005000)
     );
     assert_eq!(
         get_balance_native(&app, MockApi::default().addr_make(ADDR2), &denom),
-        Uint128::new(24997500)
+        Uint256::new(24997500)
     );
-    assert_eq!(get_balance_native(&app, MockApi::default().addr_make(ADDR3), &denom), Uint128::new(0));
+    assert_eq!(get_balance_native(&app, MockApi::default().addr_make(ADDR3), &denom), Uint256::new(0));
     assert_eq!(
         get_balance_native(&app, &reward_addr, &denom),
-        Uint128::new(24997500)
+        Uint256::new(24997500)
     );
 
     app.borrow_mut().update_block(|b| b.height = 200000);
@@ -398,16 +396,16 @@ fn test_native_rewards() {
     claim_rewards(&mut app, reward_addr.clone(), ADDR2);
     assert_eq!(
         get_balance_native(&app, MockApi::default().addr_make(ADDR1), &denom),
-        Uint128::new(150005000)
+        Uint256::new(150005000)
     );
     assert_eq!(
         get_balance_native(&app, MockApi::default().addr_make(ADDR2), &denom),
-        Uint128::new(74997500)
+        Uint256::new(74997500)
     );
-    assert_eq!(get_balance_native(&app, MockApi::default().addr_make(ADDR3), &denom), Uint128::zero());
+    assert_eq!(get_balance_native(&app, MockApi::default().addr_make(ADDR3), &denom), Uint256::zero());
     assert_eq!(
         get_balance_native(&app, &reward_addr, &denom),
-        Uint128::new(74997500)
+        Uint256::new(74997500)
     );
 
     // Add more rewards
@@ -435,19 +433,19 @@ fn test_native_rewards() {
     claim_rewards(&mut app, reward_addr.clone(), ADDR3);
     assert_eq!(
         get_balance_native(&app, MockApi::default().addr_make(ADDR1), &denom),
-        Uint128::new(250005000)
+        Uint256::new(250005000)
     );
     assert_eq!(
         get_balance_native(&app, MockApi::default().addr_make(ADDR2), &denom),
-        Uint128::new(124997500)
+        Uint256::new(124997500)
     );
     assert_eq!(
         get_balance_native(&app, MockApi::default().addr_make(ADDR3), &denom),
-        Uint128::new(124997500)
+        Uint256::new(124997500)
     );
     assert_eq!(
         get_balance_native(&app, &reward_addr, &denom),
-        Uint128::zero()
+        Uint256::zero()
     );
 
     app.borrow_mut().update_block(|b| b.height = 500000);
@@ -457,7 +455,7 @@ fn test_native_rewards() {
 
     app.borrow_mut().update_block(|b| b.height = 1000000);
     unstake_tokens(&mut app, &staking_addr, ADDR3, 1);
-    stake_tokens(&mut app, &staking_addr, &cw20_addr, MockApi::default().addr_make(ADDR3), 1);
+    stake_tokens(&mut app, &staking_addr, &cw20_addr, MockApi::default().addr_make(ADDR3), 1u128);
 }
 
 #[test]
@@ -468,15 +466,15 @@ fn test_cw20_rewards() {
     let initial_balances = vec![
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR1).to_string(),
-            amount: Uint128::new(100),
+            amount: Uint256::new(100),
         },
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR2).to_string(),
-            amount: Uint128::new(50),
+            amount: Uint256::new(50),
         },
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR3).to_string(),
-            amount: Uint128::new(50),
+            amount: Uint256::new(50),
         },
     ];
     let denom = "utest".to_string();
@@ -485,7 +483,7 @@ fn test_cw20_rewards() {
         &mut app,
         vec![Cw20Coin {
             address: MockApi::default().addr_make(OWNER).to_string(),
-            amount: Uint128::new(500000000),
+            amount: Uint256::new(500000000),
         }],
     );
     let reward_addr = setup_reward_contract(
@@ -537,12 +535,12 @@ fn test_cw20_rewards() {
 
     assert_eq!(
         get_balance_cw20(&app, &reward_token, MockApi::default().addr_make(ADDR1)),
-        Uint128::zero()
+        Uint256::zero()
     );
     claim_rewards(&mut app, reward_addr.clone(), ADDR1);
     assert_eq!(
         get_balance_cw20(&app, &reward_token, MockApi::default().addr_make(ADDR1)),
-        Uint128::new(2000)
+        Uint256::new(2000)
     );
     assert_pending_rewards(&mut app, &reward_addr, ADDR1, 0);
 
@@ -562,17 +560,17 @@ fn test_cw20_rewards() {
     claim_rewards(&mut app, reward_addr.clone(), ADDR1);
     assert_eq!(
         get_balance_cw20(&app, &reward_token, MockApi::default().addr_make(ADDR1)),
-        Uint128::new(17000)
+        Uint256::new(17000)
     );
 
     claim_rewards(&mut app, reward_addr.clone(), ADDR2);
     assert_eq!(
         get_balance_cw20(&app, &reward_token, MockApi::default().addr_make(ADDR2)),
-        Uint128::new(3500)
+        Uint256::new(3500)
     );
 
-    stake_tokens(&mut app, &staking_addr, &cw20_addr, MockApi::default().addr_make(ADDR2), 50);
-    stake_tokens(&mut app, &staking_addr, &cw20_addr, MockApi::default().addr_make(ADDR3), 50);
+    stake_tokens(&mut app, &staking_addr, &cw20_addr, MockApi::default().addr_make(ADDR2), Uint256::new(50));
+    stake_tokens(&mut app, &staking_addr, &cw20_addr, MockApi::default().addr_make(ADDR3), Uint256::new(50));
 
     app.borrow_mut().update_block(|b| b.height += 10);
     assert_pending_rewards(&mut app, &reward_addr, ADDR1, 5000);
@@ -588,19 +586,19 @@ fn test_cw20_rewards() {
     claim_rewards(&mut app, reward_addr.clone(), ADDR2);
     assert_eq!(
         get_balance_cw20(&app, &reward_token, MockApi::default().addr_make(ADDR1)),
-        Uint128::new(50005000)
+        Uint256::new(50005000)
     );
     assert_eq!(
         get_balance_cw20(&app, &reward_token, MockApi::default().addr_make(ADDR2)),
-        Uint128::new(24997500)
+        Uint256::new(24997500)
     );
     assert_eq!(
         get_balance_cw20(&app, &reward_token, MockApi::default().addr_make(ADDR3)),
-        Uint128::new(0)
+        Uint256::new(0)
     );
     assert_eq!(
         get_balance_cw20(&app, &reward_token, &reward_addr),
-        Uint128::new(24997500)
+        Uint256::new(24997500)
     );
 
     app.borrow_mut().update_block(|b| b.height = 200000);
@@ -631,19 +629,19 @@ fn test_cw20_rewards() {
     claim_rewards(&mut app, reward_addr.clone(), ADDR2);
     assert_eq!(
         get_balance_cw20(&app, &reward_token, MockApi::default().addr_make(ADDR1)),
-        Uint128::new(150005000)
+        Uint256::new(150005000)
     );
     assert_eq!(
         get_balance_cw20(&app, &reward_token, MockApi::default().addr_make(ADDR2)),
-        Uint128::new(74997500)
+        Uint256::new(74997500)
     );
     assert_eq!(
         get_balance_cw20(&app, &reward_token, MockApi::default().addr_make(ADDR3)),
-        Uint128::zero()
+        Uint256::zero()
     );
     assert_eq!(
         get_balance_cw20(&app, &reward_token, &reward_addr),
-        Uint128::new(74997500)
+        Uint256::new(74997500)
     );
 
     // Add more rewards
@@ -665,19 +663,19 @@ fn test_cw20_rewards() {
     claim_rewards(&mut app, reward_addr.clone(), ADDR3);
     assert_eq!(
         get_balance_cw20(&app, &reward_token, MockApi::default().addr_make(ADDR1)),
-        Uint128::new(250005000)
+        Uint256::new(250005000)
     );
     assert_eq!(
         get_balance_cw20(&app, &reward_token, MockApi::default().addr_make(ADDR2)),
-        Uint128::new(124997500)
+        Uint256::new(124997500)
     );
     assert_eq!(
         get_balance_cw20(&app, &reward_token, MockApi::default().addr_make(ADDR3)),
-        Uint128::new(124997500)
+        Uint256::new(124997500)
     );
     assert_eq!(
         get_balance_cw20(&app, &reward_token, &reward_addr),
-        Uint128::zero()
+        Uint256::zero()
     );
 
     app.borrow_mut().update_block(|b| b.height = 500000);
@@ -687,7 +685,7 @@ fn test_cw20_rewards() {
 
     app.borrow_mut().update_block(|b| b.height = 1000000);
     unstake_tokens(&mut app, &staking_addr, ADDR3, 1);
-    stake_tokens(&mut app, &staking_addr, &cw20_addr, MockApi::default().addr_make(ADDR3), 1);
+    stake_tokens(&mut app, &staking_addr, &cw20_addr, MockApi::default().addr_make(ADDR3), 1u128);
 }
 
 #[test]
@@ -698,15 +696,15 @@ fn update_rewards() {
     let initial_balances = vec![
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR1).to_string(),
-            amount: Uint128::new(100),
+            amount: Uint256::new(100),
         },
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR2).to_string(),
-            amount: Uint128::new(50),
+            amount: Uint256::new(50),
         },
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR3).to_string(),
-            amount: Uint128::new(50),
+            amount: Uint256::new(50),
         },
     ];
     let denom = "utest".to_string();
@@ -739,7 +737,7 @@ fn update_rewards() {
     let fund_msg = ExecuteMsg::Fund {};
 
     // None admin cannot update rewards
-    let err: ContractError = app
+    let err = app
         .borrow_mut()
         .execute_contract(
             MockApi::default().addr_make(ADDR1),
@@ -747,11 +745,9 @@ fn update_rewards() {
             &fund_msg,
             &reward_funding,
         )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
+        .unwrap_err();
 
-    assert_eq!(err, ContractError::Ownable(OwnershipError::NotOwner));
+    assert!(err.to_string().contains("not the contract's current owner"));
 
     let _res = app
         .borrow_mut()
@@ -819,10 +815,7 @@ fn update_rewards() {
         .borrow_mut()
         .execute_contract(admin, reward_addr.clone(), &fund_msg, &reward_funding)
         .unwrap_err();
-    assert_eq!(
-        ContractError::RewardPeriodNotFinished {},
-        err.downcast().unwrap()
-    );
+    assert!(err.to_string().contains("Reward period not finished"));
 
     let res: InfoResponse = app
         .borrow_mut()
@@ -843,15 +836,15 @@ fn update_reward_duration() {
     let initial_balances = vec![
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR1).to_string(),
-            amount: Uint128::new(100),
+            amount: Uint256::new(100),
         },
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR2).to_string(),
-            amount: Uint128::new(50),
+            amount: Uint256::new(50),
         },
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR3).to_string(),
-            amount: Uint128::new(50),
+            amount: Uint256::new(50),
         },
     ];
     let denom = "utest".to_string();
@@ -876,13 +869,11 @@ fn update_reward_duration() {
 
     // Zero rewards durations are not allowed.
     let msg = ExecuteMsg::UpdateRewardDuration { new_duration: 0 };
-    let err: ContractError = app
+    let err = app
         .borrow_mut()
         .execute_contract(admin.clone(), reward_addr.clone(), &msg, &[])
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(err, ContractError::ZeroRewardDuration {});
+        .unwrap_err();
+    assert!(err.to_string().contains("Reward duration can not be zero"));
 
     let msg = ExecuteMsg::UpdateRewardDuration { new_duration: 10 };
     let _resp = app
@@ -902,13 +893,11 @@ fn update_reward_duration() {
 
     // Non-admin cannot update rewards
     let msg = ExecuteMsg::UpdateRewardDuration { new_duration: 100 };
-    let err: ContractError = app
+    let err = app
         .borrow_mut()
         .execute_contract(MockApi::default().addr_make("non-admin"), reward_addr.clone(), &msg, &[])
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(err, ContractError::Ownable(OwnershipError::NotOwner));
+        .unwrap_err();
+    assert!(err.to_string().contains("not the contract's current owner"));
 
     let reward_funding = vec![coin(1000, denom)];
     app.sudo(SudoMsg::Bank({
@@ -953,13 +942,11 @@ fn update_reward_duration() {
 
     // Cannot update reward period before it finishes
     let msg = ExecuteMsg::UpdateRewardDuration { new_duration: 10 };
-    let err: ContractError = app
+    let err = app
         .borrow_mut()
         .execute_contract(admin.clone(), reward_addr.clone(), &msg, &[])
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(err, ContractError::RewardPeriodNotFinished {});
+        .unwrap_err();
+    assert!(err.to_string().contains("Reward period not finished"));
 
     // Update reward period once rewards are finished
     app.borrow_mut().update_block(|b| b.height = 1010);
@@ -989,15 +976,15 @@ fn test_update_owner() {
     let initial_balances = vec![
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR1).to_string(),
-            amount: Uint128::new(100),
+            amount: Uint256::new(100),
         },
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR2).to_string(),
-            amount: Uint128::new(50),
+            amount: Uint256::new(50),
         },
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR3).to_string(),
-            amount: Uint128::new(50),
+            amount: Uint256::new(50),
         },
     ];
     let denom = "utest".to_string();
@@ -1018,13 +1005,11 @@ fn test_update_owner() {
         new_owner: MockApi::default().addr_make(ADDR1).to_string(),
         expiry: None,
     });
-    let err: ContractError = app
+    let err = app
         .borrow_mut()
         .execute_contract(MockApi::default().addr_make(ADDR1), reward_addr.clone(), &msg, &[])
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(err, ContractError::Ownable(OwnershipError::NotOwner));
+        .unwrap_err();
+    assert!(err.to_string().contains("not the contract's current owner"));
 
     // owner nominates a new onwer.
     app.borrow_mut()
@@ -1088,15 +1073,15 @@ fn test_cannot_fund_with_wrong_coin_native() {
     let initial_balances = vec![
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR1).to_string(),
-            amount: Uint128::new(100),
+            amount: Uint256::new(100),
         },
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR2).to_string(),
-            amount: Uint128::new(50),
+            amount: Uint256::new(50),
         },
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR3).to_string(),
-            amount: Uint128::new(50),
+            amount: Uint256::new(50),
         },
     ];
     let denom = "utest".to_string();
@@ -1114,13 +1099,11 @@ fn test_cannot_fund_with_wrong_coin_native() {
     // No funding
     let fund_msg = ExecuteMsg::Fund {};
 
-    let err: ContractError = app
+    let err = app
         .borrow_mut()
         .execute_contract(owner.clone(), reward_addr.clone(), &fund_msg, &[])
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(err, ContractError::InvalidFunds {});
+        .unwrap_err();
+    assert!(err.to_string().contains("Invalid funds"));
 
     // Invalid funding
     let invalid_funding = vec![coin(100, "invalid")];
@@ -1134,7 +1117,7 @@ fn test_cannot_fund_with_wrong_coin_native() {
 
     let fund_msg = ExecuteMsg::Fund {};
 
-    let err: ContractError = app
+    let err = app
         .borrow_mut()
         .execute_contract(
             owner.clone(),
@@ -1142,10 +1125,8 @@ fn test_cannot_fund_with_wrong_coin_native() {
             &fund_msg,
             &invalid_funding,
         )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(err, ContractError::InvalidFunds {});
+        .unwrap_err();
+    assert!(err.to_string().contains("Invalid funds"));
 
     // Extra funding
     let extra_funding = vec![coin(100, denom), coin(100, "extra")];
@@ -1159,7 +1140,7 @@ fn test_cannot_fund_with_wrong_coin_native() {
 
     let fund_msg = ExecuteMsg::Fund {};
 
-    let err: ContractError = app
+    let err = app
         .borrow_mut()
         .execute_contract(
             owner.clone(),
@@ -1167,32 +1148,28 @@ fn test_cannot_fund_with_wrong_coin_native() {
             &fund_msg,
             &extra_funding,
         )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(err, ContractError::InvalidFunds {});
+        .unwrap_err();
+    assert!(err.to_string().contains("Invalid funds"));
 
     // Cw20 funding fails
     let cw20_token = instantiate_cw20(
         &mut app,
         vec![Cw20Coin {
             address: MockApi::default().addr_make(OWNER).to_string(),
-            amount: Uint128::new(500000000),
+            amount: Uint256::new(500000000),
         }],
     );
     let fund_sub_msg = to_json_binary(&ReceiveMsg::Fund {}).unwrap();
     let fund_msg = Cw20ExecuteMsg::Send {
         contract: reward_addr.into_string(),
-        amount: Uint128::new(100),
+        amount: Uint256::new(100),
         msg: fund_sub_msg,
     };
-    let err: ContractError = app
+    let err = app
         .borrow_mut()
         .execute_contract(owner, cw20_token, &fund_msg, &[])
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(err, ContractError::InvalidCw20 {});
+        .unwrap_err();
+    assert!(err.to_string().contains("Invalid Cw20"));
 }
 
 #[test]
@@ -1203,15 +1180,15 @@ fn test_cannot_fund_with_wrong_coin_cw20() {
     let initial_balances = vec![
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR1).to_string(),
-            amount: Uint128::new(100),
+            amount: Uint256::new(100),
         },
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR2).to_string(),
-            amount: Uint128::new(50),
+            amount: Uint256::new(50),
         },
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR3).to_string(),
-            amount: Uint128::new(50),
+            amount: Uint256::new(50),
         },
     ];
     let _denom = "utest".to_string();
@@ -1220,7 +1197,7 @@ fn test_cannot_fund_with_wrong_coin_cw20() {
         &mut app,
         vec![Cw20Coin {
             address: MockApi::default().addr_make(OWNER).to_string(),
-            amount: Uint128::new(500000000),
+            amount: Uint256::new(500000000),
         }],
     );
     let reward_addr = setup_reward_contract(
@@ -1236,16 +1213,14 @@ fn test_cannot_fund_with_wrong_coin_cw20() {
     let fund_sub_msg = to_json_binary(&ReceiveMsg::Fund {}).unwrap();
     let fund_msg = Cw20ExecuteMsg::Send {
         contract: reward_addr.clone().into_string(),
-        amount: Uint128::new(100),
+        amount: Uint256::new(100),
         msg: fund_sub_msg,
     };
-    let err: ContractError = app
+    let err = app
         .borrow_mut()
         .execute_contract(admin.clone(), reward_token, &fund_msg, &[])
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(err, ContractError::InvalidCw20 {});
+        .unwrap_err();
+    assert!(err.to_string().contains("Invalid Cw20"));
 
     // Test does not work when funded with native
     let invalid_funding = vec![coin(100, "invalid")];
@@ -1259,13 +1234,11 @@ fn test_cannot_fund_with_wrong_coin_cw20() {
 
     let fund_msg = ExecuteMsg::Fund {};
 
-    let err: ContractError = app
+    let err = app
         .borrow_mut()
         .execute_contract(admin, reward_addr, &fund_msg, &invalid_funding)
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(err, ContractError::InvalidFunds {})
+        .unwrap_err();
+    assert!(err.to_string().contains("Invalid funds"))
 }
 
 #[test]
@@ -1276,15 +1249,15 @@ fn test_rewards_with_zero_staked() {
     let initial_balances = vec![
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR1).to_string(),
-            amount: Uint128::new(100),
+            amount: Uint256::new(100),
         },
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR2).to_string(),
-            amount: Uint128::new(50),
+            amount: Uint256::new(50),
         },
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR3).to_string(),
-            amount: Uint128::new(50),
+            amount: Uint256::new(50),
         },
     ];
     let denom = "utest".to_string();
@@ -1339,7 +1312,7 @@ fn test_rewards_with_zero_staked() {
             &staking_addr,
             &cw20_addr,
             coin.address,
-            coin.amount.u128(),
+            coin.amount,
         );
     }
 
@@ -1364,15 +1337,15 @@ fn test_small_rewards() {
     let initial_balances = vec![
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR1).to_string(),
-            amount: Uint128::new(100),
+            amount: Uint256::new(100),
         },
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR2).to_string(),
-            amount: Uint128::new(50),
+            amount: Uint256::new(50),
         },
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR3).to_string(),
-            amount: Uint128::new(50),
+            amount: Uint256::new(50),
         },
     ];
     let denom = "utest".to_string();
@@ -1423,15 +1396,15 @@ fn test_zero_reward_rate_failed() {
     let initial_balances = vec![
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR1).to_string(),
-            amount: Uint128::new(100),
+            amount: Uint256::new(100),
         },
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR2).to_string(),
-            amount: Uint128::new(50),
+            amount: Uint256::new(50),
         },
         Cw20Coin {
             address: MockApi::default().addr_make(ADDR3).to_string(),
-            amount: Uint128::new(50),
+            amount: Uint256::new(50),
         },
     ];
     let denom = "utest".to_string();

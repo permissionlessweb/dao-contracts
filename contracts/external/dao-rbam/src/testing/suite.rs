@@ -2,7 +2,6 @@ use cosmwasm_std::{to_json_binary, Addr, CosmosMsg, StdError, Timestamp};
 use cw4::Member;
 use cw_ownable::Action;
 use dao_interface::{helpers::OptionalUpdate, proposal::InfoResponse, state::ModuleUpdate};
-use dao_rbam::ContractError;
 use dao_testing::{DaoTestingSuite, DaoTestingSuiteBase, ADDR0, ADDR1, ADDR2};
 
 use crate::{
@@ -522,7 +521,7 @@ impl Suite {
             .query_wasm_smart(
                 &self.rbam_addr,
                 &QueryMsg::TestFilter {
-                    filter: filter.clone(),
+                    filter: serde_json::to_string(filter).unwrap(),
                     msg: msg.clone(),
                 },
             )
@@ -780,7 +779,7 @@ impl Suite {
             .execute_smart_ok(sender, &self.rbam_addr, &ExecuteMsg::UpdateDao { dao }, &[]);
     }
 
-    pub fn update_dao_err(&mut self, sender: impl Into<String>, dao: String) -> ContractError {
+    pub fn update_dao_err(&mut self, sender: impl Into<String>, dao: String) -> StdError {
         self.base
             .execute_smart_err(sender, &self.rbam_addr, &ExecuteMsg::UpdateDao { dao }, &[])
     }
@@ -798,7 +797,7 @@ impl Suite {
         &mut self,
         sender: impl Into<String>,
         filter: ModuleUpdate,
-    ) -> ContractError {
+    ) -> StdError {
         self.base.execute_smart_err(
             sender,
             &self.rbam_addr,
@@ -824,7 +823,7 @@ impl Suite {
         &mut self,
         sender: impl Into<String>,
         protobuf_registry: Option<ModuleUpdate>,
-    ) -> ContractError {
+    ) -> StdError {
         self.base.execute_smart_err(
             sender,
             &self.rbam_addr,
@@ -846,7 +845,7 @@ impl Suite {
         &mut self,
         sender: impl Into<String>,
         enabled: bool,
-    ) -> ContractError {
+    ) -> StdError {
         self.base.execute_smart_err(
             sender,
             &self.rbam_addr,
@@ -872,7 +871,7 @@ impl Suite {
         &mut self,
         sender: impl Into<String>,
         msg: cw_protobuf_registry::msg::ExecuteMsg,
-    ) -> ContractError {
+    ) -> StdError {
         self.base.execute_smart_err(
             sender,
             &self.rbam_addr,
@@ -885,7 +884,7 @@ impl Suite {
         &mut self,
         sender: impl Into<String>,
         msg: cw_protobuf_registry::msg::ExecuteMsg,
-    ) -> cw_protobuf_registry::ContractError {
+    ) -> StdError {
         self.base.execute_smart_err(
             sender,
             &self.rbam_addr,
@@ -938,7 +937,7 @@ impl Suite {
         enabled: Option<bool>,
         authorizations: Option<Vec<InitialAuthorization>>,
         assignments: Option<Vec<String>>,
-    ) -> ContractError {
+    ) -> StdError {
         self.base.execute_smart_err(
             sender,
             &self.rbam_addr,
@@ -981,7 +980,7 @@ impl Suite {
         name: Option<String>,
         metadata: OptionalUpdate<String>,
         enabled: Option<bool>,
-    ) -> ContractError {
+    ) -> StdError {
         self.base.execute_smart_err(
             sender,
             &self.rbam_addr,
@@ -1013,7 +1012,7 @@ impl Suite {
                 role_id,
                 name: name.into(),
                 metadata,
-                filter,
+                filter: filter.map(|v| serde_json::to_string(&v).unwrap()),
                 enabled,
                 skip_prepare,
             },
@@ -1042,7 +1041,7 @@ impl Suite {
         metadata: Option<String>,
         filter: Option<serde_json::Value>,
         enabled: Option<bool>,
-    ) -> ContractError {
+    ) -> StdError {
         self.base.execute_smart_err(
             sender,
             &self.rbam_addr,
@@ -1050,7 +1049,7 @@ impl Suite {
                 role_id,
                 name: name.into(),
                 metadata,
-                filter,
+                filter: filter.map(|v| serde_json::to_string(&v).unwrap()),
                 enabled,
                 skip_prepare: None,
             },
@@ -1065,7 +1064,7 @@ impl Suite {
         authorization_id: u64,
         name: Option<String>,
         metadata: OptionalUpdate<String>,
-        filter: OptionalUpdate<serde_json::Value>,
+        filter: OptionalUpdate<String>,
         enabled: Option<bool>,
         skip_prepare: Option<bool>,
     ) {
@@ -1090,9 +1089,9 @@ impl Suite {
         authorization_id: u64,
         name: Option<String>,
         metadata: OptionalUpdate<String>,
-        filter: OptionalUpdate<serde_json::Value>,
+        filter: OptionalUpdate<String>,
         enabled: Option<bool>,
-    ) -> ContractError {
+    ) -> StdError {
         self.base.execute_smart_err(
             sender,
             &self.rbam_addr,
@@ -1117,7 +1116,7 @@ impl Suite {
         &mut self,
         sender: impl Into<String>,
         assign: Vec<Assignment>,
-    ) -> ContractError {
+    ) -> StdError {
         self.base
             .execute_smart_err(sender, &self.rbam_addr, &ExecuteMsg::Assign { assign }, &[])
     }
@@ -1131,7 +1130,7 @@ impl Suite {
         &mut self,
         sender: impl Into<String>,
         revoke: Vec<Assignment>,
-    ) -> ContractError {
+    ) -> StdError {
         self.base
             .execute_smart_err(sender, &self.rbam_addr, &ExecuteMsg::Revoke { revoke }, &[])
     }
@@ -1175,7 +1174,7 @@ impl Suite {
         &mut self,
         sender: impl Into<String>,
         actions: Vec<ActionToExecute>,
-    ) -> ContractError {
+    ) -> StdError {
         self.base.execute_smart_err(
             sender,
             &self.rbam_addr,

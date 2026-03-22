@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     testing::{mock_dependencies, mock_env, MockApi},
-    to_json_binary, Addr, CosmosMsg, Uint128, WasmMsg,
+    to_json_binary, Addr, CosmosMsg, MigrateInfo, Uint256, WasmMsg,
 };
 use cw2::ContractVersion;
 use cw_multi_test::{next_block, App, Executor};
@@ -150,7 +150,7 @@ pub fn test_instantiate_existing_contract() {
         )
         .unwrap();
 
-    let err: ContractError = app
+    let err = app
         .instantiate_contract(
             voting_id,
             MockApi::default().addr_make(DAO_ADDR),
@@ -163,10 +163,8 @@ pub fn test_instantiate_existing_contract() {
             "voting module",
             None,
         )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(err, ContractError::NoMembers {});
+        .unwrap_err();
+    assert!(err.to_string().contains("NoMembers"));
 
     let cw4_addr = app
         .instantiate_contract(
@@ -211,8 +209,13 @@ pub fn test_instantiate_existing_contract() {
         }],
     };
 
-    app.execute_contract(MockApi::default().addr_make(DAO_ADDR), cw4_addr.clone(), &msg, &[])
-        .unwrap();
+    app.execute_contract(
+        MockApi::default().addr_make(DAO_ADDR),
+        cw4_addr.clone(),
+        &msg,
+        &[],
+    )
+    .unwrap();
 
     // Same should be true about the groups contract.
     let cw4_power: cw4::MemberResponse = app
@@ -281,7 +284,7 @@ fn test_power_at_height() {
             },
         )
         .unwrap();
-    assert_eq!(addr1_voting_power.power, Uint128::new(1u128));
+    assert_eq!(addr1_voting_power.power, Uint256::new(1u128));
     assert_eq!(addr1_voting_power.height, app.block_info().height);
 
     let total_voting_power: TotalPowerAtHeightResponse = app
@@ -291,7 +294,7 @@ fn test_power_at_height() {
             &QueryMsg::TotalPowerAtHeight { height: None },
         )
         .unwrap();
-    assert_eq!(total_voting_power.power, Uint128::new(3u128));
+    assert_eq!(total_voting_power.power, Uint256::new(3u128));
     assert_eq!(total_voting_power.height, app.block_info().height);
 
     // Update ADDR1's weight to 2
@@ -315,7 +318,7 @@ fn test_power_at_height() {
             },
         )
         .unwrap();
-    assert_eq!(addr1_voting_power.power, Uint128::new(1u128));
+    assert_eq!(addr1_voting_power.power, Uint256::new(1u128));
 
     // Same should be true about the groups contract.
     let cw4_power: cw4::MemberResponse = app
@@ -330,8 +333,13 @@ fn test_power_at_height() {
         .unwrap();
     assert_eq!(cw4_power.weight.unwrap(), 1);
 
-    app.execute_contract(MockApi::default().addr_make(DAO_ADDR), cw4_addr.clone(), &msg, &[])
-        .unwrap();
+    app.execute_contract(
+        MockApi::default().addr_make(DAO_ADDR),
+        cw4_addr.clone(),
+        &msg,
+        &[],
+    )
+    .unwrap();
     app.update_block(next_block);
 
     // Should now be 2
@@ -345,7 +353,7 @@ fn test_power_at_height() {
             },
         )
         .unwrap();
-    assert_eq!(addr1_voting_power.power, Uint128::new(2u128));
+    assert_eq!(addr1_voting_power.power, Uint256::new(2u128));
     assert_eq!(addr1_voting_power.height, app.block_info().height);
 
     // Check we can still get the 1 weight he had last block
@@ -359,7 +367,7 @@ fn test_power_at_height() {
             },
         )
         .unwrap();
-    assert_eq!(addr1_voting_power.power, Uint128::new(1u128));
+    assert_eq!(addr1_voting_power.power, Uint256::new(1u128));
     assert_eq!(addr1_voting_power.height, app.block_info().height - 1);
 
     // Check total power is now 4
@@ -370,7 +378,7 @@ fn test_power_at_height() {
             &QueryMsg::TotalPowerAtHeight { height: None },
         )
         .unwrap();
-    assert_eq!(total_voting_power.power, Uint128::new(4u128));
+    assert_eq!(total_voting_power.power, Uint256::new(4u128));
     assert_eq!(total_voting_power.height, app.block_info().height);
 
     // Check total power for last block is 3
@@ -383,7 +391,7 @@ fn test_power_at_height() {
             },
         )
         .unwrap();
-    assert_eq!(total_voting_power.power, Uint128::new(3u128));
+    assert_eq!(total_voting_power.power, Uint256::new(3u128));
     assert_eq!(total_voting_power.height, app.block_info().height - 1);
 
     // Update ADDR1's weight back to 1
@@ -395,8 +403,13 @@ fn test_power_at_height() {
         }],
     };
 
-    app.execute_contract(MockApi::default().addr_make(DAO_ADDR), cw4_addr.clone(), &msg, &[])
-        .unwrap();
+    app.execute_contract(
+        MockApi::default().addr_make(DAO_ADDR),
+        cw4_addr.clone(),
+        &msg,
+        &[],
+    )
+    .unwrap();
     app.update_block(next_block);
 
     // Should now be 1 again
@@ -410,7 +423,7 @@ fn test_power_at_height() {
             },
         )
         .unwrap();
-    assert_eq!(addr1_voting_power.power, Uint128::new(1u128));
+    assert_eq!(addr1_voting_power.power, Uint256::new(1u128));
     assert_eq!(addr1_voting_power.height, app.block_info().height);
 
     // Check total power for current block is now 3
@@ -421,7 +434,7 @@ fn test_power_at_height() {
             &QueryMsg::TotalPowerAtHeight { height: None },
         )
         .unwrap();
-    assert_eq!(total_voting_power.power, Uint128::new(3u128));
+    assert_eq!(total_voting_power.power, Uint256::new(3u128));
     assert_eq!(total_voting_power.height, app.block_info().height);
 
     // Check total power for last block is 4
@@ -434,7 +447,7 @@ fn test_power_at_height() {
             },
         )
         .unwrap();
-    assert_eq!(total_voting_power.power, Uint128::new(4u128));
+    assert_eq!(total_voting_power.power, Uint256::new(4u128));
     assert_eq!(total_voting_power.height, app.block_info().height - 1);
 
     // Remove address 2 completely
@@ -443,8 +456,13 @@ fn test_power_at_height() {
         add: vec![],
     };
 
-    app.execute_contract(MockApi::default().addr_make(DAO_ADDR), cw4_addr.clone(), &msg, &[])
-        .unwrap();
+    app.execute_contract(
+        MockApi::default().addr_make(DAO_ADDR),
+        cw4_addr.clone(),
+        &msg,
+        &[],
+    )
+    .unwrap();
     app.update_block(next_block);
 
     // ADDR2 power is now 0
@@ -458,7 +476,7 @@ fn test_power_at_height() {
             },
         )
         .unwrap();
-    assert_eq!(addr2_voting_power.power, Uint128::zero());
+    assert_eq!(addr2_voting_power.power, Uint256::zero());
     assert_eq!(addr2_voting_power.height, app.block_info().height);
 
     // Check total power for current block is now 2
@@ -469,7 +487,7 @@ fn test_power_at_height() {
             &QueryMsg::TotalPowerAtHeight { height: None },
         )
         .unwrap();
-    assert_eq!(total_voting_power.power, Uint128::new(2u128));
+    assert_eq!(total_voting_power.power, Uint256::new(2u128));
     assert_eq!(total_voting_power.height, app.block_info().height);
 
     // Check total power for last block is 3
@@ -482,7 +500,7 @@ fn test_power_at_height() {
             },
         )
         .unwrap();
-    assert_eq!(total_voting_power.power, Uint128::new(3u128));
+    assert_eq!(total_voting_power.power, Uint256::new(3u128));
     assert_eq!(total_voting_power.height, app.block_info().height - 1);
 
     // Readd ADDR2 with 10 power
@@ -509,7 +527,7 @@ fn test_power_at_height() {
             },
         )
         .unwrap();
-    assert_eq!(addr2_voting_power.power, Uint128::new(10u128));
+    assert_eq!(addr2_voting_power.power, Uint256::new(10u128));
     assert_eq!(addr2_voting_power.height, app.block_info().height);
 
     // Check total power for current block is now 12
@@ -520,7 +538,7 @@ fn test_power_at_height() {
             &QueryMsg::TotalPowerAtHeight { height: None },
         )
         .unwrap();
-    assert_eq!(total_voting_power.power, Uint128::new(12u128));
+    assert_eq!(total_voting_power.power, Uint256::new(12u128));
     assert_eq!(total_voting_power.height, app.block_info().height);
 
     // Check total power for last block is 2
@@ -533,7 +551,7 @@ fn test_power_at_height() {
             },
         )
         .unwrap();
-    assert_eq!(total_voting_power.power, Uint128::new(2u128));
+    assert_eq!(total_voting_power.power, Uint256::new(2u128));
     assert_eq!(total_voting_power.height, app.block_info().height - 1);
 }
 
@@ -681,7 +699,7 @@ fn test_zero_voting_power() {
             },
         )
         .unwrap();
-    assert_eq!(addr4_voting_power.power, Uint128::new(0));
+    assert_eq!(addr4_voting_power.power, Uint256::new(0));
     assert_eq!(addr4_voting_power.height, app.block_info().height);
 
     // Update ADDR1's weight to 0
@@ -706,7 +724,7 @@ fn test_zero_voting_power() {
             },
         )
         .unwrap();
-    assert_eq!(addr1_voting_power.power, Uint128::new(0u128));
+    assert_eq!(addr1_voting_power.power, Uint256::new(0u128));
     assert_eq!(addr1_voting_power.height, app.block_info().height);
 
     // Check total power is now 2
@@ -714,7 +732,7 @@ fn test_zero_voting_power() {
         .wrap()
         .query_wasm_smart(voting_addr, &QueryMsg::TotalPowerAtHeight { height: None })
         .unwrap();
-    assert_eq!(total_voting_power.power, Uint128::new(2u128));
+    assert_eq!(total_voting_power.power, Uint256::new(2u128));
     assert_eq!(total_voting_power.height, app.block_info().height);
 }
 
@@ -722,7 +740,17 @@ fn test_zero_voting_power() {
 pub fn test_migrate_update_version() {
     let mut deps = mock_dependencies();
     cw2::set_contract_version(&mut deps.storage, "my-contract", "1.0.0").unwrap();
-    migrate(deps.as_mut(), mock_env(), MigrateMsg {}).unwrap();
+    let version = cw2::get_contract_version(&deps.storage).unwrap();
+    migrate(
+        deps.as_mut(),
+        mock_env(),
+        MigrateMsg {},
+        MigrateInfo {
+            sender: MockApi::default().addr_make("migrate"),
+            old_migrate_version: None,
+        },
+    )
+    .unwrap();
     let version = cw2::get_contract_version(&deps.storage).unwrap();
     assert_eq!(version.version, CONTRACT_VERSION);
     assert_eq!(version.contract, CONTRACT_NAME);

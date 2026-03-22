@@ -1,4 +1,4 @@
-use cosmwasm_std::{coins, testing::MockApi, to_json_binary, Addr, BankMsg, CosmosMsg, Decimal};
+use cosmwasm_std::{coins, testing::MockApi, to_json_binary, Addr, BankMsg, CosmosMsg, Decimal, StdResult};
 use cw_multi_test::{next_block, App, Executor};
 use cw_utils::Duration;
 use dao_interface::{
@@ -256,7 +256,7 @@ impl Suite {
         &mut self,
         sender: S,
         choices: Vec<Vec<CosmosMsg>>,
-    ) -> anyhow::Result<u32> {
+    ) -> StdResult<u32> {
         let id = self.query_next_proposal_id();
         self.app.execute_contract(
             Addr::unchecked(sender),
@@ -274,7 +274,7 @@ impl Suite {
         sender: S,
         proposal_id: u32,
         vote: Vec<u32>,
-    ) -> anyhow::Result<()> {
+    ) -> StdResult<()> {
         self.app
             .execute_contract(
                 Addr::unchecked(sender),
@@ -285,7 +285,7 @@ impl Suite {
             .map(|_| ())
     }
 
-    pub fn execute<S: Into<String>>(&mut self, sender: S, proposal_id: u32) -> anyhow::Result<()> {
+    pub fn execute<S: Into<String>>(&mut self, sender: S, proposal_id: u32) -> StdResult<()> {
         self.app
             .execute_contract(
                 Addr::unchecked(sender),
@@ -296,7 +296,7 @@ impl Suite {
             .map(|_| ())
     }
 
-    pub fn close<S: Into<String>>(&mut self, sender: S, proposal_id: u32) -> anyhow::Result<()> {
+    pub fn close<S: Into<String>>(&mut self, sender: S, proposal_id: u32) -> StdResult<()> {
         self.app
             .execute_contract(
                 Addr::unchecked(sender),

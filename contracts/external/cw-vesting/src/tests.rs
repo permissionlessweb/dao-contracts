@@ -1,5 +1,5 @@
 use cosmwasm_std::testing::{mock_dependencies, mock_env, message_info, MockApi};
-use cosmwasm_std::{coins, to_json_binary, Addr, Coin, Decimal, Uint128, Validator};
+use cosmwasm_std::{Addr, Coin, Decimal, Uint128, Uint256, Validator, coins, to_json_binary};
 use cw20::{Cw20Coin, Cw20ExecuteMsg, Cw20ReceiveMsg};
 use cw_denom::{CheckedDenom, UncheckedDenom};
 use cw_multi_test::{App, AppBuilder, BankSudo, Executor, StakingInfo, SudoMsg};
@@ -29,7 +29,7 @@ fn get_balance_cw20<T: Into<String>, U: Into<String>>(
     app: &App,
     contract_addr: T,
     address: U,
-) -> Uint128 {
+) -> Uint256 {
     let msg = cw20::Cw20QueryMsg::Balance {
         address: address.into(),
     };
@@ -41,7 +41,7 @@ fn get_balance_native<T: Into<String>, U: Into<String>>(
     app: &App,
     address: T,
     denom: U,
-) -> Uint128 {
+) -> Uint256 {
     app.wrap().query_balance(address, denom).unwrap().amount
 }
 
@@ -90,15 +90,15 @@ pub fn setup_contracts(app: &mut App) -> (Addr, u64, u64) {
                 initial_balances: vec![
                     Cw20Coin {
                         address: MockApi::default().addr_make(ALICE).to_string(),
-                        amount: Uint128::new(INITIAL_BALANCE),
+                        amount: Uint256::new(INITIAL_BALANCE),
                     },
                     Cw20Coin {
                         address: MockApi::default().addr_make(BOB).to_string(),
-                        amount: Uint128::new(INITIAL_BALANCE),
+                        amount: Uint256::new(INITIAL_BALANCE),
                     },
                     Cw20Coin {
                         address: MockApi::default().addr_make(OWNER).to_string(),
-                        amount: Uint128::new(INITIAL_BALANCE),
+                        amount: Uint256::new(INITIAL_BALANCE),
                     },
                 ],
                 mint: None,
@@ -121,7 +121,7 @@ impl Default for InstantiateMsg {
             recipient: MockApi::default().addr_make(BOB).to_string(),
             title: "title".to_string(),
             description: Some("desc".to_string()),
-            total: Uint128::new(TOTAL_VEST),
+            total: Uint256::new(TOTAL_VEST),
             // cw20 normally first contract instantaited
             denom: UncheckedDenom::Cw20("contract0".to_string()),
             schedule: Schedule::SaturatingLinear,
@@ -162,15 +162,15 @@ fn setup_test_case(app: &mut App, msg: InstantiateMsg, funds: &[Coin]) -> TestCa
 
     let vesting_payment = match msg.denom {
         UncheckedDenom::Cw20(ref cw20_addr) => {
-            let msg = Cw20ExecuteMsg::Send {
+            let send_msg = Cw20ExecuteMsg::Send {
                 contract: cw_vesting_addr.to_string(),
-                amount: msg.total,
+                amount: msg.total.into(),
                 msg: to_json_binary(&ReceiveMsg::Fund {}).unwrap(),
             };
             app.execute_contract(
                 MockApi::default().addr_make(OWNER),
                 Addr::unchecked(cw20_addr.clone()),
-                &msg,
+                &send_msg,
                 &[],
             )
             .unwrap();
@@ -202,30 +202,22 @@ fn test_happy_cw20_path() {
 
     // Check Vesting Payment was created correctly
     assert_eq!(vesting_payment.status, Status::Funded);
-    assert_eq!(vesting_payment.claimed, Uint128::zero());
+    assert_eq!(vesting_payment.claimed, Uint256::zero());
     assert_eq!(
         vesting_payment.vested(app.block_info().time),
         Uint128::zero()
     );
 
     // No time has passed, so nothing is withdrawable.
-    let err: cw_vesting::ContractError = app
+    let err = app
         .execute_contract(
             bob.clone(),
             cw_vesting_addr.clone(),
             &ExecuteMsg::Distribute { amount: None },
             &[],
         )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(
-        err,
-        cw_vesting::ContractError::InvalidWithdrawal {
-            request: Uint128::zero(),
-            claimable: Uint128::zero()
-        }
-    );
+        .unwrap_err();
+    assert!(err.to_string().contains("request must be <= claimable"));
 
     // Advance the clock by 1/2 the vesting period.
     app.update_block(|block| {
@@ -244,13 +236,13 @@ fn test_happy_cw20_path() {
     // Owner has funded the contract and down
     assert_eq!(
         get_balance_cw20(&app, cw20_addr.clone(), MockApi::default().addr_make(OWNER)),
-        Uint128::new(INITIAL_BALANCE - TOTAL_VEST)
+        Uint256::new(INITIAL_BALANCE - TOTAL_VEST)
     );
 
     // Bob has claimed vested funds and is up
     assert_eq!(
         get_balance_cw20(&app, cw20_addr, MockApi::default().addr_make(BOB)),
-        Uint128::new(INITIAL_BALANCE) + Uint128::new(TOTAL_VEST / 2)
+        Uint256::new(INITIAL_BALANCE) + Uint256::new(TOTAL_VEST / 2)
     );
 }
 
@@ -271,30 +263,22 @@ fn test_happy_native_path() {
     } = setup_test_case(&mut app, msg, &coins(TOTAL_VEST, NATIVE_DENOM));
 
     assert_eq!(vesting_payment.status, Status::Funded);
-    assert_eq!(vesting_payment.claimed, Uint128::zero());
+    assert_eq!(vesting_payment.claimed, Uint256::zero());
     assert_eq!(
         vesting_payment.vested(app.block_info().time),
         Uint128::zero()
     );
 
     // No time has passed, so nothing is withdrawable.
-    let err: cw_vesting::ContractError = app
+    let err = app
         .execute_contract(
             bob.clone(),
             cw_vesting_addr.clone(),
             &ExecuteMsg::Distribute { amount: None },
             &[],
         )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(
-        err,
-        cw_vesting::ContractError::InvalidWithdrawal {
-            request: Uint128::zero(),
-            claimable: Uint128::zero()
-        }
-    );
+        .unwrap_err();
+    assert!(err.to_string().contains("request must be <= claimable"));
 
     // Advance the clock by 1/2 the vesting period.
     app.update_block(|block| {
@@ -313,12 +297,12 @@ fn test_happy_native_path() {
     // Owner has funded the contract and down 1000
     assert_eq!(
         get_balance_native(&app, MockApi::default().addr_make(OWNER), NATIVE_DENOM),
-        Uint128::new(INITIAL_BALANCE - TOTAL_VEST)
+        Uint256::new(INITIAL_BALANCE - TOTAL_VEST)
     );
     // Bob has claimed vested funds and is up 250
     assert_eq!(
         get_balance_native(&app, MockApi::default().addr_make(BOB), NATIVE_DENOM),
-        Uint128::new(INITIAL_BALANCE) + Uint128::new(TOTAL_VEST / 2)
+        Uint256::new(INITIAL_BALANCE) + Uint256::new(TOTAL_VEST / 2)
     );
 }
 
@@ -340,7 +324,7 @@ fn test_staking_rewards_go_to_receiver() {
                     bonded_denom: NATIVE_DENOM.to_string(),
                     unbonding_time: 60,
                     // Interest rate per year (60 * 60 * 24 * 365 seconds)
-                    apr: Decimal::percent(10),
+                    apr: Decimal::percent(10).into(),
                 },
             )
             .unwrap();
@@ -359,7 +343,7 @@ fn test_staking_rewards_go_to_receiver() {
 
     let msg = InstantiateMsg {
         denom: UncheckedDenom::Native(NATIVE_DENOM.to_string()),
-        total: Uint128::new(100),
+        total: Uint256::new(100),
         ..Default::default()
     };
 
@@ -380,14 +364,14 @@ fn test_staking_rewards_go_to_receiver() {
         vesting.clone(),
         &ExecuteMsg::Delegate {
             validator: "testvaloper1".to_string(),
-            amount: Uint128::new(100),
+            amount: Uint128::new(100).into(),
         },
         &[],
     )
     .unwrap();
 
     let balance = get_balance_native(&app, MockApi::default().addr_make(BOB), NATIVE_DENOM);
-    assert_eq!(balance.u128(), 0);
+    assert_eq!(balance, Uint256::zero());
 
     // A year passes.
     app.update_block(|block| block.time = block.time.plus_seconds(60 * 60 * 24 * 365));
@@ -403,7 +387,7 @@ fn test_staking_rewards_go_to_receiver() {
     .unwrap();
 
     let balance = get_balance_native(&app, MockApi::default().addr_make(BOB), NATIVE_DENOM);
-    assert_eq!(balance.u128(), 9); // 10% APY, 1% comission, 100 staked, one year elapsed.
+    assert_eq!(balance, Uint256::new(9)); // 10% APY, 1% comission, 100 staked, one year elapsed.
 }
 
 #[test]
@@ -417,20 +401,15 @@ fn test_cancel_vesting() {
     } = setup_test_case(&mut app, InstantiateMsg::default(), &[]);
 
     // Non-owner can't cancel
-    let err: cw_vesting::ContractError = app
+    let err = app
         .execute_contract(
             MockApi::default().addr_make(ALICE),
             cw_vesting_addr.clone(),
             &ExecuteMsg::Cancel {},
             &[],
         )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(
-        err,
-        cw_vesting::ContractError::Ownable(cw_ownable::OwnershipError::NotOwner)
-    );
+        .unwrap_err();
+    assert!(err.to_string().contains("not the contract's current owner"));
 
     // Advance the clock by 1/2 the vesting period.
     app.update_block(|block| {
@@ -448,20 +427,15 @@ fn test_cancel_vesting() {
     .unwrap();
 
     // Can't distribute as tokens are already distributed.
-    let err: cw_vesting::ContractError = app
+    let err = app
         .execute_contract(
             MockApi::default().addr_make(BOB),
             cw_vesting_addr,
             &ExecuteMsg::Distribute { amount: None },
             &[],
         )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert!(matches!(
-        err,
-        cw_vesting::ContractError::InvalidWithdrawal { .. }
-    ));
+        .unwrap_err();
+    assert!(err.to_string().contains("request must be <= claimable"));
 
     // Unvested funds have been returned to contract owner
     assert_eq!(
@@ -470,7 +444,7 @@ fn test_cancel_vesting() {
             cw20_addr.to_string(),
             MockApi::default().addr_make(OWNER)
         ),
-        Uint128::new(INITIAL_BALANCE - TOTAL_VEST / 2)
+        Uint256::new(INITIAL_BALANCE - TOTAL_VEST / 2)
     );
     // Bob has gets the funds vest up until cancelation
     assert_eq!(
@@ -479,7 +453,7 @@ fn test_cancel_vesting() {
             cw20_addr.to_string(),
             MockApi::default().addr_make(BOB)
         ),
-        Uint128::new(INITIAL_BALANCE + TOTAL_VEST / 2)
+        Uint256::new(INITIAL_BALANCE + TOTAL_VEST / 2)
     );
 }
 
@@ -489,7 +463,6 @@ fn test_catch_imposter_cw20() {
     let (_, cw20_code_id, _) = setup_contracts(&mut app);
 
     let TestCase {
-        cw20_addr,
         cw_vesting_addr,
         ..
     } = setup_test_case(&mut app, InstantiateMsg::default(), &[]);
@@ -505,7 +478,7 @@ fn test_catch_imposter_cw20() {
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
                     address: MockApi::default().addr_make(OWNER).to_string(),
-                    amount: Uint128::new(INITIAL_BALANCE),
+                    amount: Uint256::new(INITIAL_BALANCE),
                 }],
                 mint: None,
                 marketing: None,
@@ -518,22 +491,20 @@ fn test_catch_imposter_cw20() {
 
     let msg = Cw20ExecuteMsg::Send {
         contract: cw_vesting_addr.to_string(),
-        amount: Uint128::new(TOTAL_VEST),
+        amount: Uint256::new(TOTAL_VEST),
         msg: to_json_binary(&ReceiveMsg::Fund {}).unwrap(),
     };
 
     // Errors that cw20 does not match what was expected
-    let error: cw_vesting::ContractError = app
+    let error = app
         .execute_contract(
             MockApi::default().addr_make(OWNER),
             Addr::unchecked(cw20_imposter_addr),
             &msg,
             &[],
         )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(error, cw_vesting::ContractError::WrongCw20);
+        .unwrap_err();
+    assert!(error.to_string().contains("sent wrong cw20"));
 }
 
 #[test]
@@ -552,7 +523,7 @@ fn test_incorrect_native_funding_amount() {
     let (_, _, cw_vesting_code_id) = setup_contracts(&mut app);
 
     // Instantiate cw-vesting contract errors with incorrect amount
-    let error: cw_vesting::ContractError = app
+    let error = app
         .instantiate_contract(
             cw_vesting_code_id,
             alice,
@@ -561,16 +532,8 @@ fn test_incorrect_native_funding_amount() {
             "cw-vesting",
             None,
         )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(
-        error,
-        cw_vesting::ContractError::WrongFundAmount {
-            sent: Uint128::new(100),
-            expected: Uint128::new(TOTAL_VEST)
-        }
-    )
+        .unwrap_err();
+    assert!(error.to_string().contains("vesting contract vests"));
 }
 
 /// should reject funding if the token is wrong, or the token amount is wrong.
@@ -583,7 +546,7 @@ fn test_execution_rejection_recv() {
         .initialize(
             deps.as_mut().storage,
             VestInit {
-                total: Uint128::new(100),
+                total: Uint256::new(100),
                 schedule: Schedule::SaturatingLinear,
                 start_time: env().block.time,
                 duration_seconds: 60 * 60 * 24 * 7,
@@ -608,7 +571,7 @@ fn test_execution_rejection_recv() {
         message_info(&MockApi::default().addr_make("notcw20"), &[]),
         Cw20ReceiveMsg {
             sender: "random".to_string(),
-            amount: Uint128::new(100),
+            amount: Uint256::new(100),
             msg: to_json_binary(&ReceiveMsg::Fund {}).unwrap(),
         },
     )
@@ -621,7 +584,7 @@ fn test_execution_rejection_recv() {
         message_info(&MockApi::default().addr_make("cw20"), &[]),
         Cw20ReceiveMsg {
             sender: "random".to_string(),
-            amount: Uint128::new(101),
+            amount: Uint256::new(101),
             msg: to_json_binary(&ReceiveMsg::Fund {}).unwrap(),
         },
     )
@@ -629,8 +592,8 @@ fn test_execution_rejection_recv() {
     assert_eq!(
         err,
         ContractError::WrongFundAmount {
-            sent: Uint128::new(101),
-            expected: Uint128::new(100)
+            sent: Uint256::new(101),
+            expected: Uint256::new(100)
         }
     );
 }
@@ -646,7 +609,7 @@ fn test_illiquid_when_unfunfed() {
         .initialize(
             deps.as_mut().storage,
             VestInit {
-                total: Uint128::new(100),
+                total: Uint256::new(100),
                 schedule: Schedule::SaturatingLinear,
                 start_time: env().block.time,
                 duration_seconds: 60 * 60 * 24 * 7,
@@ -674,7 +637,7 @@ fn test_illiquid_when_unfunfed() {
                 env().block.time
             )
             .unwrap(),
-        Uint128::zero()
+        Uint256::zero()
     );
 }
 
@@ -689,7 +652,7 @@ fn test_update_owner() {
         .initialize(
             deps.as_mut().storage,
             VestInit {
-                total: Uint128::new(100),
+                total: Uint256::new(100),
                 schedule: Schedule::SaturatingLinear,
                 start_time: env().block.time,
                 duration_seconds: 60 * 60 * 24 * 7,
@@ -712,7 +675,7 @@ fn test_update_owner() {
             deps.storage,
             env().block.time,
             "validator".to_string(),
-            Uint128::new(10),
+            Uint256::new(10),
         )
         .unwrap();
     PAYMENT

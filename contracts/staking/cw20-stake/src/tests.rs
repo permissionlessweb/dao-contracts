@@ -1,22 +1,21 @@
-use anyhow::Result as AnyResult;
-use cosmwasm_std::testing::{mock_dependencies, mock_env, message_info, MockApi};
-use cosmwasm_std::{to_json_binary, Addr, MessageInfo, Uint128};
+use std::convert::{TryFrom, TryInto};
+
+use cosmwasm_std::testing::{message_info, mock_dependencies, mock_env, MockApi};
+use cosmwasm_std::{to_json_binary, Addr, MessageInfo, StdResult, Uint128, Uint256};
 use cw20::Cw20Coin;
 use cw_controllers::{Claim, ClaimsResponse};
 use cw_multi_test::{next_block, App, AppResponse, Executor};
-use cw_ownable::{Action, Ownership, OwnershipError};
+use cw_ownable::{Action, Ownership};
 use cw_utils::Duration;
 use cw_utils::Expiration::AtHeight;
 use dao_testing::contracts::{cw20_base_contract, cw20_stake_contract};
-use dao_voting::duration::UnstakingDurationError;
 use std::borrow::BorrowMut;
 
 use crate::msg::{
     ExecuteMsg, ListStakersResponse, QueryMsg, ReceiveMsg, StakedBalanceAtHeightResponse,
-    StakedValueResponse, StakerBalanceResponse, TotalStakedAtHeightResponse, TotalValueResponse,
+    StakedValueResponse, TotalStakedAtHeightResponse, TotalValueResponse,
 };
 use crate::state::{Config, MAX_CLAIMS};
-use cw20_stake::ContractError;
 
 // v1 migration not supported in this version
 // use cw20_stake_v1 as v1;
@@ -59,7 +58,7 @@ fn get_balance<T: Into<String>, U: Into<String>>(
         address: address.into(),
     };
     let result: cw20::BalanceResponse = app.wrap().query_wasm_smart(contract_addr, &msg).unwrap();
-    result.balance
+    result.balance.try_into().unwrap()
 }
 
 fn instantiate_cw20(
@@ -128,7 +127,7 @@ fn query_staked_balance<T: Into<String>, U: Into<String>>(
     };
     let result: StakedBalanceAtHeightResponse =
         app.wrap().query_wasm_smart(contract_addr, &msg).unwrap();
-    result.balance
+    Uint128::try_from(result.balance).unwrap()
 }
 
 fn query_config<T: Into<String>>(app: &App, contract_addr: T) -> Config {
@@ -146,7 +145,7 @@ fn query_total_staked<T: Into<String>>(app: &App, contract_addr: T) -> Uint128 {
     let msg = QueryMsg::TotalStakedAtHeight { height: None };
     let result: TotalStakedAtHeightResponse =
         app.wrap().query_wasm_smart(contract_addr, &msg).unwrap();
-    result.total
+    Uint128::try_from(result.total).unwrap()
 }
 
 fn query_staked_value<T: Into<String>, U: Into<String>>(
@@ -185,10 +184,10 @@ fn stake_tokens(
     cw20_addr: &Addr,
     info: MessageInfo,
     amount: Uint128,
-) -> AnyResult<AppResponse> {
+) -> StdResult<AppResponse> {
     let msg = cw20::Cw20ExecuteMsg::Send {
         contract: staking_addr.to_string(),
-        amount,
+        amount: amount.into(),
         msg: to_json_binary(&ReceiveMsg::Stake {}).unwrap(),
     };
     app.execute_contract(info.sender, cw20_addr.clone(), &msg, &[])
@@ -199,7 +198,7 @@ fn update_config(
     staking_addr: &Addr,
     info: MessageInfo,
     duration: Option<Duration>,
-) -> AnyResult<AppResponse> {
+) -> StdResult<AppResponse> {
     let msg = ExecuteMsg::UpdateConfig { duration };
     app.execute_contract(info.sender, staking_addr.clone(), &msg, &[])
 }
@@ -209,12 +208,14 @@ fn unstake_tokens(
     staking_addr: &Addr,
     info: MessageInfo,
     amount: Uint128,
-) -> AnyResult<AppResponse> {
-    let msg = ExecuteMsg::Unstake { amount };
+) -> StdResult<AppResponse> {
+    let msg = ExecuteMsg::Unstake {
+        amount: amount.into(),
+    };
     app.execute_contract(info.sender, staking_addr.clone(), &msg, &[])
 }
 
-fn claim_tokens(app: &mut App, staking_addr: &Addr, info: MessageInfo) -> AnyResult<AppResponse> {
+fn claim_tokens(app: &mut App, staking_addr: &Addr, info: MessageInfo) -> StdResult<AppResponse> {
     let msg = ExecuteMsg::Claim {};
     app.execute_contract(info.sender, staking_addr.clone(), &msg, &[])
 }
@@ -227,10 +228,14 @@ fn test_instantiate_invalid_unstaking_duration() {
     let amount1 = Uint128::from(100u128);
     let initial_balances = vec![Cw20Coin {
         address: accts.addr1.to_string(),
-        amount: amount1,
+        amount: amount1.into(),
     }];
-    let (_staking_addr, _cw20_addr) =
-        setup_test_case(&mut app, initial_balances, Some(Duration::Height(0)), &accts);
+    let (_staking_addr, _cw20_addr) = setup_test_case(
+        &mut app,
+        initial_balances,
+        Some(Duration::Height(0)),
+        &accts,
+    );
 }
 
 #[test]
@@ -248,7 +253,7 @@ fn test_update_config() {
     let amount1 = Uint128::from(100u128);
     let initial_balances = vec![Cw20Coin {
         address: accts.addr1.to_string(),
-        amount: amount1,
+        amount: amount1.into(),
     }];
     let (staking_addr, _cw20_addr) = setup_test_case(&mut app, initial_balances, None, &accts);
 
@@ -260,33 +265,17 @@ fn test_update_config() {
 
     // Non owner may not update configuration.
     let info = message_info(&accts.addr1, &[]);
-    let err: ContractError = update_config(&mut app, &staking_addr, info, None)
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(err, ContractError::Ownership(OwnershipError::NotOwner));
+    let err = update_config(&mut app, &staking_addr, info, None).unwrap_err();
+    assert!(err.to_string().contains("not the contract's current owner"));
 
     // Zero durations not allowed.
     let info = message_info(&accts.owner, &[]);
-    let err: ContractError =
-        update_config(&mut app, &staking_addr, info, Some(Duration::Height(0)))
-            .unwrap_err()
-            .downcast()
-            .unwrap();
-    assert_eq!(
-        err,
-        ContractError::UnstakingDurationError(UnstakingDurationError::InvalidUnstakingDuration {})
-    );
+    let err = update_config(&mut app, &staking_addr, info, Some(Duration::Height(0))).unwrap_err();
+    assert!(err.to_string().contains("Invalid unstaking duration"));
 
     let info = message_info(&accts.owner, &[]);
-    let err: ContractError = update_config(&mut app, &staking_addr, info, Some(Duration::Time(0)))
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(
-        err,
-        ContractError::UnstakingDurationError(UnstakingDurationError::InvalidUnstakingDuration {})
-    );
+    let err = update_config(&mut app, &staking_addr, info, Some(Duration::Time(0))).unwrap_err();
+    assert!(err.to_string().contains("Invalid unstaking duration"));
 }
 
 #[test]
@@ -298,7 +287,7 @@ fn test_staking() {
     let amount1 = Uint128::from(100u128);
     let initial_balances = vec![Cw20Coin {
         address: accts.addr1.to_string(),
-        amount: amount1,
+        amount: amount1.into(),
     }];
     let (staking_addr, cw20_addr) = setup_test_case(&mut app, initial_balances, None, &accts);
 
@@ -335,7 +324,7 @@ fn test_staking() {
     // Can't transfer bonded amount
     let msg = cw20::Cw20ExecuteMsg::Transfer {
         recipient: accts.addr2.to_string(),
-        amount: Uint128::from(51u128),
+        amount: Uint128::from(51u128).into(),
     };
     let _err = app
         .borrow_mut()
@@ -345,7 +334,7 @@ fn test_staking() {
     // Successful transfer of unbonded amount
     let msg = cw20::Cw20ExecuteMsg::Transfer {
         recipient: accts.addr2.to_string(),
-        amount: Uint128::from(20u128),
+        amount: Uint128::from(20u128).into(),
     };
     let _res = app
         .borrow_mut()
@@ -420,7 +409,7 @@ fn text_max_claims() {
     let unstaking_blocks = 1u64;
     let initial_balances = vec![Cw20Coin {
         address: accts.addr1.to_string(),
-        amount: amount1,
+        amount: amount1.into(),
     }];
     let (staking_addr, cw20_addr) = setup_test_case(
         &mut app,
@@ -462,7 +451,7 @@ fn test_unstaking_with_claims() {
     let unstaking_blocks = 10u64;
     let initial_balances = vec![Cw20Coin {
         address: accts.addr1.to_string(),
-        amount: amount1,
+        amount: amount1.into(),
     }];
     let (staking_addr, cw20_addr) = setup_test_case(
         &mut app,
@@ -510,11 +499,8 @@ fn test_unstaking_with_claims() {
 
     // Cannot claim when nothing is available
     let info = message_info(&accts.addr1, &[]);
-    let _err: ContractError = claim_tokens(&mut app, &staking_addr, info)
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(_err, ContractError::NothingToClaim {});
+    let err = claim_tokens(&mut app, &staking_addr, info).unwrap_err();
+    assert!(err.to_string().contains("Nothing to claim"));
 
     // Successful claim
     app.update_block(|b| b.height += unstaking_blocks);
@@ -579,19 +565,19 @@ fn multiple_address_staking() {
     let initial_balances = vec![
         Cw20Coin {
             address: accts.addr1.to_string(),
-            amount: amount1,
+            amount: amount1.into(),
         },
         Cw20Coin {
             address: accts.addr2.to_string(),
-            amount: amount1,
+            amount: amount1.into(),
         },
         Cw20Coin {
             address: accts.addr3.to_string(),
-            amount: amount1,
+            amount: amount1.into(),
         },
         Cw20Coin {
             address: accts.addr4.to_string(),
-            amount: amount1,
+            amount: amount1.into(),
         },
     ];
     let mut app = mock_app();
@@ -668,7 +654,7 @@ fn test_auto_compounding_staking() {
     let amount1 = Uint128::from(1000u128);
     let initial_balances = vec![Cw20Coin {
         address: accts.addr1.to_string(),
-        amount: amount1,
+        amount: amount1.into(),
     }];
     let (staking_addr, cw20_addr) = setup_test_case(&mut app, initial_balances, None, &accts);
 
@@ -691,7 +677,10 @@ fn test_auto_compounding_staking() {
         query_staked_value(&app, &staking_addr, accts.addr1.to_string()),
         Uint128::from(100u128)
     );
-    assert_eq!(query_total_value(&app, &staking_addr), Uint128::from(100u128));
+    assert_eq!(
+        query_total_value(&app, &staking_addr),
+        Uint128::from(100u128)
+    );
     assert_eq!(
         get_balance(&app, &cw20_addr, accts.addr1.to_string()),
         Uint128::from(900u128)
@@ -700,7 +689,7 @@ fn test_auto_compounding_staking() {
     // Add compounding rewards
     let msg = cw20::Cw20ExecuteMsg::Send {
         contract: staking_addr.to_string(),
-        amount: Uint128::from(100u128),
+        amount: Uint128::from(100u128).into(),
         msg: to_json_binary(&ReceiveMsg::Fund {}).unwrap(),
     };
     let _res = app
@@ -719,7 +708,10 @@ fn test_auto_compounding_staking() {
         query_staked_value(&app, &staking_addr, accts.addr1.to_string()),
         Uint128::from(200u128)
     );
-    assert_eq!(query_total_value(&app, &staking_addr), Uint128::from(200u128));
+    assert_eq!(
+        query_total_value(&app, &staking_addr),
+        Uint128::from(200u128)
+    );
     assert_eq!(
         get_balance(&app, &cw20_addr, accts.addr1.to_string()),
         Uint128::from(800u128)
@@ -728,7 +720,7 @@ fn test_auto_compounding_staking() {
     // Successful transfer of unbonded amount
     let msg = cw20::Cw20ExecuteMsg::Transfer {
         recipient: accts.addr2.to_string(),
-        amount: Uint128::from(100u128),
+        amount: Uint128::from(100u128).into(),
     };
     let _res = app
         .borrow_mut()
@@ -762,7 +754,10 @@ fn test_auto_compounding_staking() {
         query_staked_value(&app, &staking_addr, accts.addr2.to_string()),
         Uint128::from(100u128)
     );
-    assert_eq!(query_total_value(&app, &staking_addr), Uint128::from(300u128));
+    assert_eq!(
+        query_total_value(&app, &staking_addr),
+        Uint128::from(300u128)
+    );
     assert_eq!(
         get_balance(&app, &cw20_addr, accts.addr2.clone()),
         Uint128::zero()
@@ -775,7 +770,7 @@ fn test_auto_compounding_staking() {
     // Add compounding rewards
     let msg = cw20::Cw20ExecuteMsg::Send {
         contract: staking_addr.to_string(),
-        amount: Uint128::from(90u128),
+        amount: Uint128::from(90u128).into(),
         msg: to_json_binary(&ReceiveMsg::Fund {}).unwrap(),
     };
     let _res = app
@@ -803,7 +798,10 @@ fn test_auto_compounding_staking() {
         query_staked_value(&app, &staking_addr, accts.addr2.to_string()),
         Uint128::from(130u128)
     );
-    assert_eq!(query_total_value(&app, &staking_addr), Uint128::from(390u128));
+    assert_eq!(
+        query_total_value(&app, &staking_addr),
+        Uint128::from(390u128)
+    );
     assert_eq!(
         get_balance(&app, &cw20_addr, accts.addr1.to_string()),
         Uint128::from(610u128)
@@ -838,15 +836,19 @@ fn test_simple_unstaking_with_duration() {
     let initial_balances = vec![
         Cw20Coin {
             address: accts.addr1.to_string(),
-            amount: amount1,
+            amount: amount1.into(),
         },
         Cw20Coin {
             address: accts.addr2.to_string(),
-            amount: amount1,
+            amount: amount1.into(),
         },
     ];
-    let (staking_addr, cw20_addr) =
-        setup_test_case(&mut app, initial_balances, Some(Duration::Height(1)), &accts);
+    let (staking_addr, cw20_addr) = setup_test_case(
+        &mut app,
+        initial_balances,
+        Some(Duration::Height(1)),
+        &accts,
+    );
 
     // Bond Address 1
     let info = message_info(&accts.addr1, &[]);
@@ -933,7 +935,7 @@ fn test_double_unstake_at_height() {
         &mut app,
         vec![Cw20Coin {
             address: ekez.to_string(),
-            amount: Uint128::new(10),
+            amount: Uint128::new(10).into(),
         }],
         None,
         &accts,
@@ -990,7 +992,7 @@ fn test_double_unstake_at_height() {
         )
         .unwrap();
 
-    assert_eq!(balance.balance, Uint128::new(10));
+    assert_eq!(balance.balance, Uint256::from(10u128));
 
     let balance: StakedBalanceAtHeightResponse = app
         .wrap()
@@ -1003,7 +1005,7 @@ fn test_double_unstake_at_height() {
         )
         .unwrap();
 
-    assert_eq!(balance.balance, Uint128::zero())
+    assert_eq!(balance.balance, Uint256::zero())
 }
 
 #[test]
@@ -1021,19 +1023,19 @@ fn test_query_list_stakers() {
         vec![
             Cw20Coin {
                 address: s1.to_string(),
-                amount: Uint128::new(10),
+                amount: Uint128::new(10).into(),
             },
             Cw20Coin {
                 address: s2.to_string(),
-                amount: Uint128::new(20),
+                amount: Uint128::new(20).into(),
             },
             Cw20Coin {
                 address: s3.to_string(),
-                amount: Uint128::new(30),
+                amount: Uint128::new(30).into(),
             },
             Cw20Coin {
                 address: s4.to_string(),
-                amount: Uint128::new(40),
+                amount: Uint128::new(40).into(),
             },
         ],
         None,
@@ -1129,7 +1131,7 @@ fn test_ownership_transfer() {
         &mut app,
         vec![cw20::Cw20Coin {
             address: accts.owner.to_string(),
-            amount: Uint128::from(1000u64),
+            amount: Uint128::from(1000u64).into(),
         }],
         &accts,
     );

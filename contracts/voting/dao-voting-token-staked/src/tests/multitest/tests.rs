@@ -5,7 +5,7 @@ use crate::msg::{
 };
 use crate::state::Config;
 use cosmwasm_std::testing::{mock_dependencies, mock_env, MockApi};
-use cosmwasm_std::{coins, Addr, Coin, Decimal, Uint128};
+use cosmwasm_std::{coins, Addr, Coin, Decimal256, MigrateInfo, Uint128, Uint256};
 use cw_controllers::ClaimsResponse;
 use cw_multi_test::{next_block, App, AppResponse, BankSudo, Executor, SudoMsg};
 use cw_utils::Duration;
@@ -32,11 +32,11 @@ fn mock_app() -> App {
         amount: vec![
             Coin {
                 denom: DENOM.to_string(),
-                amount: Uint128::new(10000),
+                amount: Uint256::from(10000u128),
             },
             Coin {
                 denom: INVALID_DENOM.to_string(),
-                amount: Uint128::new(10000),
+                amount: Uint256::from(10000u128),
             },
         ],
     }))
@@ -46,15 +46,15 @@ fn mock_app() -> App {
         amount: vec![
             Coin {
                 denom: DENOM.to_string(),
-                amount: Uint128::new(10000),
+                amount: Uint256::from(10000u128),
             },
             Coin {
                 denom: INVALID_DENOM.to_string(),
-                amount: Uint128::new(10000),
+                amount: Uint256::from(10000u128),
             },
             Coin {
                 denom: ODD_DENOM.to_string(),
-                amount: Uint128::new(5),
+                amount: Uint256::from(5u128),
             },
         ],
     }))
@@ -64,11 +64,11 @@ fn mock_app() -> App {
         amount: vec![
             Coin {
                 denom: DENOM.to_string(),
-                amount: Uint128::new(10000),
+                amount: Uint256::from(10000u128),
             },
             Coin {
                 denom: INVALID_DENOM.to_string(),
-                amount: Uint128::new(10000),
+                amount: Uint256::from(10000u128),
             },
         ],
     }))
@@ -94,7 +94,7 @@ fn stake_tokens(
     sender: &str,
     amount: u128,
     denom: &str,
-) -> anyhow::Result<AppResponse> {
+) -> Result<AppResponse, cosmwasm_std::StdError> {
     app.execute_contract(
         MockApi::default().addr_make(sender),
         staking_addr,
@@ -108,7 +108,7 @@ fn unstake_tokens(
     staking_addr: Addr,
     sender: &str,
     amount: u128,
-) -> anyhow::Result<AppResponse> {
+) -> Result<AppResponse, cosmwasm_std::StdError> {
     app.execute_contract(
         MockApi::default().addr_make(sender),
         staking_addr,
@@ -119,7 +119,7 @@ fn unstake_tokens(
     )
 }
 
-fn claim(app: &mut App, staking_addr: Addr, sender: &str) -> anyhow::Result<AppResponse> {
+fn claim(app: &mut App, staking_addr: Addr, sender: &str) -> Result<AppResponse, cosmwasm_std::StdError> {
     app.execute_contract(
         MockApi::default().addr_make(sender),
         staking_addr,
@@ -133,7 +133,7 @@ fn update_config(
     staking_addr: Addr,
     sender: &str,
     duration: Option<Duration>,
-) -> anyhow::Result<AppResponse> {
+) -> Result<AppResponse, cosmwasm_std::StdError> {
     app.execute_contract(
         MockApi::default().addr_make(sender),
         staking_addr,
@@ -178,7 +178,7 @@ fn get_claims(app: &mut App, staking_addr: Addr, address: String) -> ClaimsRespo
         .unwrap()
 }
 
-fn get_balance(app: &mut App, address_label: &str, denom: &str) -> Uint128 {
+fn get_balance(app: &mut App, address_label: &str, denom: &str) -> Uint256 {
     let address = app.api().addr_make(address_label);
     app.wrap().query_balance(address, denom).unwrap().amount
 }
@@ -243,7 +243,7 @@ fn test_instantiate_invalid_unstaking_duration_height() {
             },
             unstaking_duration: Some(Duration::Height(0)),
             active_threshold: Some(ActiveThreshold::AbsoluteCount {
-                count: Uint128::new(1),
+                count: Uint256::from(1u128),
             }),
         },
     );
@@ -266,7 +266,7 @@ fn test_instantiate_invalid_unstaking_duration_time() {
             },
             unstaking_duration: Some(Duration::Time(0)),
             active_threshold: Some(ActiveThreshold::AbsoluteCount {
-                count: Uint128::new(1),
+                count: Uint256::from(1u128),
             }),
         },
     );
@@ -457,14 +457,14 @@ fn test_unstake_no_unstaking_duration() {
 
     let balance = get_balance(&mut app, ADDR1, DENOM);
     // 10000 (initial bal) - 100 (staked) + 75 (unstaked) = 9975
-    assert_eq!(balance, Uint128::new(9975));
+    assert_eq!(balance, Uint256::from(9975u128));
 
     // Unstake the rest
     unstake_tokens(&mut app, addr, ADDR1, 25).unwrap();
 
     let balance = get_balance(&mut app, ADDR1, DENOM);
     // 10000 (initial bal) - 100 (staked) + 75 (unstaked 1) + 25 (unstaked 2) = 10000
-    assert_eq!(balance, Uint128::new(10000))
+    assert_eq!(balance, Uint256::from(10000u128))
 }
 
 #[test]
@@ -552,7 +552,7 @@ fn test_claim() {
     // Query balance
     let balance = get_balance(&mut app, ADDR1, DENOM);
     // 10000 (initial bal) - 100 (staked) + 75 (unstaked) = 9975
-    assert_eq!(balance, Uint128::new(9975));
+    assert_eq!(balance, Uint256::from(9975u128));
 
     // Unstake the rest
     unstake_tokens(&mut app, addr.clone(), ADDR1, 25).unwrap();
@@ -567,7 +567,7 @@ fn test_claim() {
     // Query balance
     let balance = get_balance(&mut app, ADDR1, DENOM);
     // 10000 (initial bal) - 100 (staked) + 75 (unstaked 1) + 25 (unstaked 2) = 10000
-    assert_eq!(balance, Uint128::new(10000));
+    assert_eq!(balance, Uint256::from(10000u128));
 }
 
 #[test]
@@ -799,7 +799,7 @@ fn test_voting_power_queries() {
 
     // Total power is 100
     let resp = get_total_power_at_height(&mut app, addr.clone(), None);
-    assert_eq!(resp.power, Uint128::new(100));
+    assert_eq!(resp.power, Uint256::from(100u128));
 
     // ADDR1 has 100 power
     let resp = get_voting_power_at_height(
@@ -808,7 +808,7 @@ fn test_voting_power_queries() {
         MockApi::default().addr_make(ADDR1).to_string(),
         None,
     );
-    assert_eq!(resp.power, Uint128::new(100));
+    assert_eq!(resp.power, Uint256::from(100u128));
 
     // ADDR2 still has 0 power
     let resp = get_voting_power_at_height(
@@ -827,7 +827,7 @@ fn test_voting_power_queries() {
     // Query the previous height, total 100, ADDR1 100, ADDR2 0
     // Total power is 100
     let resp = get_total_power_at_height(&mut app, addr.clone(), Some(prev_height));
-    assert_eq!(resp.power, Uint128::new(100));
+    assert_eq!(resp.power, Uint256::from(100u128));
 
     // ADDR1 has 100 power
     let resp = get_voting_power_at_height(
@@ -836,7 +836,7 @@ fn test_voting_power_queries() {
         MockApi::default().addr_make(ADDR1).to_string(),
         Some(prev_height),
     );
-    assert_eq!(resp.power, Uint128::new(100));
+    assert_eq!(resp.power, Uint256::from(100u128));
 
     // ADDR2 still has 0 power
     let resp = get_voting_power_at_height(
@@ -850,7 +850,7 @@ fn test_voting_power_queries() {
     // For current height, total 150, ADDR1 100, ADDR2 50
     // Total power is 150
     let resp = get_total_power_at_height(&mut app, addr.clone(), None);
-    assert_eq!(resp.power, Uint128::new(150));
+    assert_eq!(resp.power, Uint256::from(150u128));
 
     // ADDR1 has 100 power
     let resp = get_voting_power_at_height(
@@ -859,7 +859,7 @@ fn test_voting_power_queries() {
         MockApi::default().addr_make(ADDR1).to_string(),
         None,
     );
-    assert_eq!(resp.power, Uint128::new(100));
+    assert_eq!(resp.power, Uint256::from(100u128));
 
     // ADDR2 now has 50 power
     let resp = get_voting_power_at_height(
@@ -868,7 +868,7 @@ fn test_voting_power_queries() {
         MockApi::default().addr_make(ADDR2).to_string(),
         None,
     );
-    assert_eq!(resp.power, Uint128::new(50));
+    assert_eq!(resp.power, Uint256::from(50u128));
 
     // ADDR1 unstakes half
     unstake_tokens(&mut app, addr.clone(), ADDR1, 50).unwrap();
@@ -878,7 +878,7 @@ fn test_voting_power_queries() {
     // Query the previous height, total 150, ADDR1 100, ADDR2 50
     // Total power is 100
     let resp = get_total_power_at_height(&mut app, addr.clone(), Some(prev_height));
-    assert_eq!(resp.power, Uint128::new(150));
+    assert_eq!(resp.power, Uint256::from(150u128));
 
     // ADDR1 has 100 power
     let resp = get_voting_power_at_height(
@@ -887,7 +887,7 @@ fn test_voting_power_queries() {
         MockApi::default().addr_make(ADDR1).to_string(),
         Some(prev_height),
     );
-    assert_eq!(resp.power, Uint128::new(100));
+    assert_eq!(resp.power, Uint256::from(100u128));
 
     // ADDR2 still has 0 power
     let resp = get_voting_power_at_height(
@@ -896,12 +896,12 @@ fn test_voting_power_queries() {
         MockApi::default().addr_make(ADDR2).to_string(),
         Some(prev_height),
     );
-    assert_eq!(resp.power, Uint128::new(50));
+    assert_eq!(resp.power, Uint256::from(50u128));
 
     // For current height, total 100, ADDR1 50, ADDR2 50
     // Total power is 100
     let resp = get_total_power_at_height(&mut app, addr.clone(), None);
-    assert_eq!(resp.power, Uint128::new(100));
+    assert_eq!(resp.power, Uint256::from(100u128));
 
     // ADDR1 has 50 power
     let resp = get_voting_power_at_height(
@@ -910,7 +910,7 @@ fn test_voting_power_queries() {
         MockApi::default().addr_make(ADDR1).to_string(),
         None,
     );
-    assert_eq!(resp.power, Uint128::new(50));
+    assert_eq!(resp.power, Uint256::from(50u128));
 
     // ADDR2 now has 50 power
     let resp = get_voting_power_at_height(
@@ -919,7 +919,7 @@ fn test_voting_power_queries() {
         MockApi::default().addr_make(ADDR2).to_string(),
         None,
     );
-    assert_eq!(resp.power, Uint128::new(50));
+    assert_eq!(resp.power, Uint256::from(50u128));
 }
 
 #[test]
@@ -961,11 +961,11 @@ fn test_query_list_stakers() {
         stakers: vec![
             StakerBalanceResponse {
                 address: MockApi::default().addr_make(ADDR1).to_string(),
-                balance: Uint128::new(100),
+                balance: Uint256::from(100u128),
             },
             StakerBalanceResponse {
                 address: MockApi::default().addr_make(ADDR2).to_string(),
-                balance: Uint128::new(50),
+                balance: Uint256::from(50u128),
             },
         ],
     };
@@ -987,7 +987,7 @@ fn test_query_list_stakers() {
     let test_res = ListStakersResponse {
         stakers: vec![StakerBalanceResponse {
             address: MockApi::default().addr_make(ADDR2).to_string(),
-            balance: Uint128::new(50),
+            balance: Uint256::from(50u128),
         }],
     };
 
@@ -1023,7 +1023,7 @@ fn test_instantiate_zero_active_threshold_count() {
             },
             unstaking_duration: Some(Duration::Height(5)),
             active_threshold: Some(ActiveThreshold::AbsoluteCount {
-                count: Uint128::zero(),
+                count: Uint256::zero(),
             }),
         },
     );
@@ -1044,7 +1044,7 @@ fn test_active_threshold_absolute_count() {
             },
             unstaking_duration: Some(Duration::Height(5)),
             active_threshold: Some(ActiveThreshold::AbsoluteCount {
-                count: Uint128::new(100),
+                count: Uint256::from(100u128),
             }),
         },
     );
@@ -1082,7 +1082,7 @@ fn test_active_threshold_percent() {
             },
             unstaking_duration: Some(Duration::Height(5)),
             active_threshold: Some(ActiveThreshold::Percentage {
-                percent: Decimal::percent(20),
+                percent: Decimal256::percent(20),
             }),
         },
     );
@@ -1120,7 +1120,7 @@ fn test_active_threshold_percent_rounds_up() {
             },
             unstaking_duration: Some(Duration::Height(5)),
             active_threshold: Some(ActiveThreshold::Percentage {
-                percent: Decimal::percent(50),
+                percent: Decimal256::percent(50),
             }),
         },
     );
@@ -1203,7 +1203,7 @@ fn test_update_active_threshold() {
 
     let msg = ExecuteMsg::UpdateActiveThreshold {
         new_threshold: Some(ActiveThreshold::AbsoluteCount {
-            count: Uint128::new(100),
+            count: Uint256::from(100u128),
         }),
     };
 
@@ -1227,7 +1227,7 @@ fn test_update_active_threshold() {
     assert_eq!(
         resp.active_threshold,
         Some(ActiveThreshold::AbsoluteCount {
-            count: Uint128::new(100)
+            count: Uint256::from(100u128)
         })
     );
 }
@@ -1249,7 +1249,7 @@ fn test_active_threshold_percentage_gt_100() {
             },
             unstaking_duration: Some(Duration::Height(5)),
             active_threshold: Some(ActiveThreshold::Percentage {
-                percent: Decimal::percent(120),
+                percent: Decimal256::percent(120),
             }),
         },
     );
@@ -1272,7 +1272,7 @@ fn test_active_threshold_percentage_lte_0() {
             },
             unstaking_duration: Some(Duration::Height(5)),
             active_threshold: Some(ActiveThreshold::Percentage {
-                percent: Decimal::percent(0),
+                percent: Decimal256::percent(0),
             }),
         },
     );
@@ -1293,7 +1293,7 @@ fn test_active_threshold_absolute_count_invalid() {
             },
             unstaking_duration: Some(Duration::Height(5)),
             active_threshold: Some(ActiveThreshold::AbsoluteCount {
-                count: Uint128::new(30001),
+                count: Uint256::from(30001u128),
             }),
         },
     );
@@ -1426,7 +1426,16 @@ fn test_staking_hooks() {
 pub fn test_migrate_update_version() {
     let mut deps = mock_dependencies();
     cw2::set_contract_version(&mut deps.storage, "my-contract", "1.0.0").unwrap();
-    migrate(deps.as_mut(), mock_env(), MigrateMsg {}).unwrap();
+    migrate(
+        deps.as_mut(),
+        mock_env(),
+        MigrateMsg {},
+        MigrateInfo {
+            sender: Addr::unchecked(""),
+            old_migrate_version: None,
+        },
+    )
+    .unwrap();
     let version = cw2::get_contract_version(&deps.storage).unwrap();
     assert_eq!(version.version, CONTRACT_VERSION);
     assert_eq!(version.contract, CONTRACT_NAME);

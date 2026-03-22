@@ -1,4 +1,4 @@
-use cosmwasm_std::Uint128;
+use cosmwasm_std::Uint256;
 use cw_multi_test::{App, Executor};
 use dao_cw721_extensions::roles::MetadataExt;
 use dao_testing::contracts::dao_voting_cw721_roles_contract;
@@ -15,7 +15,7 @@ use crate::{
 use super::{addr, addr_str, instantiate::instantiate_cw721_roles, setup_test, CommonTest, CREATOR_ADDR};
 
 #[test]
-fn test_info_query_works() -> anyhow::Result<()> {
+fn test_info_query_works() -> cosmwasm_std::StdResult<()> {
     let CommonTest {
         app, module_addr, ..
     } = setup_test(vec![NftMintMsg {
@@ -61,14 +61,14 @@ fn test_use_existing_nft_contract() {
 
     // Get total power
     let total = query_total_power(&app, &module_addr, None).unwrap();
-    assert_eq!(total.power, Uint128::zero());
+    assert_eq!(total.power, Uint256::zero());
 
     // Creator mints themselves a new NFT
     mint_nft(&mut app, &cw721_addr, &addr_str(CREATOR_ADDR), &addr_str(CREATOR_ADDR), "1").unwrap();
 
     // Get voting power for creator
     let vp = query_voting_power(&app, &module_addr, &addr_str(CREATOR_ADDR), None).unwrap();
-    assert_eq!(vp.power, Uint128::new(1));
+    assert_eq!(vp.power, Uint256::new(1));
 }
 
 #[test]
@@ -100,11 +100,11 @@ fn test_voting_queries() {
 
     // Get total power
     let total = query_total_power(&app, &module_addr, None).unwrap();
-    assert_eq!(total.power, Uint128::new(1));
+    assert_eq!(total.power, Uint256::new(1));
 
     // Get voting power for creator
     let vp = query_voting_power(&app, &module_addr, &addr_str(CREATOR_ADDR), None).unwrap();
-    assert_eq!(vp.power, Uint128::new(1));
+    assert_eq!(vp.power, Uint256::new(1));
 
     // Mint a new NFT
     mint_nft(
@@ -118,9 +118,9 @@ fn test_voting_queries() {
 
     // Get total power
     let total = query_total_power(&app, &module_addr, None).unwrap();
-    assert_eq!(total.power, Uint128::new(2));
+    assert_eq!(total.power, Uint256::new(2));
 
     // Get voting power for creator
     let vp = query_voting_power(&app, &module_addr, &addr_str(CREATOR_ADDR), None).unwrap();
-    assert_eq!(vp.power, Uint128::new(2));
+    assert_eq!(vp.power, Uint256::new(2));
 }

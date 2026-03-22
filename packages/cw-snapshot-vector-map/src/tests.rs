@@ -95,8 +95,8 @@ fn test_basic() {
     for i in 0..4 {
         let err = svm.push(storage, k1, &4, i, None).unwrap_err();
         assert_eq!(
-            err,
-            StdError::generic_err("update must be performed at or after the last update (4)")
+            err.to_string(),
+            StdError::msg("update must be performed at or after the last update (4)").to_string()
         );
     }
 
@@ -107,8 +107,8 @@ fn test_basic() {
     for i in 0..4 {
         let err = svm.remove(storage, k1, 0, i).unwrap_err();
         assert_eq!(
-            err,
-            StdError::generic_err("update must be performed at or after the last update (4)")
+            err.to_string(),
+            StdError::msg("update must be performed at or after the last update (4)").to_string()
         );
     }
 
@@ -428,8 +428,8 @@ fn test_expiration() {
         .update_expiration(storage, k1, 4, 30, Some(10))
         .unwrap_err();
     assert_eq!(
-        err,
-        StdError::generic_err("update must be performed at or after the last update (31)")
+        err.to_string(),
+        StdError::msg("update must be performed at or after the last update (31)").to_string()
     );
 }
 

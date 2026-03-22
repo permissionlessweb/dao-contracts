@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     testing::{mock_dependencies, mock_env, MockApi},
-    to_json_binary, Addr, Decimal, Empty, Uint128,
+    to_json_binary, Addr, Decimal, Empty, Uint128, Uint256,
 };
 use cw_multi_test::{Contract, ContractWrapper};
 use cw_utils::Duration;
@@ -259,7 +259,7 @@ fn test_voting_power_updates() {
     suite.advance_block();
 
     // Verify the initial delegation amount
-    suite.assert_delegate_total_delegated_vp(ADDR0, initial_staked);
+    suite.assert_delegate_total_delegated_vp(ADDR0, Uint128::try_from(initial_staked).unwrap());
 
     // CASE 1: INCREASE voting power by minting and staking more tokens
     let additional_stake = Uint128::from(500u128);
@@ -267,7 +267,7 @@ fn test_voting_power_updates() {
     suite.advance_block();
 
     // Verify the delegated voting power increases correctly
-    let expected_vp_after_increase = initial_staked + additional_stake;
+    let expected_vp_after_increase = Uint128::try_from(initial_staked).unwrap() + additional_stake;
     suite.assert_delegate_total_delegated_vp(ADDR0, expected_vp_after_increase);
 
     // CASE 2: DECREASE voting power by unstaking some tokens
@@ -769,9 +769,8 @@ fn test_max_delegations() {
 
     // try to delegate to ADDR2
     let err = suite.delegate_error(ADDR3, ADDR2, Decimal::percent(10));
-    assert_eq!(
-        err,
-        ContractError::MaxDelegationsReached { max: 2, current: 2 }
+    assert!(
+        err.to_string().contains(&ContractError::MaxDelegationsReached { max: 2, current: 2 }.to_string())
     );
 
     suite.assert_delegations_count(ADDR3, 2);
@@ -782,16 +781,14 @@ fn test_max_delegations() {
 
     // try to delegate to ADDR2
     let err = suite.delegate_error(ADDR3, ADDR2, Decimal::percent(10));
-    assert_eq!(
-        err,
-        ContractError::MaxDelegationsReached { max: 1, current: 2 }
+    assert!(
+        err.to_string().contains(&ContractError::MaxDelegationsReached { max: 1, current: 2 }.to_string())
     );
 
     // try to update existing delegation
     let err = suite.delegate_error(ADDR3, ADDR1, Decimal::percent(20));
-    assert_eq!(
-        err,
-        ContractError::MaxDelegationsReached { max: 1, current: 2 }
+    assert!(
+        err.to_string().contains(&ContractError::MaxDelegationsReached { max: 1, current: 2 }.to_string())
     );
 
     // remove a delegation
@@ -1159,7 +1156,7 @@ fn test_vote_override_with_cap() {
         &proposal_module,
         id1,
         dao_voting::voting::Vote::Yes,
-        Uint128::from(suite.members[2].weight) + delegation_cap,
+        Uint128::from(suite.members[2].weight) + Uint128::try_from(delegation_cap).unwrap(),
     );
 
     // ADDR2 has 100% of ADDR3's and ADDR0's voting power
@@ -1171,7 +1168,7 @@ fn test_vote_override_with_cap() {
         &proposal_module,
         id1,
         p1.start_height,
-        delegation_cap,
+        Uint128::try_from(delegation_cap).unwrap(),
     );
 
     // if ADDR0 were to override the delegate's vote, the effective UDVP should
@@ -1197,7 +1194,7 @@ fn test_vote_override_with_cap() {
         id1,
         p1.start_height,
         suite.members[3].weight,
-        delegation_cap - new_effective_udvp,
+        Uint128::try_from(delegation_cap).unwrap() - new_effective_udvp,
     );
 
     // ADDR3 cast a vote, bringing the effective UDVP below the cap
@@ -1665,7 +1662,7 @@ fn test_unauthorized_stake_changed_hook_caller() {
         &delegation_addr,
         &crate::msg::ExecuteMsg::StakeChangeHook(StakeChangedHookMsg::Stake {
             addr: Addr::unchecked("not_registered_hook_caller"),
-            amount: Uint128::one(),
+            amount: Uint256::one(),
         }),
         &[],
     );
@@ -1836,7 +1833,7 @@ fn test_auto_unregister() {
     suite.assert_delegate_registered(ADDR0, None);
 
     // unstake all tokens, which should automatically unregister the delegate
-    suite.unstake(ADDR0, suite.members[0].amount);
+    suite.unstake(ADDR0, Uint128::try_from(suite.members[0].amount).unwrap());
 
     suite.advance_block();
 
@@ -1869,17 +1866,17 @@ fn test_vp_cap_update_token_dao() {
     // delegations take effect on the next block
     suite.advance_block();
 
-    let total_vp_except_addr0 = suite
+    let total_vp_except_addr0: u128 = suite
         .members
         .iter()
         .map(|m| {
             if m.address == ADDR0 {
-                0
+                0u128
             } else {
-                m.amount.into()
+                Uint128::try_from(m.amount).unwrap().u128()
             }
         })
-        .sum::<u128>();
+        .sum();
     suite.assert_delegate_total_delegated_vp(ADDR0, total_vp_except_addr0);
 
     // propose a proposal
@@ -1898,7 +1895,7 @@ fn test_vp_cap_update_token_dao() {
         suite
             .members
             .iter()
-            .map(|m| m.amount)
+            .map(|m| Uint128::try_from(m.amount).unwrap())
             .sum::<Uint128>()
             .mul_floor(Decimal::percent(50)),
     );
@@ -1930,7 +1927,7 @@ fn test_vp_cap_update_token_dao() {
         suite
             .members
             .iter()
-            .map(|m| m.amount)
+            .map(|m| Uint128::try_from(m.amount).unwrap())
             .sum::<Uint128>()
             .mul_floor(Decimal::percent(30)),
     );
@@ -1952,7 +1949,7 @@ fn test_vp_cap_update_token_dao() {
         suite
             .members
             .iter()
-            .map(|m| m.amount)
+            .map(|m| Uint128::try_from(m.amount).unwrap())
             .sum::<Uint128>()
             .mul_floor(Decimal::percent(50)),
     );
@@ -1998,7 +1995,7 @@ fn test_vp_cap_update_token_dao() {
         suite
             .members
             .iter()
-            .map(|m| m.amount)
+            .map(|m| Uint128::try_from(m.amount).unwrap())
             .sum::<Uint128>()
             .mul_floor(Decimal::percent(30)),
     );
@@ -2018,7 +2015,7 @@ fn test_vp_cap_update_token_dao() {
         suite
             .members
             .iter()
-            .map(|m| m.amount)
+            .map(|m| Uint128::try_from(m.amount).unwrap())
             .sum::<Uint128>()
             .mul_floor(Decimal::percent(50)),
     );
@@ -2047,7 +2044,7 @@ fn test_gas_limits() {
 
     // unstake all tokens for initial members
     for member in suite.members.clone() {
-        suite.unstake(member.address, member.amount);
+        suite.unstake(member.address, Uint128::try_from(member.amount).unwrap());
     }
 
     // mint 2,000 tokens and stake half for each of 1,000 members
@@ -2069,7 +2066,7 @@ fn test_gas_limits() {
             &dao_voting_token_staked::msg::QueryMsg::TotalPowerAtHeight { height: None },
         )
         .unwrap();
-    assert_eq!(total_vp.power, Uint128::from(initial_staked * members));
+    assert_eq!(total_vp.power, Uint256::from(initial_staked * members));
 
     // register first 100 members as delegates, and make delegator the first
     // non-delegate

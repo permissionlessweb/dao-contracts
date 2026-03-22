@@ -26,7 +26,7 @@ pub fn instantiate_with_cw20_balances_governance(
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![Cw20Coin {
             address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
-            amount: Uint128::new(100_000_000),
+            amount: Uint128::new(100_000_000).into(),
         }]
     });
 
@@ -106,7 +106,7 @@ pub fn instantiate_with_staked_balances_governance(
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![Cw20Coin {
             address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
-            amount: Uint128::new(100_000_000),
+            amount: Uint128::new(100_000_000).into(),
         }]
     });
 
@@ -248,11 +248,11 @@ pub fn instantiate_with_staking_active_threshold(
         vec![
             Cw20Coin {
                 address: "blob".to_string(),
-                amount: Uint128::new(100_000_000),
+                amount: Uint128::new(100_000_000).into(),
             },
             Cw20Coin {
                 address: "blue".to_string(),
-                amount: Uint128::new(100_000_000),
+                amount: Uint128::new(100_000_000).into(),
             },
         ]
     });
@@ -340,7 +340,7 @@ pub fn instantiate_with_cw4_groups_governance(
             })
             .map(|Cw20Coin { address, amount }| cw4::Member {
                 addr: address,
-                weight: amount.u128() as u64,
+                weight: Uint128::try_from(amount).unwrap().u128() as u64,
             })
             .collect()
     };

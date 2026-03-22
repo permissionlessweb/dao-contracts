@@ -1,6 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
-use cosmwasm_std::{coins, to_json_binary, Uint128};
+use cosmwasm_std::{coins, to_json_binary, Uint128, Uint256};
 use cw_multi_test::{BankSudo, SudoMsg};
 use cw_utils::Duration;
 use dao_interface::token::InitialBalance;
@@ -44,23 +44,23 @@ impl<'a> DaoTestingSuiteToken<'a> {
             initial_balances: vec![
                 InitialBalance {
                     address: ADDR0.to_string(),
-                    amount: Uint128::new(100),
+                    amount: Uint256::from(100u128),
                 },
                 InitialBalance {
                     address: ADDR1.to_string(),
-                    amount: Uint128::new(200),
+                    amount: Uint256::from(200u128),
                 },
                 InitialBalance {
                     address: ADDR2.to_string(),
-                    amount: Uint128::new(300),
+                    amount: Uint256::from(300u128),
                 },
                 InitialBalance {
                     address: ADDR3.to_string(),
-                    amount: Uint128::new(300),
+                    amount: Uint256::from(300u128),
                 },
                 InitialBalance {
                     address: ADDR4.to_string(),
-                    amount: Uint128::new(100),
+                    amount: Uint256::from(100u128),
                 },
             ],
             unstaking_duration: None,
@@ -91,13 +91,15 @@ impl<'a> DaoTestingSuiteToken<'a> {
         &mut self,
         dao: &TokenTestDao,
         recipient: impl Into<String>,
-        amount: impl Into<u128>,
+        amount: impl Into<Uint256>,
     ) {
+        let amt: Uint256 = amount.into();
+        let amt_u128: u128 = Uint128::try_from(amt).unwrap().into();
         self.app
             .sudo(SudoMsg::Bank({
                 BankSudo::Mint {
                     to_address: recipient.into(),
-                    amount: coins(amount.into(), &dao.x.denom),
+                    amount: coins(amt_u128, &dao.x.denom),
                 }
             }))
             .unwrap();
@@ -108,13 +110,15 @@ impl<'a> DaoTestingSuiteToken<'a> {
         &mut self,
         dao: &TokenTestDao,
         staker: impl Into<String>,
-        amount: impl Into<u128>,
+        amount: impl Into<Uint256>,
     ) {
+        let amt: Uint256 = amount.into();
+        let amt_u128: u128 = Uint128::try_from(amt).unwrap().into();
         self.execute_smart_ok(
             staker,
             &dao.voting_module_addr,
             &dao_voting_token_staked::msg::ExecuteMsg::Stake {},
-            &coins(amount.into(), &dao.x.denom),
+            &coins(amt_u128, &dao.x.denom),
         );
     }
 
@@ -189,7 +193,7 @@ impl DaoTestingSuite<TokenDaoExtra> for DaoTestingSuiteToken<'_> {
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{Addr, Uint128};
+    use cosmwasm_std::{Addr, Uint256};
 
     use super::*;
 
@@ -232,7 +236,7 @@ mod tests {
             suite
                 .initial_balances
                 .iter()
-                .fold(Uint128::zero(), |acc, m| acc + m.amount)
+                .fold(Uint256::zero(), |acc, m| acc + m.amount)
         );
     }
 }

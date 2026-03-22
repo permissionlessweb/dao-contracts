@@ -1,4 +1,4 @@
-use cosmwasm_std::{Coin, Empty};
+use cosmwasm_std::Coin;
 use cw721_base::{
     error::ContractError,
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},

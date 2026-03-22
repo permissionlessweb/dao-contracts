@@ -1,14 +1,13 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Addr, Attribute, Binary, Deps, DepsMut, Empty, Env, MessageInfo, Order, Reply,
-    Response, StdResult, Storage, SubMsg, WasmMsg,
+    Addr, Attribute, Binary, Deps, DepsMut, Empty, Env, MessageInfo, MigrateInfo, Order, Reply, Response, StdResult, Storage, SubMsg, Uint128, WasmMsg, to_json_binary
 };
 
 use cw2::set_contract_version;
 use cw_hooks::Hooks;
-use cw_storage_plus::Bound;
 use cw_reply_helper::parse_reply_instantiate_data;
+use cw_storage_plus::Bound;
 use cw_utils::Duration;
 use dao_hooks::proposal::{
     new_proposal_hooks, proposal_completed_hooks, proposal_status_changed_hooks,
@@ -408,7 +407,7 @@ pub fn execute_vote(
         return Err(ContractError::Expired { id: proposal_id });
     }
 
-    let vote_power = get_voting_power_with_delegation(
+    let vote_power_raw = get_voting_power_with_delegation(
         deps.as_ref(),
         &env.contract.address,
         &prop.delegation_module,
@@ -417,6 +416,10 @@ pub fn execute_vote(
         proposal_id,
         prop.start_height,
     )?;
+    let vote_power = crate::proposal::VotePower {
+        total: Uint128::try_from(vote_power_raw.total).unwrap(),
+        individual: Uint128::try_from(vote_power_raw.individual).unwrap(),
+    };
     if vote_power.individual.is_zero() {
         return Err(ContractError::NotRegistered {});
     }
@@ -438,9 +441,11 @@ pub fn execute_vote(
                 } else {
                     // Remove the old vote if this is a re-vote.
                     prop.votes
-                        .remove_vote(current_ballot.vote, current_ballot.power)?;
-                    prop.individual_votes
-                        .remove_vote(current_ballot.vote, current_ballot.individual_power)?;
+                        .remove_vote(current_ballot.vote, current_ballot.power.u128().into())?;
+                    prop.individual_votes.remove_vote(
+                        current_ballot.vote,
+                        current_ballot.individual_power.u128().into(),
+                    )?;
                     Ok(Ballot {
                         power: vote_power.total,
                         individual_power: vote_power.individual,
@@ -472,15 +477,15 @@ pub fn execute_vote(
             prop.start_height,
             &vote_power.individual,
             BALLOTS,
-            &mut |vote, power| prop.votes.remove_vote(*vote, power),
+            &mut |vote, power| prop.votes.remove_vote(*vote, power.u128().into()),
         )?;
     }
 
     let old_status = prop.status;
 
-    prop.votes.add_vote(vote, vote_power.total)?;
+    prop.votes.add_vote(vote, vote_power.total.u128().into())?;
     prop.individual_votes
-        .add_vote(vote, vote_power.individual)?;
+        .add_vote(vote, vote_power.individual.u128().into())?;
     prop.update_status(&env.block)?;
     PROPOSALS.save(deps.storage, proposal_id, &prop)?;
     let new_status = prop.status;
@@ -1127,7 +1132,12 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(
+    deps: DepsMut,
+    _env: Env,
+    _msg: MigrateMsg,
+    _info: MigrateInfo,
+) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     Ok(Response::default())
 }

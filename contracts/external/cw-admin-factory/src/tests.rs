@@ -1,8 +1,8 @@
 use std::vec;
 
 use cosmwasm_std::{
-    testing::{mock_dependencies, mock_env, message_info, MockApi},
-    to_json_binary, Addr, Binary, Reply, SubMsg, SubMsgResponse, SubMsgResult, WasmMsg,
+    testing::{message_info, mock_dependencies, mock_env, MockApi},
+    to_json_binary, Addr, Reply, SubMsg, SubMsgResponse, SubMsgResult, WasmMsg,
 };
 use cw_multi_test::{App, AppResponse, Executor};
 use dao_interface::state::{Admin, ModuleInstantiateInfo};
@@ -16,7 +16,6 @@ use crate::{
     },
     msg::{AdminResponse, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
 };
-use cw_admin_factory::ContractError;
 
 const ADMIN_ADDR: &str = "admin";
 
@@ -188,7 +187,7 @@ pub fn test_authorized_set_self_admin() {
     };
 
     // Fails when not the admin.
-    let err: ContractError = app
+    let err = app
         .execute_contract(
             MockApi::default().addr_make("not_admin"),
             factory_addr.clone(),
@@ -199,10 +198,8 @@ pub fn test_authorized_set_self_admin() {
             },
             &[],
         )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(err, ContractError::Unauthorized {});
+        .unwrap_err();
+    assert!(err.to_string().contains("Unauthorized"));
 
     // Succeeds as the admin.
     let res: AppResponse = app

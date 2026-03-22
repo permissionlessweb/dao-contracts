@@ -3,12 +3,21 @@ use std::ops::Add;
 use crate::query::ProposalResponse;
 use crate::state::PROPOSAL_COUNT;
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, BlockInfo, CosmosMsg, Decimal, Empty, StdResult, Storage, Uint128};
+use cosmwasm_std::{
+    Addr, BlockInfo, CosmosMsg, Decimal, Empty, StdResult, Storage, Uint128, Uint256,
+};
 use cw_utils::Expiration;
 use dao_voting::status::Status;
 use dao_voting::threshold::{PercentageThreshold, Threshold};
 use dao_voting::veto::VetoConfig;
 use dao_voting::voting::{does_vote_count_fail, does_vote_count_pass, Votes};
+
+/// Local helper to hold voting power as Uint128 after converting from
+/// the Uint256 values returned by the delegation-aware query.
+pub struct VotePower {
+    pub total: Uint128,
+    pub individual: Uint128,
+}
 
 #[cw_serde]
 pub struct SingleChoiceProposal {
@@ -33,7 +42,7 @@ pub struct SingleChoiceProposal {
     pub threshold: Threshold,
     /// The total amount of voting power at the time of this
     /// proposal's creation.
-    pub total_power: Uint128,
+    pub total_power: Uint256,
     /// The messages that will be executed should this proposal pass.
     pub msgs: Vec<CosmosMsg<Empty>>,
     /// The proposal status
@@ -84,6 +93,12 @@ pub fn advance_proposal_id(store: &mut dyn Storage) -> StdResult<u64> {
 }
 
 impl SingleChoiceProposal {
+    /// Returns total_power as Uint128, panicking if it overflows
+    /// (should never happen as voting power originates from Uint128).
+    fn total_power_u128(&self) -> Uint128 {
+        Uint128::try_from(self.total_power).unwrap()
+    }
+
     /// Consumes the proposal and returns a version which may be used
     /// in a query response. Why is this necessary? Proposal
     /// statuses are only updated on vote, execute, and close
@@ -171,11 +186,11 @@ impl SingleChoiceProposal {
 
         match self.threshold {
             Threshold::AbsolutePercentage { percentage } => {
-                let options = self.total_power - votes_to_consider.abstain;
+                let options = self.total_power_u128() - votes_to_consider.abstain;
                 does_vote_count_pass(votes_to_consider.yes, options, percentage)
             }
             Threshold::ThresholdQuorum { threshold, quorum } => {
-                if !does_vote_count_pass(votes_to_consider.total(), self.total_power, quorum) {
+                if !does_vote_count_pass(votes_to_consider.total(), self.total_power_u128(), quorum) {
                     return false;
                 }
 
@@ -187,11 +202,11 @@ impl SingleChoiceProposal {
                     let options = votes_to_consider.total() - votes_to_consider.abstain;
                     does_vote_count_pass(votes_to_consider.yes, options, threshold)
                 } else {
-                    let options = self.total_power - votes_to_consider.abstain;
+                    let options = self.total_power_u128() - votes_to_consider.abstain;
                     does_vote_count_pass(votes_to_consider.yes, options, threshold)
                 }
             }
-            Threshold::AbsoluteCount { threshold } => votes_to_consider.yes >= threshold,
+            Threshold::AbsoluteCount { threshold } => Uint256::from(votes_to_consider.yes) >= threshold,
         }
     }
 
@@ -218,7 +233,7 @@ impl SingleChoiceProposal {
             Threshold::AbsolutePercentage {
                 percentage: percentage_needed,
             } => {
-                let options = self.total_power - votes_to_consider.abstain;
+                let options = self.total_power_u128() - votes_to_consider.abstain;
 
                 // If there is a 100% passing threshold..
                 if percentage_needed == PercentageThreshold::Percent(Decimal::percent(100)) {
@@ -244,7 +259,7 @@ impl SingleChoiceProposal {
             }
             Threshold::ThresholdQuorum { threshold, quorum } => {
                 match (
-                    does_vote_count_pass(votes_to_consider.total(), self.total_power, quorum),
+                    does_vote_count_pass(votes_to_consider.total(), self.total_power_u128(), quorum),
                     self.expiration.is_expired(block),
                 ) {
                     // Has met quorum and is expired.
@@ -280,7 +295,7 @@ impl SingleChoiceProposal {
                     (true, false) | (false, false) => {
                         // => consider all possible votes and see if
                         //    no votes meet threshold.
-                        let options = self.total_power - votes_to_consider.abstain;
+                        let options = self.total_power_u128() - votes_to_consider.abstain;
 
                         // If there is a 100% passing threshold..
                         if threshold == PercentageThreshold::Percent(Decimal::percent(100)) {
@@ -312,8 +327,8 @@ impl SingleChoiceProposal {
             Threshold::AbsoluteCount { threshold } => {
                 // If all the outstanding votes voting yes would not
                 // cause this proposal to pass then it is rejected.
-                let outstanding_votes = self.total_power - votes_to_consider.total();
-                votes_to_consider.yes + outstanding_votes < threshold
+                let outstanding_votes = self.total_power - Uint256::from(votes_to_consider.total());
+                Uint256::from(votes_to_consider.yes) + outstanding_votes < threshold
             }
         }
     }
@@ -330,11 +345,12 @@ mod test {
     fn setup_prop(
         threshold: Threshold,
         votes: Votes,
-        total_power: Uint128,
+        total_power: impl Into<Uint256>,
         is_expired: bool,
         min_voting_period_elapsed: bool,
         allow_revoting: bool,
     ) -> (SingleChoiceProposal, BlockInfo) {
+        let total_power = total_power.into();
         let block = mock_env().block;
         let expiration = match is_expired {
             true => Expiration::AtHeight(block.height - 5),
@@ -368,7 +384,7 @@ mod test {
     fn check_is_passed(
         threshold: Threshold,
         votes: Votes,
-        total_power: Uint128,
+        total_power: impl Into<Uint256>,
         is_expired: bool,
         min_voting_period_elapsed: bool,
         allow_revoting: bool,
@@ -387,7 +403,7 @@ mod test {
     fn check_is_rejected(
         threshold: Threshold,
         votes: Votes,
-        total_power: Uint128,
+        total_power: impl Into<Uint256>,
         is_expired: bool,
         min_voting_period_elapsed: bool,
         allow_revoting: bool,
@@ -592,7 +608,7 @@ mod test {
     #[test]
     fn test_absolute_count_threshold() {
         let threshold = Threshold::AbsoluteCount {
-            threshold: Uint128::new(10),
+            threshold: Uint256::new(10),
         };
 
         assert!(check_is_passed(
@@ -653,7 +669,7 @@ mod test {
     #[test]
     fn test_absolute_count_threshold_revoting() {
         let threshold = Threshold::AbsoluteCount {
-            threshold: Uint128::new(10),
+            threshold: Uint256::new(10),
         };
 
         assert!(!check_is_passed(

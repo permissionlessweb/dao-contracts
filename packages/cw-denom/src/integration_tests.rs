@@ -1,4 +1,4 @@
-use cosmwasm_std::{coins, testing::MockApi, Addr, Uint128};
+use cosmwasm_std::{coins, testing::MockApi, Addr, Uint256};
 use cw20::Cw20Coin;
 use cw_multi_test::{App, BankSudo, Executor};
 use dao_testing::contracts::cw20_base_contract;
@@ -19,7 +19,7 @@ fn test_cw20_denom_send() {
                 symbol: "symbol".to_string(),
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
-                    amount: Uint128::new(10),
+                    amount: Uint256::new(10).into(),
                     address: MockApi::default().addr_make("ekez").to_string(),
                 }],
                 mint: None,
@@ -37,7 +37,7 @@ fn test_cw20_denom_send() {
         .query_balance(&app.wrap(), &MockApi::default().addr_make("ekez"))
         .unwrap();
     let send_message = denom
-        .get_transfer_to_message(&MockApi::default().addr_make("dao"), Uint128::new(9))
+        .get_transfer_to_message(&MockApi::default().addr_make("dao"), Uint256::new(9))
         .unwrap();
     app.execute(MockApi::default().addr_make("ekez"), send_message)
         .unwrap();
@@ -45,13 +45,13 @@ fn test_cw20_denom_send() {
         .query_balance(&app.wrap(), &MockApi::default().addr_make("ekez"))
         .unwrap();
 
-    assert_eq!(start_balance, Uint128::new(10));
-    assert_eq!(end_balance, Uint128::new(1));
+    assert_eq!(start_balance, Uint256::new(10));
+    assert_eq!(end_balance, Uint256::new(1));
 
     let dao_balance = denom
         .query_balance(&app.wrap(), &MockApi::default().addr_make("dao"))
         .unwrap();
-    assert_eq!(dao_balance, Uint128::new(9))
+    assert_eq!(dao_balance, Uint256::new(9))
 }
 
 #[test]
@@ -69,7 +69,7 @@ fn test_native_denom_send() {
         .query_balance(&app.wrap(), &MockApi::default().addr_make("ekez"))
         .unwrap();
     let send_message = denom
-        .get_transfer_to_message(&MockApi::default().addr_make("dao"), Uint128::new(9))
+        .get_transfer_to_message(&MockApi::default().addr_make("dao"), Uint256::new(9))
         .unwrap();
     app.execute(MockApi::default().addr_make("ekez"), send_message)
         .unwrap();
@@ -77,11 +77,11 @@ fn test_native_denom_send() {
         .query_balance(&app.wrap(), &MockApi::default().addr_make("ekez"))
         .unwrap();
 
-    assert_eq!(start_balance, Uint128::new(10));
-    assert_eq!(end_balance, Uint128::new(1));
+    assert_eq!(start_balance, Uint256::new(10));
+    assert_eq!(end_balance, Uint256::new(1));
 
     let dao_balance = denom
         .query_balance(&app.wrap(), &MockApi::default().addr_make("dao"))
         .unwrap();
-    assert_eq!(dao_balance, Uint128::new(9))
+    assert_eq!(dao_balance, Uint256::new(9))
 }

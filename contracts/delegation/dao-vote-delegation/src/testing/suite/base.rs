@@ -1,10 +1,8 @@
 use std::ops::{Deref, DerefMut};
 
-use cosmwasm_std::{Addr, Decimal, Uint128};
+use cosmwasm_std::{Addr, Decimal, StdError, Uint128};
 use dao_interface::helpers::{OptionalUpdate, Update};
 use dao_testing::DaoTestingSuiteBase;
-
-use crate::ContractError;
 
 use super::super::tests::dao_vote_delegation_contract;
 
@@ -114,7 +112,7 @@ impl DaoVoteDelegationTestingSuiteBase {
         delegator: impl Into<String>,
         delegate: impl Into<String>,
         percent: Decimal,
-    ) -> ContractError {
+    ) -> StdError {
         let delegation_addr = self.delegation_addr.clone();
         self.execute_smart_err(
             delegator,

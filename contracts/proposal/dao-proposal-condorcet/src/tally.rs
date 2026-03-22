@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{BlockInfo, Uint128};
+use cosmwasm_std::{BlockInfo, Uint128, Uint256};
 use cw_utils::Expiration;
 
 use crate::{
@@ -27,7 +27,7 @@ pub struct Tally {
     /// The block height that this tally began at.
     pub start_height: u64,
     /// Amount of voting power that has yet to vote in this tally.
-    pub power_outstanding: Uint128,
+    pub power_outstanding: Uint256,
     /// The current winner. Always up to date and updated on vote.
     pub winner: Winner,
 }
@@ -44,7 +44,7 @@ pub enum Winner {
 impl Tally {
     pub fn new(
         candidates: u32,
-        total_power: Uint128,
+        total_power: Uint256,
         start_height: u64,
         expiration: Expiration,
     ) -> Self {
@@ -81,13 +81,14 @@ impl Tally {
     ///
     /// - Voter has not already voted.
     /// - Tally is not expired.
-    pub fn add_vote(&mut self, vote: Vote, power: Uint128) {
+    pub fn add_vote(&mut self, vote: Vote, power: Uint256) {
+        let power_u128: Uint128 = power.try_into().unwrap();
         for (index, preference) in vote.iter().enumerate() {
             // an interesting property of the symetry of M is that in
             // recording all the defeats, we also record all of the
             // victories.
             for defeat in 0..index {
-                self.m.decrement((*preference, vote[defeat]), power)
+                self.m.decrement((*preference, vote[defeat]), power_u128)
             }
         }
         self.power_outstanding -= power;
@@ -95,9 +96,10 @@ impl Tally {
     }
 
     fn winner(&self) -> Winner {
-        match self.m.stats(self.power_outstanding) {
+        let power_outstanding_u128: Uint128 = self.power_outstanding.try_into().unwrap();
+        match self.m.stats(power_outstanding_u128) {
             Stats::PositiveColumn { col, min_margin } => {
-                if min_margin > self.power_outstanding {
+                if Uint256::from(min_margin) > self.power_outstanding {
                     Winner::Undisputed(col)
                 } else {
                     Winner::Some(col)

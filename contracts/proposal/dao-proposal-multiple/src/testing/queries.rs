@@ -162,12 +162,12 @@ pub fn query_balance_cw20<T: Into<String>, U: Into<String>>(
         address: address.into(),
     };
     let result: cw20::BalanceResponse = app.wrap().query_wasm_smart(contract_addr, &msg).unwrap();
-    result.balance
+    Uint128::try_from(result.balance).unwrap()
 }
 
 pub fn query_balance_native(app: &App, who: &str, denom: &str) -> Uint128 {
     let res = app.wrap().query_balance(who, denom).unwrap();
-    res.amount
+    Uint128::try_from(res.amount).unwrap()
 }
 
 pub fn query_proposal(app: &App, proposal_multiple: &Addr, id: u64) -> ProposalResponse {

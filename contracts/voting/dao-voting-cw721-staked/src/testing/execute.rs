@@ -1,8 +1,7 @@
 use cosmwasm_std::testing::MockApi;
-use cosmwasm_std::{Addr, Binary};
+use cosmwasm_std::{Addr, Binary, StdResult};
 use cw_multi_test::{App, AppResponse, Executor};
 
-use anyhow::Result as AnyResult;
 use cw_utils::Duration;
 
 use crate::msg::{ClaimType, ExecuteMsg};
@@ -21,7 +20,7 @@ pub fn send_nft(
     receiver: &Addr,
     token_id: &str,
     msg: Binary,
-) -> AnyResult<AppResponse> {
+) -> StdResult<AppResponse> {
     app.execute_contract(
         addr!(sender),
         cw721.clone(),
@@ -40,7 +39,7 @@ pub fn mint_nft(
     sender: &str,
     receiver: &str,
     token_id: &str,
-) -> AnyResult<AppResponse> {
+) -> StdResult<AppResponse> {
     app.execute_contract(
         addr!(sender),
         cw721.clone(),
@@ -60,7 +59,7 @@ pub fn stake_nft(
     module: &Addr,
     sender: &str,
     token_id: &str,
-) -> AnyResult<AppResponse> {
+) -> StdResult<AppResponse> {
     send_nft(app, cw721, sender, module, token_id, Binary::default())
 }
 
@@ -70,7 +69,7 @@ pub fn mint_and_stake_nft(
     module: &Addr,
     sender: &str,
     token_id: &str,
-) -> AnyResult<()> {
+) -> StdResult<()> {
     mint_nft(app, cw721, sender, sender, token_id)?;
     stake_nft(app, cw721, module, sender, token_id)?;
     Ok(())
@@ -81,7 +80,7 @@ pub fn unstake_nfts(
     module: &Addr,
     sender: &str,
     token_ids: &[&str],
-) -> AnyResult<AppResponse> {
+) -> StdResult<AppResponse> {
     app.execute_contract(
         addr!(sender),
         module.clone(),
@@ -97,7 +96,7 @@ pub fn update_config(
     module: &Addr,
     sender: &str,
     duration: Option<Duration>,
-) -> AnyResult<AppResponse> {
+) -> StdResult<AppResponse> {
     app.execute_contract(
         addr!(sender),
         module.clone(),
@@ -106,7 +105,7 @@ pub fn update_config(
     )
 }
 
-pub fn claim_nfts(app: &mut App, module: &Addr, sender: &str) -> AnyResult<AppResponse> {
+pub fn claim_nfts(app: &mut App, module: &Addr, sender: &str) -> StdResult<AppResponse> {
     app.execute_contract(
         addr!(sender),
         module.clone(),
@@ -122,7 +121,7 @@ pub fn claim_specific_nfts(
     module: &Addr,
     sender: &str,
     token_ids: &[String],
-) -> AnyResult<AppResponse> {
+) -> StdResult<AppResponse> {
     app.execute_contract(
         addr!(sender),
         module.clone(),
@@ -133,7 +132,7 @@ pub fn claim_specific_nfts(
     )
 }
 
-// pub fn claim_legacy_nfts(app: &mut App, module: &Addr, sender: &str) -> AnyResult<AppResponse> {
+// pub fn claim_legacy_nfts(app: &mut App, module: &Addr, sender: &str) -> StdResult<AppResponse> {
 //     app.execute_contract(
 //         addr!(sender),
 //         module.clone(),
@@ -144,7 +143,7 @@ pub fn claim_specific_nfts(
 //     )
 // }
 
-pub fn add_hook(app: &mut App, module: &Addr, sender: &str, hook: &str) -> AnyResult<AppResponse> {
+pub fn add_hook(app: &mut App, module: &Addr, sender: &str, hook: &str) -> StdResult<AppResponse> {
     app.execute_contract(
         addr!(sender),
         module.clone(),
@@ -160,7 +159,7 @@ pub fn remove_hook(
     module: &Addr,
     sender: &str,
     hook: &str,
-) -> AnyResult<AppResponse> {
+) -> StdResult<AppResponse> {
     app.execute_contract(
         addr!(sender),
         module.clone(),

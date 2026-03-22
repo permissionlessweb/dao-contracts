@@ -150,7 +150,7 @@ pub fn query_voting_power(chain: &Chain, addr: &str, height: Option<u64>) -> Uin
         )
         .unwrap();
     let data: dao_interface::voting::VotingPowerAtHeightResponse = res.data().unwrap();
-    data.power
+    data.power.try_into().unwrap()
 }
 
 pub fn mint_and_stake_nft(

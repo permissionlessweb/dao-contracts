@@ -2,7 +2,7 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdResult, SubMsg,
-    Uint128,
+    Uint256,
 };
 use cw2::set_contract_version;
 use dao_interface::state::{Admin, ModuleInstantiateInfo};
@@ -48,7 +48,7 @@ pub fn instantiate(
         } => {
             let initial_supply = initial_balances
                 .iter()
-                .fold(Uint128::zero(), |p, n| p + n.amount);
+                .fold(Uint256::zero(), |p, n| n.amount + p);
             if initial_supply.is_zero() {
                 return Err(ContractError::InitialBalancesError {});
             }

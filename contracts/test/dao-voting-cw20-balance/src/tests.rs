@@ -40,7 +40,7 @@ fn test_instantiate_zero_supply() {
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
                     address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
-                    amount: Uint128::zero(),
+                    amount: Uint128::zero().into(),
                 }],
                 marketing: None,
                 salt: None,
@@ -91,7 +91,7 @@ fn test_contract_info() {
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
                     address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
-                    amount: Uint128::from(2u64),
+                    amount: Uint128::from(2u64).into(),
                 }],
                 marketing: None,
                 salt: None,
@@ -132,7 +132,7 @@ fn test_new_cw20() {
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
                     address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
-                    amount: Uint128::from(2u64),
+                    amount: Uint128::from(2u64).into(),
                 }],
                 marketing: None,
                 salt: None,
@@ -155,7 +155,7 @@ fn test_new_cw20() {
             name: "DAO DAO".to_string(),
             symbol: "DAO".to_string(),
             decimals: 6,
-            total_supply: Uint128::from(2u64)
+            total_supply: Uint128::from(2u64).into()
         }
     );
 
@@ -185,7 +185,7 @@ fn test_new_cw20() {
     assert_eq!(
         creator_voting_power,
         VotingPowerAtHeightResponse {
-            power: Uint128::from(2u64),
+            power: Uint128::from(2u64).into(),
             height: app.block_info().height,
         }
     );
@@ -195,7 +195,7 @@ fn test_new_cw20() {
         token_addr,
         &cw20::Cw20ExecuteMsg::Transfer {
             recipient: MockApi::default().addr_make(DAO_ADDR).to_string(),
-            amount: Uint128::from(1u64),
+            amount: Uint128::from(1u64).into(),
         },
         &[],
     )
@@ -215,7 +215,7 @@ fn test_new_cw20() {
     assert_eq!(
         creator_voting_power,
         VotingPowerAtHeightResponse {
-            power: Uint128::from(1u64),
+            power: Uint128::from(1u64).into(),
             height: app.block_info().height,
         }
     );
@@ -234,7 +234,7 @@ fn test_new_cw20() {
     assert_eq!(
         dao_voting_power,
         VotingPowerAtHeightResponse {
-            power: Uint128::from(1u64),
+            power: Uint128::from(1u64).into(),
             height: app.block_info().height,
         }
     );
@@ -256,7 +256,7 @@ fn test_existing_cw20() {
                 decimals: 3,
                 initial_balances: vec![Cw20Coin {
                     address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
-                    amount: Uint128::from(2u64),
+                    amount: Uint128::from(2u64).into(),
                 }],
                 mint: None,
                 marketing: None,
@@ -292,7 +292,7 @@ fn test_existing_cw20() {
             name: "DAO DAO".to_string(),
             symbol: "DAO".to_string(),
             decimals: 3,
-            total_supply: Uint128::from(2u64)
+            total_supply: Uint128::from(2u64).into()
         }
     );
 
@@ -316,7 +316,7 @@ fn test_existing_cw20() {
     assert_eq!(
         creator_voting_power,
         VotingPowerAtHeightResponse {
-            power: Uint128::from(2u64),
+            power: Uint128::from(2u64).into(),
             height: app.block_info().height,
         }
     );
@@ -326,7 +326,7 @@ fn test_existing_cw20() {
         token_addr,
         &cw20::Cw20ExecuteMsg::Transfer {
             recipient: MockApi::default().addr_make(DAO_ADDR).to_string(),
-            amount: Uint128::from(1u64),
+            amount: Uint128::from(1u64).into(),
         },
         &[],
     )
@@ -346,7 +346,7 @@ fn test_existing_cw20() {
     assert_eq!(
         creator_voting_power,
         VotingPowerAtHeightResponse {
-            power: Uint128::from(1u64),
+            power: Uint128::from(1u64).into(),
             height: app.block_info().height,
         }
     );
@@ -365,7 +365,7 @@ fn test_existing_cw20() {
     assert_eq!(
         dao_voting_power,
         VotingPowerAtHeightResponse {
-            power: Uint128::from(1u64),
+            power: Uint128::from(1u64).into(),
             height: app.block_info().height,
         }
     );

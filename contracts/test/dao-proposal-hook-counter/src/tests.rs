@@ -49,7 +49,7 @@ fn instantiate_with_default_governance(
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![Cw20Coin {
             address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
-            amount: Uint128::new(100_000_000),
+            amount: Uint128::new(100_000_000).into(),
         }]
     });
 

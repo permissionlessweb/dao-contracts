@@ -76,7 +76,7 @@ pub fn _get_default_token_dao_proposal_module_instantiate(app: &mut App) -> Inst
                 denom: dao_voting::deposit::DepositToken::VotingModuleToken {
                     token_type: VotingModuleTokenType::Cw20,
                 },
-                amount: Uint128::new(10_000_000),
+                amount: Uint128::new(10_000_000).into(),
                 refund_policy: DepositRefundPolicy::OnlyPassed,
             }),
             false,
@@ -115,7 +115,7 @@ pub fn _instantiate_with_staked_cw721_governance(
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![Cw20Coin {
             address: addr_str(CREATOR_ADDR),
-            amount: Uint128::new(100_000_000),
+            amount: Uint128::new(100_000_000).into(),
         }]
     });
 
@@ -212,7 +212,7 @@ pub fn _instantiate_with_staked_cw721_governance(
     let staking_addr = core_state.voting_module;
 
     for Cw20Coin { address, amount } in initial_balances {
-        for i in 0..amount.u128() {
+        for i in 0..Uint128::try_from(amount).unwrap().u128() {
             app.execute_contract(
                 addr("ekez"),
                 nft_address.clone(),
@@ -255,7 +255,7 @@ pub fn instantiate_with_native_staked_balances_governance(
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![Cw20Coin {
             address: addr_str(CREATOR_ADDR),
-            amount: Uint128::new(100_000_000),
+            amount: Uint128::new(100_000_000).into(),
         }]
     });
 
@@ -339,7 +339,7 @@ pub fn instantiate_with_native_staked_balances_governance(
             amount: vec![Coin {
                 denom: "ujuno".to_string(),
                 // Double the amount so that we can stake half the balance.
-                amount: amount * Uint128::new(2),
+                amount: amount * cosmwasm_std::Uint256::from(2u128),
             }],
         }))
         .unwrap();
@@ -374,7 +374,7 @@ pub fn instantiate_with_cw20_balances_governance(
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![Cw20Coin {
             address: addr_str(CREATOR_ADDR),
-            amount: Uint128::new(100_000_000),
+            amount: Uint128::new(100_000_000).into(),
         }]
     });
 
@@ -455,7 +455,7 @@ pub fn instantiate_with_staked_balances_governance(
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![Cw20Coin {
             address: addr_str(CREATOR_ADDR),
-            amount: Uint128::new(100_000_000),
+            amount: Uint128::new(100_000_000).into(),
         }]
     });
 
@@ -592,11 +592,11 @@ pub fn instantiate_with_multiple_staked_balances_governance(
         vec![
             Cw20Coin {
                 address: addr_str(CREATOR_ADDR),
-                amount: Uint128::new(100_000_000),
+                amount: Uint128::new(100_000_000).into(),
             },
             Cw20Coin {
                 address: addr_str(ALTERNATIVE_ADDR),
-                amount: Uint128::new(100_000_000),
+                amount: Uint128::new(100_000_000).into(),
             },
         ]
     });
@@ -633,7 +633,7 @@ pub fn instantiate_with_multiple_staked_balances_governance(
             code_id: staked_balances_voting_id,
             msg: to_json_binary(&dao_voting_cw20_staked::msg::InstantiateMsg {
                 active_threshold: Some(AbsoluteCount {
-                    count: Uint128::one(),
+                    count: Uint128::one().into(),
                 }),
                 token_info: dao_voting_cw20_staked::msg::TokenInfo::New {
                     code_id: cw20_id,
@@ -740,7 +740,7 @@ pub fn instantiate_with_staking_active_threshold(
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![Cw20Coin {
             address: addr_str(CREATOR_ADDR),
-            amount: Uint128::new(100_000_000),
+            amount: Uint128::new(100_000_000).into(),
         }]
     });
 
@@ -813,7 +813,7 @@ pub fn _instantiate_with_cw4_groups_governance(
     let initial_weights = initial_weights.unwrap_or_else(|| {
         vec![Cw20Coin {
             address: addr_str(CREATOR_ADDR),
-            amount: Uint128::new(1),
+            amount: Uint128::new(1).into(),
         }]
     });
 
@@ -832,7 +832,7 @@ pub fn _instantiate_with_cw4_groups_governance(
             })
             .map(|Cw20Coin { address, amount }| cw4::Member {
                 addr: address,
-                weight: amount.u128() as u64,
+                weight: Uint128::try_from(amount).unwrap().u128() as u64,
             })
             .collect()
     };

@@ -1,7 +1,7 @@
 use cosmwasm_std::{
     coins,
     testing::{mock_dependencies, mock_env, MockApi},
-    to_json_binary, Addr, Uint128, WasmMsg,
+    to_json_binary, Addr, MigrateInfo, StdResult, Uint128, Uint256, WasmMsg,
 };
 use cw_multi_test::Executor;
 use cw_utils::Duration;
@@ -23,7 +23,7 @@ use super::{setup_test, CommonTest, STAKER};
 /// I can create a new fantoken on DAO creation.
 #[test]
 #[ignore = "requires bitsong chain sdk MsgIssue"]
-fn test_issue_fantoken() -> anyhow::Result<()> {
+fn test_issue_fantoken() -> StdResult<()> {
     let CommonTest {
         mut app,
         factory,
@@ -36,7 +36,7 @@ fn test_issue_fantoken() -> anyhow::Result<()> {
     let proposal_single_id = app.store_code(dao_proposal_single_contract());
 
     let initial_balances = vec![InitialBalance {
-        amount: Uint128::new(100),
+        amount: Uint128::new(100).into(),
         address: staker_addr.to_string(),
     }];
 
@@ -78,7 +78,7 @@ fn test_issue_fantoken() -> anyhow::Result<()> {
             code_id: proposal_single_id,
             msg: to_json_binary(&dao_proposal_single::msg::InstantiateMsg {
                 threshold: dao_voting::threshold::Threshold::AbsoluteCount {
-                    threshold: Uint128::new(100),
+                    threshold: Uint128::new(100).into(),
                 },
                 max_voting_period: Duration::Time(86400),
                 min_voting_period: None,
@@ -131,7 +131,7 @@ fn test_issue_fantoken() -> anyhow::Result<()> {
 /// I can create a new fantoken on DAO creation with initial balances.
 #[test]
 #[ignore = "requires bitsong chain sdk MsgIssue"]
-fn test_initial_fantoken_balances() -> anyhow::Result<()> {
+fn test_initial_fantoken_balances() -> StdResult<()> {
     let CommonTest {
         mut app,
         factory,
@@ -144,7 +144,7 @@ fn test_initial_fantoken_balances() -> anyhow::Result<()> {
     let proposal_single_id = app.store_code(dao_proposal_single_contract());
 
     let initial_balances = vec![InitialBalance {
-        amount: Uint128::new(100),
+        amount: Uint128::new(100).into(),
         address: staker_addr.to_string(),
     }];
 
@@ -186,7 +186,7 @@ fn test_initial_fantoken_balances() -> anyhow::Result<()> {
             code_id: proposal_single_id,
             msg: to_json_binary(&dao_proposal_single::msg::InstantiateMsg {
                 threshold: dao_voting::threshold::Threshold::AbsoluteCount {
-                    threshold: Uint128::new(100),
+                    threshold: Uint128::new(100).into(),
                 },
                 max_voting_period: Duration::Time(86400),
                 min_voting_period: None,
@@ -232,14 +232,14 @@ fn test_initial_fantoken_balances() -> anyhow::Result<()> {
 
     // verify DAO has initial balance
     let dao_balance = app.wrap().query_balance(&dao, &denom_res.denom).unwrap();
-    assert_eq!(dao_balance.amount, Uint128::new(100_000_000));
+    assert_eq!(dao_balance.amount, Uint256::from(Uint128::new(100_000_000)));
 
     // verify staker has initial balance
     let staker_balance = app
         .wrap()
         .query_balance(&staker_addr, &denom_res.denom)
         .unwrap();
-    assert_eq!(staker_balance.amount, Uint128::new(100));
+    assert_eq!(staker_balance.amount, Uint256::from(Uint128::new(100)));
 
     Ok(())
 }
@@ -247,7 +247,7 @@ fn test_initial_fantoken_balances() -> anyhow::Result<()> {
 /// The minter and authority are set to the DAO.
 #[test]
 #[ignore = "requires bitsong chain sdk MsgIssue"]
-fn test_fantoken_minter_and_authority_set_to_dao() -> anyhow::Result<()> {
+fn test_fantoken_minter_and_authority_set_to_dao() -> StdResult<()> {
     let CommonTest {
         mut app,
         factory,
@@ -260,7 +260,7 @@ fn test_fantoken_minter_and_authority_set_to_dao() -> anyhow::Result<()> {
     let proposal_single_id = app.store_code(dao_proposal_single_contract());
 
     let initial_balances = vec![InitialBalance {
-        amount: Uint128::new(100),
+        amount: Uint128::new(100).into(),
         address: staker_addr.to_string(),
     }];
 
@@ -302,7 +302,7 @@ fn test_fantoken_minter_and_authority_set_to_dao() -> anyhow::Result<()> {
             code_id: proposal_single_id,
             msg: to_json_binary(&dao_proposal_single::msg::InstantiateMsg {
                 threshold: dao_voting::threshold::Threshold::AbsoluteCount {
-                    threshold: Uint128::new(100),
+                    threshold: Uint128::new(100).into(),
                 },
                 max_voting_period: Duration::Time(86400),
                 min_voting_period: None,
@@ -405,7 +405,7 @@ fn test_fantoken_minter_and_authority_set_to_dao() -> anyhow::Result<()> {
         .wrap()
         .query_balance(&staker_addr, &denom_res.denom)
         .unwrap();
-    assert_eq!(staker_balance.amount, Uint128::new(200));
+    assert_eq!(staker_balance.amount, Uint256::from(Uint128::new(200)));
 
     Ok(())
 }
@@ -413,7 +413,7 @@ fn test_fantoken_minter_and_authority_set_to_dao() -> anyhow::Result<()> {
 /// A staker can stake fantokens.
 #[test]
 #[ignore = "requires bitsong chain sdk MsgIssue"]
-fn test_fantoken_can_be_staked() -> anyhow::Result<()> {
+fn test_fantoken_can_be_staked() -> StdResult<()> {
     let CommonTest {
         mut app,
         factory,
@@ -426,7 +426,7 @@ fn test_fantoken_can_be_staked() -> anyhow::Result<()> {
     let proposal_single_id = app.store_code(dao_proposal_single_contract());
 
     let initial_balances = vec![InitialBalance {
-        amount: Uint128::new(100),
+        amount: Uint128::new(100).into(),
         address: staker_addr.to_string(),
     }];
 
@@ -468,7 +468,7 @@ fn test_fantoken_can_be_staked() -> anyhow::Result<()> {
             code_id: proposal_single_id,
             msg: to_json_binary(&dao_proposal_single::msg::InstantiateMsg {
                 threshold: dao_voting::threshold::Threshold::AbsoluteCount {
-                    threshold: Uint128::new(100),
+                    threshold: Uint128::new(100).into(),
                 },
                 max_voting_period: Duration::Time(86400),
                 min_voting_period: None,
@@ -522,7 +522,7 @@ fn test_fantoken_can_be_staked() -> anyhow::Result<()> {
             height: None,
         },
     )?;
-    assert_eq!(vp.power, Uint128::new(0));
+    assert_eq!(vp.power, Uint256::from(Uint128::new(0)));
 
     // stake from staker
     app.execute_contract(
@@ -543,7 +543,7 @@ fn test_fantoken_can_be_staked() -> anyhow::Result<()> {
             height: None,
         },
     )?;
-    assert_eq!(vp.power, Uint128::new(100));
+    assert_eq!(vp.power, Uint256::from(Uint128::new(100)));
 
     Ok(())
 }
@@ -553,13 +553,13 @@ pub fn test_migrate_update_version() {
     let mut deps = mock_dependencies();
     cw2::set_contract_version(&mut deps.storage, "my-contract", "1.0.0").unwrap();
 
-    migrate(deps.as_mut(), mock_env(), MigrateMsg {}).unwrap();
+    migrate(deps.as_mut(), mock_env(), MigrateMsg {}, MigrateInfo { sender: Addr::unchecked("sender"), old_migrate_version: None }).unwrap();
     let version = cw2::get_contract_version(&deps.storage).unwrap();
     assert_eq!(version.version, CONTRACT_VERSION);
     assert_eq!(version.contract, CONTRACT_NAME);
 
     // migrate again, should do nothing
-    migrate(deps.as_mut(), mock_env(), MigrateMsg {}).unwrap();
+    migrate(deps.as_mut(), mock_env(), MigrateMsg {}, MigrateInfo { sender: Addr::unchecked("sender"), old_migrate_version: None }).unwrap();
     let version = cw2::get_contract_version(&deps.storage).unwrap();
     assert_eq!(version.version, CONTRACT_VERSION);
     assert_eq!(version.contract, CONTRACT_NAME);

@@ -1,6 +1,6 @@
 use std::mem::discriminant;
 
-use cosmwasm_std::{coins, Addr, Coin, Uint128};
+use cosmwasm_std::{coins, Addr, Coin, Uint128, Uint256};
 use cw20::Cw20Coin;
 
 use cw_multi_test::{App, BankSudo, Executor, SudoMsg};
@@ -103,7 +103,7 @@ where
     app.sudo(SudoMsg::Bank(BankSudo::Mint {
         to_address: addr_str("sodenomexists"),
         amount: vec![Coin {
-            amount: Uint128::new(10),
+            amount: Uint256::from(10u128),
             denom: "ujuno".to_string(),
         }],
     }))
@@ -113,7 +113,7 @@ where
         .iter()
         .map(|TestSingleChoiceVote { voter, weight, .. }| Cw20Coin {
             address: addr_str(voter),
-            amount: *weight,
+            amount: Uint256::from(*weight),
         })
         .collect::<Vec<Cw20Coin>>();
     let initial_balances_supply = votes.iter().fold(Uint128::zero(), |p, n| p + n.weight);
@@ -121,7 +121,7 @@ where
     if let Some(fill) = to_fill {
         initial_balances.push(Cw20Coin {
             address: addr_str("filler"),
-            amount: fill,
+            amount: Uint256::from(fill),
         })
     }
 
@@ -192,10 +192,10 @@ where
         // Mint the needed tokens to create the deposit.
         app.sudo(cw_multi_test::SudoMsg::Bank(BankSudo::Mint {
             to_address: proposer.clone(),
-            amount: coins(amount.u128(), denom),
+            amount: coins(Uint128::try_from(amount).unwrap().u128(), denom.clone()),
         }))
         .unwrap();
-        coins(amount.u128(), denom)
+        coins(Uint128::try_from(amount).unwrap().u128(), denom)
     } else {
         vec![]
     };
@@ -256,7 +256,7 @@ where
                         ..
                     }) => {
                         if proposer == voter_bech32 {
-                            weight - amount
+                            weight - Uint128::try_from(amount).unwrap()
                         } else {
                             weight
                         }

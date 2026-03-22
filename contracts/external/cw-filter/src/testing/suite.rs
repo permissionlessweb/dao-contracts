@@ -93,10 +93,11 @@ impl Suite {
     }
 
     pub fn filter(&mut self, filter: serde_json::Value, msg: CosmosMsg) -> FilterResponse {
+        let filter_str = serde_json::to_string(&filter).unwrap();
         self.base
             .app
             .wrap()
-            .query_wasm_smart(self.filter_addr.clone(), &QueryMsg::Filter { filter, msg })
+            .query_wasm_smart(self.filter_addr.clone(), &QueryMsg::Filter { filter: filter_str, msg })
             .unwrap()
     }
 }
@@ -153,7 +154,7 @@ impl Suite {
         &mut self,
         owner: impl Into<String>,
         protobuf_registry: Option<ModuleUpdate>,
-    ) -> ContractError {
+    ) -> cosmwasm_std::StdError {
         self.base.execute_smart_err(
             owner,
             &self.filter_addr,

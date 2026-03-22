@@ -2,7 +2,7 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_json_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply, Response,
-    StdResult, SubMsg, Uint128, WasmMsg,
+    StdResult, SubMsg, Uint128, Uint256, WasmMsg,
 };
 use cw2::set_contract_version;
 use cw721::{
@@ -336,7 +336,7 @@ pub fn execute_validate_nft_dao(
     // check the count is not greater than supply.
     // Percentage is validated in the voting module contract.
     if let Some(ActiveThreshold::AbsoluteCount { count }) = active_threshold.active_threshold {
-        assert_valid_absolute_count_threshold(count, Uint128::new(nft_supply.count.into()))?;
+        assert_valid_absolute_count_threshold(count, Uint128::new(nft_supply.count.into()).into())?;
     }
 
     Ok(Response::new())
@@ -390,11 +390,11 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
                     let initial_supply = token
                         .initial_balances
                         .iter()
-                        .fold(Uint128::zero(), |previous, new_balance| {
+                        .fold(Uint256::zero(), |previous, new_balance| {
                             previous + new_balance.amount
                         });
                     let total_supply =
-                        initial_supply + token.initial_dao_balance.unwrap_or_default();
+                        Uint256::from(token.initial_dao_balance.unwrap_or_default()) + initial_supply;
 
                     // Here we validate the active threshold to show how validation should be done
                     // in a factory contract.
@@ -409,7 +409,10 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
                                 assert_valid_percentage_threshold(percent)?;
                             }
                             ActiveThreshold::AbsoluteCount { count } => {
-                                assert_valid_absolute_count_threshold(count, initial_supply)?;
+                                assert_valid_absolute_count_threshold(
+                                    count,
+                                    initial_supply,
+                                )?;
                             }
                         }
                     }

@@ -1,6 +1,5 @@
 use cosmwasm_std::{Addr, StdError, Timestamp};
 use cw_ownable::Action;
-use cw_protobuf_registry::ContractError;
 use dao_interface::proposal::InfoResponse;
 use dao_testing::{DaoTestingSuiteBase, OWNER};
 use prost::Message;
@@ -235,7 +234,8 @@ impl Suite {
         expected: serde_json::Value,
     ) {
         let response = self.decode(message_name.to_string(), value);
-        assert_eq!(response.value, expected);
+        let actual: serde_json::Value = serde_json::from_str(&response.value).unwrap();
+        assert_eq!(actual, expected);
     }
 }
 
@@ -275,7 +275,7 @@ impl Suite {
         &mut self,
         sender: impl Into<String>,
         file_descriptor_sets: Vec<Vec<u8>>,
-    ) -> ContractError {
+    ) -> cosmwasm_std::StdError {
         self.base.execute_smart_err(
             sender,
             &self.registry_addr,
@@ -308,7 +308,7 @@ impl Suite {
         sender: impl Into<String>,
         file_names: Vec<String>,
         message_limit: Option<u32>,
-    ) -> ContractError {
+    ) -> cosmwasm_std::StdError {
         self.base.execute_smart_err(
             sender,
             &self.registry_addr,
@@ -333,7 +333,7 @@ impl Suite {
         &mut self,
         sender: impl Into<String>,
         messages: Vec<String>,
-    ) -> ContractError {
+    ) -> cosmwasm_std::StdError {
         self.base.execute_smart_err(
             sender,
             &self.registry_addr,
@@ -355,7 +355,7 @@ impl Suite {
         &mut self,
         sender: impl Into<String>,
         messages: Vec<String>,
-    ) -> ContractError {
+    ) -> cosmwasm_std::StdError {
         self.base.execute_smart_err(
             sender,
             &self.registry_addr,

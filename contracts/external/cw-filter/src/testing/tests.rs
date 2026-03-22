@@ -109,7 +109,7 @@ fn test_update_protobuf_registry() {
 
     // only the owner can update the protobuf registry
     let err = suite.update_protobuf_registry_err("not_owner", None);
-    assert_eq!(err, ContractError::Ownership(OwnershipError::NotOwner {}));
+    assert!(err.to_string().contains("Caller is not the contract's current owner"));
 
     suite.assert_protobuf_registry(Some(suite.protobuf_registry_addr.clone()));
 
