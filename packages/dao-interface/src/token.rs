@@ -1,11 +1,11 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Binary, DenomUnit, Uint128};
+use cosmwasm_std::{Binary, DenomUnit, Uint256};
 
 use crate::state::ModuleInstantiateCallback;
 
 #[cw_serde]
 pub struct InitialBalance {
-    pub amount: Uint128,
+    pub amount: Uint256,
     pub address: String,
 }
 
@@ -42,7 +42,7 @@ pub struct NewTokenInfo {
     /// The initial balances to set for the token, cannot be empty.
     pub initial_balances: Vec<InitialBalance>,
     /// Optional balance to mint for the DAO.
-    pub initial_dao_balance: Option<Uint128>,
+    pub initial_dao_balance: Option<Uint256>,
 }
 
 #[cw_serde]

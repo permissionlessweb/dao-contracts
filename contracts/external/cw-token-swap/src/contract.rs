@@ -1,7 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128,
+    to_json_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, MigrateInfo, Response,
+    StdResult, Uint256,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::Item;
@@ -88,8 +89,8 @@ fn get_counterparty(deps: Deps, sender: &Addr) -> Result<CounterpartyResponse, C
 fn do_fund(
     deps: DepsMut,
     counterparty: CheckedCounterparty,
-    paid: Uint128,
-    expected: Uint128,
+    paid: Uint256,
+    expected: Uint256,
     other_counterparty: CheckedCounterparty,
     storage: Item<CheckedCounterparty>,
 ) -> Result<Response, ContractError> {
@@ -244,7 +245,12 @@ pub fn query_status(deps: Deps) -> StdResult<Binary> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(
+    deps: DepsMut,
+    _env: Env,
+    _msg: MigrateMsg,
+    _info: MigrateInfo,
+) -> Result<Response, ContractError> {
     // Set contract to version to latest
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     Ok(Response::default())

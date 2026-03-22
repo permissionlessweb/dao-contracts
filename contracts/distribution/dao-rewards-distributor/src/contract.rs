@@ -2,7 +2,7 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     ensure, from_json, to_json_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Order,
-    Response, StdError, StdResult, Uint128, Uint256,
+    Response, StdError, StdResult, Uint256,
 };
 use cw2::{get_contract_version, set_contract_version};
 use cw20::{Cw20ReceiveMsg, Denom, UncheckedDenom};
@@ -92,7 +92,7 @@ pub fn execute(
         ExecuteMsg::Claim { id } => execute_claim(deps, env, info, id),
         ExecuteMsg::Withdraw { id } => execute_withdraw(deps, info, env, id),
         ExecuteMsg::UnsafeForceWithdraw { amount, denom } => {
-            execute_unsafe_force_withdraw(deps, info, amount, denom)
+            execute_unsafe_force_withdraw(deps, info, amount.into(), denom)
         }
     }
 }
@@ -196,7 +196,7 @@ fn execute_create(
         },
         vp_contract,
         hook_caller: hook_caller.clone(),
-        funded_amount: Uint128::zero(),
+        funded_amount: Uint256::zero().into(),
         open_funding,
         withdraw_destination,
         historical_earned_puvp: Uint256::zero(),
@@ -330,7 +330,7 @@ fn execute_fund(
     env: Env,
     sender: Addr,
     distribution: DistributionState,
-    amount: Uint128,
+    amount: Uint256,
 ) -> Result<Response, ContractError> {
     // only the owner can fund if open_funding is disabled
     if !distribution.open_funding {
@@ -348,7 +348,7 @@ fn execute_fund(
 fn execute_fund_paused(
     deps: DepsMut,
     mut distribution: DistributionState,
-    amount: Uint128,
+    amount: Uint256,
 ) -> Result<Response, ContractError> {
     distribution.funded_amount += amount;
 
@@ -366,7 +366,7 @@ fn execute_fund_immediate(
     deps: DepsMut,
     env: Env,
     mut distribution: DistributionState,
-    amount: Uint128,
+    amount: Uint256,
 ) -> Result<Response, ContractError> {
     distribution.funded_amount += amount;
 
@@ -394,7 +394,7 @@ fn execute_fund_linear(
     deps: DepsMut,
     env: Env,
     mut distribution: DistributionState,
-    amount: Uint128,
+    amount: Uint256,
 ) -> Result<Response, ContractError> {
     let continuous =
         if let EmissionRate::Linear { continuous, .. } = distribution.active_epoch.emission_rate {
@@ -498,7 +498,7 @@ fn execute_claim(
     // value to zero and get the amount of pending rewards until this point.
     let claim_amount = user_reward_state
         .pending_rewards
-        .insert(id, Uint128::zero())
+        .insert(id, Uint256::zero())
         .unwrap_or_default();
 
     // if there are no rewards to claim, error out
@@ -515,7 +515,7 @@ fn execute_claim(
     Ok(Response::new()
         .add_message(get_transfer_msg(
             info.sender.clone(),
-            claim_amount,
+            claim_amount.into(),
             distribution.denom,
         )?)
         .add_attribute("action", "claim")
@@ -563,7 +563,7 @@ fn execute_withdraw(
     let clawback_amount = distribution.funded_amount - rewards_distributed;
 
     // remove withdrawn funds from amount funded since they are no longer funded
-    distribution.funded_amount = rewards_distributed;
+    distribution.funded_amount = rewards_distributed.into();
 
     let clawback_msg = get_transfer_msg(
         distribution.withdraw_destination.clone(),
@@ -600,7 +600,7 @@ fn execute_update_owner(
 fn execute_unsafe_force_withdraw(
     deps: DepsMut,
     info: MessageInfo,
-    amount: Uint128,
+    amount: Uint256,
     denom: UncheckedDenom,
 ) -> Result<Response, ContractError> {
     nonpayable(&info)?;
@@ -615,7 +615,7 @@ fn execute_unsafe_force_withdraw(
         Denom::Cw20(address) => address.to_string(),
     };
 
-    let send = get_transfer_msg(info.sender, amount, checked_denom)?;
+    let send = get_transfer_msg(info.sender, amount.into(), checked_denom)?;
 
     Ok(Response::new()
         .add_message(send)
@@ -642,10 +642,10 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         )?)?),
         QueryMsg::UndistributedRewards { id } => Ok(to_json_binary(
             &query_undistributed_rewards(deps, env, id)
-                .map_err(|e| StdError::generic_err(e.to_string()))?,
+                .map_err(|e| StdError::msg(e.to_string()))?,
         )?),
         QueryMsg::Distribution { id } => Ok(to_json_binary(
-            &query_distribution(deps, id).map_err(|e| StdError::generic_err(e.to_string()))?,
+            &query_distribution(deps, id).map_err(|e| StdError::msg(e.to_string()))?,
         )?),
         QueryMsg::Distributions { start_after, limit } => Ok(to_json_binary(
             &query_distributions(deps, start_after, limit)?,
@@ -690,7 +690,7 @@ fn query_pending_rewards(
         // first we get the active epoch earned puvp value
         let active_total_earned_puvp =
             get_active_total_earned_puvp(deps, &env.block, &distribution)
-                .map_err(|e| StdError::generic_err(e.to_string()))?;
+                .map_err(|e| StdError::msg(e.to_string()))?;
 
         // then we add that to the historical rewards earned puvp
         let total_earned_puvp =
@@ -721,7 +721,7 @@ fn query_pending_rewards(
     Ok(PendingRewardsResponse { pending_rewards })
 }
 
-fn query_undistributed_rewards(deps: Deps, env: Env, id: u64) -> Result<Uint128, ContractError> {
+fn query_undistributed_rewards(deps: Deps, env: Env, id: u64) -> Result<Uint256, ContractError> {
     let distribution = query_distribution(deps, id)?;
     let undistributed_rewards = distribution.get_undistributed_rewards(&env.block)?;
     Ok(undistributed_rewards)

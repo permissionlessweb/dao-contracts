@@ -2,7 +2,7 @@ use cosmwasm_std::StdError;
 use cw_hooks::HookError;
 use thiserror::Error;
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum ContractError {
     #[error(transparent)]
     Std(#[from] StdError),
@@ -42,4 +42,12 @@ pub enum ContractError {
 
     #[error("received a reply failure with an invalid ID: ({id})")]
     InvalidReplyID { id: u64 },
+}
+
+impl PartialEq for ContractError {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
+        }
+    }
 }

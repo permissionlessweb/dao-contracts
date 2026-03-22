@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{CosmosMsg, Empty, StdError, StdResult, Uint128};
+use cosmwasm_std::{CosmosMsg, Empty, StdError, StdResult, Uint256};
 
 use crate::threshold::{validate_quorum, PercentageThreshold, ThresholdError};
 
@@ -47,47 +47,47 @@ impl std::fmt::Display for MultipleChoiceVote {
 pub struct MultipleChoiceVotes {
     // Vote counts is a vector of integers indicating the vote weight for each option
     // (the index corresponds to the option).
-    pub vote_weights: Vec<Uint128>,
+    pub vote_weights: Vec<Uint256>,
 }
 
 impl MultipleChoiceVotes {
     /// Sum of all vote weights
-    pub fn total(&self) -> Uint128 {
+    pub fn total(&self) -> Uint256 {
         self.vote_weights.iter().sum()
     }
 
     // Add a vote to the tally
-    pub fn add_vote(&mut self, vote: MultipleChoiceVote, weight: Uint128) -> StdResult<()> {
+    pub fn add_vote(&mut self, vote: MultipleChoiceVote, weight: Uint256) -> StdResult<()> {
         self.vote_weights[vote.option_id as usize] = self
             .get(vote)
             .checked_add(weight)
-            .map_err(StdError::overflow)?;
+            .map_err(StdError::msg)?;
         Ok(())
     }
 
     // Remove a vote from the tally
-    pub fn remove_vote(&mut self, vote: MultipleChoiceVote, weight: Uint128) -> StdResult<()> {
+    pub fn remove_vote(&mut self, vote: MultipleChoiceVote, weight: Uint256) -> StdResult<()> {
         self.vote_weights[vote.option_id as usize] = self
             .get(vote)
             .checked_sub(weight)
-            .map_err(StdError::overflow)?;
+            .map_err(StdError::msg)?;
         Ok(())
     }
 
     // Default tally of zero for all multiple choice options
     pub fn zero(num_choices: usize) -> Self {
         Self {
-            vote_weights: vec![Uint128::zero(); num_choices],
+            vote_weights: vec![Uint256::zero(); num_choices],
         }
     }
 
     /// Returns the number of votes for a given vote option.
-    pub fn get(&self, vote: MultipleChoiceVote) -> Uint128 {
+    pub fn get(&self, vote: MultipleChoiceVote) -> Uint256 {
         self.get_id(vote.option_id)
     }
 
     /// Returns the number of votes for a given vote option ID.
-    pub fn get_id(&self, id: u32) -> Uint128 {
+    pub fn get_id(&self, id: u32) -> Uint256 {
         self.vote_weights[id as usize]
     }
 }
@@ -133,13 +133,13 @@ pub struct CheckedMultipleChoiceOption {
     pub title: String,
     pub description: String,
     pub msgs: Vec<CosmosMsg<Empty>>,
-    pub vote_count: Uint128,
+    pub vote_count: Uint256,
 }
 
 impl MultipleChoiceOptions {
     pub fn into_checked(self) -> StdResult<CheckedMultipleChoiceOptions> {
         if self.options.len() < 2 || self.options.len() > MAX_NUM_CHOICES as usize {
-            return Err(StdError::generic_err("Wrong number of choices".to_string()));
+            return Err(StdError::msg("Wrong number of choices".to_string()));
         }
 
         let mut checked_options: Vec<CheckedMultipleChoiceOption> =
@@ -155,7 +155,7 @@ impl MultipleChoiceOptions {
                     option_type: MultipleChoiceOptionType::Standard,
                     description: choice.description,
                     msgs: choice.msgs,
-                    vote_count: Uint128::zero(),
+                    vote_count: Uint256::zero(),
                     title: choice.title,
                 };
                 checked_options.push(checked_option)
@@ -167,7 +167,7 @@ impl MultipleChoiceOptions {
             option_type: MultipleChoiceOptionType::None,
             description: NONE_OPTION_DESCRIPTION.to_string(),
             msgs: vec![],
-            vote_count: Uint128::zero(),
+            vote_count: Uint256::zero(),
             title: NONE_OPTION_DESCRIPTION.to_string(),
         };
 
@@ -205,22 +205,22 @@ mod test {
     #[test]
     fn test_multiple_choice_votes() {
         let mut votes = MultipleChoiceVotes {
-            vote_weights: vec![Uint128::new(10), Uint128::new(100)],
+            vote_weights: vec![Uint256::new(10), Uint256::new(100)],
         };
         let total = votes.total();
-        assert_eq!(total, Uint128::new(110));
+        assert_eq!(total, Uint256::new(110));
 
         votes
-            .add_vote(MultipleChoiceVote { option_id: 0 }, Uint128::new(10))
+            .add_vote(MultipleChoiceVote { option_id: 0 }, Uint256::new(10))
             .unwrap();
         let total = votes.total();
-        assert_eq!(total, Uint128::new(120));
+        assert_eq!(total, Uint256::new(120));
 
         votes
-            .remove_vote(MultipleChoiceVote { option_id: 0 }, Uint128::new(20))
+            .remove_vote(MultipleChoiceVote { option_id: 0 }, Uint256::new(20))
             .unwrap();
         votes
-            .remove_vote(MultipleChoiceVote { option_id: 1 }, Uint128::new(100))
+            .remove_vote(MultipleChoiceVote { option_id: 1 }, Uint256::new(100))
             .unwrap();
 
         assert_eq!(votes, MultipleChoiceVotes::zero(2))

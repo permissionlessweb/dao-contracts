@@ -1,7 +1,7 @@
 use cosmwasm_std::{Addr, Empty};
 use cw_hooks::Hooks;
 use cw_storage_plus::{Index, IndexList, IndexedMap, Item, Map, MultiIndex};
-use schemars::JsonSchema;
+use cosmwasm_schema::schemars::JsonSchema;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 

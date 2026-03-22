@@ -35,7 +35,8 @@ pub enum QueryMsg {
     ProtobufRegistry {},
     #[returns(FilterResponse)]
     Filter {
-        filter: serde_json::Value,
+        /// JSON-encoded filter expression.
+        filter: String,
         msg: CosmosMsg,
     },
 }

@@ -1,8 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Addr, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Reply, Response,
-    StdResult, SubMsg, Uint128, Uint256,
+    Addr, Binary, Decimal, Decimal256, Deps, DepsMut, Env, MessageInfo, MigrateInfo, Reply, Response, StdResult, SubMsg, Uint128, Uint256, to_json_binary
 };
 use cw2::{get_contract_version, set_contract_version, ContractVersion};
 use cw20::{Cw20Coin, TokenInfoResponse};
@@ -40,7 +39,7 @@ pub fn instantiate(
 
     if let Some(active_threshold) = msg.active_threshold.as_ref() {
         if let ActiveThreshold::Percentage { percent } = active_threshold {
-            if *percent > Decimal::percent(100) || *percent <= Decimal::percent(0) {
+            if *percent > Decimal256::percent(100) || *percent <= Decimal256::percent(0) {
                 return Err(ContractError::InvalidActivePercentage {});
             }
         }
@@ -125,7 +124,7 @@ pub fn instantiate(
         } => {
             let initial_supply = initial_balances
                 .iter()
-                .fold(Uint128::zero(), |p, n| p + n.amount);
+                .fold(Uint256::zero(), |p, n| n.amount + p);
             // Cannot instantiate with no initial token owners because
             // it would immediately lock the DAO.
             if initial_supply.is_zero() {
@@ -137,7 +136,7 @@ pub fn instantiate(
                 if initial_dao_balance > Uint128::zero() {
                     initial_balances.push(Cw20Coin {
                         address: info.sender.to_string(),
-                        amount: initial_dao_balance,
+                        amount: Uint256::new(initial_dao_balance.u128()),
                     });
                 }
             }
@@ -181,7 +180,7 @@ pub fn instantiate(
 pub fn assert_valid_absolute_count_threshold(
     deps: Deps,
     token_addr: &Addr,
-    count: Uint128,
+    count: Uint256,
 ) -> Result<(), ContractError> {
     if count.is_zero() {
         return Err(ContractError::ZeroActiveCount {});
@@ -223,7 +222,7 @@ pub fn execute_update_active_threshold(
     if let Some(active_threshold) = new_active_threshold {
         match active_threshold {
             ActiveThreshold::Percentage { percent } => {
-                if percent > Decimal::percent(100) || percent.is_zero() {
+                if percent > Decimal256::percent(100) || percent.is_zero() {
                     return Err(ContractError::InvalidActivePercentage {});
                 }
             }
@@ -355,7 +354,7 @@ pub fn query_is_active(deps: Deps) -> StdResult<Binary> {
                     .query_wasm_smart(token_contract, &cw20_base::msg::QueryMsg::TokenInfo {})?;
                 let total_power = total_potential_power
                     .total_supply
-                    .full_mul(PRECISION_FACTOR);
+                    .checked_mul(Uint256::from(PRECISION_FACTOR))?;
                 // under the hood decimals are `atomics / 10^decimal_places`.
                 // cosmwasm doesn't give us a Decimal * Uint256
                 // implementation so we take the decimal apart and
@@ -366,9 +365,8 @@ pub fn query_is_active(deps: Deps) -> StdResult<Binary> {
                 );
                 let rounded = (applied + Uint256::from(PRECISION_FACTOR) - Uint256::from(1u128))
                     / Uint256::from(PRECISION_FACTOR);
-                let count: Uint128 = rounded.try_into().unwrap();
                 to_json_binary(&IsActiveResponse {
-                    active: actual_power.total >= count,
+                    active: actual_power.total >= rounded,
                 })
             }
         }
@@ -384,7 +382,7 @@ pub fn query_active_threshold(deps: Deps) -> StdResult<Binary> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg, _info: MigrateInfo) -> Result<Response, ContractError> {
     let storage_version: ContractVersion = get_contract_version(deps.storage)?;
 
     // Only migrate if newer

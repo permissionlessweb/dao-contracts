@@ -5,7 +5,8 @@ use cosmwasm_std::entry_point;
 use cosmwasm_std::instantiate2_address;
 use cosmwasm_std::{
     coins, from_json, to_json_binary, BankMsg, BankQuery, Binary, Coin, CosmosMsg, Deps, DepsMut,
-    Env, MessageInfo, Order, Reply, Response, StdResult, SubMsg, Uint128, Uint256, WasmMsg,
+    Env, MessageInfo, MigrateInfo, Order, Reply, Response, StdResult, SubMsg, Uint128, Uint256,
+    WasmMsg,
 };
 use cw2::{get_contract_version, set_contract_version, ContractVersion};
 use cw_controllers::ClaimsResponse;
@@ -13,8 +14,6 @@ use cw_storage_plus::Bound;
 use cw_tokenfactory_issuer::msg::{
     ExecuteMsg as IssuerExecuteMsg, InstantiateMsg as IssuerInstantiateMsg,
 };
-
-
 
 use cw_utils::{maybe_addr, must_pay, Duration};
 use dao_hooks::stake::{stake_hook_msgs, unstake_hook_msgs};
@@ -262,12 +261,12 @@ pub fn execute_stake(
         deps.storage,
         &info.sender,
         env.block.height,
-        |balance| -> StdResult<Uint128> { Ok(balance.unwrap_or_default().checked_add(amount)?) },
+        |balance| -> StdResult<Uint256> { Ok(balance.unwrap_or_default().checked_add(amount)?) },
     )?;
     STAKED_TOTAL.update(
         deps.storage,
         env.block.height,
-        |total| -> StdResult<Uint128> { Ok(total.unwrap_or_default().checked_add(amount)?) },
+        |total| -> StdResult<Uint256> { Ok(total.unwrap_or_default().checked_add(amount)?) },
     )?;
 
     // Add stake hook messages
@@ -294,26 +293,31 @@ pub fn execute_unstake(
         deps.storage,
         &info.sender,
         env.block.height,
-        |balance| -> Result<Uint128, ContractError> {
+        |balance| -> Result<Uint256, ContractError> {
             balance
                 .unwrap_or_default()
-                .checked_sub(amount)
+                .checked_sub(amount.u128().into())
                 .map_err(|_e| ContractError::InvalidUnstakeAmount {})
         },
     )?;
     STAKED_TOTAL.update(
         deps.storage,
         env.block.height,
-        |total| -> Result<Uint128, ContractError> {
+        |total| -> Result<Uint256, ContractError> {
             total
                 .unwrap_or_default()
-                .checked_sub(amount)
+                .checked_sub(amount.u128().into())
                 .map_err(|_e| ContractError::InvalidUnstakeAmount {})
         },
     )?;
 
     // Add unstake hook messages
-    let hook_msgs = unstake_hook_msgs(HOOKS, deps.storage, info.sender.clone(), amount)?;
+    let hook_msgs = unstake_hook_msgs(
+        HOOKS,
+        deps.storage,
+        info.sender.clone(),
+        amount.u128().into(),
+    )?;
 
     let config = CONFIG.load(deps.storage)?;
     let denom = DENOM.load(deps.storage)?;
@@ -502,7 +506,10 @@ pub fn query_voting_power_at_height(
     let power = STAKED_BALANCES
         .may_load_at_height(deps.storage, &address, height)?
         .unwrap_or_default();
-    Ok(VotingPowerAtHeightResponse { power, height })
+    Ok(VotingPowerAtHeightResponse {
+        power: power.into(),
+        height,
+    })
 }
 
 pub fn query_total_power_at_height(
@@ -514,7 +521,10 @@ pub fn query_total_power_at_height(
     let power = STAKED_TOTAL
         .may_load_at_height(deps.storage, height)?
         .unwrap_or_default();
-    Ok(TotalPowerAtHeightResponse { power, height })
+    Ok(TotalPowerAtHeightResponse {
+        power: power.into(),
+        height,
+    })
 }
 
 pub fn query_info(deps: Deps) -> StdResult<Binary> {
@@ -591,10 +601,8 @@ pub fn query_is_active(deps: Deps) -> StdResult<Binary> {
                         .query(&cosmwasm_std::QueryRequest::Bank(BankQuery::Supply {
                             denom,
                         }))?;
-                let total_power = total_potential_power
-                    .amount
-                    .amount
-                    .full_mul(PRECISION_FACTOR);
+                let total_power = Uint256::from(total_potential_power.amount.amount)
+                    .checked_mul(Uint256::from(PRECISION_FACTOR))?;
                 // under the hood decimals are `atomics / 10^decimal_places`.
                 // cosmwasm doesn't give us a Decimal * Uint256
                 // implementation so we take the decimal apart and
@@ -605,9 +613,8 @@ pub fn query_is_active(deps: Deps) -> StdResult<Binary> {
                 );
                 let rounded = (applied + Uint256::from(PRECISION_FACTOR) - Uint256::from(1u128))
                     / Uint256::from(PRECISION_FACTOR);
-                let count: Uint128 = rounded.try_into().unwrap();
                 to_json_binary(&IsActiveResponse {
-                    active: actual_power >= count,
+                    active: actual_power >= rounded,
                 })
             }
         }
@@ -629,7 +636,12 @@ pub fn query_hooks(deps: Deps) -> StdResult<GetHooksResponse> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(
+    deps: DepsMut,
+    _env: Env,
+    _msg: MigrateMsg,
+    _info: MigrateInfo,
+) -> Result<Response, ContractError> {
     let storage_version: ContractVersion = get_contract_version(deps.storage)?;
 
     // Only migrate if newer
@@ -681,7 +693,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
                         let initial_supply = token
                             .initial_balances
                             .iter()
-                            .fold(Uint128::zero(), |previous, new_balance| {
+                            .fold(Uint256::zero(), |previous, new_balance| {
                                 previous + new_balance.amount
                             });
                         let total_supply =
@@ -693,7 +705,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
                         {
                             // We use initial_supply here because the DAO balance is not
                             // able to be staked by users.
-                            assert_valid_absolute_count_threshold(count, initial_supply)?;
+                            assert_valid_absolute_count_threshold(count, initial_supply.into())?;
                         }
 
                         // Cannot instantiate with no initial token owners because it would

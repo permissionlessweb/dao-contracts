@@ -3,7 +3,7 @@ use cosmwasm_std::{Deps, MessageInfo, StdError};
 use cw_utils::Duration;
 use thiserror::Error;
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum VetoError {
     #[error("{0}")]
     Std(#[from] StdError),
@@ -31,6 +31,14 @@ pub enum VetoError {
 
     #[error("Only vetoer can veto a proposal.")]
     Unauthorized {},
+}
+
+impl PartialEq for VetoError {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
+        }
+    }
 }
 
 #[cw_serde]

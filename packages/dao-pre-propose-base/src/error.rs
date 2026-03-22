@@ -8,7 +8,7 @@ use dao_voting::{
     deposit::DepositError, pre_propose::PreProposeSubmissionPolicyError, status::Status,
 };
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum PreProposeError {
     #[error(transparent)]
     Std(#[from] StdError),
@@ -57,4 +57,12 @@ pub enum PreProposeError {
 
     #[error("Cannot migrate contract version {actual}. Requires: {required}")]
     CannotMigrateVersion { required: String, actual: String },
+}
+
+impl PartialEq for PreProposeError {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
+        }
+    }
 }

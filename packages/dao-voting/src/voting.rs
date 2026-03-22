@@ -216,7 +216,7 @@ pub fn get_voting_power(
     address: Addr,
     dao: &Addr,
     height: Option<u64>,
-) -> StdResult<Uint128> {
+) -> StdResult<Uint256> {
     let response: voting::VotingPowerAtHeightResponse = deps.querier.query_wasm_smart(
         dao,
         &voting::Query::VotingPowerAtHeight {
@@ -229,9 +229,9 @@ pub fn get_voting_power(
 
 pub struct VotingPowerWithDelegation {
     /// Individual voting power.
-    pub individual: Uint128,
+    pub individual: Uint256,
     /// Total voting power (individual + unvoted delegated voting power).
-    pub total: Uint128,
+    pub total: Uint256,
 }
 
 /// Query the voting power for a member, including any voting power delegated to
@@ -275,13 +275,13 @@ pub fn get_voting_power_with_delegation(
         .effective;
 
     // sum both to get total voting power for this address on this proposal
-    let total = individual.checked_add(udvp)?;
+    let total = individual.checked_add(udvp.into())?;
 
     Ok(VotingPowerWithDelegation { individual, total })
 }
 
 /// A height of None will query for the current block height.
-pub fn get_total_power(deps: Deps, dao: &Addr, height: Option<u64>) -> StdResult<Uint128> {
+pub fn get_total_power(deps: Deps, dao: &Addr, height: Option<u64>) -> StdResult<Uint256> {
     let response: voting::TotalPowerAtHeightResponse = deps
         .querier
         .query_wasm_smart(dao, &voting::Query::TotalPowerAtHeight { height })?;

@@ -150,7 +150,7 @@ impl ModuleUpdate {
 mod tests {
     use super::*;
 
-    use cosmwasm_std::{coins, testing::{mock_dependencies, MockApi}, to_json_binary, Addr, Uint128, WasmMsg};
+    use cosmwasm_std::{Addr, Uint128, Uint256, WasmMsg, coins, testing::{MockApi, mock_dependencies}, to_json_binary};
 
     #[test]
     fn test_module_instantiate_admin_none() {
@@ -170,7 +170,7 @@ mod tests {
                 msg: to_json_binary("foo").unwrap(),
                 funds: vec![Coin {
                     denom: "uatom".to_string(),
-                    amount: Uint128::from(100u64),
+                    amount: Uint256::from(100u64),
                 }],
                 label: "bar".to_string()
             }
@@ -241,7 +241,7 @@ mod tests {
                 msg: to_json_binary("foo").unwrap(),
                 funds: vec![Coin {
                     denom: "uatom".to_string(),
-                    amount: Uint128::from(100u64),
+                    amount: Uint256::from(100u64),
                 }],
                 label: "bar".to_string(),
                 salt: to_json_binary("test_salt").unwrap()
@@ -322,7 +322,7 @@ mod tests {
                     msg: to_json_binary("foo").unwrap(),
                     funds: vec![Coin {
                         denom: "uatom".to_string(),
-                        amount: Uint128::from(100u64),
+                        amount: Uint256::from(100u64),
                     }],
                     label: "bar".to_string(),
                 },

@@ -231,12 +231,12 @@ where
         let last_active_update = self
             .last_active_update
             .may_load(store, k.clone())?
-            .ok_or(StdError::generic_err("no active items for key"))?;
+            .ok_or(StdError::msg("no active items for key"))?;
 
         // ensure this update is performed at or after the last update, and
         // don't update the last active update since we're not making a new copy
         if curr_height < last_active_update {
-            return Err(StdError::generic_err(format!(
+            return Err(StdError::msg(format!(
                 "update must be performed at or after the last update ({last_active_update})",
             )));
         }
@@ -257,7 +257,7 @@ where
             .map(|(_, expiration)| {
                 *expiration = new_expiration;
             })
-            .ok_or(StdError::generic_err("item not found or expired"))?;
+            .ok_or(StdError::msg("item not found or expired"))?;
 
         // override the list at the last active update
         self.active
@@ -279,7 +279,7 @@ where
             .may_load(store, k.clone())?
             .unwrap_or_default();
         match curr_height.cmp(&last_active_update) {
-            Ordering::Less => Err(StdError::generic_err(format!(
+            Ordering::Less => Err(StdError::msg(format!(
                 "update must be performed at or after the last update ({last_active_update})",
             ))),
             Ordering::Equal => Ok(()),

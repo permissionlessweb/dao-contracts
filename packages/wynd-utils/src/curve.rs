@@ -1,11 +1,11 @@
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use cosmwasm_schema::cw_serde;
+
 use std::cmp::Ordering;
 use thiserror::Error;
 
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{Uint128, Uint256};
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum CurveError {
     #[error("Curve isn't monotonic")]
     NotMonotonic,
@@ -23,8 +23,15 @@ pub enum CurveError {
     MissingSteps,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
-#[serde(rename_all = "snake_case")]
+impl PartialEq for CurveError {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
+        }
+    }
+}
+
+#[cw_serde]
 pub enum Curve {
     Constant { y: Uint128 },
     SaturatingLinear(SaturatingLinear),
@@ -95,7 +102,7 @@ impl Curve {
 }
 
 /// min_y for all x <= min_x, max_y for all x >= max_x, linear in between
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
+#[cw_serde]
 pub struct SaturatingLinear {
     pub min_x: u64,
     pub min_y: Uint128,
@@ -164,7 +171,7 @@ fn interpolate((min_x, min_y): (u64, Uint128), (max_x, max_y): (u64, Uint128), x
 /// Otherwise, it is a linear interpolation between the two closest points.
 /// Vec of length 1 -> Constant
 /// Vec of length 2 -> SaturatingLinear
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
+#[cw_serde]
 pub struct PiecewiseLinear {
     pub steps: Vec<(u64, Uint128)>,
 }

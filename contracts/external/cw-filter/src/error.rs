@@ -5,7 +5,7 @@ use thiserror::Error;
 pub use cw_ownable::OwnershipError;
 pub use cw_utils::PaymentError;
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
@@ -33,4 +33,11 @@ pub enum ContractError {
 
     #[error("Missing protobuf registry")]
     MissingProtobufRegistry {},
+}
+impl PartialEq for ContractError {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
+        }
+    }
 }

@@ -1,7 +1,7 @@
 use anyhow::Result;
 use cosm_orc::orchestrator::{Coin, Key, SigningKey};
 use cosm_orc::{config::cfg::Config, orchestrator::cosm_orc::CosmOrc};
-use cosmwasm_std::{to_json_binary, Decimal, Empty, Uint128};
+use cosmwasm_std::{Decimal, Empty, Uint256, to_json_binary};
 use cw20::Cw20Coin;
 use dao_interface::state::{Admin, ModuleInstantiateInfo};
 use dao_voting::pre_propose::PreProposeSubmissionPolicy;
@@ -66,7 +66,7 @@ fn main() -> Result<()> {
                     decimals: 6,
                     initial_balances: vec![Cw20Coin {
                         address: addr.clone(),
-                        amount: Uint128::new(100_000_000),
+                        amount: Uint256::from(100_000_000u128),
                     }],
                     marketing: None,
                     staking_code_id: orc.contract_map.code_id("cw20_stake")?,
@@ -75,7 +75,8 @@ fn main() -> Result<()> {
                     initial_dao_balance: None,
                 },
                 active_threshold: None,
-            })?,
+            })
+            .map_err(|e| anyhow::anyhow!("{}", e))?,
             funds: None,
             admin: Some(Admin::CoreModule {}),
             label: "DAO DAO Voting Module".to_string(),
@@ -100,7 +101,7 @@ fn main() -> Result<()> {
                                 denom: DepositToken::VotingModuleToken {
                                     token_type: VotingModuleTokenType::Cw20,
                                 },
-                                amount: Uint128::new(1000000000),
+                                amount: Uint256::from(1000000000u128),
                                 refund_policy: DepositRefundPolicy::OnlyPassed,
                             }),
                             submission_policy: PreProposeSubmissionPolicy::Specific {
@@ -120,7 +121,8 @@ fn main() -> Result<()> {
                 close_proposal_on_execution_failure: false,
                 veto: None,
                 delegation_module: None,
-            })?,
+            })
+            .map_err(|e| anyhow::anyhow!("{}", e))?,
             admin: Some(Admin::CoreModule {}),
             funds: None,
             label: "DAO DAO Proposal Module".to_string(),

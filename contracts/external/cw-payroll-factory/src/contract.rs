@@ -9,8 +9,8 @@ use cosmwasm_std::{Addr, Coin};
 use cw2::set_contract_version;
 use cw20::Cw20ExecuteMsg;
 use cw20::Cw20ReceiveMsg;
-use cw_storage_plus::Bound;
 use cw_reply_helper::parse_reply_instantiate_data;
+use cw_storage_plus::Bound;
 use cw_utils::nonpayable;
 use cw_vesting::msg::{
     InstantiateMsg as PayrollInstantiateMsg, QueryMsg as PayrollQueryMsg,
@@ -91,7 +91,7 @@ pub fn execute_receive_cw20(
             if receive_msg.amount != instantiate_msg.total {
                 return Err(ContractError::WrongFundAmount {
                     sent: receive_msg.amount,
-                    expected: instantiate_msg.total,
+                    expected: instantiate_msg.total.into(),
                 });
             }
             instantiate_contract(deps, sender, None, instantiate_msg, label)

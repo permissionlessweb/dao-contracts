@@ -7,13 +7,12 @@ use std::fmt::{self};
 
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    to_json_binary, Addr, BankMsg, Coin, CosmosMsg, CustomQuery, Deps, QuerierWrapper, StdError,
-    StdResult, Uint128, WasmMsg,
+    Addr, BankMsg, Coin, CosmosMsg, CustomQuery, Deps, QuerierWrapper, StdError, StdResult, Uint256, WasmMsg, to_json_binary
 };
 
 use thiserror::Error;
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum DenomError {
     #[error(transparent)]
     Std(#[from] StdError),
@@ -30,6 +29,15 @@ pub enum DenomError {
     #[error("invalid character ({c}) in native denom")]
     InvalidCharacter { c: char },
 }
+
+impl PartialEq for DenomError {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
+        }
+    }
+}
+
 
 /// A denom that has been checked to point to a valid asset. This enum
 /// should never be constructed literally and should always be built
@@ -121,7 +129,7 @@ impl CheckedDenom {
         &self,
         querier: &QuerierWrapper<C>,
         who: &Addr,
-    ) -> StdResult<Uint128> {
+    ) -> StdResult<Uint256> {
         match self {
             CheckedDenom::Native(denom) => Ok(querier.query_balance(who, denom)?.amount),
             CheckedDenom::Cw20(address) => {
@@ -139,7 +147,7 @@ impl CheckedDenom {
     /// Gets a `CosmosMsg` that, when executed, will transfer AMOUNT
     /// tokens to WHO. AMOUNT being zero will cause the message
     /// execution to fail.
-    pub fn get_transfer_to_message(&self, who: &Addr, amount: Uint128) -> StdResult<CosmosMsg> {
+    pub fn get_transfer_to_message(&self, who: &Addr, amount: Uint256) -> StdResult<CosmosMsg> {
         Ok(match self {
             CheckedDenom::Native(denom) => BankMsg::Send {
                 to_address: who.to_string(),
@@ -227,7 +235,7 @@ mod tests {
                                     name: "coin".to_string(),
                                     symbol: "symbol".to_string(),
                                     decimals: 6,
-                                    total_supply: Uint128::new(10),
+                                    total_supply: Uint256::new(10),
                                 })
                                 .unwrap(),
                             ))
@@ -271,7 +279,7 @@ mod tests {
         assert_eq!(
             err,
             DenomError::InvalidCw20 {
-                err: StdError::generic_err(format!(
+                err: StdError::msg(format!(
                     "Querier system error: No such contract: {cw20}",
                 ))
             }
@@ -290,7 +298,7 @@ mod tests {
         let err = unchecked.into_checked(deps.as_ref()).unwrap_err();
         assert_eq!(
             err,
-            DenomError::Std(StdError::generic_err("Error decoding bech32"))
+            DenomError::Std(StdError::msg("Error decoding bech32"))
         )
     }
 

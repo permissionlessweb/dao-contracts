@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, BlockInfo, Deps, DepsMut, Env, StdResult, Uint128, Uint256};
+use cosmwasm_std::{Addr, BlockInfo, Deps, DepsMut, Env, StdResult, Uint256};
 use cw20::Expiration;
 
 use crate::{
@@ -64,7 +64,7 @@ pub fn update_rewards(
     // get the amount of newly earned rewards for the distribution
     user_reward_state
         .pending_rewards
-        .insert(distribution_id, amount_sum);
+        .insert(distribution_id, amount_sum.into());
 
     // update the accounted for amount to that of the total applicable puvp
     user_reward_state
@@ -148,7 +148,7 @@ pub fn get_accrued_rewards_not_yet_accounted_for(
     total_earned_puvp: Uint256,
     distribution: &DistributionState,
     user_reward_state: &UserRewardState,
-) -> StdResult<Uint128> {
+) -> StdResult<Uint256> {
     // get the user's voting power at the current height
     let voting_power: Uint256 =
         get_voting_power_at_block(deps, &env.block, &distribution.vp_contract, addr)?.into();
@@ -167,7 +167,7 @@ pub fn get_accrued_rewards_not_yet_accounted_for(
 
     // calculate the amount of rewards earned:
     // voting_power * reward_factor / scale_factor
-    let accrued_rewards_amount: Uint128 = voting_power
+    let accrued_rewards_amount: Uint256 = voting_power
         .checked_mul(reward_factor)?
         .checked_div(scale_factor())?
         .try_into()?;

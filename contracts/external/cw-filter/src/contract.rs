@@ -118,7 +118,12 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Ownership {} => to_json_binary(&cw_ownable::get_ownership(deps.storage)?),
         QueryMsg::Info {} => to_json_binary(&query_info(deps)?),
         QueryMsg::ProtobufRegistry {} => to_json_binary(&query_protobuf_registry(deps)?),
-        QueryMsg::Filter { filter, msg } => to_json_binary(&query_filter(deps, filter, msg)?),
+        QueryMsg::Filter { filter, msg } => {
+            let filter: serde_json::Value = serde_json::from_str(&filter).map_err(|e| {
+                cosmwasm_std::StdError::msg(format!("invalid filter JSON: {e}"))
+            })?;
+            to_json_binary(&query_filter(deps, filter, msg)?)
+        }
     }
 }
 
@@ -140,7 +145,7 @@ fn query_filter(
     let protobuf_registry = PROTOBUF_REGISTRY.may_load(deps.storage)?;
 
     let msg_value = serde_json::to_value(msg).map_err(|e| {
-        StdError::generic_err(ContractError::JsonSerialization { err: e.to_string() }.to_string())
+        StdError::msg(ContractError::JsonSerialization { err: e.to_string() }.to_string())
     })?;
 
     let decoder = protobuf_registry.map(|addr| WasmQuerierProtobufDecoder::new(deps.querier, addr));

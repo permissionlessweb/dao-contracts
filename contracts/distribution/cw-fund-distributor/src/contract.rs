@@ -54,12 +54,13 @@ pub fn instantiate(
     if total_power.power.is_zero() {
         return Err(ContractError::ZeroVotingPower {});
     }
-    TOTAL_POWER.save(deps.storage, &total_power.power)?;
+    let total_power_u128: Uint128 = total_power.power.try_into().unwrap();
+    TOTAL_POWER.save(deps.storage, &total_power_u128)?;
 
     Ok(Response::default()
         .add_attribute("distribution_height", env.block.height.to_string())
         .add_attribute("voting_contract", voting_contract)
-        .add_attribute("total_power", total_power.power))
+        .add_attribute("total_power", total_power_u128))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -74,7 +75,7 @@ pub fn execute(
             sender: _,
             amount,
             msg: _,
-        }) => execute_fund_cw20(deps, env, info.sender, amount),
+        }) => execute_fund_cw20(deps, env, info.sender, amount.try_into().unwrap()),
         ExecuteMsg::FundNative {} => execute_fund_native(deps, env, info),
         ExecuteMsg::ClaimCW20 { tokens } => execute_claim_cw20s(deps, env, info.sender, tokens),
         ExecuteMsg::ClaimNatives { denoms } => {
@@ -131,16 +132,17 @@ pub fn execute_fund_native(
     // collect a list of successful funding kv pairs
     let mut attributes: Vec<(String, String)> = Vec::new();
     for coin in info.funds {
-        if coin.amount > Uint128::zero() {
+        let amount_u128: Uint128 = coin.amount.try_into().unwrap();
+        if !amount_u128.is_zero() {
             NATIVE_BALANCES.update(
                 deps.storage,
                 coin.denom.clone(),
                 |current_balance| -> Result<_, ContractError> {
                     let new_amount = match current_balance {
                         // add the funding amount to current balance
-                        Some(current_balance) => coin.amount.checked_add(current_balance)?,
+                        Some(current_balance) => amount_u128.checked_add(current_balance)?,
                         // with no existing balance, set it to the funding amount
-                        None => coin.amount,
+                        None => amount_u128,
                     };
                     attributes.push((coin.denom, new_amount.to_string()));
                     Ok(new_amount)
@@ -181,7 +183,8 @@ fn get_relative_share(deps: &Deps, sender: Addr) -> Result<Decimal, StdError> {
         },
     )?;
     // return senders share
-    Ok(Decimal::from_ratio(voting_power.power, total_power))
+    let power_u128: Uint128 = voting_power.power.try_into().unwrap();
+    Ok(Decimal::from_ratio(power_u128, total_power))
 }
 
 pub fn execute_claim_cw20s(
@@ -249,7 +252,7 @@ fn get_cw20_claim_wasm_messages(
                 contract_addr: addr,
                 msg: to_json_binary(&cw20::Cw20ExecuteMsg::Transfer {
                     recipient: sender.to_string(),
-                    amount: entitlement,
+                    amount: entitlement.into(),
                 })?,
                 funds: vec![],
             });
@@ -325,7 +328,7 @@ fn get_native_claim_bank_messages(
                 to_address: sender.to_string(),
                 amount: vec![Coin {
                     denom: addr,
-                    amount: entitlement,
+                    amount: entitlement.into(),
                 }],
             });
         }
@@ -581,9 +584,10 @@ fn execute_redistribute_unclaimed_funds(
                 Some(cw20_balance) => cw20_balance
                     .checked_sub(amount)
                     .map_err(ContractError::OverflowErr),
-                None => Err(ContractError::Std(StdError::not_found(
-                    cw20_addr.to_string(),
-                ))),
+                None => Err(ContractError::Std(StdError::msg(format!(
+                    "not found: {}",
+                    cw20_addr
+                )))),
             }
         })?;
     }
@@ -597,7 +601,10 @@ fn execute_redistribute_unclaimed_funds(
                 Some(native_balance) => native_balance
                     .checked_sub(amount)
                     .map_err(ContractError::OverflowErr),
-                None => Err(ContractError::Std(StdError::not_found(denom.to_string()))),
+                None => Err(ContractError::Std(StdError::msg(format!(
+                    "not found: {}",
+                    denom
+                )))),
             }
         })?;
     }

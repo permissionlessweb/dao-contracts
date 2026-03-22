@@ -1,8 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_json, to_json_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo,
-    Reply, Response, StdError, StdResult, SubMsg, Uint128, Uint256, WasmMsg,
+    Addr, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, MigrateInfo, Reply, Response, StdError, StdResult, SubMsg, Uint128, Uint256, WasmMsg, from_json, to_json_binary
 };
 use cw2::{get_contract_version, set_contract_version, ContractVersion};
 use cw721::{
@@ -108,7 +107,7 @@ pub fn instantiate(
                     // greater than zero.
                     assert_valid_absolute_count_threshold(
                         *count,
-                        Uint128::new(nft_supply.count.into()),
+                        Uint128::new(nft_supply.count.into()).into(),
                     )?;
                 }
             }
@@ -508,7 +507,7 @@ pub fn execute_update_active_threshold(
                 )?;
                 assert_valid_absolute_count_threshold(
                     count,
-                    Uint128::new(nft_supply.count.into()),
+                    Uint128::new(nft_supply.count.into()).into(),
                 )?;
             }
         }
@@ -565,7 +564,7 @@ pub fn query_is_active(deps: Deps, env: Env) -> StdResult<Binary> {
 
         match threshold {
             ActiveThreshold::AbsoluteCount { count } => to_json_binary(&IsActiveResponse {
-                active: staked_nfts >= count,
+                active: Uint256::new(staked_nfts.u128()) >= count,
             }),
             ActiveThreshold::Percentage { percent } => {
                 // Check if there are any staked NFTs
@@ -631,7 +630,7 @@ pub fn query_voting_power_at_height(
     let power = NFT_BALANCES
         .may_load_at_height(deps.storage, &address, height)?
         .unwrap_or_default();
-    to_json_binary(&dao_interface::voting::VotingPowerAtHeightResponse { power, height })
+    to_json_binary(&dao_interface::voting::VotingPowerAtHeightResponse { power: power.into(), height })
 }
 
 pub fn query_total_power_at_height(deps: Deps, env: Env, height: Option<u64>) -> StdResult<Binary> {
@@ -639,7 +638,7 @@ pub fn query_total_power_at_height(deps: Deps, env: Env, height: Option<u64>) ->
     let power = TOTAL_STAKED_NFTS
         .may_load_at_height(deps.storage, height)?
         .unwrap_or_default();
-    to_json_binary(&dao_interface::voting::TotalPowerAtHeightResponse { power, height })
+    to_json_binary(&dao_interface::voting::TotalPowerAtHeightResponse { power: power.into(), height })
 }
 
 pub fn query_config(deps: Deps) -> StdResult<Binary> {
@@ -722,7 +721,7 @@ pub fn query_staked_nfts(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg, _info: MigrateInfo) -> Result<Response, ContractError> {
     let storage_version: ContractVersion = get_contract_version(deps.storage)?;
 
     // Only migrate if newer
@@ -821,7 +820,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
             {
                 assert_valid_absolute_count_threshold(
                     count,
-                    Uint128::new(nft_supply.count.into()),
+                    Uint128::new(nft_supply.count.into()).into(),
                 )?;
             }
 
@@ -849,7 +848,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
                     // Parse info from the callback, this will fail
                     // if incorrectly formatted.
                     let callback_data = cw_reply_helper::parse_reply_execute_data(&msg)
-                        .map_err(|e| StdError::generic_err(e.to_string()))?
+                        .map_err(|e| StdError::msg(e.to_string()))?
                         .ok_or(ContractError::NoFactoryCallback {})?;
                     let info: NftFactoryCallback = from_json(callback_data)?;
 

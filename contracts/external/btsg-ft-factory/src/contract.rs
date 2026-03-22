@@ -1,14 +1,18 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
+#[cfg(not(test))]
+use cosmwasm_std::SubMsg;
 use cosmwasm_std::{
-    to_json_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply, Response,
-    StdError, StdResult, SubMsg,
+    to_json_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, MigrateInfo, Reply,
+    Response, StdError, StdResult,
 };
 
 use cw2::set_contract_version;
 use dao_interface::token::{InitialBalance, TokenFactoryCallback};
 
-use crate::bitsong::{Coin, MsgIssue, MsgIssueResponse, MsgMint, MsgSetAuthority, MsgSetMinter};
+#[cfg(not(test))]
+use crate::bitsong::MsgIssue;
+use crate::bitsong::{Coin, MsgIssueResponse, MsgMint, MsgSetAuthority, MsgSetMinter};
 use crate::error::ContractError;
 use crate::msg::{CreatingFanToken, ExecuteMsg, InstantiateMsg, MigrateMsg, NewFanToken, QueryMsg};
 use crate::state::CREATING_FAN_TOKEN;
@@ -176,7 +180,7 @@ pub fn execute_issue(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(_deps: Deps, _env: Env, _msg: QueryMsg) -> StdResult<Binary> {
-    Err(StdError::generic_err("no queries"))
+    Err(StdError::msg("no queries"))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -264,7 +268,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg, _migrate_info: MigrateInfo) -> Result<Response, ContractError> {
     // Set contract to version to latest
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     Ok(Response::default())

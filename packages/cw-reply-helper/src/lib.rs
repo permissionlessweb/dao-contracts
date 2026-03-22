@@ -146,7 +146,7 @@ pub fn parse_event_from_reply_submsg(
                 .find(|e| e.ty == "wasm")
                 .and_then(|ev| ev.attributes.iter().find(|a| a.key == "contract"))
         })
-        .ok_or_else(|| StdError::generic_err("key not found in event"))?
+        .ok_or_else(|| StdError::msg("key not found in event"))?
         .value
         .clone())
 }

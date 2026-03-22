@@ -32,7 +32,8 @@ pub fn is_delegate_registered(deps: Deps, delegate: &Addr, height: Option<u64>) 
 
 pub fn get_voting_power(deps: Deps, addr: &Addr, height: u64) -> StdResult<Uint128> {
     let dao = DAO.load(deps.storage)?;
-    voting::get_voting_power(deps, addr.clone(), &dao, Some(height))
+    let vp = voting::get_voting_power(deps, addr.clone(), &dao, Some(height))?;
+    Ok(vp.try_into().unwrap())
 }
 
 /// Returns the unvoted delegated VP for a delegate on a proposal, falling back
@@ -169,7 +170,7 @@ pub fn update_delegated_vp_expiration(
     // decrement at end of expiration period.
     if let Some(original_expiration) = original_expiration {
         if original_expiration <= env.block.height {
-            return Err(StdError::generic_err(
+            return Err(StdError::msg(
                 "original expiration is in the past, cannot rewrite history",
             ));
         }
@@ -180,7 +181,7 @@ pub fn update_delegated_vp_expiration(
     // if new expiration is set, decrement at new expiration
     if let Some(new_expiration) = new_expiration {
         if new_expiration <= env.block.height {
-            return Err(StdError::generic_err(
+            return Err(StdError::msg(
                 "new expiration is in the past, cannot rewrite history",
             ));
         }

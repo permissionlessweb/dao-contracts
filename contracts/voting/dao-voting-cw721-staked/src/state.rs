@@ -64,7 +64,7 @@ pub fn register_staked_nft(
     let add_one = |prev: Option<Uint128>| -> StdResult<Uint128> {
         prev.unwrap_or_default()
             .checked_add(Uint128::new(1))
-            .map_err(StdError::overflow)
+            .map_err(StdError::msg)
     };
 
     STAKED_NFTS_PER_OWNER.save(storage, (staker, token_id), &Empty::default())?;
@@ -88,7 +88,7 @@ pub fn register_unstaked_nfts(
         move |prev: Option<Uint128>| -> StdResult<Uint128> {
             prev.expect("unstaking that which was not staked")
                 .checked_sub(Uint128::new(amount))
-                .map_err(StdError::overflow)
+                .map_err(StdError::msg)
         }
     };
 

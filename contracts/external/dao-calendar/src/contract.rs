@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Binary, Deps, DepsMut, Empty, Env, MessageInfo, Reply, Response, StdResult,
+    Binary, Deps, DepsMut, Empty, Env, MessageInfo, MigrateInfo, Reply, Response, StdResult, to_json_binary
 };
 use cw2::set_contract_version;
 
@@ -107,9 +107,7 @@ pub fn execute(
             group_id,
             suppliers,
         } => execute::execute_update_group(deps, info, group_id, suppliers),
-        ExecuteMsg::RemoveGroup { group_id } => {
-            execute::execute_remove_group(deps, info, group_id)
-        }
+        ExecuteMsg::RemoveGroup { group_id } => execute::execute_remove_group(deps, info, group_id),
         ExecuteMsg::RenewCalendar { limit } => execute::execute_renew_calendar(deps, env, limit),
         ExecuteMsg::AddEventHook { address } => {
             execute::execute_add_event_hook(deps, info, address)
@@ -152,14 +150,17 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::DumpState {} => to_json_binary(&query::query_dump_state(deps)?),
         QueryMsg::Dao {} => to_json_binary(&DAO.load(deps.storage)?),
         QueryMsg::Info {} => to_json_binary(&query::query_info(deps)?),
-        QueryMsg::NextProposalId {} => {
-            to_json_binary(&(EVENT_COUNT.load(deps.storage)? + 1))
-        }
+        QueryMsg::NextProposalId {} => to_json_binary(&(EVENT_COUNT.load(deps.storage)? + 1)),
     }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(
+    deps: DepsMut,
+    _env: Env,
+    msg: MigrateMsg,
+    _info: MigrateInfo,
+) -> Result<Response, ContractError> {
     match msg {
         MigrateMsg::FromCompatible {} => {
             set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;

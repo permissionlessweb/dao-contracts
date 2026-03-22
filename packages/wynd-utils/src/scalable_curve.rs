@@ -1,11 +1,12 @@
+use cosmwasm_schema::cw_serde;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::{Decimal, Uint128};
+use cosmwasm_std::{Decimal, Uint128, Uint256};
 
 use crate::{Curve, CurveError, PiecewiseLinear, SaturatingLinear};
 
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum ScalableCurve {
     Constant { ratio: Decimal },
@@ -17,10 +18,10 @@ impl ScalableCurve {
     pub fn scale(self, amount: Uint128) -> Curve {
         match self {
             ScalableCurve::Constant { ratio } => Curve::Constant {
-                y: amount.mul_floor(ratio),
+                y: amount.mul_floor(ratio).into(),
             },
             ScalableCurve::ScalableLinear(s) => s.scale(amount),
-            ScalableCurve::ScalablePiecewise(p) => p.scale(amount),
+            ScalableCurve::ScalablePiecewise(p) => p.scale(amount.into()),
         }
     }
 
@@ -47,7 +48,7 @@ impl ScalableCurve {
 }
 
 /// min_y for all x <= min_x, max_y for all x >= max_x, linear in between
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
+#[cw_serde]
 pub struct ScalableLinear {
     pub min_x: u64,
     pub min_y: Decimal,
@@ -59,14 +60,14 @@ impl ScalableLinear {
     pub fn scale(self, amount: Uint128) -> Curve {
         Curve::SaturatingLinear(SaturatingLinear {
             min_x: self.min_x,
-            min_y: amount.mul_floor(self.min_y),
+            min_y: amount.mul_floor(self.min_y).into(),
             max_x: self.max_x,
-            max_y: amount.mul_floor(self.max_y),
+            max_y: amount.mul_floor(self.max_y).into(),
         })
     }
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ScalablePiecewise {
     pub steps: Vec<(u64, Decimal)>,
 }
@@ -84,6 +85,7 @@ impl ScalablePiecewise {
 
 #[cfg(test)]
 mod test {
+
     use super::*;
 
     #[test]

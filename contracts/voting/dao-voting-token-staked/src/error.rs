@@ -3,7 +3,7 @@ use cw_utils::{ParseReplyError, PaymentError};
 use dao_voting::threshold::ActiveThresholdError;
 use thiserror::Error;
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum ContractError {
     #[error(transparent)]
     Std(#[from] StdError),
@@ -30,7 +30,7 @@ pub enum ContractError {
     InitialBalancesError {},
 
     #[error("InstantiateError: {e}")]
-    InstantiateError {e: String},
+    InstantiateError { e: String },
 
     #[error("Can only unstake less than or equal to the amount you have staked")]
     InvalidUnstakeAmount {},
@@ -58,4 +58,11 @@ pub enum ContractError {
 
     #[error("Metadata is required")]
     MetadataRequired {},
+}
+impl PartialEq for ContractError {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
+        }
+    }
 }

@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Timestamp, Uint128};
+use cosmwasm_std::{Timestamp, Uint256};
 use cw20::Cw20ReceiveMsg;
 use cw_denom::UncheckedDenom;
 use cw_ownable::cw_ownable_execute;
@@ -22,7 +22,7 @@ pub struct InstantiateMsg {
     pub description: Option<String>,
 
     /// The total amount of tokens to be vested.
-    pub total: Uint128,
+    pub total: Uint256,
     /// The type and denom of token being vested.
     pub denom: UncheckedDenom,
 
@@ -75,7 +75,7 @@ pub enum ExecuteMsg {
     Distribute {
         /// The amount of tokens to distribute. If none are specified
         /// all claimable tokens will be distributed.
-        amount: Option<Uint128>,
+        amount: Option<Uint256>,
     },
     /// Cancels the vesting payment. The current amount vested becomes
     /// the total amount that will ever vest, and all pending and
@@ -106,7 +106,7 @@ pub enum ExecuteMsg {
         /// The validator to delegate to.
         validator: String,
         /// The amount to delegate.
-        amount: Uint128,
+        amount: Uint256,
     },
     /// This is translated to a
     /// [MsgBeginRedelegate](https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto#L96).
@@ -117,7 +117,7 @@ pub enum ExecuteMsg {
     Redelegate {
         src_validator: String,
         dst_validator: String,
-        amount: Uint128,
+        amount: Uint256,
     },
     /// This is translated to a
     /// [MsgUndelegate](https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto#L112-L121).
@@ -129,7 +129,7 @@ pub enum ExecuteMsg {
         /// The validator to undelegate from
         validator: String,
         /// The amount to delegate
-        amount: Uint128,
+        amount: Uint256,
     },
     /// This is translated to a
     /// [MsgSetWithdrawAddress](https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto#L31-L37).
@@ -153,7 +153,7 @@ pub enum ExecuteMsg {
     /// call this method to return them.
     WithdrawCanceledPayment {
         /// The amount to withdraw.
-        amount: Option<Uint128>,
+        amount: Option<Uint256>,
     },
     /// Registers a slash event bonded or unbonding tokens with the
     /// contract. Only callable by the owner as the contract is unable
@@ -181,7 +181,7 @@ pub enum ExecuteMsg {
         /// The number of tokens that THIS CONTRACT lost as a result
         /// of the slash. Note that this differs from the total amount
         /// slashed from the validator.
-        amount: Uint128,
+        amount: Uint256,
         /// If the slash happened during unbonding. Set to false in
         /// the common case where the slash impacted bonding tokens.
         during_unbonding: bool,
@@ -209,21 +209,21 @@ pub enum QueryMsg {
     /// vestee. This is the minimum of the number of unstaked tokens
     /// in the contract, and the number of tokens that have been
     /// vested at time t.
-    #[returns(::cosmwasm_std::Uint128)]
+    #[returns(::cosmwasm_std::Uint256)]
     Distributable {
         /// The time or none to use the current time.
         t: Option<Timestamp>,
     },
     /// Gets the current value of `vested(t)`. If `t` is `None`, the
     /// current time is used.
-    #[returns(::cosmwasm_std::Uint128)]
+    #[returns(::cosmwasm_std::Uint256)]
     Vested { t: Option<Timestamp> },
     /// Gets the total amount that will ever vest, `max(vested(t))`.
     ///
     /// Note that if the contract is canceled at time c, this value
     /// will change to `vested(c)`. Thus, it can not be assumed to be
     /// constant over the contract's lifetime.
-    #[returns(::cosmwasm_std::Uint128)]
+    #[returns(::cosmwasm_std::Uint256)]
     TotalToVest {},
     /// Gets the amount of time between the vest starting, and it
     /// completing. Returns `None` if the vest has been cancelled.
@@ -233,6 +233,6 @@ pub enum QueryMsg {
     /// bonded and unbonding token balances. See the
     /// `StakeTrackerQuery` in `packages/cw-stake-tracker/lib.rs` for
     /// query methods and their return types.
-    #[returns(::cosmwasm_std::Uint128)]
+    #[returns(::cosmwasm_std::Uint256)]
     Stake(StakeTrackerQuery),
 }

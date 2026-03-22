@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Uint128};
+use cosmwasm_std::{Addr, Uint256};
 use cw_controllers::Claims;
 use cw_hooks::Hooks;
 use cw_storage_plus::{Item, SnapshotItem, SnapshotMap, Strategy};
@@ -23,7 +23,7 @@ pub const DAO: Item<Addr> = Item::new("dao");
 pub const DENOM: Item<String> = Item::new("denom");
 
 /// Keeps track of staked balances by address over time
-pub const STAKED_BALANCES: SnapshotMap<&Addr, Uint128> = SnapshotMap::new(
+pub const STAKED_BALANCES: SnapshotMap<&Addr, Uint256> = SnapshotMap::new(
     "staked_balances",
     "staked_balance__checkpoints",
     "staked_balance__changelog",
@@ -31,7 +31,7 @@ pub const STAKED_BALANCES: SnapshotMap<&Addr, Uint128> = SnapshotMap::new(
 );
 
 /// Keeps track of staked total over time
-pub const STAKED_TOTAL: SnapshotItem<Uint128> = SnapshotItem::new(
+pub const STAKED_TOTAL: SnapshotItem<Uint256> = SnapshotItem::new(
     "total_staked",
     "total_staked__checkpoints",
     "total_staked__changelog",

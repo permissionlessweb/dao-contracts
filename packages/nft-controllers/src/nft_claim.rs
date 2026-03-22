@@ -4,7 +4,7 @@ use cw_storage_plus::{Bound, Map};
 use cw_utils::Expiration;
 use thiserror::Error;
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum NftClaimError {
     #[error(transparent)]
     Std(#[from] StdError),
@@ -16,6 +16,21 @@ pub enum NftClaimError {
     NotReady { token_id: String },
 }
 
+
+impl PartialEq for NftClaimError {
+    fn ne(&self, other: &Self) -> bool {
+        !self.eq(other)
+    }
+    
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Std(l0), Self::Std(r0)) => l0.to_string() == r0.to_string(),
+            (Self::NotFound { token_id: l_token_id }, Self::NotFound { token_id: r_token_id }) => l_token_id == r_token_id,
+            (Self::NotReady { token_id: l_token_id }, Self::NotReady { token_id: r_token_id }) => l_token_id == r_token_id,
+            _ => false,
+        }
+    }
+}
 #[cw_serde]
 pub struct NftClaim {
     pub token_id: String,

@@ -1,8 +1,8 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cw_ownable::{cw_ownable_execute, cw_ownable_query};
 use dao_interface::proposal::InfoResponse;
-
 pub use cw_ownable::Ownership;
+
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -125,5 +125,6 @@ pub struct FileDescriptorSetResponse {
 
 #[cw_serde]
 pub struct DecodeResponse {
-    pub value: serde_json::Value,
+    /// JSON-encoded decoded protobuf message.
+    pub value: String,
 }

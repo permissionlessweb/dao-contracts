@@ -1,7 +1,5 @@
-use cosmwasm_schema::QueryResponses;
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, CosmosMsg, Empty, Timestamp};
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
 
 // ═══════════════════════════ CW721-style Generic Extension ═══════════════════════════
 
@@ -20,8 +18,7 @@ use serde::{Deserialize, Serialize};
 /// }
 /// type MeetingEvent = Event<MeetingMetadata>;
 /// ```
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct Event<TMetadata = Empty> {
     pub id: u64,
     pub title: String,
@@ -39,8 +36,7 @@ pub struct Event<TMetadata = Empty> {
 
 // ═══════════════════════════ Event Status ═══════════════════════════
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum EventStatus {
     Upcoming,
     Active,
@@ -72,8 +68,7 @@ impl std::fmt::Display for EventStatus {
 
 // ═══════════════════════════ Supporting Types ═══════════════════════════
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct EventService {
     pub name: String,
     pub description: Option<String>,
@@ -81,23 +76,20 @@ pub struct EventService {
     pub msgs: Vec<CosmosMsg>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct Group {
     pub id: String,
     pub dao: Addr,
     pub suppliers: Vec<EventSupplier>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct EventSupplier {
     pub contract: Addr,
     pub supplier_type: EventSupplierType,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum EventSupplierType {
     Authorization,
     Gauge,
@@ -105,16 +97,14 @@ pub enum EventSupplierType {
     Account,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct GaugeConfig {
     pub label: String,
     pub begin_msgs: Vec<CosmosMsg>,
     pub end_msgs: Vec<CosmosMsg>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct EventGauge {
     pub event_id: u64,
     pub begin_msgs: Vec<CosmosMsg>,
@@ -123,8 +113,7 @@ pub struct EventGauge {
 
 // ═══════════════════════════ Init Types ═══════════════════════════
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct EventServiceInit {
     pub name: String,
     pub description: Option<String>,
@@ -132,15 +121,13 @@ pub struct EventServiceInit {
     pub msgs: Vec<CosmosMsg>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct GroupInit {
     pub id: String,
     pub suppliers: Vec<EventSupplierInit>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct EventSupplierInit {
     pub contract: String,
     pub supplier_type: EventSupplierType,
@@ -148,8 +135,7 @@ pub struct EventSupplierInit {
 
 // ═══════════════════════════ Messages ═══════════════════════════
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct InstantiateMsg {
     pub initial_groups: Option<Vec<GroupInit>>,
 }
@@ -157,8 +143,7 @@ pub struct InstantiateMsg {
 /// Execute messages, generic over the metadata extension type `TMetadata`.
 /// Use `ExecuteMsg<Empty>` (the default) for events with no custom metadata.
 /// Custom contracts can define `type MyExecuteMsg = ExecuteMsg<MyMetadata>`.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 #[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
 
 pub enum ExecuteMsg<TMetadata = Empty> {
@@ -229,14 +214,12 @@ pub enum ExecuteMsg<TMetadata = Empty> {
 
 /// Query messages. Non-generic — response types use default `Empty` extension.
 /// Custom contracts override at the handler level to return their typed extension.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, QueryResponses)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
+#[derive(QueryResponses)]
 #[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 pub enum QueryMsg {
     #[returns(EventResponse)]
-    Event {
-        event_id: u64,
-    },
+    Event { event_id: u64 },
 
     #[returns(EventListResponse)]
     ListEvents {
@@ -256,19 +239,13 @@ pub enum QueryMsg {
     ListGroups {},
 
     #[returns(GroupResponse)]
-    Group {
-        group_id: String,
-    },
+    Group { group_id: String },
 
     #[returns(GroupsManagingEventResponse)]
-    GroupsManagingEvent {
-        event_id: u64,
-    },
+    GroupsManagingEvent { event_id: u64 },
 
     #[returns(EventGaugeResponse)]
-    EventGauges {
-        event_id: u64,
-    },
+    EventGauges { event_id: u64 },
 
     #[returns(u64)]
     EventCount {},
@@ -294,52 +271,49 @@ pub enum QueryMsg {
 
 // ═══════════════════════════ Filters ═══════════════════════════
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum EventFilter {
-    ByGroups { groups: Vec<String> },
+    ByGroups {
+        groups: Vec<String>,
+    },
     ByTimeRange {
         start_after: Option<Timestamp>,
         end_before: Option<Timestamp>,
     },
-    ByStatus { status: EventStatus },
+    ByStatus {
+        status: EventStatus,
+    },
 }
 
 // ═══════════════════════════ Responses ═══════════════════════════
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct EventResponse<TMetadata = Empty> {
     pub id: u64,
     pub event: Event<TMetadata>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct EventListResponse<TMetadata = Empty> {
     pub events: Vec<EventResponse<TMetadata>>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct GroupResponse {
     pub group: Group,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct GroupListResponse {
     pub groups: Vec<Group>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct GroupsManagingEventResponse {
     pub groups: Vec<Group>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct EventGaugeResponse {
     pub event_id: u64,
     pub begin_msgs: Vec<CosmosMsg>,
@@ -347,15 +321,13 @@ pub struct EventGaugeResponse {
     pub group_gauges: Vec<GroupGaugeSummary>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct GroupGaugeSummary {
     pub group_id: String,
     pub gauges: Vec<GaugeConfig>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct DumpStateResponse {
     pub dao: Addr,
     pub groups: Vec<Group>,
@@ -365,42 +337,42 @@ pub struct DumpStateResponse {
 
 // ═══════════════════════════ Migrate ═══════════════════════════
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum MigrateMsg {
     FromCompatible {},
 }
 
 // ═══════════════════════════ Hook Messages ═══════════════════════════
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum CalendarHookMsg {
-    EventCreated { event_id: u64, creator: String },
+    EventCreated {
+        event_id: u64,
+        creator: String,
+    },
     EventStatusChanged {
         event_id: u64,
         old_status: String,
         new_status: String,
     },
-    EventCancelled { event_id: u64 },
+    EventCancelled {
+        event_id: u64,
+    },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum CalendarHookExecuteMsg {
     CalendarHook(CalendarHookMsg),
 }
 
 // ═══════════════════════════ Authorization Interface ═══════════════════════════
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub enum AuthorizationQueryMsg {
     IsAuthorized { sender: String },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-#[serde(rename_all = "snake_case")]
+#[cw_serde]
 pub struct IsAuthorizedResponse {
     pub authorized: bool,
 }

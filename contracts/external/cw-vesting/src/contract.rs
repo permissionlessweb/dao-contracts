@@ -2,7 +2,7 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     from_json, to_json_binary, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response,
-    StdResult, Uint128,
+    StdResult, Uint256,
 };
 #[cfg(feature = "staking")]
 use cosmwasm_std::{
@@ -61,7 +61,7 @@ pub fn instantiate(
             if vest.total() != sent {
                 return Err(ContractError::WrongFundAmount {
                     sent,
-                    expected: vest.total(),
+                    expected: vest.total().into(),
                 });
             }
             PAYMENT.set_funded(deps.storage)?;
@@ -159,7 +159,7 @@ pub fn execute_receive_cw20(
             if vest.total() != receive_msg.amount {
                 return Err(ContractError::WrongFundAmount {
                     sent: receive_msg.amount,
-                    expected: vest.total(),
+                    expected: vest.total().into(),
                 });
             } // correct amount
 
@@ -199,7 +199,7 @@ pub fn execute_cancel_vesting_payment(
 pub fn execute_distribute(
     env: Env,
     deps: DepsMut,
-    request: Option<Uint128>,
+    request: Option<Uint256>,
 ) -> Result<Response, ContractError> {
     let msg = PAYMENT.distribute(deps.storage, env.block.time, request)?;
 
@@ -211,7 +211,7 @@ pub fn execute_distribute(
 pub fn execute_withdraw_canceled_payment(
     deps: DepsMut,
     env: Env,
-    amount: Option<Uint128>,
+    amount: Option<Uint256>,
 ) -> Result<Response, ContractError> {
     let owner = cw_ownable::get_ownership(deps.storage)?
         .owner
@@ -246,7 +246,7 @@ pub fn execute_delegate(
     deps: DepsMut,
     info: MessageInfo,
     validator: String,
-    amount: Uint128,
+    amount: Uint256,
 ) -> Result<Response, ContractError> {
     nonpayable(&info)?;
 
@@ -271,7 +271,10 @@ pub fn execute_delegate(
 
     let msg = StakingMsg::Delegate {
         validator: validator.clone(),
-        amount: Coin { denom, amount },
+        amount: Coin {
+            denom,
+            amount: amount.into(),
+        },
     };
 
     Ok(Response::new()
@@ -288,7 +291,7 @@ pub fn execute_redelegate(
     info: MessageInfo,
     src_validator: String,
     dst_validator: String,
-    amount: Uint128,
+    amount: Uint256,
 ) -> Result<Response, ContractError> {
     nonpayable(&info)?;
 
@@ -320,7 +323,7 @@ pub fn execute_redelegate(
     let delegation = resp
         .delegation
         .ok_or(ContractError::NoDelegation(src_validator.clone()))?;
-    if delegation.can_redelegate.amount < amount {
+    if delegation.can_redelegate.amount < amount.into() {
         return Err(ContractError::NonImmediateRedelegate {
             max: delegation.can_redelegate.amount,
         });
@@ -337,7 +340,10 @@ pub fn execute_redelegate(
     let msg = StakingMsg::Redelegate {
         src_validator: src_validator.clone(),
         dst_validator: dst_validator.clone(),
-        amount: Coin { denom, amount },
+        amount: Coin {
+            denom,
+            amount: amount.into(),
+        },
     };
 
     Ok(Response::new()
@@ -354,7 +360,7 @@ pub fn execute_undelegate(
     deps: DepsMut,
     info: MessageInfo,
     validator: String,
-    amount: Uint128,
+    amount: Uint256,
 ) -> Result<Response, ContractError> {
     nonpayable(&info)?;
 
@@ -381,7 +387,10 @@ pub fn execute_undelegate(
 
     let msg = StakingMsg::Undelegate {
         validator: validator.clone(),
-        amount: Coin { denom, amount },
+        amount: Coin {
+            denom,
+            amount: amount.into(),
+        },
     };
 
     Ok(Response::default()
@@ -439,7 +448,7 @@ pub fn execute_register_slash(
     info: MessageInfo,
     validator: String,
     time: Timestamp,
-    amount: Uint128,
+    amount: Uint256,
     during_unbonding: bool,
 ) -> Result<Response, ContractError> {
     cw_ownable::assert_owner(deps.storage, &info.sender)?;

@@ -11,7 +11,7 @@ pub struct HooksResponse {
     pub hooks: Vec<String>,
 }
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum HookError {
     #[error("{0}")]
     Std(#[from] StdError),
@@ -21,6 +21,16 @@ pub enum HookError {
 
     #[error("Given address not registered as a hook")]
     HookNotRegistered {},
+}
+
+
+
+impl PartialEq for HookError {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
+        }
+    }
 }
 
 // store all hook addresses in one item. We cannot have many of them before the contract becomes unusable anyway.

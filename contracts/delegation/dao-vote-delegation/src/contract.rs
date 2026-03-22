@@ -616,7 +616,9 @@ fn query_unvoted_delegated_vp(
     if let Some(vp_cap_percent) = vp_cap_percent {
         if vp_cap_percent < Decimal::one() {
             let dao = DAO.load(deps.storage)?;
-            let total_power = voting::get_total_power(deps, &dao, Some(height))?;
+            let total_power: Uint128 = voting::get_total_power(deps, &dao, Some(height))?
+                .try_into()
+                .unwrap();
             let cap = calculate_delegated_vp(total_power, vp_cap_percent);
 
             effective = total.min(cap);

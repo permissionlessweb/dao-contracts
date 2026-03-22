@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{to_json_binary, Binary, StdResult, Storage, Timestamp, Uint128};
+use cosmwasm_std::{Binary, StdResult, Storage, Timestamp, Uint128, Uint256, to_json_binary};
 use cw_wormhole::Wormhole;
 
 #[cfg(test)]
@@ -8,7 +8,7 @@ mod tests;
 pub struct StakeTracker {
     /// staked(t) := the total number of native tokens staked &
     /// unbonding with validators at time t.
-    total_staked: Wormhole<(), Uint128>,
+    total_staked: Wormhole<(), Uint256>,
     /// validators(v, t) := the amount staked + amount unbonding with
     /// validator v at time t.
     ///
@@ -19,7 +19,7 @@ pub struct StakeTracker {
     /// staking module ought to error. this is checked in
     /// `test_cw_vesting_staking` in
     /// `ci/integration-tests/src/tests/cw_vesting_test.rs`.
-    validators: Wormhole<String, Uint128>,
+    validators: Wormhole<String, Uint256>,
     /// cardinality(t) := the # of validators with staked and/or
     /// unbonding tokens at time t.
     cardinality: Wormhole<(), u64>,
@@ -28,11 +28,11 @@ pub struct StakeTracker {
 #[cw_serde]
 #[derive(QueryResponses)]
 pub enum StakeTrackerQuery {
-    #[returns(::cosmwasm_std::Uint128)]
+    #[returns(::cosmwasm_std::Uint256)]
     Cardinality { t: Timestamp },
-    #[returns(::cosmwasm_std::Uint128)]
+    #[returns(::cosmwasm_std::Uint256)]
     TotalStaked { t: Timestamp },
-    #[returns(::cosmwasm_std::Uint128)]
+    #[returns(::cosmwasm_std::Uint256)]
     ValidatorStaked { validator: String, t: Timestamp },
 }
 
@@ -54,7 +54,7 @@ impl StakeTracker {
         storage: &mut dyn Storage,
         t: Timestamp,
         validator: String,
-        amount: Uint128,
+        amount: Uint256,
     ) -> StdResult<()> {
         self.total_staked
             .increment(storage, (), t.seconds(), amount)?;
@@ -81,7 +81,7 @@ impl StakeTracker {
         t: Timestamp,
         src: String,
         dst: String,
-        amount: Uint128,
+        amount: Uint256,
     ) -> StdResult<()> {
         let new = self
             .validators
@@ -103,7 +103,7 @@ impl StakeTracker {
         storage: &mut dyn Storage,
         t: Timestamp,
         validator: String,
-        amount: Uint128,
+        amount: Uint256,
         unbonding_duration_seconds: u64,
     ) -> StdResult<()> {
         self.total_staked.decrement(
@@ -138,7 +138,7 @@ impl StakeTracker {
         storage: &mut dyn Storage,
         t: Timestamp,
         validator: String,
-        amount: Uint128,
+        amount: Uint256,
     ) -> StdResult<()> {
         enum Change {
             /// Increment by one at (time: u64).
@@ -205,7 +205,7 @@ impl StakeTracker {
         storage: &mut dyn Storage,
         t: Timestamp,
         validator: String,
-        amount: Uint128,
+        amount: Uint256,
     ) -> StdResult<()> {
         // invariant (2) provides that a slash did occur at time `t`,
         // and that the `amount` <= `total_unbonding`. As such, we
@@ -229,7 +229,7 @@ impl StakeTracker {
 
     /// Gets the total number of bonded and unbonding tokens across
     /// all validators.
-    pub fn total_staked(&self, storage: &dyn Storage, t: Timestamp) -> StdResult<Uint128> {
+    pub fn total_staked(&self, storage: &dyn Storage, t: Timestamp) -> StdResult<Uint256> {
         self.total_staked
             .load(storage, (), t.seconds())
             .map(|v| v.unwrap_or_default())
@@ -242,7 +242,7 @@ impl StakeTracker {
         storage: &dyn Storage,
         t: Timestamp,
         v: String,
-    ) -> StdResult<Uint128> {
+    ) -> StdResult<Uint256> {
         self.validators
             .load(storage, v, t.seconds())
             .map(|v| v.unwrap_or_default())
@@ -261,7 +261,7 @@ impl StakeTracker {
     /// API.
     pub fn query(&self, storage: &dyn Storage, msg: StakeTrackerQuery) -> StdResult<Binary> {
         match msg {
-            StakeTrackerQuery::Cardinality { t } => to_json_binary(&Uint128::new(
+            StakeTrackerQuery::Cardinality { t } => to_json_binary(&Uint256::new(
                 self.validator_cardinality(storage, t)?.into(),
             )),
             StakeTrackerQuery::TotalStaked { t } => to_json_binary(&self.total_staked(storage, t)?),

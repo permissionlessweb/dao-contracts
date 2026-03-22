@@ -52,7 +52,7 @@ pub struct InitialAuthorization {
     /// Optionally set metadata for the authorization.
     pub metadata: Option<String>,
     /// Optionally set the filter for the authorization.
-    pub filter: Option<serde_json::Value>,
+    pub filter: Option<String>,
     /// Optionally set whether the authorization is enabled.
     pub enabled: Option<bool>,
     /// Optionally skip preparing the protobuf messages, if any. Defaults to
@@ -130,7 +130,7 @@ pub enum ExecuteMsg {
         /// Optionally set metadata for the authorization.
         metadata: Option<String>,
         /// Optionally set the filter for the authorization.
-        filter: Option<serde_json::Value>,
+        filter: Option<String>,
         /// Optionally set whether the authorization is enabled.
         enabled: Option<bool>,
         /// Optionally skip preparing the protobuf messages, if any. Defaults to
@@ -146,7 +146,7 @@ pub enum ExecuteMsg {
         /// Optionally update the metadata for the authorization.
         metadata: OptionalUpdate<String>,
         /// Optionally update the filter for the authorization.
-        filter: OptionalUpdate<serde_json::Value>,
+        filter: OptionalUpdate<String>,
         /// Optionally update whether the authorization is enabled.
         enabled: Option<bool>,
         /// Optionally skip preparing the protobuf messages, if they changed.
@@ -374,7 +374,7 @@ pub enum QueryMsg {
     // Helpers
     #[returns(TestFilterResponse)]
     TestFilter {
-        filter: serde_json::Value,
+        filter: String,
         msg: CosmosMsg,
     },
 }

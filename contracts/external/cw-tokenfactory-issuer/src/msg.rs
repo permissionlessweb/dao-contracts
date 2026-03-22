@@ -2,7 +2,7 @@ use crate::state::BeforeSendHookInfo;
 use cosmwasm_schema::{cw_serde, QueryResponses};
 #[cfg(any(feature = "osmosis_tokenfactory", feature = "cosmwasm_tokenfactory"))]
 use cosmwasm_std::DenomMetadata;
-use cosmwasm_std::{Coin, Uint128};
+use cosmwasm_std::{Coin, Uint128, Uint256};
 
 
 /// The message used to create a new instance of this smart contract.
@@ -50,7 +50,7 @@ pub enum ExecuteMsg {
     },
 
     /// Mint token to address. Mint allowance is required and wiil be deducted after successful mint.
-    Mint { to_address: String, amount: Uint128 },
+    Mint { to_address: String, amount: Uint256 },
 
     /// Deny adds the target address to the denylist, whis prevents them from sending/receiving the token attached
     /// to this contract tokenfactory's BeforeSendHook listener must be set to this contract in order for this
@@ -93,7 +93,7 @@ pub enum ExecuteMsg {
     SetDenomMetadata { metadata: DenomMetadata },
 
     /// Grant/revoke mint allowance.
-    SetMinterAllowance { address: String, allowance: Uint128 },
+    SetMinterAllowance { address: String, allowance: Uint256 },
 
     /// Updates the admin of the Token Factory token.
     /// Normally this is the cw-tokenfactory-issuer contract itself.
@@ -226,7 +226,7 @@ pub struct OwnerResponse {
 /// the amount of tokens the account is allowed to mint or burn
 #[cw_serde]
 pub struct AllowanceResponse {
-    pub allowance: Uint128,
+    pub allowance: Uint256,
 }
 
 /// Information about a particular account and its mint / burn allowances.
@@ -234,7 +234,7 @@ pub struct AllowanceResponse {
 #[cw_serde]
 pub struct AllowanceInfo {
     pub address: String,
-    pub allowance: Uint128,
+    pub allowance: Uint256,
 }
 
 /// Returns a list of all mint or burn allowances

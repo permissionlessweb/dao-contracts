@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Uint128;
+use cosmwasm_std::Uint256;
 use cw2::ContractVersion;
 
 #[cw_serde]
@@ -40,13 +40,13 @@ pub enum ActiveThresholdQuery {
 
 #[cw_serde]
 pub struct VotingPowerAtHeightResponse {
-    pub power: Uint128,
+    pub power: Uint256,
     pub height: u64,
 }
 
 #[cw_serde]
 pub struct TotalPowerAtHeightResponse {
-    pub power: Uint128,
+    pub power: Uint256,
     pub height: u64,
 }
 

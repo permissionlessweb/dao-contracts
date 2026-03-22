@@ -499,7 +499,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         },
         _ => Cw721Roles::default()
             .query(deps, &env, msg)
-            .map_err(|e| cosmwasm_std::StdError::generic_err(e.to_string())),
+            .map_err(|e| cosmwasm_std::StdError::msg(e.to_string())),
     }
 }
 

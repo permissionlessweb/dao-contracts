@@ -567,7 +567,7 @@ pub fn migrate(mut deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response
                                 CheckedDenomV241::Native(denom) => CheckedDenom::Native(denom),
                                 CheckedDenomV241::Cw20(addr) => CheckedDenom::Cw20(addr),
                             },
-                            amount: deposit.amount,
+                            amount: deposit.amount.into(),
                             refund_policy: match deposit.refund_policy {
                                 DepositRefundPolicyV241::Always => DepositRefundPolicy::Always,
                                 DepositRefundPolicyV241::OnlyPassed => {
@@ -598,7 +598,7 @@ pub fn migrate(mut deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response
                             // should not be possible since these are completed
                             // proposals only
                             ProposalStatusV241::Pending {} => {
-                                return Err(PreProposeError::Std(StdError::generic_err(
+                                return Err(PreProposeError::Std(StdError::msg(
                                     "unexpected proposal status",
                                 )))
                             }
@@ -625,7 +625,7 @@ pub fn migrate(mut deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response
                                 CheckedDenomV241::Native(denom) => CheckedDenom::Native(denom),
                                 CheckedDenomV241::Cw20(addr) => CheckedDenom::Cw20(addr),
                             },
-                            amount: deposit.amount,
+                            amount: deposit.amount.into(),
                             refund_policy: match deposit.refund_policy {
                                 DepositRefundPolicyV241::Always => DepositRefundPolicy::Always,
                                 DepositRefundPolicyV241::OnlyPassed => {
@@ -639,7 +639,7 @@ pub fn migrate(mut deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response
             }
         }
         _ => {
-            return Err(PreProposeError::Std(StdError::generic_err(
+            return Err(PreProposeError::Std(StdError::msg(
                 "not implemented",
             )))
         }

@@ -1,11 +1,11 @@
-use cosmwasm_std::{StdError, Uint128};
+use cosmwasm_std::{StdError, Uint256};
 use cw_denom::DenomError;
 use cw_ownable::OwnershipError;
 use cw_utils::PaymentError;
 use thiserror::Error;
 use wynd_utils::CurveError;
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum ContractError {
     #[error(transparent)]
     Std(#[from] StdError),
@@ -23,10 +23,10 @@ pub enum ContractError {
     PaymentError(#[from] PaymentError),
 
     #[error("vesting curve values be in [0, total]`. got [{min}, {max}]")]
-    VestRange { min: Uint128, max: Uint128 },
+    VestRange { min: Uint256, max: Uint256 },
 
     #[error("vesting contract vests ({expected}) tokens, funded with ({sent})")]
-    WrongFundAmount { sent: Uint128, expected: Uint128 },
+    WrongFundAmount { sent: Uint256, expected: Uint256 },
 
     #[error("sent wrong cw20")]
     WrongCw20,
@@ -71,14 +71,22 @@ pub enum ContractError {
     SelfWithdraw,
 
     #[error("can't redelegate funds that are not immediately redelegatable. max: ({max})")]
-    NonImmediateRedelegate { max: Uint128 },
+    NonImmediateRedelegate { max: Uint256 },
 
     #[error("request must be <= claimable and > 0. !(0 < {request} <= {claimable})")]
     InvalidWithdrawal {
-        request: Uint128,
-        claimable: Uint128,
+        request: Uint256,
+        claimable: Uint256,
     },
 
     #[error("can't register a slash event occuring in the future")]
     FutureSlash,
+}
+
+impl PartialEq for ContractError {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
+        }
+    }
 }

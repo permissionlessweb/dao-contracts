@@ -3,22 +3,18 @@ use std::{collections::HashSet, env};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply, Response,
-    StdResult, SubMsg, WasmMsg,
+    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdResult, WasmMsg,
 };
 use cw2::set_contract_version;
-use dao_interface::{
-    query::SubDao,
-    state::{ModuleInstantiateCallback, ProposalModule},
-};
+use dao_interface::state::ModuleInstantiateCallback;
 
 use crate::{
     error::ContractError,
     msg::{ExecuteMsg, InstantiateMsg, MigrateV1ToV2, QueryMsg},
-    state::{CORE_ADDR, MODULES_ADDRS, TEST_STATE},
-    types::{
-        CodeIdPair, MigrationMsgs, MigrationParams, ModulesAddrs, TestState, V1CodeIds, V2CodeIds,
-    },
+    state::CORE_ADDR,
+    // types::{
+    //     CodeIdPair, MigrationMsgs, MigrationParams, ModulesAddrs, TestState, V1CodeIds, V2CodeIds,
+    // },
 };
 
 #[cfg(feature = "v1")]
@@ -67,7 +63,7 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
-   Ok(Response::default())
+    Ok(Response::default())
 }
 
 #[cfg(feature = "v1")]

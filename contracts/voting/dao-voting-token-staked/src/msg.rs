@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Binary, Uint128};
+use cosmwasm_std::{Binary, Uint128, Uint256};
 use cw_utils::Duration;
 use dao_dao_macros::{active_query, native_token_query, voting_module_query};
 use dao_interface::token::NewTokenInfo;
@@ -94,7 +94,7 @@ pub struct ListStakersResponse {
 #[cw_serde]
 pub struct StakerBalanceResponse {
     pub address: String,
-    pub balance: Uint128,
+    pub balance: Uint256,
 }
 
 #[cw_serde]
