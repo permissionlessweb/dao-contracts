@@ -141,7 +141,7 @@ fn test_valid_instantiate() {
 }
 
 #[test]
-#[should_panic(expected = "Error parsing into type cw20_base::msg::InstantiateMsg: Invalid type")]
+#[should_panic(expected = "invalid type")]
 fn test_instantiate_with_submessage_failure() {
     let mut app = App::default();
     let cw20_id = app.store_code(cw20_base_contract());
@@ -1400,7 +1400,7 @@ fn test_admin_nomination() {
         .unwrap_err(),
     );
 
-    assert!(err.contains("no admin nomination"));
+    assert!(err.contains("pending admin nomination"));
 
     // Can not claim nomination b/c it has been withdrawn.
     let err = err_str(
@@ -1413,7 +1413,7 @@ fn test_admin_nomination() {
         .unwrap_err(),
     );
 
-    assert!(err.contains("no admin nomination"));
+    assert!(err.contains("pending admin nomination"));
 
     // Nominate a new admin.
     app.execute_contract(
@@ -1440,7 +1440,7 @@ fn test_admin_nomination() {
         .unwrap_err(),
     );
 
-    assert!(err.contains("pending nomination"));
+    assert!(err.contains("pending admin nomination must be withdrawn"));
 
     // Only nominated admin may accept.
     let err = err_str(
@@ -2560,7 +2560,7 @@ fn test_pause() {
         .unwrap_err(),
     );
 
-    assert!(err.contains("Paused"));
+    assert!(err.contains("paused"));
 
     app.update_block(|block| block.height += 9);
 
@@ -2585,7 +2585,7 @@ fn test_pause() {
         .unwrap_err(),
     );
 
-    assert!(err.contains("Paused"));
+    assert!(err.contains("paused"));
 
     app.update_block(|block| block.height += 1);
 
@@ -3328,7 +3328,7 @@ fn test_initial_actions() {
     );
 
     assert!(err.contains("Initial actions error"));
-    assert!(err.to_string().contains("Cannot Sub"));
+    assert!(err.to_string().contains("Overflow"));
 
     // Creator still has 100 tokens.
     assert_eq!(

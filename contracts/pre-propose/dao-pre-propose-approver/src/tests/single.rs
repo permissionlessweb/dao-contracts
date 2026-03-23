@@ -1225,7 +1225,7 @@ fn test_permissions() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("not module"));
+    assert!(err.to_string().contains("not proposal module"));
 
     // Non-members may not propose when open_propose_submission is
     // disabled.
@@ -1244,7 +1244,7 @@ fn test_permissions() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("Unauthorized"));
+    assert!(err.to_string().contains("not allowed to submit proposals"));
 }
 
 #[test]
@@ -1512,7 +1512,7 @@ fn test_update_config() {
             denylist: vec![],
         },
     );
-    assert!(err.to_string().contains("NoOneAllowed"));
+    assert!(err.to_string().contains("doesn't allow anyone to submit proposals"));
 
     // Errors when allowlist and denylist overlap.
     let err = update_config_should_fail(
@@ -1526,7 +1526,7 @@ fn test_update_config() {
             denylist: vec![MockApi::default().addr_make("ekez")],
         },
     );
-    assert!(err.to_string().contains("DenylistAllowlistOverlap"));
+    assert!(err.to_string().contains("Denylist cannot contain addresses in the allowlist"));
 }
 
 #[test]
@@ -1646,10 +1646,10 @@ fn test_withdraw() {
         core_addr.as_str(),
         Some(UncheckedDenom::Native("ujuno".to_string())),
     );
-    assert!(err.to_string().contains("nothing to withdraw"));
+    assert!(err.to_string().contains("Nothing to withdraw"));
 
     let err = withdraw_should_fail(&mut app, pre_propose.clone(), core_addr.as_str(), None);
-    assert!(err.to_string().contains("no withdrawal denom"));
+    assert!(err.to_string().contains("denomination for withdrawal"));
 
     // Turn on native deposits.
     update_config(

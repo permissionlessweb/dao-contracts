@@ -1206,7 +1206,7 @@ fn test_permissions() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("Not module"));
+    assert!(err.to_string().contains("not proposal module"));
 
     // Non-members may not propose when open_propose_submission is
     // disabled.
@@ -1238,7 +1238,7 @@ fn test_permissions() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("Unauthorized"));
+    assert!(err.to_string().contains("not allowed to submit proposals"));
 }
 
 #[test]
@@ -1476,7 +1476,7 @@ fn test_no_deposit_required_members_submission() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("Unauthorized"));
+    assert!(err.to_string().contains("not allowed to submit proposals"));
 
     let pre_propose_id = make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &[]);
 
@@ -1550,7 +1550,7 @@ fn test_anyone_denylist() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("Unauthorized"));
+    assert!(err.to_string().contains("not allowed to submit proposals"));
 
     // Proposing succeeds if not on denylist.
     assert!(query_can_propose(&app, pre_propose.clone(), &addr_str("ekez")));
@@ -1614,7 +1614,7 @@ fn test_specific_allowlist_denylist() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("Unauthorized"));
+    assert!(err.to_string().contains("not allowed to submit proposals"));
 
     update_config(
         &mut app,
@@ -1674,7 +1674,7 @@ fn test_specific_allowlist_denylist() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("Unauthorized"));
+    assert!(err.to_string().contains("not allowed to submit proposals"));
 
     update_config(
         &mut app,
@@ -1718,7 +1718,7 @@ fn test_specific_allowlist_denylist() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("Unauthorized"));
+    assert!(err.to_string().contains("not allowed to submit proposals"));
 
     // Proposal succeeds if on allowlist.
     assert!(query_can_propose(&app, pre_propose.clone(), &addr_str(rando)));
@@ -1972,7 +1972,7 @@ fn test_update_config() {
         None,
         PreProposeSubmissionPolicy::Anyone { denylist: vec![] },
     );
-    assert!(err.contains("Not dao"));
+    assert!(err.contains("not dao"));
 
     // Errors when no one is authorized to create proposals.
     let err = update_config_should_fail(
@@ -1986,7 +1986,7 @@ fn test_update_config() {
             denylist: vec![],
         },
     );
-    assert!(err.contains("no one is allowed"));
+    assert!(err.contains("doesn't allow anyone to submit proposals"));
 
     // Errors when allowlist and denylist overlap.
     let err = update_config_should_fail(
@@ -2000,7 +2000,7 @@ fn test_update_config() {
             denylist: vec![addr("ekez")],
         },
     );
-    assert!(err.contains("overlap"));
+    assert!(err.contains("Denylist cannot contain addresses in the allowlist"));
 }
 
 #[test]
@@ -2036,7 +2036,7 @@ fn test_update_submission_policy() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("Not dao"));
+    assert!(err.to_string().contains("not dao"));
 
     // Append to denylist, with auto de-dupe.
     app.execute_contract(
@@ -2129,7 +2129,7 @@ fn test_update_submission_policy() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("AnyoneInvalidUpdateFields"));
+    assert!(err.to_string().contains("only supports a denylist"));
     let err = app
         .execute_contract(
             core_addr.clone(),
@@ -2144,7 +2144,7 @@ fn test_update_submission_policy() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("AnyoneInvalidUpdateFields"));
+    assert!(err.to_string().contains("only supports a denylist"));
     let err = app
         .execute_contract(
             core_addr.clone(),
@@ -2159,7 +2159,7 @@ fn test_update_submission_policy() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("AnyoneInvalidUpdateFields"));
+    assert!(err.to_string().contains("only supports a denylist"));
 
     // Change to Specific policy.
     app.execute_contract(
@@ -2373,7 +2373,7 @@ fn test_update_submission_policy() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("no one is allowed"));
+    assert!(err.to_string().contains("doesn't allow anyone to submit proposals"));
 
     // Set dao_members to false and add allowlist.
     app.execute_contract(
@@ -2418,7 +2418,7 @@ fn test_update_submission_policy() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("overlap"));
+    assert!(err.to_string().contains("Denylist cannot contain addresses in the allowlist"));
 }
 
 #[test]
@@ -2437,7 +2437,7 @@ fn test_withdraw() {
         proposal_multiple.as_str(),
         Some(UncheckedDenom::Native("ujuno".to_string())),
     );
-    assert!(err.contains("Not dao"));
+    assert!(err.contains("not dao"));
 
     let err = withdraw_should_fail(
         &mut app,
@@ -2448,7 +2448,7 @@ fn test_withdraw() {
     assert!(err.contains("Nothing to withdraw"));
 
     let err = withdraw_should_fail(&mut app, pre_propose.clone(), core_addr.as_str(), None);
-    assert!(err.contains("No withdrawal denom"));
+    assert!(err.contains("denomination for withdrawal"));
 
     // Turn on native deposits.
     update_config(

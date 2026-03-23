@@ -178,7 +178,7 @@ fn test_update_config() {
         .execute_contract(MockApi::default().addr_make("notowner"), distributor_addr, &msg, &[])
         .unwrap_err();
 
-    assert!(err.to_string().contains("caller is not the contract's current owner"));
+    assert!(err.to_string().contains("not the contract's current owner"));
 }
 
 #[test]
@@ -437,7 +437,7 @@ fn test_withdraw() {
         )
         .unwrap_err();
 
-    assert!(err.to_string().contains("caller is not the contract's current owner"));
+    assert!(err.to_string().contains("not the contract's current owner"));
 
     // Withdraw funds
     app.execute_contract(
@@ -617,7 +617,7 @@ fn test_ownership_expiry() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("ownership transfer has expired"))
+    assert!(err.to_string().contains("has expired"))
 }
 
 // v1 migration test removed: MigrateMsg::FromV1 variant was removed along

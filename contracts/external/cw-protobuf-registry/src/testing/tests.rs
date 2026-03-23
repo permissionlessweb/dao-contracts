@@ -78,10 +78,10 @@ fn test_protobuf_management() {
     let mut suite = SuiteBuilder::base().build();
 
     let err = suite.register_err(OWNER, vec![]);
-    assert!(err.to_string().contains("NoFiles"));
+    assert!(err.to_string().contains("No files provided"));
 
     let err = suite.unregister_err(OWNER, vec![], None);
-    assert!(err.to_string().contains("NoFiles"));
+    assert!(err.to_string().contains("No files provided"));
 
     // Create a protobuf file descriptor set
     let crate_root = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string());
@@ -141,7 +141,7 @@ fn test_protobuf_management() {
         vec!["google/protobuf/wrappers.proto".to_string(), "".to_string()],
         Some(1),
     );
-    assert!(err.to_string().contains("MessageLimitReached"));
+    assert!(err.to_string().contains("Message limit reached"));
 
     // Allows partial unregistering of messages from a single file.
     suite.unregister(
@@ -170,7 +170,7 @@ fn test_regen_protobuf_filter() {
     // Attempt to get the file descriptor set for a message that doesn't exist.
     let err =
         suite.file_descriptor_set_err(vec!["regen.ecocredit.basket.v1.MsgCreate".to_string()]);
-    assert!(err.to_string().contains("MessageNotFound"));
+    assert!(err.to_string().contains("Protobuf message not found"));
 
     // Register the protobuf file descriptor set.
 
@@ -260,7 +260,7 @@ fn test_prepare_and_decode() {
 
     // not yet registered
     let err = suite.decode_err("cosmos.base.v1beta1.Coin", encoded_coin.clone());
-    assert!(err.to_string().contains("MessageNotFound"));
+    assert!(err.to_string().contains("Protobuf message not found"));
 
     // Register the protobuf file descriptor set.
     suite.register(OWNER, vec![file_descriptor_set.clone()]);
@@ -319,7 +319,7 @@ fn test_prepare_and_decode() {
     assert_eq!(fds.file[0].message_type[0].name.as_ref().unwrap(), "Coin");
 
     let err = suite.decode_err("wrong_message", encoded_coin.clone());
-    assert!(err.to_string().contains("MessageNotFound"));
+    assert!(err.to_string().contains("Protobuf message not found"));
 
     let err = suite.decode_err("cosmos.base.v1beta1.Coin", vec![0x1, 0x2, 0x3]);
     assert!(err.to_string().contains("failed to decode Protobuf message"));

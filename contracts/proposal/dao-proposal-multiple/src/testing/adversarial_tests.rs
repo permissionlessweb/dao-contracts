@@ -89,7 +89,7 @@ fn test_execute_proposal_open() {
         )
         .unwrap_err();
 
-    assert!(err.to_string().contains("NotPassed"))
+    assert!(err.to_string().contains("passed' state"))
 }
 
 // A proposal can be executed if and only if it passed.
@@ -151,7 +151,7 @@ fn test_execute_proposal_rejected_closed() {
         )
         .unwrap_err();
 
-    assert!(err.to_string().contains("NotPassed"));
+    assert!(err.to_string().contains("passed' state"));
 
     app.update_block(next_block);
 
@@ -176,7 +176,7 @@ fn test_execute_proposal_rejected_closed() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("NotPassed"));
+    assert!(err.to_string().contains("passed'  state"));
 }
 
 // A proposal can only be executed once. Any subsequent
@@ -243,7 +243,7 @@ fn test_execute_proposal_more_than_once() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("NotPassed"));
+    assert!(err.to_string().contains("passed'  state"));
 }
 
 // Users should be able to submit votes past the proposal
@@ -392,3 +392,5 @@ pub fn test_allow_voting_after_proposal_execution_pre_expiration_cw20() {
     let balance = query_balance_cw20(&app, gov_token.to_string(), addr_str(CREATOR_ADDR));
     assert_eq!(balance, Uint128::new(110_000_000));
 }
+
+

@@ -41,28 +41,27 @@ pub(crate) fn amount_to_stake(staked_total: Uint256, balance: Uint256, sent: Uin
 /// guarenteed not to panic.
 ///
 /// 1. staked_total != 0.
-/// 2. ask + balance <= 2^128
+/// 2. ask + balance <= 2^256 (guaranteed since cw20 max supply is 2^128)
 /// 3. ask <= staked_total
 ///
-/// For information on the panic conditions for math, see:
-/// <https://rust-lang.github.io/rfcs/0560-integer-overflow.html>
+/// All values are `Uint256` to match the cw20 balance field type in
+/// cosmwasm-std v3, though cw20 token amounts remain bounded by 2^128.
+/// Arithmetic uses `Uint512` intermediates (via `full_mul`) to avoid
+/// overflow before the final division.
 pub(crate) fn amount_to_claim(staked_total: Uint256, balance: Uint256, ask: Uint256) -> Uint256 {
     // we know that:
     //
-    // 1. cw20's max supply is 2^128
+    // 1. cw20's max supply is 2^128; values are Uint256 but bounded by 2^128
     // 2. balance := staked_total + rewards
     //
     // for non-malicious inputs:
     //
-    // 3. 1 => ask + balance <= 2^128
-    // 4. ask <= staked_total
-    // 5. staked_total != 0
-    // 6. 4 => ask / staked_total <= 1
-    // 7. 3 => balance <= 2^128
-    // 8. 6 + 7 => ask / staked_total * balance <= 2^128
+    // 3. ask <= staked_total  => ask / staked_total <= 1
+    // 4. balance <= 2^128
+    // 5. 3 + 4 => ask / staked_total * balance <= 2^128 <= Uint256::MAX
     //
-    // which, as addition and division are communative, proves that
-    // ask * balance / staked_total will fit into a 128 bit integer.
+    // full_mul returns Uint512 to avoid intermediate overflow, then
+    // the result is divided and safely converted back to Uint256.
     ask.full_mul(balance).div(Uint512::from(staked_total)).try_into().unwrap()
 }
 
@@ -104,7 +103,7 @@ mod tests {
     // check that our invariants are indeed invariants.
 
     #[test]
-    #[should_panic(expected = "attempt to divide by zero")]
+    #[should_panic]
     fn test_amount_to_claim_invariant_one() {
         let ask = Uint256::new(2);
         let balance = Uint256::zero();

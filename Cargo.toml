@@ -55,9 +55,10 @@ cw-utils = "3.0.0"
 cw2 = "3.0.0"
 cw20            = { version = "3.0.0", git = "https://github.com/permissionlessweb/cw-plus" }
 cw20-base       = { version = "3.0.0", features = ["library"], git = "https://github.com/permissionlessweb/cw-plus" }
-cw3 = "2.0.0"
 cw4                = { package = "cw4", git = "https://github.com/permissionlessweb/cw-plus" }
 cw4-group          = { package = "cw4-group", git = "https://github.com/permissionlessweb/cw-plus", features = ["library"] }
+cw3             = { package = "cw4", git = "https://github.com/permissionlessweb/cw-plus" }
+cw-ownable      = { version = "3.0.1", git = "https://github.com/permissionlessweb/cw-plus-plus" }
 cw721 = {path = "../../abstract/cw-nfts/packages/cw721"}
 cw721-base = {path = "../../abstract/cw-nfts/contracts/cw721-base"}
 env_logger = "0.10"
@@ -86,7 +87,7 @@ wynd-utils = { path = "./packages/wynd-utils", version = "0.4.2" }
 
 # One commit ahead of version 0.3.0. Allows initialization with an
 # optional owner.
-cw-ownable      = { version = "3.0.1", git = "https://github.com/permissionlessweb/cw-plus-plus" }
+
 cw-orch = { path = "../../abstract/cw-orchestrator/cw-orch", default-features = false }
 
 btsg-ft-factory = { path = "./contracts/external/btsg-ft-factory", version = "2.8.0-alpha.2" }

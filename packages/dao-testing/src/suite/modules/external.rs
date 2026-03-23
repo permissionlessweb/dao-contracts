@@ -1,6 +1,8 @@
 use cw_orch::prelude::*;
 use dao_cw_orch::*;
 
+pub mod calendar;
+
 /// External module interfaces.
 pub struct DaoExternalSuite<Chain: CwEnv> {
     pub admin_factory: DaoExternalAdminFactory<Chain>,

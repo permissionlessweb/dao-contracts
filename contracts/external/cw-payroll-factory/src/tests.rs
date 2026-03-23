@@ -429,9 +429,10 @@ fn test_update_vesting_code_id() {
             &[],
         )
         .unwrap_err();
+    println!("{:#?}", err);
     assert!(err
         .to_string()
-        .contains("caller is not the contract's current owner"));
+        .contains("Caller is not the contract's current owner"));
 
     app.sudo(SudoMsg::Bank({
         BankSudo::Mint {
@@ -563,5 +564,6 @@ pub fn test_inconsistent_cw20_amount() {
             &vec![Coin::new(amount, NATIVE_DENOM)],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("WrongFundAmount"));
+    println!("{:#?}", err);
+    assert!(err.to_string().contains("vests") && err.to_string().contains("tokens, funded with"));
 }
