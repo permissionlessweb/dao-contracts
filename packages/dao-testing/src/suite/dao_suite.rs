@@ -6,6 +6,7 @@ use super::modules::{
     dao_state::{DaoSnapshot, DaoStateRegistry, ModuleRegistry, ProposalModuleEntry},
     distribution::DaoDistributionSuite,
     external::DaoExternalSuite,
+    gauges::DaoGaugeSuite,
     proposal::DaoProposalSuite,
     staking::DaoStakingSuite,
     voting::DaoVotingSuite,
@@ -138,6 +139,7 @@ pub struct DaoDaoSuite<Chain: CwEnv + TxHandler> {
     pub staking: DaoStakingSuite<Chain>,
     pub distribution: DaoDistributionSuite<Chain>,
     pub external: DaoExternalSuite<Chain>,
+    pub gauges: DaoGaugeSuite<Chain>,
     pub registry: DaoStateRegistry,
 }
 
@@ -150,6 +152,7 @@ impl<Chain: CwEnv> DaoDaoSuite<Chain> {
             staking: DaoStakingSuite::new(chain.clone()),
             distribution: DaoDistributionSuite::new(chain.clone()),
             external: DaoExternalSuite::new(chain.clone()),
+            gauges: DaoGaugeSuite::new(chain.clone()),
             registry: DaoStateRegistry::new(),
         }
     }
@@ -161,6 +164,7 @@ impl<Chain: CwEnv> DaoDaoSuite<Chain> {
         self.staking.upload()?;
         self.distribution.upload()?;
         self.external.upload()?;
+        self.gauges.upload()?;
         Ok(())
     }
 }
@@ -378,6 +382,22 @@ define_suite! {
         category: "External",
         description: "On-chain event calendar with groups, gauges, scheduling",
         schema: "schema/dao-calendar.json",
+    },
+
+    // ── Gauges ───────────────────────────────────────────────────
+    GAUGE_ORCHESTRATOR, "gauge_orchestrator" => {
+        path: gauges.orchestrator,
+        name: "Gauge Orchestrator",
+        category: "Gauges",
+        description: "Orchestrates gauge voting rounds and option set management",
+        schema: "contracts/gauges/gauge-orchestrator/schema/gauge-orchestrator.json",
+    },
+    GAUGE_ADAPTER, "gauge_adapter" => {
+        path: gauges.adapter,
+        name: "Gauge Adapter",
+        category: "Gauges",
+        description: "Adapter connecting a gauge to an external reward or allocation target",
+        schema: "contracts/gauges/gauge-adapter/schema/gauge-adapter.json",
     },
 }
 
@@ -620,6 +640,7 @@ impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for DaoDaoSuite<Chain> {
         cs.extend(self.staking.get_contracts_mut());
         cs.extend(self.distribution.get_contracts_mut());
         cs.extend(self.external.get_contracts_mut());
+        cs.extend(self.gauges.get_contracts_mut());
         cs
     }
 

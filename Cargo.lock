@@ -5,7 +5,6 @@ version = 4
 [[package]]
 name = "abstract-cw-multi-test"
 version = "3.0.0-rc"
-source = "git+https://github.com/permissionlessweb/cw-multi-test-fork?branch=bump%2Fcw3%2Fofficial-ibc-fork#52cdb22e24c7b10b91fded32eb7b2f026159307b"
 dependencies = [
  "bech32 0.11.1",
  "cosmwasm-schema 3.0.4",
@@ -71,6 +70,12 @@ checksum = "819e7219dbd41043ac279b19830f2efc897156490d7fd6ea916720117ee66311"
 dependencies = [
  "libc",
 ]
+
+[[package]]
+name = "anybuf"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ecb50559f19eb92f65279f9de03e4625ed0572e7564ef3de5253e13928c55266"
 
 [[package]]
 name = "anyhow"
@@ -702,6 +707,16 @@ dependencies = [
 [[package]]
 name = "cosmos-sdk-proto"
 version = "0.28.0"
+dependencies = [
+ "bytes",
+ "http-body-util",
+ "prost 0.14.3",
+ "tendermint-proto 0.40.4 (git+https://github.com/permissionlessweb/tendermint-rs)",
+]
+
+[[package]]
+name = "cosmos-sdk-proto"
+version = "0.28.0"
 source = "git+https://github.com/permissionlessweb/cosmos-rust#2308b3422090d8c86ee0954ee7b19fbd7d09ccbc"
 dependencies = [
  "bytes",
@@ -737,7 +752,7 @@ version = "0.23.0"
 source = "git+https://github.com/permissionlessweb/cosmos-rust#2308b3422090d8c86ee0954ee7b19fbd7d09ccbc"
 dependencies = [
  "bip32 0.5.3",
- "cosmos-sdk-proto 0.28.0",
+ "cosmos-sdk-proto 0.28.0 (git+https://github.com/permissionlessweb/cosmos-rust)",
  "ecdsa 0.16.9",
  "eyre",
  "k256 0.13.4",
@@ -2347,6 +2362,8 @@ dependencies = [
  "dao-voting-cw721-roles",
  "dao-voting-cw721-staked",
  "dao-voting-token-staked",
+ "gauge-adapter",
+ "gauge-orchestrator",
  "serde",
 ]
 
@@ -3109,6 +3126,8 @@ dependencies = [
  "dao-voting-cw721-roles",
  "dao-voting-cw721-staked",
  "dao-voting-token-staked",
+ "gauge-adapter",
+ "gauge-orchestrator",
  "osmosis-std 0.26.0",
  "osmosis-test-tube",
  "rand",
@@ -3913,6 +3932,51 @@ dependencies = [
  "memchr",
  "pin-project-lite",
  "slab",
+]
+
+[[package]]
+name = "gauge-adapter"
+version = "2.8.0-alpha.2"
+dependencies = [
+ "anybuf",
+ "anyhow",
+ "cosmwasm-schema 3.0.4",
+ "cosmwasm-std 3.0.4",
+ "cw-denom 2.8.0-alpha.2",
+ "cw-multi-test",
+ "cw-ownable",
+ "cw-storage-plus 3.0.1",
+ "cw-utils 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cw2 3.0.0",
+ "cw20 3.0.0",
+ "cw20-base 3.0.0",
+ "semver",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "gauge-orchestrator"
+version = "2.8.0-alpha.2"
+dependencies = [
+ "anyhow",
+ "cosmwasm-schema 3.0.4",
+ "cosmwasm-std 3.0.4",
+ "cw-multi-test",
+ "cw-ownable",
+ "cw-storage-plus 3.0.1",
+ "cw-utils 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cw2 3.0.0",
+ "cw4 3.0.0",
+ "cw4-group 3.0.0",
+ "dao-dao-core 2.8.0-alpha.2",
+ "dao-hooks 2.8.0-alpha.2",
+ "dao-interface 2.8.0-alpha.2",
+ "dao-proposal-single 2.8.0-alpha.2",
+ "dao-voting 2.8.0-alpha.2",
+ "dao-voting-cw4 2.8.0-alpha.2",
+ "schemars 1.2.1",
+ "serde",
+ "thiserror 1.0.69",
 ]
 
 [[package]]

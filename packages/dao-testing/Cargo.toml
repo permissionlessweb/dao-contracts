@@ -78,6 +78,8 @@ dao-voting-cw721-staked = { workspace = true }
 dao-voting-cw721-roles = { workspace = true }
 dao-voting-token-staked = { workspace = true }
 dao-proposal-hook-counter = { workspace = true }
+gauge-adapter = { workspace = true }
+gauge-orchestrator = { workspace = true }
 
 # v1 migration
 cw-core-v1 = { workspace = true }

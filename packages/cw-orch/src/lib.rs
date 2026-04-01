@@ -14,6 +14,8 @@ mod staking;
 mod test_contracts;
 #[cfg(not(target_arch = "wasm32"))]
 mod voting;
+#[cfg(not(target_arch = "wasm32"))]
+mod gauges;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use core::*;
@@ -31,6 +33,8 @@ pub use staking::*;
 pub use test_contracts::*;
 #[cfg(not(target_arch = "wasm32"))]
 pub use voting::*;
+#[cfg(not(target_arch = "wasm32"))]
+pub use gauges::*;
 
 #[cfg(feature = "wasm_test")]
 #[cfg(test)]
