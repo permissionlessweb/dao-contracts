@@ -38,6 +38,31 @@ overflow-checks = true
 [profile.release.package.cw-protobuf-registry]
 opt-level = "z"
 
+[patch.crates-io]
+# cw-minus
+cw-utils       = { path = "../cw-minus/packages/cw-utils" }
+cw2            = { path = "../cw-minus/packages/cw2" }
+cw-controllers = { path = "../cw-minus/packages/controllers" }
+# cw-plus
+cw20           = { path = "../cw-plus/packages/cw20" }
+cw20-base      = { path = "../cw-plus/contracts/cw20-base" }
+cw3            = { path = "../cw-plus/packages/cw3" }
+cw4            = { path = "../cw-plus/packages/cw4" }
+cw4-group      = { path = "../cw-plus/contracts/cw4-group" }
+# cw-plus-plus
+cw-ownable     = { path = "../cw-plus-plus/packages/ownable" }
+# cw-nfts
+cw721          = { path = "../cw-nfts/packages/cw721" }
+cw721-base     = { path = "../cw-nfts/contracts/cw721-base" }
+# cosmos-rust
+cosmos-sdk-proto = { path = "../cosmos-rust/cosmos-sdk-proto" }
+# osmosis
+osmosis-std        = { path = "../osmosis-rust/packages/osmosis-std" }
+osmosis-std-derive = { path = "../osmosis-rust/packages/osmosis-std-derive" }
+osmosis-test-tube  = { path = "../osmosis-test-tube/packages/osmosis-test-tube" }
+# local
+cw-orch    = { path = "../cw-orchestrator/cw-orch", default-features = false }
+
 [workspace.dependencies]
 anybuf = { version = "0.5.0" }
 anyhow = { version = "1.0" }
@@ -47,27 +72,27 @@ base64 = "0.22.1"
 chrono = "0.4"
 cosm-orc = { version = "4.0" }
 cosm-tome = "0.2"
-cosmos-sdk-proto = "0.27.0"
+cosmos-sdk-proto = { path = "../cosmos-rust/cosmos-sdk-proto" }
 cosmwasm-schema = "3.0.4"
 cosmwasm-std = { version = "3.0.4", features = ["stargate", "cosmwasm_2_2"] }
-cw-controllers = "3.0.0"
+cw-controllers = { path = "../cw-minus/packages/controllers" }
 cw-multi-test = { version = "3.0.1", features = ["staking", "stargate", "cosmwasm_2_0"] }
 cw-storage-plus = "3.0.1"
-cw-utils = "3.0.0"
-cw2 = "3.0.0"
-cw20            = { version = "3.0.0", git = "https://github.com/permissionlessweb/cw-plus" }
-cw20-base       = { version = "3.0.0", features = ["library"], git = "https://github.com/permissionlessweb/cw-plus" }
-cw4                = { package = "cw4", git = "https://github.com/permissionlessweb/cw-plus" }
-cw4-group          = { package = "cw4-group", git = "https://github.com/permissionlessweb/cw-plus", features = ["library"] }
-cw3             = { package = "cw4", git = "https://github.com/permissionlessweb/cw-plus" }
-cw-ownable      = { version = "3.0.1", git = "https://github.com/permissionlessweb/cw-plus-plus" }
-cw721 = {path = "../../abstract/cw-nfts/packages/cw721"}
-cw721-base = {path = "../../abstract/cw-nfts/contracts/cw721-base"}
-env_logger = "0.10"
+cw-utils = { path = "../cw-minus/packages/cw-utils" }
+cw2 = { path = "../cw-minus/packages/cw2" }
+cw20            = { path = "../cw-plus/packages/cw20" }
+cw20-base       = { path = "../cw-plus/contracts/cw20-base" }
+cw4                = { path = "../cw-plus/packages/cw4" }
+cw4-group          = { path = "../cw-plus/contracts/cw4-group" }
+cw3             = { path = "../cw-plus/packages/cw3" }
+cw-ownable      = { path = "../cw-plus-plus/packages/ownable" }
+cw721 = { path = "../cw-nfts/packages/cw721" }
+cw721-base = { path = "../cw-nfts/contracts/cw721-base" }
+env_logger = "0.11.10"
 once_cell = "1.18"
-osmosis-std = {path = "../../abstract/osmosis-rust/packages/osmosis-std"}
-osmosis-std-derive = { path = "../../abstract/osmosis-rust/packages/osmosis-std-derive"}
-osmosis-test-tube = {path = "../../abstract/osmosis-test-tube/packages/osmosis-test-tube"}
+osmosis-std = { path = "../osmosis-rust/packages/osmosis-std" }
+osmosis-std-derive = { path = "../osmosis-rust/packages/osmosis-std-derive" }
+osmosis-test-tube = { path = "../osmosis-test-tube/packages/osmosis-test-tube" }
 proc-macro2 = "1.0"
 prost = { version = "=0.14.3" }
 prost-types = { version = "=0.14.3", default-features = false }
@@ -85,12 +110,11 @@ sg-multi-test = "3.1.0"
 syn = { version = "1.0", features = ["derive"] }
 test-context = "0.1"
 thiserror = { version = "1.0" }
-wynd-utils = { path = "./packages/wynd-utils", version = "0.4.2" }
 
 # One commit ahead of version 0.3.0. Allows initialization with an
 # optional owner.
 
-cw-orch = { path = "../../abstract/cw-orchestrator/cw-orch", default-features = false }
+cw-orch = { path = "../cw-orchestrator/cw-orch", default-features = false }
 
 btsg-ft-factory = { path = "./contracts/external/btsg-ft-factory", version = "2.8.0-alpha.2" }
 cw-admin-factory = { path = "./contracts/external/cw-admin-factory", version = "2.8.0-alpha.2" }
@@ -148,6 +172,7 @@ dao-voting-cw721-roles = { path = "./contracts/voting/dao-voting-cw721-roles", v
 dao-voting-cw721-staked = { path = "./contracts/voting/dao-voting-cw721-staked", version = "2.8.0-alpha.2" }
 dao-voting-token-staked = { path = "./contracts/voting/dao-voting-token-staked", version = "2.8.0-alpha.2" }
 nft-controllers = { path = "./packages/nft-controllers", version = "2.8.0-alpha.2" }
+wynd-utils = { path = "./packages/wynd-utils", version = "0.4.2" }
 
 # v1 dependencies. used for state migrations.
 cw-core-v1 = { package = "cw-core", version = "0.1.0" }
