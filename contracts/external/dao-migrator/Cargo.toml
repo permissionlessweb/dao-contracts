@@ -55,8 +55,8 @@ cw20-staked-balance-voting-v1 = { workspace = true, features = ["library"], opti
 cw20-stake-v1 = { workspace = true, features = ["library"], optional = true }
 cw-core-interface-v1 = { package = "cw-core-interface", version = "0.1.0", git = "https://github.com/DA0-DA0/dao-contracts.git", tag = "v1.0.0", optional = true }
 cw4-voting-v1 = { package = "cw4-voting", version = "0.1.0", git = "https://github.com/DA0-DA0/dao-contracts.git", tag = "v1.0.0", optional = true }
-cw20-v1 = { version = "0.13", package = "cw20", optional = true }
-cw4-v1 = { version = "0.13", package = "cw4", optional = true }
+cw20-v1 = { package = "cw20", git = "https://github.com/permissionlessweb/cw-plus", branch = "main" }
+cw4-v1 = { package = "cw4", git = "https://github.com/permissionlessweb/cw-plus", branch = "main" }
 
 [dev-dependencies]
 dao-migrator    = { workspace = true }
