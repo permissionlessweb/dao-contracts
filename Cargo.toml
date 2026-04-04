@@ -49,6 +49,12 @@ osmosis-std-derive = { path = "../osmosis-rust/packages/osmosis-std-derive" }
 # local
 
 # Fork patches (managed by dep-switch.py)
+
+# Fork patches (managed by dep-switch.py)
+
+# Fork patches (managed by dep-switch.py)
+
+# Fork patches (managed by dep-switch.py)
 cw-utils = { git = "https://github.com/permissionlessweb/cw-minus", branch = "main" }
 cw2 = { git = "https://github.com/permissionlessweb/cw-minus", branch = "main" }
 cw-controllers = { git = "https://github.com/permissionlessweb/cw-minus", branch = "main" }
@@ -57,13 +63,13 @@ cw20-base = { git = "https://github.com/permissionlessweb/cw-plus", branch = "ma
 cw3 = { git = "https://github.com/permissionlessweb/cw-plus", branch = "main" }
 cw4 = { git = "https://github.com/permissionlessweb/cw-plus", branch = "main" }
 cw4-group = { git = "https://github.com/permissionlessweb/cw-plus", branch = "main" }
-cw-ownable = { git = "https://github.com/permissionlessweb/cw-plus-plus", branch = "main" }
-cw721 = { git = "https://github.com/permissionlessweb/cw-nfts", branch = "main" }
-cw721-base = { git = "https://github.com/permissionlessweb/cw-nfts", branch = "main" }
+cw-ownable = { git = "https://github.com/permissionlessweb/cw-plus-plus", branch = "feat/mvp" }
+cw721 = { git = "https://github.com/permissionlessweb/cw-nfts", branch = "cw3" }
+cw721-base = { git = "https://github.com/permissionlessweb/cw-nfts", branch = "cw3" }
 cosmos-sdk-proto = { git = "https://github.com/permissionlessweb/cosmos-rust", branch = "main" }
-osmosis-std = { git = "https://github.com/permissionlessweb/osmosis-rust", branch = "main" }
-osmosis-test-tube = { git = "https://github.com/permissionlessweb/osmosis-test-tube", branch = "main" }
-cw-orch = { git = "https://github.com/permissionlessweb/cw-orchestrator", branch = "main" }
+osmosis-std = { git = "https://github.com/permissionlessweb/osmosis-rust", branch = "cw3" }
+osmosis-test-tube = { git = "https://github.com/permissionlessweb/osmosis-test-tube", branch = "cw3" }
+cw-orch = { git = "https://github.com/permissionlessweb/cw-orchestrator", branch = "cw3" }
 [workspace.dependencies]
 anybuf = { version = "0.5.0" }
 anyhow = { version = "1.0" }
@@ -86,14 +92,14 @@ cw20-base = { git = "https://github.com/permissionlessweb/cw-plus", branch = "ma
 cw4 = { git = "https://github.com/permissionlessweb/cw-plus", branch = "main" }
 cw4-group = { git = "https://github.com/permissionlessweb/cw-plus", branch = "main" }
 cw3 = { git = "https://github.com/permissionlessweb/cw-plus", branch = "main" }
-cw-ownable = { git = "https://github.com/permissionlessweb/cw-plus-plus", branch = "main" }
-cw721 = { git = "https://github.com/permissionlessweb/cw-nfts", branch = "main" }
-cw721-base = { git = "https://github.com/permissionlessweb/cw-nfts", branch = "main" }
+cw-ownable = { git = "https://github.com/permissionlessweb/cw-plus-plus", branch = "feat/mvp" }
+cw721 = { git = "https://github.com/permissionlessweb/cw-nfts", branch = "cw3" }
+cw721-base = { git = "https://github.com/permissionlessweb/cw-nfts", branch = "cw3" }
 env_logger = "0.11.10"
 once_cell = "1.18"
-osmosis-std = { git = "https://github.com/permissionlessweb/osmosis-rust", branch = "main" }
+osmosis-std = { git = "https://github.com/permissionlessweb/osmosis-rust", branch = "cw3" }
 osmosis-std-derive = { path = "../osmosis-rust/packages/osmosis-std-derive" }
-osmosis-test-tube = { git = "https://github.com/permissionlessweb/osmosis-test-tube", branch = "main" }
+osmosis-test-tube = { git = "https://github.com/permissionlessweb/osmosis-test-tube", branch = "cw3" }
 proc-macro2 = "1.0"
 prost = { version = "=0.14.3" }
 prost-types = { version = "=0.14.3", default-features = false }
@@ -115,7 +121,7 @@ thiserror = { version = "1.0" }
 # One commit ahead of version 0.3.0. Allows initialization with an
 # optional owner.
 
-cw-orch = { git = "https://github.com/permissionlessweb/cw-orchestrator", branch = "main" }
+cw-orch = { git = "https://github.com/permissionlessweb/cw-orchestrator", branch = "cw3" }
 
 btsg-ft-factory = { path = "./contracts/external/btsg-ft-factory", version = "2.8.0-alpha.2" }
 cw-admin-factory = { path = "./contracts/external/cw-admin-factory", version = "2.8.0-alpha.2" }
