@@ -55,6 +55,8 @@ osmosis-std-derive = { path = "../osmosis-rust/packages/osmosis-std-derive" }
 # Fork patches (managed by dep-switch.py)
 
 # Fork patches (managed by dep-switch.py)
+
+# Fork patches (managed by dep-switch.py)
 cw-utils = { git = "https://github.com/permissionlessweb/cw-minus", branch = "main" }
 cw2 = { git = "https://github.com/permissionlessweb/cw-minus", branch = "main" }
 cw-controllers = { git = "https://github.com/permissionlessweb/cw-minus", branch = "main" }
