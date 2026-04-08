@@ -90,6 +90,8 @@ opt-level = "z"
 # Fork patches (managed by dep-switch.py)
 
 # Fork patches (managed by dep-switch.py)
+
+# Fork patches (managed by dep-switch.py)
 osmosis-std-derive = { path = "../osmosis-rust/packages/osmosis-std-derive" }
 cw-utils = { path = "../ZK/cw/zk-cw-minus/packages/cw-utils" }
 cw2 = { path = "../ZK/cw/zk-cw-minus/packages/cw2" }
