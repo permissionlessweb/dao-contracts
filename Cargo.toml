@@ -70,6 +70,7 @@ opt-level = "z"
 
 
 
+
 osmosis-std-derive = { git = "https://github.com/permissionlessweb/osmosis-rust", branch = "zk-mvp" }
 cw-utils = { git = "https://github.com/permissionlessweb/cw-minus", branch = "zk-mvp" }
 cw2 = { git = "https://github.com/permissionlessweb/cw-minus", branch = "zk-mvp" }
@@ -99,7 +100,7 @@ cosmos-sdk-proto = { git = "https://github.com/permissionlessweb/cosmos-rust", b
 cosmwasm-schema = { git = "https://github.com/permissionlessweb/cosmwasm", branch = "zk-mvp" }
 cosmwasm-std = { git = "https://github.com/permissionlessweb/cosmwasm", branch = "zk-mvp" }
 cw-controllers = { git = "https://github.com/permissionlessweb/cw-minus", branch = "zk-mvp" }
-cw-multi-test = { path = "../cw-multi-test-fork" }
+cw-multi-test = { package = "abstract-cw-multi-test", path = "../cw-multi-test-fork" }
 cw-storage-plus = { git = "https://github.com/permissionlessweb/cw-storage-plus", branch = "zk-mvp" }
 cw-utils = { git = "https://github.com/permissionlessweb/cw-minus", branch = "zk-mvp" }
 cw2 = { git = "https://github.com/permissionlessweb/cw-minus", branch = "zk-mvp" }
