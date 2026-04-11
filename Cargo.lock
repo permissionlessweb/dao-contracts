@@ -5,28 +5,6 @@ version = 4
 [[package]]
 name = "abstract-cw-multi-test"
 version = "3.0.0-rc"
-dependencies = [
- "bech32 0.11.1",
- "cosmwasm-schema 3.0.3-dev",
- "cosmwasm-std 3.0.3-dev",
- "cw-storage-plus 3.0.1",
- "cw-utils 3.0.0",
- "cw20-ics20",
- "hex",
- "itertools 0.14.0",
- "log",
- "prost 0.14.3",
- "schemars 0.8.22",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "thiserror 1.0.69",
- "tiny-keccak",
-]
-
-[[package]]
-name = "abstract-cw-multi-test"
-version = "3.0.0-rc"
 source = "git+https://github.com/permissionlessweb/cw-multi-test-fork?branch=zk-mvp#2339e4cfbe5c7b5896b25bb10bc4decd3db98249"
 dependencies = [
  "bech32 0.11.1",
@@ -580,7 +558,7 @@ dependencies = [
 name = "btsg-ft-factory"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "anyhow",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
@@ -1137,7 +1115,7 @@ dependencies = [
 name = "cw-admin-factory"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "bech32 0.11.1",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
@@ -1297,7 +1275,7 @@ dependencies = [
 name = "cw-denom"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
  "cw20 3.0.0",
@@ -1310,7 +1288,7 @@ dependencies = [
 name = "cw-filter"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
  "cw-filter",
@@ -1336,7 +1314,7 @@ dependencies = [
 name = "cw-fund-distributor"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
  "cw-orch",
@@ -1423,7 +1401,7 @@ name = "cw-orch-core"
 version = "2.1.4"
 source = "git+https://github.com/permissionlessweb/cw-orchestrator?branch=zk-mvp#5c24932c40a9c64c1e6e6806f84739ebfb2f4ae7"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc (git+https://github.com/permissionlessweb/cw-multi-test-fork?branch=zk-mvp)",
+ "abstract-cw-multi-test",
  "anyhow",
  "cosmos-sdk-proto 0.28.0",
  "cosmwasm-std 3.0.3-dev",
@@ -1453,7 +1431,7 @@ name = "cw-orch-mock"
 version = "0.24.4"
 source = "git+https://github.com/permissionlessweb/cw-orchestrator?branch=zk-mvp#5c24932c40a9c64c1e6e6806f84739ebfb2f4ae7"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc (git+https://github.com/permissionlessweb/cw-multi-test-fork?branch=zk-mvp)",
+ "abstract-cw-multi-test",
  "cosmos-sdk-proto 0.28.0",
  "cosmwasm-std 3.0.3-dev",
  "cw-orch-core",
@@ -1523,7 +1501,7 @@ dependencies = [
 name = "cw-paginate-storage"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "cosmwasm-std 3.0.3-dev",
  "cw-storage-plus 3.0.1",
  "serde",
@@ -1533,7 +1511,7 @@ dependencies = [
 name = "cw-payroll-factory"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
  "cw-denom 2.8.0-alpha.2",
@@ -1581,7 +1559,7 @@ dependencies = [
 name = "cw-protobuf-registry"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "base64 0.22.1",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
@@ -1702,7 +1680,7 @@ dependencies = [
 name = "cw-token-swap"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
  "cw-orch",
@@ -1720,7 +1698,7 @@ dependencies = [
 name = "cw-tokenfactory-issuer"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
  "cw-orch",
@@ -1809,7 +1787,7 @@ dependencies = [
 name = "cw-vesting"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "anyhow",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
@@ -2031,7 +2009,7 @@ dependencies = [
 name = "cw20-stake"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "anyhow",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
@@ -2056,7 +2034,7 @@ dependencies = [
 name = "cw20-stake-external-rewards"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "anyhow",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
@@ -2080,7 +2058,7 @@ dependencies = [
 name = "cw20-stake-reward-distributor"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
  "cw-orch",
@@ -2310,7 +2288,7 @@ dependencies = [
 name = "cw721-roles"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
  "cw-controllers 3.0.0",
@@ -2333,7 +2311,7 @@ dependencies = [
 name = "dao-calendar"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
  "cw-hooks 2.8.0-alpha.2",
@@ -2427,7 +2405,7 @@ dependencies = [
 name = "dao-dao-core"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "anyhow",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
@@ -2536,7 +2514,7 @@ dependencies = [
 name = "dao-migrator"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "anyhow",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
@@ -2570,7 +2548,7 @@ dependencies = [
 name = "dao-pre-propose-approval-multiple"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
  "cw-denom 2.8.0-alpha.2",
@@ -2616,7 +2594,7 @@ dependencies = [
 name = "dao-pre-propose-approval-single"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
  "cw-denom 2.8.0-alpha.2",
@@ -2652,7 +2630,7 @@ dependencies = [
 name = "dao-pre-propose-approver"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
  "cw-denom 2.8.0-alpha.2",
@@ -2700,7 +2678,7 @@ dependencies = [
 name = "dao-pre-propose-base"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
  "cw-denom 2.8.0-alpha.2",
@@ -2733,7 +2711,7 @@ dependencies = [
 name = "dao-pre-propose-multiple"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
  "cw-denom 2.8.0-alpha.2",
@@ -2778,7 +2756,7 @@ dependencies = [
 name = "dao-pre-propose-single"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
  "cw-denom 2.8.0-alpha.2",
@@ -2811,7 +2789,7 @@ dependencies = [
 name = "dao-proposal-condorcet"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "anyhow",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
@@ -2834,7 +2812,7 @@ dependencies = [
 name = "dao-proposal-hook-counter"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
  "cw-hooks 2.8.0-alpha.2",
@@ -2881,7 +2859,7 @@ dependencies = [
 name = "dao-proposal-multiple"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "anyhow",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
@@ -2944,7 +2922,7 @@ dependencies = [
 name = "dao-proposal-single"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "anyhow",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
@@ -2983,7 +2961,7 @@ dependencies = [
 name = "dao-proposal-sudo"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
  "cw-orch",
@@ -2998,7 +2976,7 @@ dependencies = [
 name = "dao-rbam"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "chrono",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
@@ -3030,7 +3008,7 @@ dependencies = [
 name = "dao-rewards-distributor"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "anyhow",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
@@ -3063,7 +3041,7 @@ dependencies = [
 name = "dao-test-custom-factory"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
  "cw-orch",
@@ -3085,7 +3063,7 @@ dependencies = [
 name = "dao-testing"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "btsg-ft-factory",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
@@ -3162,7 +3140,7 @@ dependencies = [
 name = "dao-vote-delegation"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "anyhow",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
@@ -3244,7 +3222,7 @@ dependencies = [
 name = "dao-voting-cw20-balance"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
  "cw-orch",
@@ -3263,7 +3241,7 @@ dependencies = [
 name = "dao-voting-cw20-staked"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
  "cw-orch",
@@ -3302,7 +3280,7 @@ dependencies = [
 name = "dao-voting-cw4"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
  "cw-orch",
@@ -3323,7 +3301,7 @@ dependencies = [
 name = "dao-voting-cw721-roles"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "anyhow",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
@@ -3348,7 +3326,7 @@ dependencies = [
 name = "dao-voting-cw721-staked"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "anyhow",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
@@ -3381,7 +3359,7 @@ dependencies = [
 name = "dao-voting-token-staked"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "anyhow",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
@@ -3959,7 +3937,7 @@ dependencies = [
 name = "gauge-adapter"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "anybuf",
  "anyhow",
  "cosmwasm-schema 3.0.3-dev",
@@ -3979,7 +3957,7 @@ dependencies = [
 name = "gauge-orchestrator"
 version = "2.8.0-alpha.2"
 dependencies = [
- "abstract-cw-multi-test 3.0.0-rc",
+ "abstract-cw-multi-test",
  "anyhow",
  "cosmwasm-schema 3.0.3-dev",
  "cosmwasm-std 3.0.3-dev",
