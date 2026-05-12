@@ -1,5 +1,7 @@
 use cosmwasm_std::testing::MockApi;
-use cosmwasm_std::{coins, from_json, to_json_binary, Addr, Coin, Empty, MigrateInfo, Uint128, Uint256};
+use cosmwasm_std::{
+    coins, from_json, to_json_binary, Addr, Coin, Empty, MigrateInfo, Uint128, Uint256,
+};
 use cw2::ContractVersion;
 use cw20::Cw20Coin;
 use cw_denom::UncheckedDenom;
@@ -40,7 +42,7 @@ fn dao_proposal_multiple_contract() -> Box<dyn Contract<Empty>> {
         dao_proposal_multiple::contract::instantiate,
         dao_proposal_multiple::contract::query,
     )
-    .with_migrate(|deps, env, msg| {
+    .with_migrate(|deps, env, msg, info| {
         dao_proposal_multiple::contract::migrate(
             deps,
             env,
@@ -531,8 +533,12 @@ fn test_native_permutation(
     );
 
     mint_natives(&mut app, &addr_str("ekez"), coins(10, "ujuno"));
-    let pre_propose_id =
-        make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &coins(10, "ujuno"));
+    let pre_propose_id = make_pre_proposal(
+        &mut app,
+        pre_propose.clone(),
+        &addr_str("ekez"),
+        &coins(10, "ujuno"),
+    );
 
     // Make sure it went away.
     let balance = get_balance_native(&app, &addr_str("ekez"), "ujuno");
@@ -555,7 +561,13 @@ fn test_native_permutation(
                 EndStatus::PassedB => (1, Status::Passed, execute_proposal),
                 EndStatus::Failed => (2, Status::Rejected, close_proposal),
             };
-            let new_status = vote(&mut app, proposal_multiple.clone(), &addr_str("ekez"), id, position);
+            let new_status = vote(
+                &mut app,
+                proposal_multiple.clone(),
+                &addr_str("ekez"),
+                id,
+                position,
+            );
             assert_eq!(new_status, expected_status);
 
             // Close or execute the proposal to trigger a refund.
@@ -622,7 +634,12 @@ fn test_cw20_permutation(
     match approval_status {
         ApprovalStatus::Approved => {
             // Approver approves, new proposal id is returned
-            let id = approve_proposal(&mut app, pre_propose.clone(), &addr_str("approver"), pre_propose_id);
+            let id = approve_proposal(
+                &mut app,
+                pre_propose.clone(),
+                &addr_str("approver"),
+                pre_propose_id,
+            );
 
             // Voting happens on newly created proposal
             #[allow(clippy::type_complexity)]
@@ -635,7 +652,13 @@ fn test_cw20_permutation(
                 EndStatus::PassedB => (1, Status::Passed, execute_proposal),
                 EndStatus::Failed => (2, Status::Rejected, close_proposal),
             };
-            let new_status = vote(&mut app, proposal_multiple.clone(), &addr_str("ekez"), id, position);
+            let new_status = vote(
+                &mut app,
+                proposal_multiple.clone(),
+                &addr_str("ekez"),
+                id,
+                position,
+            );
             assert_eq!(new_status, expected_status);
 
             // Close or execute the proposal to trigger a refund.
@@ -644,7 +667,12 @@ fn test_cw20_permutation(
         ApprovalStatus::Rejected => {
             // Proposal is rejected by approver
             // No proposal is created so there is no voting
-            reject_proposal(&mut app, pre_propose.clone(), &addr_str("approver"), pre_propose_id);
+            reject_proposal(
+                &mut app,
+                pre_propose.clone(),
+                &addr_str("approver"),
+                pre_propose_id,
+            );
         }
     };
 
@@ -860,8 +888,12 @@ fn test_multiple_open_proposals() {
     );
 
     mint_natives(&mut app, &addr_str("ekez"), coins(20, "ujuno"));
-    let first_pre_propose_id =
-        make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &coins(10, "ujuno"));
+    let first_pre_propose_id = make_pre_proposal(
+        &mut app,
+        pre_propose.clone(),
+        &addr_str("ekez"),
+        &coins(10, "ujuno"),
+    );
     let balance = get_balance_native(&app, &addr_str("ekez"), "ujuno");
     assert_eq!(10, balance.u128());
 
@@ -875,32 +907,58 @@ fn test_multiple_open_proposals() {
     let balance = get_balance_native(&app, &addr_str("ekez"), "ujuno");
     assert_eq!(10, balance.u128());
 
-    let second_pre_propose_id =
-        make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &coins(10, "ujuno"));
+    let second_pre_propose_id = make_pre_proposal(
+        &mut app,
+        pre_propose.clone(),
+        &addr_str("ekez"),
+        &coins(10, "ujuno"),
+    );
     let balance = get_balance_native(&app, &addr_str("ekez"), "ujuno");
     assert_eq!(0, balance.u128());
 
     // Approver approves prop, balance remains the same
-    let second_id = approve_proposal(&mut app, pre_propose, &addr_str("approver"), second_pre_propose_id);
+    let second_id = approve_proposal(
+        &mut app,
+        pre_propose,
+        &addr_str("approver"),
+        second_pre_propose_id,
+    );
     let balance = get_balance_native(&app, &addr_str("ekez"), "ujuno");
     assert_eq!(0, balance.u128());
 
     // Finish up the first proposal.
-    let new_status = vote(&mut app, proposal_multiple.clone(), &addr_str("ekez"), first_id, 0);
+    let new_status = vote(
+        &mut app,
+        proposal_multiple.clone(),
+        &addr_str("ekez"),
+        first_id,
+        0,
+    );
     assert_eq!(Status::Passed, new_status);
 
     // Still zero.
     let balance = get_balance_native(&app, &addr_str("ekez"), "ujuno");
     assert_eq!(0, balance.u128());
 
-    execute_proposal(&mut app, proposal_multiple.clone(), &addr_str("ekez"), first_id);
+    execute_proposal(
+        &mut app,
+        proposal_multiple.clone(),
+        &addr_str("ekez"),
+        first_id,
+    );
 
     // First proposal refunded.
     let balance = get_balance_native(&app, &addr_str("ekez"), "ujuno");
     assert_eq!(10, balance.u128());
 
     // Finish up the second proposal.
-    let new_status = vote(&mut app, proposal_multiple.clone(), &addr_str("ekez"), second_id, 2);
+    let new_status = vote(
+        &mut app,
+        proposal_multiple.clone(),
+        &addr_str("ekez"),
+        second_id,
+        2,
+    );
     assert_eq!(Status::Rejected, new_status);
 
     // Still zero.
@@ -935,8 +993,18 @@ fn test_pending_proposal_queries() {
     );
 
     mint_natives(&mut app, &addr_str("ekez"), coins(20, "ujuno"));
-    make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &coins(10, "ujuno"));
-    make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &coins(10, "ujuno"));
+    make_pre_proposal(
+        &mut app,
+        pre_propose.clone(),
+        &addr_str("ekez"),
+        &coins(10, "ujuno"),
+    );
+    make_pre_proposal(
+        &mut app,
+        pre_propose.clone(),
+        &addr_str("ekez"),
+        &coins(10, "ujuno"),
+    );
 
     // Query for individual proposal
     let prop1: Proposal = app
@@ -1018,8 +1086,18 @@ fn test_completed_proposal_queries() {
     );
 
     mint_natives(&mut app, &addr_str("ekez"), coins(20, "ujuno"));
-    let approve_id = make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &coins(10, "ujuno"));
-    let reject_id = make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &coins(10, "ujuno"));
+    let approve_id = make_pre_proposal(
+        &mut app,
+        pre_propose.clone(),
+        &addr_str("ekez"),
+        &coins(10, "ujuno"),
+    );
+    let reject_id = make_pre_proposal(
+        &mut app,
+        pre_propose.clone(),
+        &addr_str("ekez"),
+        &coins(10, "ujuno"),
+    );
 
     let is_pending: bool = app
         .wrap()
@@ -1032,9 +1110,18 @@ fn test_completed_proposal_queries() {
         .unwrap();
     assert!(is_pending);
 
-    let created_approved_id =
-        approve_proposal(&mut app, pre_propose.clone(), &addr_str("approver"), approve_id);
-    reject_proposal(&mut app, pre_propose.clone(), &addr_str("approver"), reject_id);
+    let created_approved_id = approve_proposal(
+        &mut app,
+        pre_propose.clone(),
+        &addr_str("approver"),
+        approve_id,
+    );
+    reject_proposal(
+        &mut app,
+        pre_propose.clone(),
+        &addr_str("approver"),
+        reject_id,
+    );
 
     let is_pending: bool = app
         .wrap()
@@ -1426,7 +1513,8 @@ fn test_no_deposit_required_open_submission() {
     );
 
     // Non-member proposes.
-    let pre_propose_id = make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("nonmember"), &[]);
+    let pre_propose_id =
+        make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("nonmember"), &[]);
 
     // Approver approves
     let id = approve_proposal(&mut app, pre_propose, &addr_str("approver"), pre_propose_id);
@@ -1507,7 +1595,11 @@ fn test_anyone_denylist() {
     let rando = "rando";
 
     // Proposal succeeds when anyone can propose.
-    assert!(query_can_propose(&app, pre_propose.clone(), &addr_str(rando)));
+    assert!(query_can_propose(
+        &app,
+        pre_propose.clone(),
+        &addr_str(rando)
+    ));
     make_pre_proposal(&mut app, pre_propose.clone(), &addr_str(rando), &[]);
 
     update_config(
@@ -1521,7 +1613,11 @@ fn test_anyone_denylist() {
     );
 
     // Proposing fails if on denylist.
-    assert!(!query_can_propose(&app, pre_propose.clone(), &addr_str(rando)));
+    assert!(!query_can_propose(
+        &app,
+        pre_propose.clone(),
+        &addr_str(rando)
+    ));
     let err = app
         .execute_contract(
             addr(rando),
@@ -1553,7 +1649,11 @@ fn test_anyone_denylist() {
     assert!(err.to_string().contains("not allowed to submit proposals"));
 
     // Proposing succeeds if not on denylist.
-    assert!(query_can_propose(&app, pre_propose.clone(), &addr_str("ekez")));
+    assert!(query_can_propose(
+        &app,
+        pre_propose.clone(),
+        &addr_str("ekez")
+    ));
     make_pre_proposal(&mut app, pre_propose, &addr_str("ekez"), &[]);
 }
 
@@ -1579,13 +1679,21 @@ fn test_specific_allowlist_denylist() {
     );
 
     // Proposal succeeds for member.
-    assert!(query_can_propose(&app, pre_propose.clone(), &addr_str("ekez")));
+    assert!(query_can_propose(
+        &app,
+        pre_propose.clone(),
+        &addr_str("ekez")
+    ));
     make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &[]);
 
     let rando = "rando";
 
     // Proposing fails for non-member.
-    assert!(!query_can_propose(&app, pre_propose.clone(), &addr_str(rando)));
+    assert!(!query_can_propose(
+        &app,
+        pre_propose.clone(),
+        &addr_str(rando)
+    ));
     let err = app
         .execute_contract(
             addr(rando),
@@ -1629,7 +1737,11 @@ fn test_specific_allowlist_denylist() {
     );
 
     // Proposal succeeds if on allowlist.
-    assert!(query_can_propose(&app, pre_propose.clone(), &addr_str(rando)));
+    assert!(query_can_propose(
+        &app,
+        pre_propose.clone(),
+        &addr_str(rando)
+    ));
     make_pre_proposal(&mut app, pre_propose.clone(), &addr_str(rando), &[]);
 
     update_config(
@@ -1645,7 +1757,11 @@ fn test_specific_allowlist_denylist() {
     );
 
     // Proposing fails if on denylist.
-    assert!(!query_can_propose(&app, pre_propose.clone(), &addr_str("ekez")));
+    assert!(!query_can_propose(
+        &app,
+        pre_propose.clone(),
+        &addr_str("ekez")
+    ));
     let err = app
         .execute_contract(
             addr("ekez"),
@@ -1689,7 +1805,11 @@ fn test_specific_allowlist_denylist() {
     );
 
     // Proposing fails if members not allowed.
-    assert!(!query_can_propose(&app, pre_propose.clone(), &addr_str("ekez")));
+    assert!(!query_can_propose(
+        &app,
+        pre_propose.clone(),
+        &addr_str("ekez")
+    ));
     let err = app
         .execute_contract(
             addr("ekez"),
@@ -1721,7 +1841,11 @@ fn test_specific_allowlist_denylist() {
     assert!(err.to_string().contains("not allowed to submit proposals"));
 
     // Proposal succeeds if on allowlist.
-    assert!(query_can_propose(&app, pre_propose.clone(), &addr_str(rando)));
+    assert!(query_can_propose(
+        &app,
+        pre_propose.clone(),
+        &addr_str(rando)
+    ));
     make_pre_proposal(&mut app, pre_propose.clone(), &addr_str(rando), &[]);
 }
 
@@ -1890,7 +2014,12 @@ fn test_update_config() {
     let pre_propose_id = make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &[]);
 
     // Approver approves
-    let id = approve_proposal(&mut app, pre_propose.clone(), &addr_str("approver"), pre_propose_id);
+    let id = approve_proposal(
+        &mut app,
+        pre_propose.clone(),
+        &addr_str("approver"),
+        pre_propose_id,
+    );
 
     update_config(
         &mut app,
@@ -1931,8 +2060,12 @@ fn test_update_config() {
 
     // New proposals should have the new deposit info.
     mint_natives(&mut app, &addr_str("ekez"), coins(10, "ujuno"));
-    let new_pre_propose_id =
-        make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &coins(10, "ujuno"));
+    let new_pre_propose_id = make_pre_proposal(
+        &mut app,
+        pre_propose.clone(),
+        &addr_str("ekez"),
+        &coins(10, "ujuno"),
+    );
 
     // Approver approves
     let new_id = approve_proposal(
@@ -1956,10 +2089,27 @@ fn test_update_config() {
     );
 
     // Both proposals should be allowed to complete.
-    vote(&mut app, proposal_multiple.clone(), &addr_str("ekez"), id, 0);
-    vote(&mut app, proposal_multiple.clone(), &addr_str("ekez"), new_id, 0);
+    vote(
+        &mut app,
+        proposal_multiple.clone(),
+        &addr_str("ekez"),
+        id,
+        0,
+    );
+    vote(
+        &mut app,
+        proposal_multiple.clone(),
+        &addr_str("ekez"),
+        new_id,
+        0,
+    );
     execute_proposal(&mut app, proposal_multiple.clone(), &addr_str("ekez"), id);
-    execute_proposal(&mut app, proposal_multiple.clone(), &addr_str("ekez"), new_id);
+    execute_proposal(
+        &mut app,
+        proposal_multiple.clone(),
+        &addr_str("ekez"),
+        new_id,
+    );
     // Deposit should not have been refunded (never policy in use).
     let balance = get_balance_native(&app, &addr_str("ekez"), "ujuno");
     assert_eq!(balance, Uint128::new(0));
@@ -2373,7 +2523,9 @@ fn test_update_submission_policy() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("doesn't allow anyone to submit proposals"));
+    assert!(err
+        .to_string()
+        .contains("doesn't allow anyone to submit proposals"));
 
     // Set dao_members to false and add allowlist.
     app.execute_contract(
@@ -2418,7 +2570,9 @@ fn test_update_submission_policy() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("Denylist cannot contain addresses in the allowlist"));
+    assert!(err
+        .to_string()
+        .contains("Denylist cannot contain addresses in the allowlist"));
 }
 
 #[test]
@@ -2489,8 +2643,12 @@ fn test_withdraw() {
 
     // Make a proposal with the native tokens to put some in the system.
     mint_natives(&mut app, &addr_str("ekez"), coins(10, "ujuno"));
-    let native_pre_propose_id =
-        make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &coins(10, "ujuno"));
+    let native_pre_propose_id = make_pre_proposal(
+        &mut app,
+        pre_propose.clone(),
+        &addr_str("ekez"),
+        &coins(10, "ujuno"),
+    );
 
     // Approver approves
     let native_id = approve_proposal(
@@ -2527,7 +2685,8 @@ fn test_withdraw() {
         cw20_address.clone(),
         Uint128::new(10),
     );
-    let cw20_pre_propose_id = make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &[]);
+    let cw20_pre_propose_id =
+        make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &[]);
 
     // Approver approves
     let cw20_id = approve_proposal(
@@ -2549,8 +2708,19 @@ fn test_withdraw() {
 
     // Proposal should still be executable! We just get removed from
     // the proposal module's hook receiver list.
-    vote(&mut app, proposal_multiple.clone(), &addr_str("ekez"), cw20_id, 1);
-    execute_proposal(&mut app, proposal_multiple.clone(), &addr_str("ekez"), cw20_id);
+    vote(
+        &mut app,
+        proposal_multiple.clone(),
+        &addr_str("ekez"),
+        cw20_id,
+        1,
+    );
+    execute_proposal(
+        &mut app,
+        proposal_multiple.clone(),
+        &addr_str("ekez"),
+        cw20_id,
+    );
 
     // Make sure the proposal module has fallen back to anyone can
     // propose becuase of our malfunction.
@@ -2565,8 +2735,19 @@ fn test_withdraw() {
     assert_eq!(proposal_creation_policy, ProposalCreationPolicy::Anyone {});
 
     // Close out the native proposal and it's deposit as well.
-    vote(&mut app, proposal_multiple.clone(), &addr_str("ekez"), native_id, 2);
-    close_proposal(&mut app, proposal_multiple.clone(), &addr_str("ekez"), native_id);
+    vote(
+        &mut app,
+        proposal_multiple.clone(),
+        &addr_str("ekez"),
+        native_id,
+        2,
+    );
+    close_proposal(
+        &mut app,
+        proposal_multiple.clone(),
+        &addr_str("ekez"),
+        native_id,
+    );
     withdraw(
         &mut app,
         pre_propose.clone(),

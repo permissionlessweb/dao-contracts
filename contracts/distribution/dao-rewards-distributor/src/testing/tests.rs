@@ -1,5 +1,5 @@
 use cosmwasm_std::testing::{mock_dependencies, mock_env, MockApi};
-use cosmwasm_std::{coin, coins, to_json_binary, Addr, Timestamp};
+use cosmwasm_std::{coin, coins, to_json_binary, Addr, MigrateInfo, Timestamp};
 use cosmwasm_std::{Uint128, Uint256};
 use cw2::ContractVersion;
 use cw20::{Cw20Coin, Expiration, UncheckedDenom};
@@ -2965,14 +2965,26 @@ fn test_queries_before_funded() {
     suite.assert_undistributed_rewards(2, 0);
 }
 
+fn dummy_migrate_info() -> MigrateInfo {
+    MigrateInfo {
+        sender: Addr::unchecked(""),
+        old_migrate_version: None,
+    }
+}
+
 #[test]
 fn test_migrate_validation() {
     let mut deps = mock_dependencies();
 
     // wrong contract name errors
     cw2::set_contract_version(&mut deps.storage, "test", "0.0.1").unwrap();
-    let err: crate::ContractError =
-        crate::contract::migrate(deps.as_mut(), mock_env(), MigrateMsg {}).unwrap_err();
+    let err: crate::ContractError = crate::contract::migrate(
+        deps.as_mut(),
+        mock_env(),
+        MigrateMsg {},
+        dummy_migrate_info(),
+    )
+    .unwrap_err();
     assert_eq!(
         err,
         crate::ContractError::MigrationErrorIncorrectContract {
@@ -2983,8 +2995,13 @@ fn test_migrate_validation() {
 
     // same-version migration errors
     cw2::set_contract_version(&mut deps.storage, CONTRACT_NAME, CONTRACT_VERSION).unwrap();
-    let err: crate::ContractError =
-        crate::contract::migrate(deps.as_mut(), mock_env(), MigrateMsg {}).unwrap_err();
+    let err: crate::ContractError = crate::contract::migrate(
+        deps.as_mut(),
+        mock_env(),
+        MigrateMsg {},
+        dummy_migrate_info(),
+    )
+    .unwrap_err();
     assert_eq!(
         err,
         crate::ContractError::MigrationErrorInvalidVersionNotNewer {
@@ -2995,8 +3012,13 @@ fn test_migrate_validation() {
 
     // future version errors
     cw2::set_contract_version(&mut deps.storage, CONTRACT_NAME, "9.9.9").unwrap();
-    let err: crate::ContractError =
-        crate::contract::migrate(deps.as_mut(), mock_env(), MigrateMsg {}).unwrap_err();
+    let err: crate::ContractError = crate::contract::migrate(
+        deps.as_mut(),
+        mock_env(),
+        MigrateMsg {},
+        dummy_migrate_info(),
+    )
+    .unwrap_err();
     assert_eq!(
         err,
         crate::ContractError::MigrationErrorInvalidVersionNotNewer {
@@ -3007,7 +3029,13 @@ fn test_migrate_validation() {
 
     // migration succeeds from v2.4.0
     cw2::set_contract_version(&mut deps.storage, CONTRACT_NAME, "2.4.0").unwrap();
-    crate::contract::migrate(deps.as_mut(), mock_env(), MigrateMsg {}).unwrap();
+    crate::contract::migrate(
+        deps.as_mut(),
+        mock_env(),
+        MigrateMsg {},
+        dummy_migrate_info(),
+    )
+    .unwrap();
 }
 
 #[test]

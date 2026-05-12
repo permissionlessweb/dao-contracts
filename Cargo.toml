@@ -1,5 +1,5 @@
 [workspace]
-exclude = ["ci/configs/", "contracts/voting/dao-voting-onft-staked", "wasmvm/libwasmvm"]
+exclude = ["ci/configs/", "ci/optimizer/", "contracts/voting/dao-voting-onft-staked", "contracts/external/dao-migrator", "wasmvm/libwasmvm"]
 members = [
     "ci/*",
     "contracts/dao-dao-core",
@@ -29,28 +29,27 @@ base64 = "0.22.1"
 bech32 = "0.11.1"
 chrono = "0.4"
 cosm-orc = { version = "4.0" }
-cosm-tome = "0.2"
-cosmos-sdk-proto = { git = "https://github.com/permissionlessweb/cosmos-rust", branch = "zk-mvp" }
-cosmwasm-schema = { git = "https://github.com/permissionlessweb/cosmwasm", branch = "zk-mvp" }
-cosmwasm-std = { git = "https://github.com/permissionlessweb/cosmwasm", branch = "zk-mvp" }
-cw-controllers = { git = "https://github.com/permissionlessweb/cw-minus", branch = "zk-mvp" }
-cw-multi-test = { package = "abstract-cw-multi-test", git = "https://github.com/permissionlessweb/cw-multi-test-fork", branch = "zk-mvp" }
-cw-ownable = { git = "https://github.com/permissionlessweb/cw-plus-plus", branch = "zk-mvp" }
-cw-storage-plus = { git = "https://github.com/permissionlessweb/cw-storage-plus", branch = "zk-mvp" }
-cw-utils = { git = "https://github.com/permissionlessweb/cw-minus", branch = "zk-mvp" }
-cw2 = { git = "https://github.com/permissionlessweb/cw-minus", branch = "zk-mvp" }
-cw20 = { git = "https://github.com/permissionlessweb/cw-plus", branch = "zk-mvp" }
-cw20-base = { git = "https://github.com/permissionlessweb/cw-plus", branch = "zk-mvp" }
-cw3 = { git = "https://github.com/permissionlessweb/cw-plus", branch = "zk-mvp" }
-cw4 = { git = "https://github.com/permissionlessweb/cw-plus", branch = "zk-mvp" }
-cw4-group = { git = "https://github.com/permissionlessweb/cw-plus", branch = "zk-mvp" }
-cw721 = { git = "https://github.com/permissionlessweb/cw-nfts", branch = "zk-mvp" }
-cw721-base = { git = "https://github.com/permissionlessweb/cw-nfts", branch = "zk-mvp" }
+cosmos-sdk-proto = { path = "../cosmos-rust/cosmos-sdk-proto" }
+cosmwasm-schema = { path = "../cosmwasm/packages/schema" }
+cosmwasm-std = { path = "../cosmwasm/packages/std", features = ["cosmwasm_1_2", "cosmwasm_2_2", "stargate"] }
+cw-controllers = { path = "../cw-minus/packages/controllers" }
+cw-multi-test = { package = "abstract-cw-multi-test", path = "../cw-multi-test-fork" }
+cw-ownable = { path = "../cw-plus-plus/packages/ownable" }
+cw-storage-plus = { path = "../cw-storage-plus" }
+cw-utils = { path = "../cw-minus/packages/cw-utils" }
+cw2 = { path = "../cw-minus/packages/cw2" }
+cw20 = { path = "../cw-plus/packages/cw20" }
+cw20-base = { path = "../cw-plus/contracts/cw20-base" }
+cw3 = { path = "../cw-plus/packages/cw3" }
+cw4 = { path = "../cw-plus/packages/cw4" }
+cw4-group = { path = "../cw-plus/contracts/cw4-group" }
+cw721 = { path = "../cw-nfts/packages/cw721" }
+cw721-base = { path = "../cw-nfts/contracts/cw721-base" }
 env_logger = "0.11.10"
 once_cell = "1.18"
-osmosis-std = { git = "https://github.com/permissionlessweb/osmosis-rust", branch = "zk-mvp" }
-osmosis-std-derive = { git = "https://github.com/permissionlessweb/osmosis-rust", branch = "zk-mvp" }
-osmosis-test-tube = { git = "https://github.com/permissionlessweb/osmosis-test-tube", branch = "zk-mvp" }
+osmosis-std = { path = "../osmosis-rust/packages/osmosis-std" }
+osmosis-std-derive = { path = "../osmosis-rust/packages/osmosis-std-derive" }
+osmosis-test-tube = { path = "../osmosis-test-tube/packages/osmosis-test-tube" }
 proc-macro2 = "1.0"
 prost = { version = "=0.14.3" }
 prost-reflect = { version = "=0.16.3", features = ["serde"] }
@@ -71,7 +70,7 @@ thiserror = { version = "1.0" }
 # One commit ahead of version 0.3.0. Allows initialization with an
 # optional owner.
 
-cw-orch = { git = "https://github.com/permissionlessweb/cw-orchestrator", branch = "zk-mvp" }
+cw-orch = { path = "../cw-orchestrator/cw-orch" }
 
 btsg-ft-factory = { path = "./contracts/external/btsg-ft-factory", version = "2.8.0-alpha.2" }
 cw-admin-factory = { path = "./contracts/external/cw-admin-factory", version = "2.8.0-alpha.2" }
@@ -102,7 +101,6 @@ dao-dao-core = { path = "./contracts/dao-dao-core", version = "2.8.0-alpha.2" }
 dao-dao-macros = { path = "./packages/dao-dao-macros", version = "2.8.0-alpha.2" }
 dao-hooks = { path = "./packages/dao-hooks", version = "2.8.0-alpha.2" }
 dao-interface = { path = "./packages/dao-interface", version = "2.8.0-alpha.2" }
-dao-migrator = { path = "./contracts/external/dao-migrator", version = "2.8.0-alpha.2" }
 dao-pre-propose-approval-multiple = { path = "./contracts/pre-propose/dao-pre-propose-approval-multiple", version = "2.8.0-alpha.2" }
 dao-pre-propose-approval-single = { path = "./contracts/pre-propose/dao-pre-propose-approval-single", version = "2.8.0-alpha.2" }
 dao-pre-propose-approver = { path = "./contracts/pre-propose/dao-pre-propose-approver", version = "2.8.0-alpha.2" }
@@ -132,40 +130,47 @@ nft-controllers = { path = "./packages/nft-controllers", version = "2.8.0-alpha.
 wynd-utils = { path = "./packages/wynd-utils", version = "0.4.2" }
 
 # v1 dependencies. used for state migrations.
-cw-core-interface-v1 = { package = "cw-core-interface", version = "0.1.0", git = "https://github.com/DA0-DA0/dao-contracts.git", tag = "v1.0.0" }
-cw-core-v1 = { package = "cw-core", version = "0.1.0" }
-cw-proposal-single-v1 = { package = "cw-proposal-single", version = "0.1.0" }
-cw-utils-v1 = { package = "cw-utils", git = "https://github.com/permissionlessweb/cw-minus", branch = "zk-mvp" }
-cw20-stake-external-rewards-v1 = { package = "stake-cw20-external-rewards", version = "0.2.6" }
-cw20-stake-reward-distributor-v1 = { package = "stake-cw20-reward-distributor", version = "0.1.0" }
-cw20-stake-v1 = { package = "cw20-stake", version = "0.2.6" }
-cw20-staked-balance-voting-v1 = { package = "cw20-staked-balance-voting", version = "0.1.0" }
-cw20-v1 = { package = "cw20", git = "https://github.com/permissionlessweb/cw-plus", branch = "zk-mvp" }
-cw4-v1 = { package = "cw4", git = "https://github.com/permissionlessweb/cw-plus", branch = "zk-mvp" }
-cw4-voting-v1 = { package = "cw4-voting", version = "0.1.0", git = "https://github.com/DA0-DA0/dao-contracts.git", tag = "v1.0.0" }
-stake-cw20-v03 = { package = "stake-cw20", version = "0.2.6" }
-voting-v1 = { package = "dao-voting", version = "0.1.0" }
-
-# v2.4.1-compatible base dependencies (cosmwasm-std v1, cw4 v1.1, cw-utils v1)
-cosmwasm-std-v1 = { package = "cosmwasm-std", git = "https://github.com/permissionlessweb/cosmwasm", branch = "zk-mvp", features = ["ibc2"] }
-cw-utils-v241 = { package = "cw-utils", git = "https://github.com/permissionlessweb/cw-minus", branch = "zk-mvp" }
-cw4-v241 = { package = "cw4", git = "https://github.com/permissionlessweb/cw-plus", branch = "zk-mvp" }
-
-# v2.4.1 dependencies. used for state migrations.
-cw-denom-v241 = { package = "cw-denom", version = "=2.4.1" }
-dao-dao-core-v241 = { package = "dao-dao-core", version = "=2.4.1" }
-dao-interface-v241 = { package = "dao-interface", version = "=2.4.1" }
-dao-pre-propose-approval-single-v241 = { package = "dao-pre-propose-approval-single", version = "=2.4.1" }
-dao-pre-propose-base-v241 = { package = "dao-pre-propose-base", version = "=2.4.1" }
-dao-pre-propose-multiple-v241 = { package = "dao-pre-propose-multiple", version = "=2.4.1" }
-dao-pre-propose-single-v241 = { package = "dao-pre-propose-single", version = "=2.4.1" }
-dao-proposal-multiple-v241 = { package = "dao-proposal-multiple", version = "=2.4.1" }
-dao-proposal-single-v241 = { package = "dao-proposal-single", version = "=2.4.1" }
-dao-voting-cw4-v241 = { package = "dao-voting-cw4", version = "=2.4.1" }
-dao-voting-v241 = { package = "dao-voting", version = "=2.4.1" }
+# NOTE: These are commented out because they pull in cosmwasm-std v1.5 which conflicts
+# with cosmwasm-std v3.0.3-dev at link time (duplicate symbols). Re-enable individually
+# behind feature flags if/when migration tests are needed.
+# cw-core-v1 = { package = "cw-core", version = "0.1.0" }
+# cw-proposal-single-v1 = { package = "cw-proposal-single", version = "0.1.0" }
+# cw-utils-v1 = { package = "cw-utils", version = "0.13" }
+# cw20-stake-external-rewards-v1 = { package = "stake-cw20-external-rewards", version = "0.2.6" }
+# cw20-stake-reward-distributor-v1 = { package = "stake-cw20-reward-distributor", version = "0.1.0" }
+# cw20-stake-v1 = { package = "cw20-stake", version = "0.2.6" }
+# cw20-staked-balance-voting-v1 = { package = "cw20-staked-balance-voting", version = "0.1.0" }
+# stake-cw20-v03 = { package = "stake-cw20", version = "0.2.6" }
+# cw4-voting-v1 = { package = "cw4-voting", version = "0.1.0", git = "https://github.com/DA0-DA0/dao-contracts.git", tag = "v1.0.0" }
+# cw-core-interface-v1 = { package = "cw-core-interface", version = "0.1.0", git = "https://github.com/DA0-DA0/dao-contracts.git", tag = "v1.0.0" }
+# voting-v1 = { package = "dao-voting", version = "0.1.0" }
+# cw20-v1 = { version = "0.13", package = "cw20" }
+# cw4-v1 = { version = "0.13", package = "cw4" }
 
 # v2.5.0 dependencies.
-cw721-controllers-v250 = { package = "cw721-controllers", version = "=2.5.0" }
+# cw721-controllers-v250 = { package = "cw721-controllers", version = "=2.5.0" }
+
+[patch.crates-io]
+# cw-minus# cw-plus# cw-plus-plus# cw-nfts# cosmos-rust# osmosis# local
+
+osmosis-std-derive = { path = "../osmosis-rust/packages/osmosis-std-derive" }
+cw-utils = { path = "../cw-minus/packages/cw-utils" }
+cw2 = { path = "../cw-minus/packages/cw2" }
+cw-controllers = { path = "../cw-minus/packages/controllers" }
+cw20 = { path = "../cw-plus/packages/cw20" }
+cw20-base = { path = "../cw-plus/contracts/cw20-base" }
+cw3 = { path = "../cw-plus/packages/cw3" }
+cw4 = { path = "../cw-plus/packages/cw4" }
+cw4-group = { path = "../cw-plus/contracts/cw4-group" }
+cw-ownable = { path = "../cw-plus-plus/packages/ownable" }
+cw721 = { path = "../cw-nfts/packages/cw721" }
+cw721-base = { path = "../cw-nfts/contracts/cw721-base" }
+cosmos-sdk-proto = { path = "../cosmos-rust/cosmos-sdk-proto" }
+osmosis-std = { path = "../osmosis-rust/packages/osmosis-std" }
+osmosis-test-tube = { path = "../osmosis-test-tube/packages/osmosis-test-tube" }
+cw-orch = { path = "../cw-orchestrator/cw-orch" }
+
+
 
 [profile.release]
 codegen-units = 1
@@ -182,23 +187,3 @@ overflow-checks = true
 
 [profile.release.package.cw-protobuf-registry]
 opt-level = "z"
-
-[patch.crates-io]
-# cw-minus# cw-plus# cw-plus-plus# cw-nfts# cosmos-rust# osmosis# local
-
-osmosis-std-derive = { git = "https://github.com/permissionlessweb/osmosis-rust", branch = "zk-mvp" }
-cw-utils = { git = "https://github.com/permissionlessweb/cw-minus", branch = "zk-mvp" }
-cw2 = { git = "https://github.com/permissionlessweb/cw-minus", branch = "zk-mvp" }
-cw-controllers = { git = "https://github.com/permissionlessweb/cw-minus", branch = "zk-mvp" }
-cw20 = { git = "https://github.com/permissionlessweb/cw-plus", branch = "zk-mvp" }
-cw20-base = { git = "https://github.com/permissionlessweb/cw-plus", branch = "zk-mvp" }
-cw3 = { git = "https://github.com/permissionlessweb/cw-plus", branch = "zk-mvp" }
-cw4 = { git = "https://github.com/permissionlessweb/cw-plus", branch = "zk-mvp" }
-cw4-group = { git = "https://github.com/permissionlessweb/cw-plus", branch = "zk-mvp" }
-cw-ownable = { git = "https://github.com/permissionlessweb/cw-plus-plus", branch = "zk-mvp" }
-cw721 = { git = "https://github.com/permissionlessweb/cw-nfts", branch = "zk-mvp" }
-cw721-base = { git = "https://github.com/permissionlessweb/cw-nfts", branch = "zk-mvp" }
-cosmos-sdk-proto = { git = "https://github.com/permissionlessweb/cosmos-rust", branch = "zk-mvp" }
-osmosis-std = { git = "https://github.com/permissionlessweb/osmosis-rust", branch = "zk-mvp" }
-osmosis-test-tube = { git = "https://github.com/permissionlessweb/osmosis-test-tube", branch = "zk-mvp" }
-cw-orch = { git = "https://github.com/permissionlessweb/cw-orchestrator", branch = "zk-mvp" }

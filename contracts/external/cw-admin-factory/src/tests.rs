@@ -1,8 +1,7 @@
 use std::vec;
 
 use cosmwasm_std::{
-    testing::{message_info, mock_dependencies, mock_env, MockApi},
-    to_json_binary, Addr, Reply, SubMsg, SubMsgResponse, SubMsgResult, WasmMsg,
+    Addr, MigrateInfo, Reply, SubMsg, SubMsgResponse, SubMsgResult, WasmMsg, testing::{MockApi, message_info, mock_dependencies, mock_env}, to_json_binary
 };
 use cw_multi_test::{App, AppResponse, Executor};
 use dao_interface::state::{Admin, ModuleInstantiateInfo};
@@ -258,11 +257,24 @@ pub fn test_set_self_admin_mock() {
     )
 }
 
+fn dummy_migrate_info() -> MigrateInfo {
+    MigrateInfo {
+        sender: Addr::unchecked(""),
+        old_migrate_version: None,
+    }
+}
+
 #[test]
 pub fn test_migrate_update_version() {
     let mut deps = mock_dependencies();
     cw2::set_contract_version(&mut deps.storage, "my-contract", "old-version").unwrap();
-    migrate(deps.as_mut(), mock_env(), MigrateMsg {}).unwrap();
+    migrate(
+        deps.as_mut(),
+        mock_env(),
+        MigrateMsg {},
+        dummy_migrate_info(),
+    )
+    .unwrap();
     let version = cw2::get_contract_version(&deps.storage).unwrap();
     assert_eq!(version.version, CONTRACT_VERSION);
     assert_eq!(version.contract, CONTRACT_NAME);

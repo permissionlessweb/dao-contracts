@@ -33,6 +33,7 @@ dao-pre-propose-base = { workspace = true }
 dao-voting = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
+#cw-core-v1 = { workspace = true, features = ["library"], optional = true }
 
 [dev-dependencies]
 dao-proposal-single = { workspace = true }
@@ -53,4 +54,3 @@ cw20-base = { workspace = true }
 cw721-base = { workspace = true }
 cw4 = { workspace = true }
 cw4-group = { workspace = true }
-cw-core-v1 = { workspace = true, features = ["library"] }

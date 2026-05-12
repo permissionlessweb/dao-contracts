@@ -4,7 +4,7 @@ use std::collections::HashSet;
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     attr, to_json_binary, Attribute, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order,
-    Reply, Response, StdError, StdResult, SubMsg, WasmMsg,
+    Reply, Response, StdError, StdResult, SubMsg, WasmMsg,MigrateInfo,
 };
 use cw_storage_plus::Bound;
 
@@ -1378,7 +1378,7 @@ fn query_test_filter(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg,info: MigrateInfo) -> Result<Response, ContractError> {
     // Set contract to version to latest
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     Ok(Response::default())

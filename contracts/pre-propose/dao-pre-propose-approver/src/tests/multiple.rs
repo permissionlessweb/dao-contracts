@@ -1,5 +1,7 @@
 use cosmwasm_std::testing::MockApi;
-use cosmwasm_std::{coins, from_json, to_json_binary, Addr, Coin, Empty, MigrateInfo, StdError, Uint128};
+use cosmwasm_std::{
+    coins, from_json, to_json_binary, Addr, Coin, Empty, MigrateInfo, StdError, Uint128,
+};
 use cw2::ContractVersion;
 use cw20::Cw20Coin;
 use cw_denom::UncheckedDenom;
@@ -60,7 +62,9 @@ fn dao_proposal_single_contract() -> Box<dyn Contract<Empty>> {
         dps::contract::instantiate,
         dps::contract::query,
     )
-    .with_migrate(|deps, env, msg| dps::contract::migrate(deps, env, msg, dummy_migrate_info()))
+    .with_migrate(|deps, env, msg, info| {
+        dps::contract::migrate(deps, env, msg, dummy_migrate_info())
+    })
     .with_reply(dps::contract::reply);
     Box::new(contract)
 }
@@ -71,7 +75,9 @@ fn dao_proposal_multiple_contract() -> Box<dyn Contract<Empty>> {
         dpm::contract::instantiate,
         dpm::contract::query,
     )
-    .with_migrate(|deps, env, msg| dpm::contract::migrate(deps, env, msg, dummy_migrate_info()))
+    .with_migrate(|deps, env, msg, info| {
+        dpm::contract::migrate(deps, env, msg, dummy_migrate_info())
+    })
     .with_reply(dpm::contract::reply);
     Box::new(contract)
 }
@@ -1325,7 +1331,9 @@ fn test_permissions() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("Message sender is not proposal module"));
+    assert!(err
+        .to_string()
+        .contains("Message sender is not proposal module"));
 
     // Non-members may not propose when open_propose_submission is
     // disabled.
@@ -1357,7 +1365,9 @@ fn test_permissions() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("You are not allowed to submit proposals"));
+    assert!(err
+        .to_string()
+        .contains("You are not allowed to submit proposals"));
 }
 
 #[test]
@@ -1625,7 +1635,9 @@ fn test_update_config() {
             denylist: vec![],
         },
     );
-    assert!(err.to_string().contains("doesn't allow anyone to submit proposals"));
+    assert!(err
+        .to_string()
+        .contains("doesn't allow anyone to submit proposals"));
 
     // Errors when allowlist and denylist overlap.
     let err = update_config_should_fail(
@@ -1639,7 +1651,9 @@ fn test_update_config() {
             denylist: vec![MockApi::default().addr_make("ekez")],
         },
     );
-    assert!(err.to_string().contains("Denylist cannot contain addresses in the allowlist"));
+    assert!(err
+        .to_string()
+        .contains("Denylist cannot contain addresses in the allowlist"));
 }
 
 #[test]

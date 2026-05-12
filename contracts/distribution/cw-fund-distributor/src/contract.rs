@@ -11,7 +11,7 @@ use crate::state::{
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_json_binary, Addr, BankMsg, Binary, Coin, Decimal, Deps, DepsMut, Env, Fraction,
-    MessageInfo, Order, Response, StdError, StdResult, Uint128, WasmMsg,
+    MessageInfo, Order, Response, StdError, StdResult, Uint128, WasmMsg,MigrateInfo,
 };
 use cw2::set_contract_version;
 use cw_paginate_storage::paginate_map;
@@ -551,7 +551,7 @@ pub fn query_cw20_entitlements(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg,info: MigrateInfo) -> Result<Response, ContractError> {
     match msg {
         MigrateMsg::RedistributeUnclaimedFunds {
             distribution_height,

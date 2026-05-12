@@ -3,7 +3,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_json_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Order,
-    Response, StdError, StdResult, SubMsg, Uint128, WasmMsg,
+    Response, StdError, StdResult, SubMsg, Uint128, WasmMsg,MigrateInfo,
 };
 use cw2::set_contract_version;
 use cw_denom::CheckedDenom;
@@ -415,7 +415,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(mut deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, PreProposeError> {
+pub fn migrate(mut deps: DepsMut, _env: Env, msg: MigrateMsg, info: MigrateInfo) -> Result<Response, PreProposeError> {
     let res: Result<Response, PreProposeError> =
         PrePropose::default().migrate(deps.branch(), msg.clone());
     match msg {

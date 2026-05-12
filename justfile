@@ -53,15 +53,21 @@ download-deps:
 	wget https://github.com/CosmWasm/cw-plus/releases/latest/download/cw4_group.wasm -O artifacts/cw4_group.wasm
 	wget https://github.com/CosmWasm/cw-nfts/releases/latest/download/cw721_base.wasm -O artifacts/cw721_base.wasm
 
+optimizer-build:
+    docker build -t dao-optimizer:0.17.0 ci/optimizer/
+
 workspace-optimize:
     #!/bin/bash
-    if [[ $(uname -m) == 'arm64' ]] || [ $(uname -m) == 'aarch64' ]]; then docker run --rm -v "$(pwd)":/code \
-            --mount type=volume,source="$(basename "$(pwd)")_cache",target=/target \
+    # Custom optimizer that mounts the entire parent directory tree
+    # so [patch.crates-io] sibling paths (../cosmwasm, ../cw-plus, etc.) resolve.
+    # .git dirs and snapshots are present in the mount but ignored by the build.
+    if [[ $(uname -m) == 'arm64' ]] || [ $(uname -m) == 'aarch64' ]; then docker run --rm -v "$(pwd)/..":/workspace \
+            --mount type=volume,source="dao_contracts_cache",target=/target \
             --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
             --platform linux/arm64 \
-            cosmwasm/optimizer-arm64:0.17.0; \
-    elif [[ $(uname -m) == 'x86_64' ]]; then docker run --rm -v "$(pwd)":/code \
-            --mount type=volume,source="$(basename "$(pwd)")_cache",target=/target \
+            dao-optimizer:0.17.0; \
+    elif [[ $(uname -m) == 'x86_64' ]]; then docker run --rm -v "$(pwd)/..":/workspace \
+            --mount type=volume,source="dao_contracts_cache",target=/target \
             --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
             --platform linux/amd64 \
-            cosmwasm/optimizer:0.17.0; fi
+            dao-optimizer:0.17.0; fi

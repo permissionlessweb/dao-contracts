@@ -1,6 +1,10 @@
 use cw_orch::prelude::*;
 use dao_cw_orch::*;
 
+/// Deploy data for proposal modules (placeholder for future config).
+#[derive(Clone, Debug, Default)]
+pub struct DaoProposalDeployData;
+
 /// Pre-propose module interfaces.
 pub struct DaoPreProposeSuite<Chain: CwEnv> {
     pub pre_prop_approval_single: DaoPreProposeApprovalSingle<Chain>,
@@ -48,7 +52,7 @@ impl<Chain: CwEnv> DaoPreProposeSuite<Chain> {
 
 impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for DaoPreProposeSuite<Chain> {
     type Error = CwOrchError;
-    type DeployData = Addr;
+    type DeployData = DaoProposalDeployData;
 
     fn store_on(chain: Chain) -> Result<Self, Self::Error> {
         let suite = Self::new(chain);
@@ -112,7 +116,7 @@ impl<Chain: CwEnv> DaoProposalSuite<Chain> {
 
 impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for DaoProposalSuite<Chain> {
     type Error = CwOrchError;
-    type DeployData = Addr;
+    type DeployData = DaoProposalDeployData;
 
     fn store_on(chain: Chain) -> Result<Self, Self::Error> {
         let suite = Self::new(chain);

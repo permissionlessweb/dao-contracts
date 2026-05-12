@@ -2,6 +2,26 @@ use cw_orch::prelude::*;
 use dao_cw_orch::*;
 
 pub mod calendar;
+pub use calendar::CalendarDeployData;
+
+// TODO: implement array of depoydata trait implement for all external suite dd.
+/// Composite deploy data for external modules.
+#[derive(Clone, Debug, Default)]
+pub struct DaoExternalDeployData {
+    pub admin: Option<Addr>,
+    pub calendar: Option<CalendarDeployData>,
+}
+
+impl DaoExternalDeployData {
+    /// Run preflight validation on all present module deploy data.
+    pub fn preflight(&self) -> Result<(), String> {
+        use super::super::deploy_data::DaoDeployData;
+        if let Some(ref cal) = self.calendar {
+            cal.preflight().map_err(|e| format!("calendar: {e}"))?;
+        }
+        Ok(())
+    }
+}
 
 /// External module interfaces.
 pub struct DaoExternalSuite<Chain: CwEnv> {
@@ -12,7 +32,6 @@ pub struct DaoExternalSuite<Chain: CwEnv> {
     pub cw_tokenfactory_issuer: DaoExternalTokenfactoryIssuer<Chain>,
     pub cw_vesting: DaoExternalCwVesting<Chain>,
     pub cw721_roles: DaoExternalCw721Roles<Chain>,
-    pub migrator: DaoExternalMigrator<Chain>,
     pub calendar: DaoCalendar<Chain>,
 }
 
@@ -29,7 +48,6 @@ impl<Chain: CwEnv> DaoExternalSuite<Chain> {
             ),
             cw_vesting: DaoExternalCwVesting::new("cw_vesting", chain.clone()),
             cw721_roles: DaoExternalCw721Roles::new("cw721_roles", chain.clone()),
-            migrator: DaoExternalMigrator::new("dao_migrator", chain.clone()),
             calendar: DaoCalendar::new(chain.clone()),
         }
     }
@@ -42,7 +60,6 @@ impl<Chain: CwEnv> DaoExternalSuite<Chain> {
         self.cw_tokenfactory_issuer.upload()?;
         self.cw_vesting.upload()?;
         self.cw721_roles.upload()?;
-        self.migrator.upload()?;
         self.calendar.upload()?;
         Ok(())
     }
@@ -56,7 +73,6 @@ impl<Chain: CwEnv> DaoExternalSuite<Chain> {
             Box::new(&mut self.cw_tokenfactory_issuer),
             Box::new(&mut self.cw_vesting),
             Box::new(&mut self.cw721_roles),
-            Box::new(&mut self.migrator),
             Box::new(&mut self.calendar),
         ]
     }
@@ -64,7 +80,7 @@ impl<Chain: CwEnv> DaoExternalSuite<Chain> {
 
 impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for DaoExternalSuite<Chain> {
     type Error = CwOrchError;
-    type DeployData = Addr;
+    type DeployData = DaoExternalDeployData;
 
     fn store_on(chain: Chain) -> Result<Self, Self::Error> {
         let suite = Self::new(chain);
@@ -79,7 +95,8 @@ impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for DaoExternalSuite<Chain> 
         Ok(Self::new(chain))
     }
 
-    fn deploy_on(chain: Chain, _data: Self::DeployData) -> Result<Self, Self::Error> {
+    fn deploy_on(chain: Chain, data: Self::DeployData) -> Result<Self, Self::Error> {
+        data.preflight().map_err(CwOrchError::StdErr)?;
         Self::store_on(chain)
     }
 }

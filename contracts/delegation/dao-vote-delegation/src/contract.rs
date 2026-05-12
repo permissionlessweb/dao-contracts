@@ -1,8 +1,8 @@
 use cosmwasm_std::{ensure, Addr, Order, Uint128};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::{
-    entry_point, to_json_binary, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Response,
-    StdResult,
+    entry_point, to_json_binary, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, MigrateInfo,
+    Response, StdResult,
 };
 use cw2::{get_contract_version, set_contract_version};
 use cw_paginate_storage::paginate_map_keys;
@@ -735,7 +735,12 @@ fn query_voting_power_cap(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(
+    deps: DepsMut,
+    _env: Env,
+    _msg: MigrateMsg,
+    info: MigrateInfo,
+) -> Result<Response, ContractError> {
     let contract_version = get_contract_version(deps.storage)?;
 
     if contract_version.contract != CONTRACT_NAME {

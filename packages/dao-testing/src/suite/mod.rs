@@ -5,6 +5,7 @@ mod cw721_suite;
 mod token_suite;
 mod modules;
 mod dao_suite;
+pub mod deploy_data;
 
 pub const OWNER: &str = "cosmwasm1fsgzj6t7udv8zhf6zj32mkqhcjcpv52yph5qsdcl0qt94jgdckqs2g053y";
 

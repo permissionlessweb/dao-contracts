@@ -1,9 +1,8 @@
 use crate::state::BeforeSendHookInfo;
 use cosmwasm_schema::{cw_serde, QueryResponses};
-#[cfg(any(feature = "osmosis_tokenfactory", feature = "cosmwasm_tokenfactory"))]
-use cosmwasm_std::DenomMetadata;
 use cosmwasm_std::{Coin, Uint128, Uint256};
-
+#[cfg(feature = "thorchain_tokenfactory")]
+use dao_interface::token::Metadata;
 
 /// The message used to create a new instance of this smart contract.
 #[cw_serde]
@@ -21,9 +20,9 @@ pub enum InstantiateMsg {
     },
     #[cfg(feature = "thorchain_tokenfactory")]
     NewToken {
-        /// Component of fulldenom.
+        /// Component of fulld,
+        metadata: cosmwasm_std::DenomMetadata,
         subdenom: String,
-        metadata: Metadata,
     },
     /// `ExistingToken` will use already created token. So to set this up,
     /// Token Factory admin for the existing token needs trasfer admin over
@@ -90,7 +89,7 @@ pub enum ExecuteMsg {
 
     /// Set denom metadata. see: https://docs.cosmos.network/main/modules/bank#denom-metadata.
     #[cfg(any(feature = "osmosis_tokenfactory", feature = "cosmwasm_tokenfactory"))]
-    SetDenomMetadata { metadata: DenomMetadata },
+    SetDenomMetadata { metadata: cosmwasm_std::DenomMetadata },
 
     /// Grant/revoke mint allowance.
     SetMinterAllowance { address: String, allowance: Uint256 },

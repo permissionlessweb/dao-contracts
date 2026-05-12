@@ -1,8 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 
-#[cfg(feature = "thorchain_tokenfactory")]
-use cosmwasm_std::instantiate2_address;
 use cosmwasm_std::{
     coins, from_json, to_json_binary, BankMsg, BankQuery, Binary, Coin, CosmosMsg, Deps, DepsMut,
     Env, MessageInfo, MigrateInfo, Order, Reply, Response, StdResult, SubMsg, Uint128, Uint256,
@@ -128,9 +126,9 @@ pub fn instantiate(
                     .querier
                     .query_wasm_code_info(*token_issuer_code_id)?
                     .checksum
-                    .to_vec();
+                    .as_slice();
 
-                let issuer_addr = deps.api.addr_humanize(&instantiate2_address(
+                let issuer_addr = deps.api.addr_humanize(&cosmwasm_std::instantiate2_address(
                     &checksum,
                     &deps.api.addr_canonicalize(_env.contract.address.as_str())?,
                     &token_issuer_salt.clone().unwrap(),
@@ -147,7 +145,7 @@ pub fn instantiate(
                 // denom. It must have an exponent of 0. This the smallest
                 // unit of the token. For more info: //
                 // https://docs.cosmos.network/main/architecture/adr-024-coin-metadata
-                let mut denom_units = vec![DenomUnit {
+                let mut denom_units = vec![cosmwasm_std::DenomUnit {
                     denom: denom.clone(),
                     exponent: 0,
                     // Use provided subdenom, not the one with the issuer
@@ -165,7 +163,7 @@ pub fn instantiate(
 
                 to_json_binary(&IssuerInstantiateMsg::NewToken {
                     subdenom: subdenom.to_string(),
-                    metadata: Metadata {
+                    metadata: cosmwasm_std::DenomMetadata {
                         description: metadata.description.clone(),
                         denom_units,
                         base: denom.clone(),

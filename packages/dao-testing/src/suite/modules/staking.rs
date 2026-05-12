@@ -1,6 +1,10 @@
 use cw_orch::prelude::*;
 use dao_cw_orch::*;
 
+/// Deploy data for staking modules (placeholder for future config).
+#[derive(Clone, Debug, Default)]
+pub struct DaoStakingDeployData;
+
 /// Staking module interfaces.
 pub struct DaoStakingSuite<Chain: CwEnv> {
     pub cw20_stake: DaoStakingCw20<Chain>,
@@ -41,14 +45,14 @@ impl<Chain: CwEnv> DaoStakingSuite<Chain> {
 
 impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for DaoStakingSuite<Chain> {
     type Error = CwOrchError;
-    type DeployData = Addr;
+    type DeployData = DaoStakingDeployData;
 
     fn store_on(chain: Chain) -> Result<Self, Self::Error> {
         let suite = Self::new(chain);
         suite.upload()?;
         Ok(suite)
     }
-    
+
     fn get_contracts_mut(&mut self) -> Vec<Box<&mut dyn ContractInstance<Chain>>> {
         self.get_contracts_mut()
     }

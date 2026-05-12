@@ -27,7 +27,6 @@ cw-vesting.workspace = true
 cw-payroll-factory.workspace = true
 cw-token-swap.workspace = true
 cw-tokenfactory-issuer.workspace = true
-dao-migrator.workspace = true
 dao-calendar.workspace = true
 dao-dao-core.workspace = true
 dao-interface.workspace = true

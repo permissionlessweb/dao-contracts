@@ -2,7 +2,7 @@ use cosmwasm_schema::cw_serde;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdResult,
+    Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdResult,MigrateInfo,
 };
 use cw2::set_contract_version;
 
@@ -137,7 +137,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(mut deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, PreProposeError> {
+pub fn migrate(mut deps: DepsMut, _env: Env, msg: MigrateMsg,info: MigrateInfo) -> Result<Response, PreProposeError> {
     let res = PrePropose::default().migrate(deps.branch(), msg);
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     res

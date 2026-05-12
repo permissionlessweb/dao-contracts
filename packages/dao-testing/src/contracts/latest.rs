@@ -3,7 +3,7 @@ use cw_multi_test::{Contract, ContractWrapper};
 
 /// Create a dummy MigrateInfo for cw-multi-test which uses 3-param migrate
 /// but cosmwasm-std 3.x contracts have 4-param migrate.
-fn dummy_migrate_info() -> MigrateInfo {
+pub fn dummy_migrate_info() -> MigrateInfo {
     MigrateInfo {
         sender: Addr::unchecked(""),
         old_migrate_version: None,
@@ -16,7 +16,9 @@ pub fn cw20_base_contract() -> Box<dyn Contract<Empty>> {
         cw20_base::contract::instantiate,
         cw20_base::contract::query,
     )
-    .with_migrate(|deps, env, msg| cw20_base::contract::migrate(deps, env, msg, dummy_migrate_info()));
+    .with_migrate(|deps, env, msg, info| {
+        cw20_base::contract::migrate(deps, env, msg, dummy_migrate_info())
+    });
     Box::new(contract)
 }
 
@@ -54,7 +56,9 @@ pub fn cw20_stake_contract() -> Box<dyn Contract<Empty>> {
         cw20_stake::contract::instantiate,
         cw20_stake::contract::query,
     )
-    .with_migrate(|deps, env, msg| cw20_stake::contract::migrate(deps, env, msg, dummy_migrate_info()));
+    .with_migrate(|deps, env, msg, _info| {
+        cw20_stake::contract::migrate(deps, env, msg, dummy_migrate_info())
+    });
     Box::new(contract)
 }
 
@@ -75,7 +79,9 @@ pub fn dao_proposal_single_contract() -> Box<dyn Contract<Empty>> {
         dao_proposal_single::contract::query,
     )
     .with_reply(dao_proposal_single::contract::reply)
-    .with_migrate(|deps, env, msg| dao_proposal_single::contract::migrate(deps, env, msg, dummy_migrate_info()));
+    .with_migrate(|deps, env, msg, _info| {
+        dao_proposal_single::contract::migrate(deps, env, msg, dummy_migrate_info())
+    });
     Box::new(contract)
 }
 
@@ -86,7 +92,9 @@ pub fn dao_proposal_multiple_contract() -> Box<dyn Contract<Empty>> {
         dao_proposal_multiple::contract::query,
     )
     .with_reply(dao_proposal_multiple::contract::reply)
-    .with_migrate(|deps, env, msg| dao_proposal_multiple::contract::migrate(deps, env, msg, dummy_migrate_info()));
+    .with_migrate(|deps, env, msg, _info| {
+        dao_proposal_multiple::contract::migrate(deps, env, msg, dummy_migrate_info())
+    });
     Box::new(contract)
 }
 
@@ -105,7 +113,9 @@ pub fn dao_pre_propose_approver_contract() -> Box<dyn Contract<Empty>> {
         dao_pre_propose_approver::contract::instantiate,
         dao_pre_propose_approver::contract::query,
     )
-    .with_migrate(dao_pre_propose_approver::contract::migrate);
+    .with_migrate(|deps, env, msg, _info| {
+        dao_pre_propose_approver::contract::migrate(deps, env, msg, dummy_migrate_info())
+    });
     Box::new(contract)
 }
 
@@ -115,7 +125,9 @@ pub fn dao_pre_propose_single_contract() -> Box<dyn Contract<Empty>> {
         dao_pre_propose_single::contract::instantiate,
         dao_pre_propose_single::contract::query,
     )
-    .with_migrate(dao_pre_propose_single::contract::migrate);
+    .with_migrate(|deps, env, msg, _info| {
+        dao_pre_propose_single::contract::migrate(deps, env, msg, dummy_migrate_info())
+    });
     Box::new(contract)
 }
 
@@ -125,7 +137,9 @@ pub fn dao_pre_propose_multiple_contract() -> Box<dyn Contract<Empty>> {
         dao_pre_propose_multiple::contract::instantiate,
         dao_pre_propose_multiple::contract::query,
     )
-    .with_migrate(dao_pre_propose_multiple::contract::migrate);
+    .with_migrate(|deps, env, msg, _info| {
+        dao_pre_propose_multiple::contract::migrate(deps, env, msg, dummy_migrate_info())
+    });
     Box::new(contract)
 }
 
@@ -135,7 +149,9 @@ pub fn dao_pre_propose_approval_single_contract() -> Box<dyn Contract<Empty>> {
         dao_pre_propose_approval_single::contract::instantiate,
         dao_pre_propose_approval_single::contract::query,
     )
-    .with_migrate(dao_pre_propose_approval_single::contract::migrate);
+    .with_migrate(|deps, env, msg, _info| {
+        dao_pre_propose_approval_single::contract::migrate(deps, env, msg, dummy_migrate_info())
+    });
     Box::new(contract)
 }
 
@@ -146,7 +162,9 @@ pub fn dao_voting_cw4_contract() -> Box<dyn Contract<Empty>> {
         dao_voting_cw4::contract::query,
     )
     .with_reply(dao_voting_cw4::contract::reply)
-    .with_migrate(|deps, env, msg| dao_voting_cw4::contract::migrate(deps, env, msg, dummy_migrate_info()));
+    .with_migrate(|deps, env, msg, _info| {
+        dao_voting_cw4::contract::migrate(deps, env, msg, dummy_migrate_info())
+    });
     Box::new(contract)
 }
 
@@ -157,7 +175,9 @@ pub fn dao_voting_cw20_staked_contract() -> Box<dyn Contract<Empty>> {
         dao_voting_cw20_staked::contract::query,
     )
     .with_reply(dao_voting_cw20_staked::contract::reply)
-    .with_migrate(|deps, env, msg| dao_voting_cw20_staked::contract::migrate(deps, env, msg, dummy_migrate_info()));
+    .with_migrate(|deps, env, msg, _info| {
+        dao_voting_cw20_staked::contract::migrate(deps, env, msg, dummy_migrate_info())
+    });
     Box::new(contract)
 }
 
@@ -178,7 +198,9 @@ pub fn dao_voting_token_staked_contract() -> Box<dyn Contract<Empty>> {
         dao_voting_token_staked::contract::query,
     )
     .with_reply(dao_voting_token_staked::contract::reply)
-    .with_migrate(|deps, env, msg| dao_voting_token_staked::contract::migrate(deps, env, msg, dummy_migrate_info()));
+    .with_migrate(|deps, env, msg, _info| {
+        dao_voting_token_staked::contract::migrate(deps, env, msg, dummy_migrate_info())
+    });
     Box::new(contract)
 }
 
@@ -189,7 +211,9 @@ pub fn dao_voting_cw721_staked_contract() -> Box<dyn Contract<Empty>> {
         dao_voting_cw721_staked::contract::query,
     )
     .with_reply(dao_voting_cw721_staked::contract::reply)
-    .with_migrate(|deps, env, msg| dao_voting_cw721_staked::contract::migrate(deps, env, msg, dummy_migrate_info()));
+    .with_migrate(|deps, env, msg, _info| {
+        dao_voting_cw721_staked::contract::migrate(deps, env, msg, dummy_migrate_info())
+    });
     Box::new(contract)
 }
 
@@ -210,17 +234,9 @@ pub fn dao_dao_core_contract() -> Box<dyn Contract<Empty>> {
         dao_dao_core::contract::query,
     )
     .with_reply(dao_dao_core::contract::reply)
-    .with_migrate(|deps, env, msg| dao_dao_core::contract::migrate(deps, env, msg, dummy_migrate_info()));
-    Box::new(contract)
-}
-
-pub fn dao_migrator_contract() -> Box<dyn Contract<Empty>> {
-    let contract = ContractWrapper::new(
-        dao_migrator::contract::execute,
-        dao_migrator::contract::instantiate,
-        dao_migrator::contract::query,
-    )
-    .with_reply(dao_migrator::contract::reply);
+    .with_migrate(|deps, env, msg, _info| {
+        dao_dao_core::contract::migrate(deps, env, msg, dummy_migrate_info())
+    });
     Box::new(contract)
 }
 
@@ -278,7 +294,9 @@ pub fn dao_rewards_distributor_contract() -> Box<dyn Contract<Empty>> {
         dao_rewards_distributor::contract::instantiate,
         dao_rewards_distributor::contract::query,
     )
-    .with_migrate(dao_rewards_distributor::contract::migrate);
+    .with_migrate(|deps, env, msg, _info| {
+        dao_rewards_distributor::contract::migrate(deps, env, msg, dummy_migrate_info())
+    });
     Box::new(contract)
 }
 
@@ -289,7 +307,9 @@ pub fn btsg_ft_factory_contract() -> Box<dyn Contract<Empty>> {
         btsg_ft_factory::contract::query,
     )
     .with_reply(btsg_ft_factory::contract::reply)
-    .with_migrate(|deps, env, msg| btsg_ft_factory::contract::migrate(deps, env, msg, dummy_migrate_info()));
+    .with_migrate(|deps, env, msg, _info| {
+        btsg_ft_factory::contract::migrate(deps, env, msg, dummy_migrate_info())
+    });
     Box::new(contract)
 }
 
@@ -300,7 +320,9 @@ pub fn cw_admin_factory_contract() -> Box<dyn Contract<Empty>> {
         cw_admin_factory::contract::query,
     )
     .with_reply(cw_admin_factory::contract::reply)
-    .with_migrate(cw_admin_factory::contract::migrate);
+    .with_migrate(|deps, env, msg, _info| {
+        cw_admin_factory::contract::migrate(deps, env, msg, dummy_migrate_info())
+    });
     Box::new(contract)
 }
 
@@ -320,7 +342,9 @@ pub fn cw_token_swap_contract() -> Box<dyn Contract<Empty>> {
         cw_token_swap::contract::instantiate,
         cw_token_swap::contract::query,
     )
-    .with_migrate(|deps, env, msg| cw_token_swap::contract::migrate(deps, env, msg, dummy_migrate_info()));
+    .with_migrate(|deps, env, msg, _info| {
+        cw_token_swap::contract::migrate(deps, env, msg, dummy_migrate_info())
+    });
     Box::new(contract)
 }
 
@@ -330,7 +354,9 @@ pub fn cw20_stake_external_rewards_contract() -> Box<dyn Contract<Empty>> {
         cw20_stake_external_rewards::contract::instantiate,
         cw20_stake_external_rewards::contract::query,
     )
-    .with_migrate(|deps, env, msg| cw20_stake_external_rewards::contract::migrate(deps, env, msg, dummy_migrate_info()));
+    .with_migrate(|deps, env, msg, _info| {
+        cw20_stake_external_rewards::contract::migrate(deps, env, msg, dummy_migrate_info())
+    });
     Box::new(contract)
 }
 
@@ -340,7 +366,9 @@ pub fn cw20_stake_reward_distributor_contract() -> Box<dyn Contract<Empty>> {
         cw20_stake_reward_distributor::contract::instantiate,
         cw20_stake_reward_distributor::contract::query,
     )
-    .with_migrate(|deps, env, msg| cw20_stake_reward_distributor::contract::migrate(deps, env, msg, dummy_migrate_info()));
+    .with_migrate(|deps, env, msg, _info| {
+        cw20_stake_reward_distributor::contract::migrate(deps, env, msg, dummy_migrate_info())
+    });
     Box::new(contract)
 }
 

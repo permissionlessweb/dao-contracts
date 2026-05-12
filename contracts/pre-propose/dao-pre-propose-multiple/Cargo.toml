@@ -15,7 +15,8 @@ version = { workspace = true }
 crate-type = ["cdylib", "rlib"]
 
 [features]
-
+# v2.4.1 migration tests — disabled until migration crates are available
+v241 = []
 
 # use library feature to disable all instantiate/execute/query exports
 library = []
@@ -45,15 +46,12 @@ dao-interface = { workspace = true }
 dao-testing = { workspace = true }
 dao-hooks = { workspace = true }
 
-# v2.4.1-compatible base dependencies
-cosmwasm-std-v1 = { workspace = true }
-cw4-v241 = { workspace = true }
-cw-utils-v241 = { workspace = true }
-
-# v2.4.1 migration
-dao-dao-core-v241 = { workspace = true }
-dao-interface-v241 = { workspace = true }
-dao-pre-propose-multiple-v241 = { workspace = true }
-dao-proposal-multiple-v241  = { workspace = true }
-dao-voting-cw4-v241 = { workspace = true }
-dao-voting-v241 = { workspace = true }
+# v2.4.1 migration (gated behind feature flag — crates unavailable)
+# cw4-v241 = { workspace = true }
+# cw-utils-v241 = { workspace = true }
+# dao-dao-core-v241 = { workspace = true }
+# dao-interface-v241 = { workspace = true }
+# dao-pre-propose-multiple-v241 = { workspace = true }
+# dao-proposal-multiple-v241 = { workspace = true }
+# dao-voting-cw4-v241 = { workspace = true }
+# dao-voting-v241 = { workspace = true }

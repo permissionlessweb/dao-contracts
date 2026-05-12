@@ -13,7 +13,7 @@ pub struct InstantiateMsg {
 
 #[cw_ownable_execute]
 #[cw_serde]
-#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteMsg))]
+#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
     /// Register protobuf file descriptor sets.
     Register {

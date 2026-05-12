@@ -14,11 +14,6 @@ crate-type = ["cdylib", "rlib"]
 
 # use library feature to disable all instantiate/execute/query exports
 library = []
-
-# v241 migration tests require cosmwasm-std v1 crates which are
-# fundamentally incompatible with cosmwasm-std v2 types at compile time.
-# Gate behind this feature so normal `cargo test` succeeds.
-v241 = []
 interface = ["cw-orch"]
 
 [dependencies]
@@ -46,11 +41,3 @@ dao-testing = { workspace = true }
 dao-hooks = { workspace = true }
 dao-proposal-single = { workspace = true }
 cw-hooks = { workspace = true }
-
-# v2.4.1 migration
-dao-dao-core-v241 = { workspace = true }
-dao-interface-v241 = { workspace = true }
-dao-pre-propose-single-v241 = { workspace = true }
-dao-proposal-single-v241  = { workspace = true }
-dao-voting-cw4-v241 = { workspace = true }
-dao-voting-v241 = { workspace = true }

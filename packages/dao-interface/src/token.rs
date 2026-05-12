@@ -3,6 +3,10 @@ use cosmwasm_std::{Binary, DenomUnit, Uint256};
 
 use crate::state::ModuleInstantiateCallback;
 
+/// Re-export cosmwasm_std's DenomMetadata as Metadata for backwards compatibility.
+/// Previously this was re-exported from osmosis_std; now cosmwasm-std v3 provides it natively.
+pub use cosmwasm_std::DenomMetadata as Metadata;
+
 #[cw_serde]
 pub struct InitialBalance {
     pub amount: Uint256,

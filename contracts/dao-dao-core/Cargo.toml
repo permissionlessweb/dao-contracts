@@ -14,6 +14,7 @@ crate-type = ["cdylib", "rlib"]
 # use library feature to disable all instantiate/execute/query exports
 library = []
 interface = ["cw-orch"]
+v241 = []
 
 [dependencies]
 cw-orch = { workspace = true, optional = true }
@@ -30,7 +31,7 @@ dao-interface = { workspace = true }
 dao-dao-macros = { workspace = true }
 cw-paginate-storage = { workspace = true }
 cw-reply-helper = { workspace = true }
-cw-core-v1 = { workspace = true, features = ["library"] }
+# cw-core-v1 = { workspace = true, features = ["library"], optional = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }

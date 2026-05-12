@@ -1,16 +1,198 @@
-use cosmwasm_std::Addr;
+use cosmwasm_std::{to_json_binary, Addr};
 use cw_orch::prelude::*;
 use dao_cw_orch::DaoDaoCore;
+use dao_interface::state::{Admin, ModuleInstantiateInfo};
 
 use super::modules::{
     dao_state::{DaoSnapshot, DaoStateRegistry, ModuleRegistry, ProposalModuleEntry},
-    distribution::DaoDistributionSuite,
-    external::DaoExternalSuite,
-    gauges::DaoGaugeSuite,
-    proposal::DaoProposalSuite,
-    staking::DaoStakingSuite,
-    voting::DaoVotingSuite,
+    distribution::{DaoDistributionDeployData, DaoDistributionSuite},
+    external::{calendar::CalendarDeployData, DaoExternalDeployData, DaoExternalSuite},
+    gauges::{DaoGaugeDeployData, DaoGaugeSuite},
+    proposal::{DaoProposalDeployData, DaoProposalSuite},
+    staking::{DaoStakingDeployData, DaoStakingSuite},
+    voting::{DaoVotingDeployData, DaoVotingSuite},
 };
+
+/// Voting module configuration for a single DAO instance.
+#[derive(Clone, Debug)]
+pub enum VotingModuleConfig {
+    /// CW4 group-based voting.
+    Cw4 {
+        cw4_group_code_id: u64,
+        initial_members: Vec<cw4::Member>,
+    },
+    /// CW20 token staking-based voting.
+    Cw20Staked {
+        token_info: dao_voting_cw20_staked::msg::TokenInfo,
+        active_threshold: Option<dao_voting::threshold::ActiveThreshold>,
+    },
+    /// Native/tokenfactory token staking-based voting.
+    TokenStaked {
+        token_info: dao_voting_token_staked::msg::TokenInfo,
+        unstaking_duration: Option<cw_utils::Duration>,
+        active_threshold: Option<dao_voting::threshold::ActiveThreshold>,
+    },
+}
+
+impl VotingModuleConfig {
+    /// Build a `ModuleInstantiateInfo` from uploaded suite code IDs.
+    pub fn to_module_info<Chain: CwEnv>(
+        &self,
+        suite: &DaoDaoSuite<Chain>,
+    ) -> Result<ModuleInstantiateInfo, CwOrchError> {
+        match self {
+            VotingModuleConfig::Cw4 {
+                cw4_group_code_id,
+                initial_members,
+            } => {
+                let msg = dao_voting_cw4::msg::InstantiateMsg {
+                    group_contract: dao_voting_cw4::msg::GroupContract::New {
+                        cw4_group_code_id: *cw4_group_code_id,
+                        cw4_group_salt: None,
+                        initial_members: initial_members.clone(),
+                    },
+                };
+                Ok(ModuleInstantiateInfo {
+                    code_id: suite.voting.voting_cw4.code_id()?,
+                    msg: to_json_binary(&msg)
+                        .map_err(|e| CwOrchError::StdErr(e.to_string()))?,
+                    admin: Some(Admin::CoreModule {}),
+                    funds: None,
+                    label: "dao_voting_cw4".to_string(),
+                    salt: None,
+                })
+            }
+            VotingModuleConfig::Cw20Staked {
+                token_info,
+                active_threshold,
+            } => {
+                let msg = dao_voting_cw20_staked::msg::InstantiateMsg {
+                    token_info: token_info.clone(),
+                    active_threshold: active_threshold.clone(),
+                };
+                Ok(ModuleInstantiateInfo {
+                    code_id: suite.voting.voting_cw20_staked.code_id()?,
+                    msg: to_json_binary(&msg)
+                        .map_err(|e| CwOrchError::StdErr(e.to_string()))?,
+                    admin: Some(Admin::CoreModule {}),
+                    funds: None,
+                    label: "dao_voting_cw20_staked".to_string(),
+                    salt: None,
+                })
+            }
+            VotingModuleConfig::TokenStaked {
+                token_info,
+                unstaking_duration,
+                active_threshold,
+            } => {
+                let msg = dao_voting_token_staked::msg::InstantiateMsg {
+                    token_info: token_info.clone(),
+                    unstaking_duration: *unstaking_duration,
+                    active_threshold: active_threshold.clone(),
+                };
+                Ok(ModuleInstantiateInfo {
+                    code_id: suite.voting.voting_token_staked.code_id()?,
+                    msg: to_json_binary(&msg)
+                        .map_err(|e| CwOrchError::StdErr(e.to_string()))?,
+                    admin: Some(Admin::CoreModule {}),
+                    funds: None,
+                    label: "dao_voting_token_staked".to_string(),
+                    salt: None,
+                })
+            }
+        }
+    }
+}
+
+/// Proposal module configuration for a single DAO instance.
+#[derive(Clone, Debug)]
+pub enum ProposalModuleConfig {
+    /// Single-choice proposal module.
+    Single {
+        msg: dao_proposal_single::msg::InstantiateMsg,
+    },
+    /// Multiple-choice proposal module.
+    Multiple {
+        msg: dao_proposal_multiple::msg::InstantiateMsg,
+    },
+    /// Calendar registered as a proposal module.
+    Calendar(CalendarDeployData),
+}
+
+impl ProposalModuleConfig {
+    /// Build a `ModuleInstantiateInfo` from uploaded suite code IDs.
+    pub fn to_module_info<Chain: CwEnv>(
+        &self,
+        suite: &DaoDaoSuite<Chain>,
+    ) -> Result<ModuleInstantiateInfo, CwOrchError> {
+        match self {
+            ProposalModuleConfig::Single { msg } => Ok(ModuleInstantiateInfo {
+                code_id: suite.proposal.prop_single.code_id()?,
+                msg: to_json_binary(msg)
+                    .map_err(|e| CwOrchError::StdErr(e.to_string()))?,
+                admin: Some(Admin::CoreModule {}),
+                funds: None,
+                label: "dao_proposal_single".to_string(),
+                salt: None,
+            }),
+            ProposalModuleConfig::Multiple { msg } => Ok(ModuleInstantiateInfo {
+                code_id: suite.proposal.prop_multiple.code_id()?,
+                msg: to_json_binary(msg)
+                    .map_err(|e| CwOrchError::StdErr(e.to_string()))?,
+                admin: Some(Admin::CoreModule {}),
+                funds: None,
+                label: "dao_proposal_multiple".to_string(),
+                salt: None,
+            }),
+            ProposalModuleConfig::Calendar(cal_data) => {
+                use super::deploy_data::DaoDeployData;
+                Ok(ModuleInstantiateInfo {
+                    code_id: suite.external.calendar.code_id()?,
+                    msg: to_json_binary(&cal_data.clone().into_init())
+                        .map_err(|e| CwOrchError::StdErr(e.to_string()))?,
+                    admin: Some(Admin::CoreModule {}),
+                    funds: None,
+                    label: "dao_calendar".to_string(),
+                    salt: None,
+                })
+            }
+        }
+    }
+}
+
+/// Per-DAO instance configuration.
+#[derive(Clone, Debug)]
+pub struct DaoConfig {
+    /// Registry key for this DAO.
+    pub key: String,
+    /// Optional admin address.
+    pub admin: Option<String>,
+    /// DAO name.
+    pub name: String,
+    /// DAO description.
+    pub description: String,
+    /// Voting module configuration.
+    pub voting: VotingModuleConfig,
+    /// Proposal modules to register.
+    pub proposal_modules: Vec<ProposalModuleConfig>,
+}
+
+/// Top-level deploy data for a full DAO suite.
+///
+/// `Default` yields empty `daos` vec with all sub-suite data defaulted,
+/// so `deploy_on(chain, DaoDaoDeployData::default())` just uploads all codes.
+#[derive(Clone, Debug, Default)]
+pub struct DaoDaoDeployData {
+    /// Array of DAO instances to bootstrap.
+    pub daos: Vec<DaoConfig>,
+    /// Suite-level deploy data (affects code uploads, not per-DAO).
+    pub proposal: DaoProposalDeployData,
+    pub voting: DaoVotingDeployData,
+    pub staking: DaoStakingDeployData,
+    pub distribution: DaoDistributionDeployData,
+    pub external: DaoExternalDeployData,
+    pub gauges: DaoGaugeDeployData,
+}
 
 // ═══════════════════════════════════════════════════════════════════════
 // ContractDoc — static metadata for a single contract interface
@@ -369,13 +551,6 @@ define_suite! {
         description: "CW721 NFT collection with weighted roles for governance",
         schema: "contracts/external/cw721-roles/schema/cw721-roles.json",
     },
-    MIGRATOR, "migrator" => {
-        path: external.migrator,
-        name: "DAO Migrator",
-        category: "External",
-        description: "Handles DAO contract migrations across versions",
-        schema: "contracts/external/dao-migrator/schema/dao-migrator.json",
-    },
     CALENDAR, "calendar" => {
         path: external.calendar,
         name: "DAO Calendar",
@@ -624,7 +799,7 @@ impl<Chain: CwEnv> DaoDaoSuite<Chain> {
 // ═══════════════════════════════════════════════════════════════════════
 impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for DaoDaoSuite<Chain> {
     type Error = CwOrchError;
-    type DeployData = Addr;
+    type DeployData = DaoDaoDeployData;
 
     fn store_on(chain: Chain) -> Result<Self, Self::Error> {
         let suite = Self::new(chain);
@@ -648,8 +823,60 @@ impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for DaoDaoSuite<Chain> {
         Ok(Self::new(chain))
     }
 
-    fn deploy_on(chain: Chain, _data: Self::DeployData) -> Result<Self, Self::Error> {
-        Self::store_on(chain)
+    fn deploy_on(chain: Chain, data: Self::DeployData) -> Result<Self, Self::Error> {
+        // 1. Deploy all sub-suites (uploads all code)
+        let dao_core = DaoDaoCore::new("dao_dao_core", chain.clone());
+        dao_core.upload()?;
+
+        let proposal = DaoProposalSuite::deploy_on(chain.clone(), data.proposal)?;
+        let voting = DaoVotingSuite::deploy_on(chain.clone(), data.voting)?;
+        let staking = DaoStakingSuite::deploy_on(chain.clone(), data.staking)?;
+        let distribution = DaoDistributionSuite::deploy_on(chain.clone(), data.distribution)?;
+        let external = DaoExternalSuite::deploy_on(chain.clone(), data.external)?;
+        let gauges = DaoGaugeSuite::deploy_on(chain, data.gauges)?;
+
+        let mut suite = Self {
+            dao_core,
+            proposal,
+            voting,
+            staking,
+            distribution,
+            external,
+            gauges,
+            registry: DaoStateRegistry::new(),
+        };
+
+        // 2. Instantiate each DAO
+        for dao_cfg in data.daos {
+            let voting_info = dao_cfg.voting.to_module_info(&suite)?;
+            let proposal_infos: Vec<ModuleInstantiateInfo> = dao_cfg
+                .proposal_modules
+                .iter()
+                .map(|pm| pm.to_module_info(&suite))
+                .collect::<Result<_, _>>()?;
+
+            let init_msg = dao_interface::msg::InstantiateMsg {
+                admin: dao_cfg.admin.clone(),
+                name: dao_cfg.name,
+                description: dao_cfg.description,
+                image_url: None,
+                automatically_add_cw20s: true,
+                automatically_add_cw721s: true,
+                voting_module_instantiate_info: voting_info,
+                proposal_modules_instantiate_info: proposal_infos,
+                initial_items: None,
+                initial_actions: None,
+                dao_uri: None,
+            };
+
+            suite
+                .dao_core
+                .instantiate(&init_msg, dao_cfg.admin.as_deref().map(|a| Addr::unchecked(a)).as_ref(), &[])?;
+            let core_addr = suite.dao_core.address()?;
+            suite.save_dao(&dao_cfg.key, core_addr);
+        }
+
+        Ok(suite)
     }
 }
 

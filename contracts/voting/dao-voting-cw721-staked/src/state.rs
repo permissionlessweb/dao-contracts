@@ -46,8 +46,9 @@ pub const TOTAL_STAKED_NFTS: SnapshotItem<Uint128> = SnapshotItem::new(
 /// the number of claims that may be outstanding. This is horrible UX,
 /// especially for large NFT collections. To allow DAOs to upgrade, we must keep
 /// the legacy NFT claims storage, but we can paginate the new storage.
-pub const LEGACY_NFT_CLAIMS: cw721_controllers_v250::NftClaims =
-    cw721_controllers_v250::NftClaims::new("nft_claims");
+/// NOTE: Previously used cw721_controllers_v250 which pulled in cosmwasm-std v1.5.
+/// Replaced with local nft_controllers::NftClaims — same storage layout.
+pub const LEGACY_NFT_CLAIMS: NftClaims = NftClaims::new("nft_claims");
 
 pub const NFT_CLAIMS: NftClaims = NftClaims::new("nc");
 

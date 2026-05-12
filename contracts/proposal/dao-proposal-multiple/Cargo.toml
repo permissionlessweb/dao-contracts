@@ -35,7 +35,7 @@ dao-voting = { workspace = true }
 cw-hooks = { workspace = true }
 dao-hooks = { workspace = true }
 dao-pre-propose-multiple = { workspace = true }
-voting-v1 = { workspace = true }
+# voting-v1 = { workspace = true }
 
 [dev-dependencies]
 dao-proposal-multiple = { workspace = true }

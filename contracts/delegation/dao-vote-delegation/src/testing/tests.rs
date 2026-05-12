@@ -1,12 +1,12 @@
 use cosmwasm_std::{
     testing::{mock_dependencies, mock_env, MockApi},
-    to_json_binary, Addr, Decimal, Empty, Uint128, Uint256,
+    to_json_binary, Addr, Decimal, Empty, MigrateInfo, Uint128, Uint256,
 };
 use cw_multi_test::{Contract, ContractWrapper};
 use cw_utils::Duration;
 use dao_hooks::{nft_stake::NftStakeChangedHookMsg, stake::StakeChangedHookMsg, vote::VoteHookMsg};
 use dao_interface::helpers::OptionalUpdate;
-use dao_testing::{ADDR0, ADDR1, ADDR2, ADDR3, ADDR4};
+use dao_testing::{contracts::dummy_migrate_info, ADDR0, ADDR1, ADDR2, ADDR3, ADDR4};
 
 use crate::{
     contract::{CONTRACT_NAME, CONTRACT_VERSION, DEFAULT_MAX_DELEGATIONS},
@@ -769,9 +769,9 @@ fn test_max_delegations() {
 
     // try to delegate to ADDR2
     let err = suite.delegate_error(ADDR3, ADDR2, Decimal::percent(10));
-    assert!(
-        err.to_string().contains(&ContractError::MaxDelegationsReached { max: 2, current: 2 }.to_string())
-    );
+    assert!(err
+        .to_string()
+        .contains(&ContractError::MaxDelegationsReached { max: 2, current: 2 }.to_string()));
 
     suite.assert_delegations_count(ADDR3, 2);
 
@@ -781,15 +781,15 @@ fn test_max_delegations() {
 
     // try to delegate to ADDR2
     let err = suite.delegate_error(ADDR3, ADDR2, Decimal::percent(10));
-    assert!(
-        err.to_string().contains(&ContractError::MaxDelegationsReached { max: 1, current: 2 }.to_string())
-    );
+    assert!(err
+        .to_string()
+        .contains(&ContractError::MaxDelegationsReached { max: 1, current: 2 }.to_string()));
 
     // try to update existing delegation
     let err = suite.delegate_error(ADDR3, ADDR1, Decimal::percent(20));
-    assert!(
-        err.to_string().contains(&ContractError::MaxDelegationsReached { max: 1, current: 2 }.to_string())
-    );
+    assert!(err
+        .to_string()
+        .contains(&ContractError::MaxDelegationsReached { max: 1, current: 2 }.to_string()));
 
     // remove a delegation
     suite.undelegate(ADDR3, ADDR0);
@@ -1592,7 +1592,11 @@ fn test_cannot_delegate_no_vp() {
     let mut suite = Cw4DaoVoteDelegationTestingSuite::new().build();
 
     suite.register(ADDR0);
-    suite.delegate(MockApi::default().addr_make("not_member"), ADDR0, Decimal::percent(100));
+    suite.delegate(
+        MockApi::default().addr_make("not_member"),
+        ADDR0,
+        Decimal::percent(100),
+    );
 }
 
 #[test]
@@ -1746,8 +1750,13 @@ fn test_migration_incorrect_contract() {
 
     cw2::set_contract_version(&mut deps.storage, "different_contract", "0.1.0").unwrap();
 
-    let err =
-        crate::contract::migrate(deps.as_mut(), mock_env(), crate::msg::MigrateMsg {}).unwrap_err();
+    let err = crate::contract::migrate(
+        deps.as_mut(),
+        mock_env(),
+        crate::msg::MigrateMsg {},
+        dummy_migrate_info(),
+    )
+    .unwrap_err();
     assert_eq!(
         err,
         crate::ContractError::MigrationErrorIncorrectContract {
@@ -1763,8 +1772,13 @@ fn test_cannot_migrate_to_same_version() {
 
     cw2::set_contract_version(&mut deps.storage, CONTRACT_NAME, CONTRACT_VERSION).unwrap();
 
-    let err =
-        crate::contract::migrate(deps.as_mut(), mock_env(), crate::msg::MigrateMsg {}).unwrap_err();
+    let err = crate::contract::migrate(
+        deps.as_mut(),
+        mock_env(),
+        crate::msg::MigrateMsg {},
+        dummy_migrate_info(),
+    )
+    .unwrap_err();
     assert_eq!(
         err,
         crate::ContractError::MigrationErrorInvalidVersion {
@@ -1780,7 +1794,13 @@ fn test_migrate() {
 
     cw2::set_contract_version(&mut deps.storage, CONTRACT_NAME, "2.4.0").unwrap();
 
-    crate::contract::migrate(deps.as_mut(), mock_env(), crate::msg::MigrateMsg {}).unwrap();
+    crate::contract::migrate(
+        deps.as_mut(),
+        mock_env(),
+        crate::msg::MigrateMsg {},
+        dummy_migrate_info(),
+    )
+    .unwrap();
 
     let version = cw2::get_contract_version(&deps.storage).unwrap();
 
