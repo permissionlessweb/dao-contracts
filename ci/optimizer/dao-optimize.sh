@@ -61,6 +61,9 @@ for crate in $EXCLUDED_CRATES; do
   fi
 done
 
+# Disable bulk memory operations for CosmWasm MVP compatibility
+export RUSTFLAGS="-C target-feature=-bulk-memory"
+
 # Build: cd into the project directory and run bob (the optimizer's builder)
 echo "Building project $PROJECT_DIR ..."
 (
@@ -89,7 +92,7 @@ for WASM in /target/wasm32-unknown-unknown/release/*.wasm; do
 
   OUT_FILENAME=$(basename "$WASM")
   echo "Optimizing $OUT_FILENAME ..."
-  wasm-opt -Os "$WASM" -o "$PROJECT_DIR/artifacts/$OUT_FILENAME"
+  wasm-opt -Os --enable-bulk-memory "$WASM" -o "$PROJECT_DIR/artifacts/$OUT_FILENAME"
 done
 
 # Post-process: checksums

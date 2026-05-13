@@ -23,6 +23,9 @@ RUN rustup install 1.88.0 && rustup default 1.88.0
 # Add the wasm target for the new toolchain
 RUN rustup target add wasm32-unknown-unknown --toolchain 1.88.0
 
+# Disable bulk memory operations for CosmWasm MVP compatibility
+ENV RUSTFLAGS="-C target-feature=-bulk-memory"
+
 # Override the entrypoint with our wrapper that handles the /workspace layout
 COPY dao-optimize.sh /usr/local/bin/dao-optimize.sh
 RUN chmod +x /usr/local/bin/dao-optimize.sh

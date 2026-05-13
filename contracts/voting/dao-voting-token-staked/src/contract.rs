@@ -113,6 +113,7 @@ pub fn instantiate(
             TOKEN_INSTANTIATION_INFO.save(deps.storage, &msg.token_info)?;
 
             // Metadata must be set on creation for Thorchain.
+
             #[cfg(feature = "thorchain_tokenfactory")]
             let msg = if let Some(metadata) = &token.metadata {
                 // If the salt is not provided, use a default salt so that
@@ -125,11 +126,10 @@ pub fn instantiate(
                 let checksum = deps
                     .querier
                     .query_wasm_code_info(*token_issuer_code_id)?
-                    .checksum
-                    .as_slice();
+                    .checksum;
 
                 let issuer_addr = deps.api.addr_humanize(&cosmwasm_std::instantiate2_address(
-                    &checksum,
+                    checksum.as_slice(),
                     &deps.api.addr_canonicalize(_env.contract.address.as_str())?,
                     &token_issuer_salt.clone().unwrap(),
                 )?)?;
@@ -170,6 +170,8 @@ pub fn instantiate(
                         display: metadata.display.clone(),
                         name: metadata.name.clone(),
                         symbol: metadata.symbol.clone(),
+                        uri: Default::default(),
+                        uri_hash: Default::default(),
                     },
                 })?
             } else {
