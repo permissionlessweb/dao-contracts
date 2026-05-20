@@ -12,6 +12,7 @@
 - [Staking](#staking)
 - [Distribution](#distribution)
 - [External](#external)
+- [Gauges](#gauges)
 
 ## Contract Summary
 
@@ -43,8 +44,9 @@
 | `cw_tokenfactory_issuer` | TokenFactory Issuer | External | Tokenfactory denom management — mint, burn, freeze |
 | `cw_vesting` | CW Vesting | External | Token vesting with configurable curves and clawback |
 | `cw721_roles` | CW721 Roles | External | CW721 NFT collection with weighted roles for governance |
-| `migrator` | DAO Migrator | External | Handles DAO contract migrations across versions |
 | `calendar` | DAO Calendar | External | On-chain event calendar with groups, gauges, scheduling |
+| `gauge_orchestrator` | Gauge Orchestrator | Gauges | Orchestrates gauge voting rounds and option set management |
+| `gauge_adapter` | Gauge Adapter | Gauges | Adapter connecting a gauge to an external reward or allocation target |
 
 ---
 
@@ -1100,74 +1102,28 @@ Note that if the contract is canceled at time c, this value will change to ... |
 | `Extension` | Extension query |
 | `Ownership` | Query the contract's ownership information |
 
-### DAO Migrator (`migrator`)
-
-> Handles DAO contract migrations across versions
-
-**Version**: `2.8.0-alpha.2`
-
-#### InstantiateMsg
-
-| Field | Required | Description |
-|-------|----------|-------------|
-| `migration_params` | yes |  |
-| `sub_daos` | yes |  |
-| `v1_code_ids` | yes |  |
-| `v2_code_ids` | yes |  |
-
 ### DAO Calendar (`calendar`)
 
 > On-chain event calendar with groups, gauges, scheduling
 
-**Version**: `2.8.0-alpha.2`
-
-#### InstantiateMsg
-
-| Field | Required | Description |
-|-------|----------|-------------|
-| `initial_groups` | no |  |
-
-#### ExecuteMsg
-
-| Variant | Description |
-|---------|-------------|
-| `CreateEvent` |  |
-| `UpdateEvent` |  |
-| `CancelEvent` |  |
-| `RegisterEventGauges` |  |
-| `TriggerEventStart` |  |
-| `TriggerEventEnd` |  |
-| `RegisterGroup` |  |
-| `UpdateGroup` |  |
-| `RemoveGroup` |  |
-| `RenewCalendar` |  |
-| `AddEventHook` |  |
-| `RemoveEventHook` |  |
-
-#### QueryMsg
-
-| Variant | Description |
-|---------|-------------|
-| `Event` |  |
-| `ListEvents` |  |
-| `ReverseEvents` |  |
-| `ListGroups` |  |
-| `Group` |  |
-| `GroupsManagingEvent` |  |
-| `EventGauges` |  |
-| `EventCount` |  |
-| `EventHooks` |  |
-| `DumpState` |  |
-| `Dao` | Returns the address of the DAO this module belongs to. |
-| `Info` | Returns contract version info. |
-| `NextProposalId` | Returns the next event ID that will be assigned. |
-
-#### MigrateMsg
-
-| Variant | Description |
-|---------|-------------|
-| `FromCompatible` |  |
+*Schema not found: `schema/dao-calendar.json`*
 
 ---
 
-*28 contracts across 7 categories.*
+## Gauges
+
+### Gauge Orchestrator (`gauge_orchestrator`)
+
+> Orchestrates gauge voting rounds and option set management
+
+*Schema not found: `contracts/gauges/gauge-orchestrator/schema/gauge-orchestrator.json`*
+
+### Gauge Adapter (`gauge_adapter`)
+
+> Adapter connecting a gauge to an external reward or allocation target
+
+*Schema not found: `contracts/gauges/gauge-adapter/schema/gauge-adapter.json`*
+
+---
+
+*29 contracts across 8 categories.*

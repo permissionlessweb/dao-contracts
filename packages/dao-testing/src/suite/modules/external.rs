@@ -1,8 +1,58 @@
-use cw_orch::prelude::*;
+use cw_orch::{anyhow, prelude::*};
+use dao_calendar::msg::{EventSupplier, EventSupplierInit, EventSupplierType, GroupInit};
 use dao_cw_orch::*;
 
 pub mod calendar;
 pub use calendar::CalendarDeployData;
+
+use crate::{
+    distribution::DaoDistributionDeployData, gauges::DaoGaugeDeployData,
+    proposal::DaoProposalDeployData, staking::DaoStakingDeployData, voting::DaoVotingDeployData,
+    DaoConfig, DaoDaoDeployData, ProposalModuleConfig, VotingModuleConfig,
+};
+
+/// Single DAO with dao-calendar module as a proposal module.
+pub fn dao_deploy_data_single(sender: Addr) -> anyhow::Result<Option<DaoDaoDeployData>> {
+    // Calendar deploy data — minimal config for local testing
+    let calendar_data = CalendarDeployData {
+        initial_groups: Some(vec![GroupInit {
+            id: "public-resources".into(),
+            suppliers: vec![EventSupplierInit {
+                contract: todo!(),
+                supplier_type: todo!(),
+            }],
+        }]),
+    };
+
+    // DAO config with calendar as a proposal module
+    let dao_config = DaoConfig {
+        key: "terp_dao".to_string(),
+        admin: Some(sender.to_string()),
+        name: "Terp DAO".to_string(),
+        description: "Terp Network DAO with calendar governance module".to_string(),
+        voting: VotingModuleConfig::Cw4 {
+            cw4_group_code_id: 0, // Resolved from suite code IDs during deploy
+            initial_members: vec![cw4::Member {
+                addr: sender.to_string(),
+                weight: 1,
+            }],
+        },
+        proposal_modules: vec![ProposalModuleConfig::Calendar(calendar_data.clone())],
+    };
+
+    Ok(Some(DaoDaoDeployData {
+        proposal: DaoProposalDeployData::default(),
+        voting: DaoVotingDeployData::default(),
+        staking: DaoStakingDeployData::default(),
+        distribution: DaoDistributionDeployData::default(),
+        external: DaoExternalDeployData {
+            calendar: Some(calendar_data),
+            ..Default::default()
+        },
+        gauges: DaoGaugeDeployData::default(),
+        daos: vec![dao_config],
+    }))
+}
 
 // TODO: implement array of depoydata trait implement for all external suite dd.
 /// Composite deploy data for external modules.

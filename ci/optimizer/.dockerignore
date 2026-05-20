@@ -3,6 +3,16 @@
 **/.gitignore
 **/.gitmodules
 
+# Build artifacts — don't copy compiled output into the container
+target/
+
+# Test fixtures — not needed for building bob
+tests/
+
+# Git
+.git/
+.gitignore
+
 # Exclude snapshot/cache data
 **/target
 **/snapshot*
@@ -32,3 +42,8 @@
 *
 !Dockerfile
 !dao-optimize.sh
+# Bob source files
+!Cargo.toml
+!Cargo.lock
+!src/
+!src/**

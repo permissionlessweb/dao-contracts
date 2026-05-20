@@ -13,6 +13,23 @@ use super::modules::{
     voting::{DaoVotingDeployData, DaoVotingSuite},
 };
 
+/// Top-level deploy data for a full DAO suite.
+///
+/// `Default` yields empty `daos` vec with all sub-suite data defaulted,
+/// so `deploy_on(chain, DaoDaoDeployData::default())` just uploads all codes.
+#[derive(Clone, Debug, Default)]
+pub struct DaoDaoDeployData {
+    /// Array of DAO instances to bootstrap.
+    pub daos: Vec<DaoConfig>,
+    /// Suite-level deploy data (affects code uploads, not per-DAO).
+    pub proposal: DaoProposalDeployData,
+    pub voting: DaoVotingDeployData,
+    pub staking: DaoStakingDeployData,
+    pub distribution: DaoDistributionDeployData,
+    pub external: DaoExternalDeployData,
+    pub gauges: DaoGaugeDeployData,
+}
+
 /// Voting module configuration for a single DAO instance.
 #[derive(Clone, Debug)]
 pub enum VotingModuleConfig {
@@ -54,8 +71,7 @@ impl VotingModuleConfig {
                 };
                 Ok(ModuleInstantiateInfo {
                     code_id: suite.voting.voting_cw4.code_id()?,
-                    msg: to_json_binary(&msg)
-                        .map_err(|e| CwOrchError::StdErr(e.to_string()))?,
+                    msg: to_json_binary(&msg).map_err(|e| CwOrchError::StdErr(e.to_string()))?,
                     admin: Some(Admin::CoreModule {}),
                     funds: None,
                     label: "dao_voting_cw4".to_string(),
@@ -72,8 +88,7 @@ impl VotingModuleConfig {
                 };
                 Ok(ModuleInstantiateInfo {
                     code_id: suite.voting.voting_cw20_staked.code_id()?,
-                    msg: to_json_binary(&msg)
-                        .map_err(|e| CwOrchError::StdErr(e.to_string()))?,
+                    msg: to_json_binary(&msg).map_err(|e| CwOrchError::StdErr(e.to_string()))?,
                     admin: Some(Admin::CoreModule {}),
                     funds: None,
                     label: "dao_voting_cw20_staked".to_string(),
@@ -92,8 +107,7 @@ impl VotingModuleConfig {
                 };
                 Ok(ModuleInstantiateInfo {
                     code_id: suite.voting.voting_token_staked.code_id()?,
-                    msg: to_json_binary(&msg)
-                        .map_err(|e| CwOrchError::StdErr(e.to_string()))?,
+                    msg: to_json_binary(&msg).map_err(|e| CwOrchError::StdErr(e.to_string()))?,
                     admin: Some(Admin::CoreModule {}),
                     funds: None,
                     label: "dao_voting_token_staked".to_string(),
@@ -128,8 +142,7 @@ impl ProposalModuleConfig {
         match self {
             ProposalModuleConfig::Single { msg } => Ok(ModuleInstantiateInfo {
                 code_id: suite.proposal.prop_single.code_id()?,
-                msg: to_json_binary(msg)
-                    .map_err(|e| CwOrchError::StdErr(e.to_string()))?,
+                msg: to_json_binary(msg).map_err(|e| CwOrchError::StdErr(e.to_string()))?,
                 admin: Some(Admin::CoreModule {}),
                 funds: None,
                 label: "dao_proposal_single".to_string(),
@@ -137,8 +150,7 @@ impl ProposalModuleConfig {
             }),
             ProposalModuleConfig::Multiple { msg } => Ok(ModuleInstantiateInfo {
                 code_id: suite.proposal.prop_multiple.code_id()?,
-                msg: to_json_binary(msg)
-                    .map_err(|e| CwOrchError::StdErr(e.to_string()))?,
+                msg: to_json_binary(msg).map_err(|e| CwOrchError::StdErr(e.to_string()))?,
                 admin: Some(Admin::CoreModule {}),
                 funds: None,
                 label: "dao_proposal_multiple".to_string(),
@@ -175,23 +187,6 @@ pub struct DaoConfig {
     pub voting: VotingModuleConfig,
     /// Proposal modules to register.
     pub proposal_modules: Vec<ProposalModuleConfig>,
-}
-
-/// Top-level deploy data for a full DAO suite.
-///
-/// `Default` yields empty `daos` vec with all sub-suite data defaulted,
-/// so `deploy_on(chain, DaoDaoDeployData::default())` just uploads all codes.
-#[derive(Clone, Debug, Default)]
-pub struct DaoDaoDeployData {
-    /// Array of DAO instances to bootstrap.
-    pub daos: Vec<DaoConfig>,
-    /// Suite-level deploy data (affects code uploads, not per-DAO).
-    pub proposal: DaoProposalDeployData,
-    pub voting: DaoVotingDeployData,
-    pub staking: DaoStakingDeployData,
-    pub distribution: DaoDistributionDeployData,
-    pub external: DaoExternalDeployData,
-    pub gauges: DaoGaugeDeployData,
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -747,8 +742,7 @@ impl<Chain: CwEnv> DaoDaoSuite<Chain> {
     }
 
     pub fn query_admin(&self) -> Result<Addr, CwOrchError> {
-        self.dao_core
-            .query(&dao_interface::msg::QueryMsg::Admin {})
+        self.dao_core.query(&dao_interface::msg::QueryMsg::Admin {})
     }
 
     pub fn query_total_power(
@@ -769,9 +763,7 @@ impl<Chain: CwEnv> DaoDaoSuite<Chain> {
             })
     }
 
-    pub fn query_pause_info(
-        &self,
-    ) -> Result<dao_interface::query::PauseInfoResponse, CwOrchError> {
+    pub fn query_pause_info(&self) -> Result<dao_interface::query::PauseInfoResponse, CwOrchError> {
         self.dao_core
             .query(&dao_interface::msg::QueryMsg::PauseInfo {})
     }
@@ -808,8 +800,7 @@ impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for DaoDaoSuite<Chain> {
     }
 
     fn get_contracts_mut(&mut self) -> Vec<Box<&mut dyn ContractInstance<Chain>>> {
-        let mut cs: Vec<Box<&mut dyn ContractInstance<Chain>>> =
-            vec![Box::new(&mut self.dao_core)];
+        let mut cs: Vec<Box<&mut dyn ContractInstance<Chain>>> = vec![Box::new(&mut self.dao_core)];
         cs.extend(self.proposal.get_contracts_mut());
         cs.extend(self.voting.get_contracts_mut());
         cs.extend(self.staking.get_contracts_mut());
@@ -869,9 +860,15 @@ impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for DaoDaoSuite<Chain> {
                 dao_uri: None,
             };
 
-            suite
-                .dao_core
-                .instantiate(&init_msg, dao_cfg.admin.as_deref().map(|a| Addr::unchecked(a)).as_ref(), &[])?;
+            suite.dao_core.instantiate(
+                &init_msg,
+                dao_cfg
+                    .admin
+                    .as_deref()
+                    .map(|a| Addr::unchecked(a))
+                    .as_ref(),
+                &[],
+            )?;
             let core_addr = suite.dao_core.address()?;
             suite.save_dao(&dao_cfg.key, core_addr);
         }
@@ -915,7 +912,11 @@ fn extract_instantiate_fields(section: &serde_json::Value) -> Vec<(String, Strin
     let required: Vec<String> = section
         .get("required")
         .and_then(|v| v.as_array())
-        .map(|a| a.iter().filter_map(|v| v.as_str().map(String::from)).collect())
+        .map(|a| {
+            a.iter()
+                .filter_map(|v| v.as_str().map(String::from))
+                .collect()
+        })
         .unwrap_or_default();
     let props = match section.get("properties").and_then(|v| v.as_object()) {
         Some(p) => p,
@@ -924,7 +925,10 @@ fn extract_instantiate_fields(section: &serde_json::Value) -> Vec<(String, Strin
     let mut fields: Vec<_> = props
         .iter()
         .map(|(name, prop)| {
-            let desc = prop.get("description").and_then(|d| d.as_str()).unwrap_or("");
+            let desc = prop
+                .get("description")
+                .and_then(|d| d.as_str())
+                .unwrap_or("");
             (name.clone(), desc.to_string(), required.contains(name))
         })
         .collect();
@@ -963,7 +967,9 @@ pub fn generate_api_markdown(workspace_root: &std::path::Path) -> String {
     // Header
     md.push_str("# DAO DAO Suite — API Reference\n\n");
     md.push_str("> Auto-generated from contract schemas and `DaoDaoSuite` registry.\n");
-    md.push_str("> Regenerate: `cargo test -p dao-testing generate_suite_api_docs -- --ignored`\n\n");
+    md.push_str(
+        "> Regenerate: `cargo test -p dao-testing generate_suite_api_docs -- --ignored`\n\n",
+    );
 
     // Collect unique categories in declaration order
     let categories: Vec<&str> = {
@@ -979,7 +985,11 @@ pub fn generate_api_markdown(workspace_root: &std::path::Path) -> String {
     // TOC
     md.push_str("## Table of Contents\n\n");
     for cat in &categories {
-        md.push_str(&format!("- [{}](#{})\n", cat, cat.to_lowercase().replace(' ', "-")));
+        md.push_str(&format!(
+            "- [{}](#{})\n",
+            cat,
+            cat.to_lowercase().replace(' ', "-")
+        ));
     }
     md.push('\n');
 

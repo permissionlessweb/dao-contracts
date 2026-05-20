@@ -1,6 +1,8 @@
 orc_config := env_var_or_default('CONFIG', '`pwd`/ci/configs/cosm-orc/ci.yaml')
 test_addrs := env_var_or_default('TEST_ADDRS', `jq -r '.[].address' ci/configs/test_accounts.json | tr '\n' ' '`)
 gas_limit := env_var_or_default('GAS_LIMIT', '10000000')
+docker_image := env_var_or_default('DOCKER_IMAGE', 'dao-optimizer:0.17.0')
+arch := `if [ "$(uname -m)" = "arm64" ] || [ "$(uname -m)" = "aarch64" ]; then echo "linux/arm64"; else echo "linux/amd64"; fi`
 
 build:
 	cargo build
@@ -54,20 +56,25 @@ download-deps:
 	wget https://github.com/CosmWasm/cw-nfts/releases/latest/download/cw721_base.wasm -O artifacts/cw721_base.wasm
 
 optimizer-build:
-    docker build -t dao-optimizer:0.17.0 ci/optimizer/
+	docker build -t {{docker_image}} ci/optimizer/
 
-workspace-optimize:
-    #!/bin/bash
-    # Custom optimizer that mounts the entire parent directory tree
-    # so [patch.crates-io] sibling paths (../cosmwasm, ../cw-plus, etc.) resolve.
-    # .git dirs and snapshots are present in the mount but ignored by the build.
-    if [[ $(uname -m) == 'arm64' ]] || [ $(uname -m) == 'aarch64' ]; then docker run --rm -v "$(pwd)/..":/workspace \
-            --mount type=volume,source="dao_contracts_cache",target=/target \
-            --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-            --platform linux/arm64 \
-            dao-optimizer:0.17.0; \
-    elif [[ $(uname -m) == 'x86_64' ]]; then docker run --rm -v "$(pwd)/..":/workspace \
-            --mount type=volume,source="dao_contracts_cache",target=/target \
-            --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-            --platform linux/amd64 \
-            dao-optimizer:0.17.0; fi
+workspace-optimize: optimizer-build
+	docker run --rm \
+		-v "{{justfile_directory()}}/..":/workspace \
+		--mount type=volume,source=dao_contracts_cache,target=/target \
+		--mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+		--platform {{arch}} \
+		{{docker_image}}
+
+# Quick rebuild without rebuilding the Docker image
+workspace-optimize-quick:
+	docker run --rm \
+		-v "{{justfile_directory()}}/..":/workspace \
+		--mount type=volume,source=dao_contracts_cache,target=/target \
+		--mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+		--platform {{arch}} \
+		{{docker_image}}
+
+# Clear build caches (useful after toolchain changes or if builds fail)
+optimizer-clean:
+	docker volume rm dao_contracts_cache registry_cache 2>/dev/null || true
