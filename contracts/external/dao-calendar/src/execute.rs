@@ -9,9 +9,9 @@ use crate::error::ContractError;
 use crate::msg::{
     AuthorizationQueryMsg, CalendarHookExecuteMsg, CalendarHookMsg, Event, EventGauge,
     EventService, EventServiceInit, EventStatus, EventSupplier, EventSupplierInit,
-    EventSupplierType, Group, GroupInit, IsAuthorizedResponse,
+    EventSupplierType, Group, GroupInit, IsAuthorizedResponse, RecurrenceRule,
 };
-use crate::state::{DAO, EVENTS_BY_GROUP, EVENT_COUNT, EVENT_GAUGES, EVENT_HOOKS, GROUPS, events};
+use crate::state::{DAO, EVENTS_BY_GROUP, EVENT_COUNT, EVENT_GAUGES, EVENT_HOOKS, EVENT_RECURRENCE, GROUPS, events};
 
 // ═══════════════════════════ Auth Helpers ═══════════════════════════
 
@@ -90,10 +90,22 @@ pub fn save_group_from_init(
             })
         })
         .collect::<Result<_, ContractError>>()?;
+    let members: Option<Vec<Addr>> = init
+        .members
+        .map(|m| {
+            m.into_iter()
+                .filter_map(|addr| api.addr_validate(&addr).ok())
+                .collect::<Vec<Addr>>()
+        })
+        .filter(|v: &Vec<Addr>| !v.is_empty());
     let group = Group {
         id: init.id.clone(),
         dao: dao.clone(),
         suppliers,
+        name: init.name.unwrap_or_else(|| init.id.clone()),
+        description: init.description,
+        color: init.color,
+        members,
     };
     GROUPS.save(storage, &init.id, &group)?;
     Ok(())
@@ -179,9 +191,20 @@ pub fn execute_create_event(
     managing_groups: Vec<String>,
     services: Option<Vec<EventServiceInit>>,
     extension: Option<Empty>,
+    timezone: Option<String>,
+    recurrence: Option<RecurrenceRule>,
 ) -> Result<Response, ContractError> {
     if start_time >= end_time {
         return Err(ContractError::InvalidTimeRange {});
+    }
+
+    // Validate timezone if provided
+    if let Some(ref tz) = timezone {
+        if !is_valid_timezone(tz) {
+            return Err(ContractError::InvalidTimezone {
+                tz: tz.clone(),
+            });
+        }
     }
 
     // Validate all groups exist
@@ -203,6 +226,7 @@ pub fn execute_create_event(
         description,
         start_time,
         end_time,
+        timezone,
         managing_groups: managing_groups.clone(),
         event_services: convert_services(services),
         extension,
@@ -226,6 +250,11 @@ pub fn execute_create_event(
         },
     )?;
 
+    // Save recurrence rule if provided
+    if let Some(rr) = recurrence {
+        EVENT_RECURRENCE.save(deps.storage, event_id, &rr)?;
+    }
+
     Ok(Response::new()
         .add_submessages(hook_msgs)
         .add_attribute("action", "create_event")
@@ -246,6 +275,7 @@ pub fn execute_update_event(
     managing_groups: Option<Vec<String>>,
     services: Option<Vec<EventServiceInit>>,
     extension: Option<Empty>,
+    timezone: Option<String>,
 ) -> Result<Response, ContractError> {
     let mut event = events::<Empty>()
         .may_load(deps.storage, event_id)?
@@ -302,6 +332,12 @@ pub fn execute_update_event(
     }
     if extension.is_some() {
         event.extension = extension;
+    }
+    if let Some(tz) = timezone {
+        if !is_valid_timezone(&tz) {
+            return Err(ContractError::InvalidTimezone { tz });
+        }
+        event.timezone = Some(tz);
     }
 
     events::<Empty>().save(deps.storage, event_id, &event)?;
@@ -560,6 +596,7 @@ pub fn execute_renew_calendar(
         }
         events::<Empty>().remove(deps.storage, event_id)?;
         EVENT_GAUGES.remove(deps.storage, event_id);
+        EVENT_RECURRENCE.remove(deps.storage, event_id);
     }
 
     Ok(Response::new()
@@ -591,4 +628,15 @@ pub fn execute_remove_event_hook(
     Ok(Response::new()
         .add_attribute("action", "remove_event_hook")
         .add_attribute("address", address))
+}
+
+// ═══════════════════════════ Timezone Validation ═══════════════════════════
+
+/// Validate an IANA timezone identifier string.
+pub fn is_valid_timezone(tz: &str) -> bool {
+    if tz.is_empty() || tz.len() > 64 {
+        return false;
+    }
+    tz.chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '/' || c == '_' || c == '-' || c == '+')
 }

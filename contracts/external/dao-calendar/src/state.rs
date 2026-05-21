@@ -69,3 +69,6 @@ pub const GROUPS: Map<&str, Group> = Map::new("groups");
 
 /// Per-event gauge overrides
 pub const EVENT_GAUGES: Map<u64, EventGauge> = Map::new("event_gauges");
+
+/// Recurrence rules: event_id → RecurrenceRule
+pub const EVENT_RECURRENCE: Map<u64, crate::msg::RecurrenceRule> = Map::new("event_recurrence");

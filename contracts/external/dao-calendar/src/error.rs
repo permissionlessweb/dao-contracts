@@ -37,6 +37,9 @@ pub enum ContractError {
     #[error("invalid supplier type")]
     InvalidSupplierType {},
 
+    #[error("invalid timezone: ({tz})")]
+    InvalidTimezone { tz: String },
+
     #[error("received a failed event hook reply with an invalid hook index: ({idx})")]
     InvalidHookIndex { idx: u64 },
 

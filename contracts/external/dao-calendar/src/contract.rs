@@ -9,6 +9,7 @@ use crate::error::ContractError;
 use crate::execute;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use crate::query;
+use crate::recurrence;
 use crate::state::{DAO, EVENT_COUNT, EVENT_HOOKS};
 
 pub(crate) const CONTRACT_NAME: &str = "crates.io:dao-calendar";
@@ -54,6 +55,8 @@ pub fn execute(
             managing_groups,
             services,
             extension,
+            timezone,
+            recurrence,
         } => execute::execute_create_event(
             deps,
             env,
@@ -65,6 +68,8 @@ pub fn execute(
             managing_groups,
             services,
             extension,
+            timezone,
+            recurrence,
         ),
         ExecuteMsg::UpdateEvent {
             event_id,
@@ -75,6 +80,7 @@ pub fn execute(
             managing_groups,
             services,
             extension,
+            timezone,
         } => execute::execute_update_event(
             deps,
             env,
@@ -87,6 +93,7 @@ pub fn execute(
             managing_groups,
             services,
             extension,
+            timezone,
         ),
         ExecuteMsg::CancelEvent { event_id } => {
             execute::execute_cancel_event(deps, env, info, event_id)
@@ -137,7 +144,10 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             start_before,
             limit,
         )?),
-        QueryMsg::ListGroups {} => to_json_binary(&query::query_list_groups(deps)?),
+        QueryMsg::ListGroups {
+            start_after,
+            limit,
+        } => to_json_binary(&query::query_list_groups(deps, start_after, limit)?),
         QueryMsg::Group { group_id } => to_json_binary(&query::query_group(deps, &group_id)?),
         QueryMsg::GroupsManagingEvent { event_id } => {
             to_json_binary(&query::query_groups_managing_event(deps, event_id)?)
@@ -151,6 +161,20 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Dao {} => to_json_binary(&DAO.load(deps.storage)?),
         QueryMsg::Info {} => to_json_binary(&query::query_info(deps)?),
         QueryMsg::NextProposalId {} => to_json_binary(&(EVENT_COUNT.load(deps.storage)? + 1)),
+        QueryMsg::ComputeRecurringInstances {
+            event_id,
+            from,
+            to,
+            limit,
+        } => to_json_binary(&query::query_compute_recurring_instances(
+            deps, event_id, from, to, limit,
+        )?),
+        QueryMsg::EventRecurrence { event_id } => {
+            to_json_binary(&query::query_event_recurrence(deps, event_id)?)
+        }
+        QueryMsg::Agenda { from, limit } => {
+            to_json_binary(&query::query_agenda(deps, from, limit)?)
+        }
     }
 }
 

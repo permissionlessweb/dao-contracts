@@ -18,9 +18,13 @@ pub fn dao_deploy_data_single(sender: Addr) -> anyhow::Result<Option<DaoDaoDeplo
         initial_groups: Some(vec![GroupInit {
             id: "public-resources".into(),
             suppliers: vec![EventSupplierInit {
-                contract: todo!(),
-                supplier_type: todo!(),
+                contract: "cosmos1test".into(),
+                supplier_type: EventSupplierType::Authorization,
             }],
+            name: Some("Public Resources".into()),
+            description: Some("Public calendar group".into()),
+            color: None,
+            members: None,
         }]),
     };
 

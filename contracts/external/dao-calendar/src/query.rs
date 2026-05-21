@@ -3,11 +3,13 @@ use cw2::get_contract_version;
 use cw_storage_plus::Bound;
 
 use crate::msg::{
-    DumpStateResponse, EventFilter, EventGaugeResponse, EventListResponse, EventResponse,
-    EventStatus, GaugeConfig, Group, GroupGaugeSummary, GroupListResponse, GroupResponse,
-    GroupsManagingEventResponse, Event, EventSupplierType,
+    AgendaResponse, DumpStateResponse, Event, EventFilter, EventGaugeResponse, EventListResponse, EventResponse,
+    EventStatus, EventSupplierType, GaugeConfig, Group, GroupGaugeSummary, GroupListResponse,
+    GroupResponse, GroupsManagingEventResponse, RecurrenceConfig, RecurrenceConfigResponse,
+    RecurringInstancesResponse,
 };
-use crate::state::{DAO, EVENTS_BY_GROUP, EVENT_COUNT, EVENT_GAUGES, GROUPS, events};
+use crate::recurrence;
+use crate::state::{DAO, EVENTS_BY_GROUP, EVENT_COUNT, EVENT_GAUGES, EVENT_RECURRENCE, GROUPS, events};
 use dao_interface::voting::InfoResponse;
 
 const DEFAULT_LIMIT: u32 = 30;
@@ -120,20 +122,27 @@ fn query_events_by_groups(
 ) -> StdResult<EventListResponse<Empty>> {
     let mut seen = std::collections::BTreeSet::new();
     let mut result = Vec::new();
+    let mut remaining = limit;
 
     for group_id in groups {
+        if remaining == 0 {
+            break;
+        }
         let min_bound = start_after.map(Bound::<u64>::exclusive);
-        let event_ids: Vec<u64> = EVENTS_BY_GROUP
+        // Lazy iteration: avoids collecting ALL event IDs into a Vec before processing.
+        // Short-circuits once we've accumulated enough events across all groups.
+        for item in EVENTS_BY_GROUP
             .prefix(group_id.as_str())
             .range(deps.storage, min_bound, None, Order::Ascending)
-            .map(|r| r.map(|(eid, _)| eid))
-            .collect::<StdResult<_>>()?;
-
-        for eid in event_ids {
+            .take(remaining)
+        {
+            let (eid, _) = item?;
             if seen.insert(eid) {
                 if let Ok(event) = events::<Empty>().load(deps.storage, eid) {
                     result.push(event_to_response(eid, event));
-                    if result.len() >= limit {
+                    remaining -= 1;
+                    if remaining == 0 {
+                        result.sort_by_key(|r| r.id);
                         return Ok(EventListResponse { events: result });
                     }
                 }
@@ -141,7 +150,6 @@ fn query_events_by_groups(
         }
     }
 
-    // Sort by event ID (chronological)
     result.sort_by_key(|r| r.id);
     result.truncate(limit);
 
@@ -155,34 +163,27 @@ fn query_events_by_time_range(
     start_after: Option<u64>,
     limit: usize,
 ) -> StdResult<EventListResponse<Empty>> {
+    // Composite bounds on (start_seconds, event_id) — avoids in-memory post-filter
     let min_secs = time_start.map(|t| t.seconds());
     let max_secs = time_end.map(|t| t.seconds());
 
-    let min_bound = min_secs.map(|s| Bound::inclusive((s, 0u64)));
+    let min_bound: Option<Bound<(u64, u64)>> = match (min_secs, start_after) {
+        (Some(secs), Some(sa)) => Some(Bound::exclusive((secs, sa))),
+        (Some(secs), None) => Some(Bound::inclusive((secs, 0))),
+        (None, Some(sa)) => Some(Bound::exclusive((0, sa))),
+        (None, None) => None,
+    };
     let max_bound = max_secs.map(|s| Bound::inclusive((s, u64::MAX)));
 
     let event_list: Vec<EventResponse<Empty>> = events::<Empty>()
         .idx
         .by_start
         .range(deps.storage, min_bound, max_bound, Order::Ascending)
-        .filter(|r| {
-            if let Ok((_, ref event)) = r {
-                if let Some(sa) = start_after {
-                    event.id > sa
-                } else {
-                    true
-                }
-            } else {
-                true
-            }
-        })
         .take(limit)
         .map(|r| r.map(|(id, event)| event_to_response(id, event)))
         .collect::<StdResult<_>>()?;
 
-    Ok(EventListResponse {
-        events: event_list,
-    })
+    Ok(EventListResponse { events: event_list })
 }
 
 fn query_events_by_status(
@@ -210,9 +211,16 @@ fn query_events_by_status(
     })
 }
 
-pub fn query_list_groups(deps: Deps) -> StdResult<GroupListResponse> {
+pub fn query_list_groups(
+    deps: Deps,
+    start_after: Option<String>,
+    limit: Option<u32>,
+) -> StdResult<GroupListResponse> {
+    let limit = clamp_limit(limit);
+    let min_bound = start_after.as_ref().map(|sa| Bound::exclusive(sa.as_str()));
     let groups: Vec<Group> = GROUPS
-        .range(deps.storage, None, None, Order::Ascending)
+        .range(deps.storage, min_bound, None, Order::Ascending)
+        .take(limit)
         .map(|r| r.map(|(_, group)| group))
         .collect::<StdResult<_>>()?;
     Ok(GroupListResponse { groups })
@@ -299,4 +307,94 @@ pub fn query_dump_state(deps: Deps) -> StdResult<DumpStateResponse> {
 pub fn query_info(deps: Deps) -> StdResult<InfoResponse> {
     let info = get_contract_version(deps.storage)?;
     Ok(InfoResponse { info })
+}
+
+// ═══════════════════════════ Recurrence Queries ═══════════════════════════
+
+pub fn query_compute_recurring_instances(
+    deps: Deps,
+    event_id: u64,
+    from: Option<Timestamp>,
+    to: Option<Timestamp>,
+    limit: Option<u32>,
+) -> StdResult<RecurringInstancesResponse> {
+    let event = events::<Empty>().load(deps.storage, event_id)?;
+    let rule = match EVENT_RECURRENCE.may_load(deps.storage, event_id)? {
+        Some(r) => r,
+        None => {
+            return Ok(RecurringInstancesResponse {
+                instances: vec![],
+                has_more: false,
+            });
+        }
+    };
+
+    let (instances, has_more) = recurrence::compute_instances(
+        &rule,
+        event.start_time,
+        event.end_time,
+        from,
+        to,
+        limit,
+    );
+
+    Ok(RecurringInstancesResponse {
+        instances,
+        has_more,
+    })
+}
+
+pub fn query_event_recurrence(deps: Deps, event_id: u64) -> StdResult<RecurrenceConfigResponse> {
+    let rule = EVENT_RECURRENCE.may_load(deps.storage, event_id)?;
+    let config = rule.map(|r| RecurrenceConfig { event_id, rule: r });
+    Ok(RecurrenceConfigResponse { config })
+}
+
+// ═══════════════════════════ Agenda Query ═══════════════════════════
+
+const AGENDA_DEFAULT_LIMIT: u32 = 10;
+const AGENDA_MAX_LIMIT: u32 = 50;
+
+/// Returns upcoming and active events sorted by start_time — a compact dashboard view.
+/// Filters to `Upcoming` and `Active` status events, ordered ascending by start_time.
+pub fn query_agenda(
+    deps: Deps,
+    from: Option<Timestamp>,
+    limit: Option<u32>,
+) -> StdResult<AgendaResponse> {
+    let limit = limit
+        .unwrap_or(AGENDA_DEFAULT_LIMIT)
+        .min(AGENDA_MAX_LIMIT) as usize;
+    let from_secs = from.map(|t| t.seconds()).unwrap_or(0);
+
+    // Walk the by_start index from `from` forward, collecting Upcoming + Active events
+    let min_bound: Option<Bound<(u64, u64)>> = Some(Bound::inclusive((from_secs, 0)));
+
+    let mut results: Vec<EventResponse<Empty>> = Vec::new();
+
+    for item in events::<Empty>()
+        .idx
+        .by_start
+        .range(deps.storage, min_bound, None, Order::Ascending)
+    {
+        let (_pk, event) = item?;
+        match event.status {
+            EventStatus::Upcoming | EventStatus::Active => {
+                results.push(EventResponse {
+                    id: event.id,
+                    event,
+                });
+                if results.len() >= limit {
+                    break;
+                }
+            }
+            _ => continue,
+        }
+    }
+
+    let count = results.len() as u64;
+    Ok(AgendaResponse {
+        events: results,
+        count,
+    })
 }
