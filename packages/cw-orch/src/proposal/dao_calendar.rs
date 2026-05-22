@@ -1,7 +1,7 @@
 use cw_orch::{interface, prelude::*};
 
-use dao_calendar::contract::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use dao_calendar::contract::{execute, instantiate, migrate, query};
+use dao_calendar::contract::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 
 /// cw-orch interface for the dao-calendar contract.
 ///

@@ -1,5 +1,4 @@
 use cw_orch::{anyhow, prelude::*};
-use dao_calendar::contract::{EventSupplier, EventSupplierInit, EventSupplierType, GroupInit};
 use dao_cw_orch::*;
 
 use crate::{
@@ -15,17 +14,12 @@ use crate::{
 pub fn dao_deploy_data_single(sender: Addr) -> anyhow::Result<Option<DaoDaoDeployData>> {
     // Calendar deploy data — minimal config for local testing
     let calendar_data = super::proposal::CalendarDeployData {
-        initial_groups: Some(vec![GroupInit {
-            id: "public-resources".into(),
-            suppliers: vec![EventSupplierInit {
-                contract: sender.clone().into(),
-                supplier_type: EventSupplierType::Authorization,
-            }],
-            name: Some("Public Resources".into()),
-            description: Some("Public calendar group".into()),
-            color: None,
-            members: None,
-        }]),
+        name: todo!(),
+        symbol: todo!(),
+        ext: todo!(),
+        minter: todo!(),
+        creator: todo!(),
+        withdrawer: todo!(),
     };
 
     // DAO config with calendar as a proposal module

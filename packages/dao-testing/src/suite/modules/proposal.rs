@@ -1,20 +1,29 @@
 use cw_orch::prelude::*;
+use dao_calendar::contract::CalendarModuleCollectionExtension;
 use dao_cw_orch::*;
-
-
 
 /// Deploy data for the calendar module.
 #[derive(Clone, Debug, Default)]
 pub struct CalendarDeployData {
-    pub initial_groups: Option<Vec<dao_calendar::msg::GroupInit>>,
+    pub name: String,
+    pub symbol: String,
+    pub ext: CalendarModuleCollectionExtension,
+    pub minter: Option<String>,
+    pub creator: Option<String>,
+    pub withdrawer: Option<String>,
 }
 
 impl crate::DaoDeployData for CalendarDeployData {
-    type Init = dao_calendar::msg::InstantiateMsg;
+    type Init = dao_calendar::contract::InstantiateMsg;
 
     fn into_init(self) -> Self::Init {
-        dao_calendar::msg::InstantiateMsg {
-            initial_groups: self.initial_groups,
+        Self::Init {
+            name: self.name,
+            symbol: self.symbol,
+            collection_info_extension: self.ext,
+            minter: self.minter,
+            creator: self.creator,
+            withdraw_address: self.withdrawer,
         }
     }
 }

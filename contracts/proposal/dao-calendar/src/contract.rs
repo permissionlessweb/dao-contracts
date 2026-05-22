@@ -7,10 +7,9 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 use cw721::{extension::Cw721Extensions, msg::Cw721InstantiateMsg, traits::Cw721Execute};
-use cw721_nips::nips::nip52::CalendarEventMetadata;
 use cw_hooks::Hooks;
 use cw_storage_plus::{Item, Map};
-use cw_utils::Duration;
+use cw_utils::{Duration, DAY};
 use dao_voting::{
     pre_propose::{PreProposeInfo, ProposalCreationPolicy},
     veto::VetoConfig,
@@ -42,7 +41,19 @@ pub struct MetadataExt {
     pub nostr_event_id: Option<String>,
     /// Optional: Store the author's pubkey
     pub author_pubkey: Option<String>,
-} 
+}
+
+impl Default for CalendarModuleCollectionExtension {
+    fn default() -> Self {
+        Self {
+            min_event_period: None,
+            max_event_period: DAY * 365,
+            pre_propose_info: PreProposeInfo::AnyoneMayPropose {},
+            veto: None,
+            delegation_module: None,
+        }
+    }
+}
 
 #[cw_serde]
 pub struct CalendarModuleCollectionExtension {
@@ -80,7 +91,64 @@ pub mod state {
     impl Cw721CustomMsg for MetadataExt {}
     impl Contains for MetadataExt {
         fn contains(&self, other: &Self) -> bool {
-            false
+            self == other
+        }
+    }
+
+    // ── NIP-52 integration ──────────────────────────────────────────
+    use cw721_nips::{
+        cw::NostrCw721Ext,
+        error::{NipError, NipResult},
+        nips::nip52::{CalendarEventMetadata, Nip52Kind},
+        NipMetadata, RawNostrEvent,
+    };
+
+    impl NipMetadata for MetadataExt {
+        type Kind = Nip52Kind;
+
+        fn kind(&self) -> Self::Kind {
+            CalendarEventMetadata::from_storage_binary(&self.e)
+                .map(|m| m.kind())
+                .unwrap_or(Nip52Kind::TimeEvent)
+        }
+
+        fn validate(&self) -> NipResult<()> {
+            if self.e.is_empty() {
+                return Err(NipError::Validation(
+                    "No calendar event data in MetadataExt.e".to_string(),
+                ));
+            }
+            CalendarEventMetadata::from_storage_binary(&self.e)
+                .map_err(|e| NipError::Validation(format!("Failed to decode calendar event: {e}")))?
+                .validate()
+        }
+
+        fn to_tags(&self) -> Vec<cw721_nips::Tag> {
+            CalendarEventMetadata::from_storage_binary(&self.e)
+                .map(|m| m.to_tags())
+                .unwrap_or_default()
+        }
+
+        fn content(&self) -> String {
+            CalendarEventMetadata::from_storage_binary(&self.e)
+                .map(|m| m.content())
+                .unwrap_or_default()
+        }
+
+        fn d_tag(&self) -> Option<String> {
+            CalendarEventMetadata::from_storage_binary(&self.e)
+                .ok()
+                .and_then(|m| m.d_tag())
+        }
+
+        fn from_raw_event(event: &RawNostrEvent) -> NipResult<Self> {
+            let inner = CalendarEventMetadata::from_raw_event(event)?;
+            let e = Binary::from(serde_json::to_vec(&inner)?);
+            Ok(Self {
+                e,
+                nostr_event_id: Some(event.id.clone()),
+                author_pubkey: Some(event.pubkey.clone()),
+            })
         }
     }
 
@@ -95,17 +163,84 @@ pub mod state {
 
     impl Contains for CalendarModuleCollectionExtension {
         fn contains(&self, other: &Self) -> bool {
-            false
+            self == other
         }
     }
     impl ToAttributesState for CalendarModuleCollectionExtension {
         fn to_attributes_state(&self) -> Result<Vec<cw721::Attribute>, Cw721ContractError> {
-            todo!()
+            use cosmwasm_std::to_json_binary;
+            Ok(vec![
+                cw721::Attribute {
+                    key: "min_event_period".to_string(),
+                    value: to_json_binary(&self.min_event_period)?,
+                },
+                cw721::Attribute {
+                    key: "max_event_period".to_string(),
+                    value: to_json_binary(&self.max_event_period)?,
+                },
+                cw721::Attribute {
+                    key: "pre_propose_info".to_string(),
+                    value: to_json_binary(&self.pre_propose_info)?,
+                },
+                cw721::Attribute {
+                    key: "veto".to_string(),
+                    value: to_json_binary(&self.veto)?,
+                },
+                cw721::Attribute {
+                    key: "delegation_module".to_string(),
+                    value: to_json_binary(&self.delegation_module)?,
+                },
+            ])
         }
     }
     impl FromAttributesState for CalendarModuleCollectionExtension {
         fn from_attributes_state(value: &[cw721::Attribute]) -> Result<Self, Cw721ContractError> {
-            todo!()
+            let mut min_event_period = None;
+            let mut max_event_period = None;
+            let mut pre_propose_info = None;
+            let mut veto = None;
+            let mut delegation_module = None;
+
+            for attr in value {
+                match attr.key.as_str() {
+                    "min_event_period" => {
+                        min_event_period = Some(attr.value::<Option<Duration>>()?);
+                    }
+                    "max_event_period" => {
+                        max_event_period = Some(attr.value::<Duration>()?);
+                    }
+                    "pre_propose_info" => {
+                        pre_propose_info = Some(attr.value::<PreProposeInfo>()?);
+                    }
+                    "veto" => {
+                        veto = Some(attr.value::<Option<VetoConfig>>()?);
+                    }
+                    "delegation_module" => {
+                        delegation_module = Some(attr.value::<Option<String>>()?);
+                    }
+                    _ => {}
+                }
+            }
+
+            Ok(Self {
+                min_event_period: min_event_period.ok_or_else(|| {
+                    Cw721ContractError::Std(cosmwasm_std::StdError::msg("Missing min_event_period"))
+                })?,
+                max_event_period: max_event_period.ok_or_else(|| {
+                    Cw721ContractError::Std(cosmwasm_std::StdError::msg("Missing max_event_period"))
+                })?,
+                pre_propose_info: pre_propose_info.ok_or_else(|| {
+                    Cw721ContractError::Std(cosmwasm_std::StdError::msg("Missing pre_propose_info"))
+                })?,
+                veto: veto.ok_or_else(|| {
+                    Cw721ContractError::Std(cosmwasm_std::StdError::msg("Missing veto"))
+                })?,
+                delegation_module: delegation_module.ok_or_else(|| {
+                    Cw721ContractError::Std(cosmwasm_std::StdError::msg(
+                        "Missing delegation_module",
+                    ))
+                })?,
+            })
         }
     }
 
@@ -237,6 +372,7 @@ pub mod msg {
     }
 
     #[cw_serde]
+    #[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
     pub enum ExecuteExt {
         /// Create a new calendar NFT. The pre-propose module validates
         /// who may call this.
@@ -289,6 +425,7 @@ pub mod msg {
 
     #[cw_serde]
     #[derive(QueryResponses)]
+    #[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
     pub enum QueryExt {
         #[returns(Config)]
         Config {},
@@ -336,16 +473,25 @@ pub mod msg {
         #[returns(Addr)]
         Dao {},
     }
+}
 
-    // #[cw_serde]
-    // #[derive(QueryResponses)]
-    // #[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
-    // pub enum QueryMsg {}
-
-    // Messages for managing calendar NFTs and their NIP-52 events.
-    // #[cw_serde]
-    // #[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
-    // pub enum ExecuteMsg {}
+// ── cw-orch ExecuteFns / QueryFns bridge ────────────────────────────
+//
+// The derive macros on msg::ExecuteExt and msg::QueryExt (behind
+// `feature = "interface"`) generate methods that need
+// Into<ExecuteMsg/QueryMsg>.  These impls wrap custom variants into
+// the outer cw721 envelope.
+#[cfg(feature = "interface")]
+impl From<msg::ExecuteExt> for ExecuteMsg {
+    fn from(ext: msg::ExecuteExt) -> Self {
+        ExecuteMsg::UpdateExtension { msg: ext }
+    }
+}
+#[cfg(feature = "interface")]
+impl From<msg::QueryExt> for QueryMsg {
+    fn from(ext: msg::QueryExt) -> Self {
+        QueryMsg::Extension { msg: ext }
+    }
 }
 
 pub mod calendar {

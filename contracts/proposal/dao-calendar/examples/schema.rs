@@ -1,5 +1,5 @@
 use cosmwasm_schema::write_api;
-use dao_calendar::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+use dao_calendar::contract::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 
 fn main() {
     write_api! {
