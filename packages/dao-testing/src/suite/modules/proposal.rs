@@ -1,6 +1,24 @@
 use cw_orch::prelude::*;
 use dao_cw_orch::*;
 
+
+
+/// Deploy data for the calendar module.
+#[derive(Clone, Debug, Default)]
+pub struct CalendarDeployData {
+    pub initial_groups: Option<Vec<dao_calendar::msg::GroupInit>>,
+}
+
+impl crate::DaoDeployData for CalendarDeployData {
+    type Init = dao_calendar::msg::InstantiateMsg;
+
+    fn into_init(self) -> Self::Init {
+        dao_calendar::msg::InstantiateMsg {
+            initial_groups: self.initial_groups,
+        }
+    }
+}
+
 /// Deploy data for proposal modules (placeholder for future config).
 #[derive(Clone, Debug, Default)]
 pub struct DaoProposalDeployData;
@@ -80,6 +98,7 @@ pub struct DaoProposalSuite<Chain: CwEnv> {
     pub prop_condorcet: DaoProposalCondorcet<Chain>,
     pub prop_sudo: DaoProposalSudo<Chain>,
     pub pre_prop_suite: DaoPreProposeSuite<Chain>,
+    pub calendar: DaoCalendar<Chain>,
 }
 
 impl<Chain: CwEnv> DaoProposalSuite<Chain> {
@@ -89,7 +108,8 @@ impl<Chain: CwEnv> DaoProposalSuite<Chain> {
             prop_multiple: DaoProposalMultiple::new("dao_proposal_multiple", chain.clone()),
             prop_condorcet: DaoProposalCondorcet::new("dao_proposal_condorcet", chain.clone()),
             prop_sudo: DaoProposalSudo::new("dao_proposal_sudo", chain.clone()),
-            pre_prop_suite: DaoPreProposeSuite::new(chain),
+            pre_prop_suite: DaoPreProposeSuite::new(chain.clone()),
+            calendar: DaoCalendar::new(chain),
         }
     }
 

@@ -3,12 +3,13 @@ use cw_orch::prelude::*;
 use dao_cw_orch::DaoDaoCore;
 use dao_interface::state::{Admin, ModuleInstantiateInfo};
 
+use crate::external::{DaoExternalDeployData, DaoExternalSuite};
+
 use super::modules::{
     dao_state::{DaoSnapshot, DaoStateRegistry, ModuleRegistry, ProposalModuleEntry},
     distribution::{DaoDistributionDeployData, DaoDistributionSuite},
-    external::{calendar::CalendarDeployData, DaoExternalDeployData, DaoExternalSuite},
     gauges::{DaoGaugeDeployData, DaoGaugeSuite},
-    proposal::{DaoProposalDeployData, DaoProposalSuite},
+    proposal::{CalendarDeployData, DaoProposalDeployData, DaoProposalSuite},
     staking::{DaoStakingDeployData, DaoStakingSuite},
     voting::{DaoVotingDeployData, DaoVotingSuite},
 };
@@ -304,9 +305,86 @@ macro_rules! define_suite {
     };
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// DaoDaoSuite struct + constructor + upload
-// ═══════════════════════════════════════════════════════════════════════
+// // Define a trait for all proposal modules
+// pub trait ProposalModule<Chain: CwEnv> {
+//     // type InstantiateMsg: Serialize + DeserializeOwned;
+//     // type ExecuteMsg: Serialize + DeserializeOwned;
+//     // type QueryMsg: Serialize + DeserializeOwned;
+
+//     // fn new(name: &str, chain: Chain) -> Self;
+//     // fn upload(&self) -> Result<(), CwOrchError>;
+//     // fn instantiate(&self, msg: &Self::InstantiateMsg) -> Result<(), CwOrchError>;
+//     // fn execute(&self, msg: &Self::ExecuteMsg) -> Result<(), CwOrchError>;
+//     // fn query<T>(&self, msg: &Self::QueryMsg) -> Result<T, CwOrchError>;
+// }
+
+// // Define a trait for all voting modules
+// pub trait VotingModule<Chain: CwEnv> {
+//     // type InstantiateMsg: Serialize + DeserializeOwned;
+//     // type ExecuteMsg: Serialize + DeserializeOwned;
+//     // type QueryMsg: Serialize + DeserializeOwned;
+
+//     // fn new(name: &str, chain: Chain) -> Self;
+//     // fn upload(&self) -> Result<(), CwOrchError>;
+//     // fn instantiate(&self, msg: &Self::InstantiateMsg) -> Result<(), CwOrchError>;
+//     // fn execute(&self, msg: &Self::ExecuteMsg) -> Result<(), CwOrchError>;
+//     // fn query<T>(&self, msg: &Self::QueryMsg) -> Result<T, CwOrchError>;
+// }
+
+// // Define a trait for all staking modules
+// pub trait StakingModule<Chain: CwEnv> {
+//     // type InstantiateMsg: Serialize + DeserializeOwned;
+//     // type ExecuteMsg: Serialize + DeserializeOwned;
+//     // type QueryMsg: Serialize + DeserializeOwned;
+
+//     // fn new(name: &str, chain: Chain) -> Self;
+//     // fn upload(&self) -> Result<(), CwOrchError>;
+//     // fn instantiate(&self, msg: &Self::InstantiateMsg) -> Result<(), CwOrchError>;
+//     // fn execute(&self, msg: &Self::ExecuteMsg) -> Result<(), CwOrchError>;
+//     // fn query<T>(&self, msg: &Self::QueryMsg) -> Result<T, CwOrchError>;
+// }
+
+// // Define a generic DAO deployer trait
+// pub trait DaoDeployer<Chain: CwEnv> {
+//     type Error;
+//     type DeployData;
+//     type ProposalModules: ProposalModule<Chain>;
+//     type VotingModules: VotingModule<Chain>;
+//     type StakingModules: StakingModule<Chain>;
+
+//     fn new(chain: Chain) -> Self;
+//     // fn store_on(chain: Chain) -> Result<Self, Self::Error>;
+//     // fn deploy_on(chain: Chain, data: Self::DeployData) -> Result<Self, Self::Error>;
+//     // fn load_from(chain: Chain) -> Result<Self, Self::Error>;
+//     // fn get_contracts_mut(&mut self) -> Vec<Box<&mut dyn ContractInstance<Chain>>>;
+// }
+// // ═══════════════════════════════════════════════════════════════════════
+// // DaoDaoSuite struct + constructor + upload
+// // ═══════════════════════════════════════════════════════════════════════
+
+// // First, define the DaoSuite trait
+// pub trait DaoSuite<Chain: CwEnv> {
+//     type Error;
+//     type DeployData;
+
+//     // Core contract registry methods (mirroring your macro-generated methods)
+//     fn get_contract(&self, key: &str) -> Option<&dyn ContractInstance<Chain>>;
+//     fn get_contract_mut(&mut self, key: &str) -> Option<&mut dyn ContractInstance<Chain>>;
+//     fn set_contract_addr(&mut self, key: &str, addr: &Addr) -> Result<(), CwOrchError>;
+//     fn get_contract_addr(&self, key: &str) -> Result<Addr, CwOrchError>;
+//     fn load_module_into_interface(&mut self, dao_key: &str, module_key: &str, interface_key: &str) -> Result<(), CwOrchError>;
+//     fn available_keys() -> &'static [&'static str];
+
+//     // Additional suite-wide operations
+//     fn upload_all(&self) -> Result<(), Self::Error>;
+//     fn instantiate_all(&mut self, data: Self::DeployData) -> Result<(), Self::Error>;
+//     fn get_contracts_mut(&mut self) -> Vec<Box<&mut dyn ContractInstance<Chain>>>;
+
+//     // DAO-specific operations
+//     fn create_dao(&mut self, data: Self::DeployData) -> Result<(), Self::Error>;
+//     fn query_dao_state<T>(&self, key: &str, query_msg: &str) -> Result<T, Self::Error>;
+//     fn execute_dao_action(&mut self, key: &str, execute_msg: &str) -> Result<(), Self::Error>;
+// }
 
 /// Full DAO DAO cw-orch testing suite.
 pub struct DaoDaoSuite<Chain: CwEnv + TxHandler> {

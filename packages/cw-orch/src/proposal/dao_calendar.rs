@@ -1,7 +1,7 @@
 use cw_orch::{interface, prelude::*};
 
+use dao_calendar::contract::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 use dao_calendar::contract::{execute, instantiate, migrate, query};
-use dao_calendar::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 
 /// cw-orch interface for the dao-calendar contract.
 ///
@@ -24,8 +24,6 @@ impl<Chain> Uploadable for DaoCalendar<Chain> {
     }
 
     fn wrapper() -> Box<dyn MockContract<Empty>> {
-        Box::new(
-            ContractWrapper::new_with_empty(execute, instantiate, query).with_migrate(migrate),
-        )
+        Box::new(ContractWrapper::new_with_empty(execute, instantiate, query).with_migrate(migrate))
     }
 }

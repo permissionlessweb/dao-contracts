@@ -15,6 +15,7 @@ version = { workspace = true }
 # use test tube feature to enable test-tube integration tests, for example
 # cargo test --features "test-tube"
 test-tube = []
+interface = []
 # when writing tests you may wish to enable test-tube as a default feature
 # default = ["test-tube"]
 
@@ -52,7 +53,7 @@ cw20-stake-reward-distributor = { workspace = true }
 cw721-base = { workspace = true }
 cw721-roles = { workspace = true }
 cw-tokenfactory-issuer = { workspace = true }
-dao-calendar = { workspace = true }
+dao-calendar = { workspace = true , features = ["interface"]}
 dao-dao-core = { workspace = true }
 dao-interface = { workspace = true }
 dao-cw-orch = { workspace = true }

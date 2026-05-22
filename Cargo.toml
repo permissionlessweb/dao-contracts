@@ -38,6 +38,7 @@ cw-multi-test = { package = "abstract-cw-multi-test", path = "../cw-multi-test-f
 cw-ownable = { path = "../cw-plus-plus/packages/ownable" }
 cw-storage-plus = { path = "../cw-storage-plus" }
 cw-utils = { path = "../cw-minus/packages/cw-utils" }
+cw721-nips = { path = "../terp-rs/crates/public/nips" }
 cw2 = { path = "../cw-minus/packages/cw2" }
 cw20 = { path = "../cw-plus/packages/cw20" }
 cw20-base = { path = "../cw-plus/contracts/cw20-base" }
@@ -95,7 +96,7 @@ cw20-stake = { path = "./contracts/staking/cw20-stake", version = "2.8.0-alpha.2
 cw20-stake-external-rewards = { path = "./contracts/staking/cw20-stake-external-rewards", version = "2.8.0-alpha.2" }
 cw20-stake-reward-distributor = { path = "./contracts/staking/cw20-stake-reward-distributor", version = "2.8.0-alpha.2" }
 cw721-roles = { path = "./contracts/external/cw721-roles", version = "2.8.0-alpha.2" }
-dao-calendar = { path = "./contracts/external/dao-calendar", version = "2.8.0-alpha.2" }
+dao-calendar = { path = "./contracts/proposal/dao-calendar", version = "2.8.0-alpha.2" }
 dao-cw-orch = { path = "./packages/cw-orch", version = "2.8.0-alpha.2" }
 dao-cw721-extensions = { path = "./packages/dao-cw721-extensions", version = "2.8.0-alpha.2" }
 dao-dao-core = { path = "./contracts/dao-dao-core", version = "2.8.0-alpha.2" }

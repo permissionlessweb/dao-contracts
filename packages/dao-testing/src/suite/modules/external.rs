@@ -1,24 +1,24 @@
 use cw_orch::{anyhow, prelude::*};
-use dao_calendar::msg::{EventSupplier, EventSupplierInit, EventSupplierType, GroupInit};
+use dao_calendar::contract::{EventSupplier, EventSupplierInit, EventSupplierType, GroupInit};
 use dao_cw_orch::*;
 
-pub mod calendar;
-pub use calendar::CalendarDeployData;
-
 use crate::{
-    distribution::DaoDistributionDeployData, gauges::DaoGaugeDeployData,
-    proposal::DaoProposalDeployData, staking::DaoStakingDeployData, voting::DaoVotingDeployData,
+    distribution::DaoDistributionDeployData,
+    gauges::DaoGaugeDeployData,
+    proposal::{CalendarDeployData, DaoProposalDeployData},
+    staking::DaoStakingDeployData,
+    voting::DaoVotingDeployData,
     DaoConfig, DaoDaoDeployData, ProposalModuleConfig, VotingModuleConfig,
 };
 
 /// Single DAO with dao-calendar module as a proposal module.
 pub fn dao_deploy_data_single(sender: Addr) -> anyhow::Result<Option<DaoDaoDeployData>> {
     // Calendar deploy data — minimal config for local testing
-    let calendar_data = CalendarDeployData {
+    let calendar_data = super::proposal::CalendarDeployData {
         initial_groups: Some(vec![GroupInit {
             id: "public-resources".into(),
             suppliers: vec![EventSupplierInit {
-                contract: "cosmos1test".into(),
+                contract: sender.clone().into(),
                 supplier_type: EventSupplierType::Authorization,
             }],
             name: Some("Public Resources".into()),

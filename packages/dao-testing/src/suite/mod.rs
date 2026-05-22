@@ -2,10 +2,10 @@ mod base;
 mod cw20_suite;
 mod cw4_suite;
 mod cw721_suite;
-mod token_suite;
-mod modules;
 mod dao_suite;
 pub mod deploy_data;
+mod modules;
+mod token_suite;
 
 pub const OWNER: &str = "cosmwasm1fsgzj6t7udv8zhf6zj32mkqhcjcpv52yph5qsdcl0qt94jgdckqs2g053y";
 
@@ -21,10 +21,11 @@ pub const GOV_DENOM: &str = "ugovtoken";
 pub use cw_multi_test::Executor;
 
 // Old cw-multi-test suite (preserved)
+pub use crate::deploy_data::DaoDeployData;
 pub use base::*;
 pub use cw20_suite::*;
 pub use cw4_suite::*;
 pub use cw721_suite::*;
-pub use modules::*;
 pub use dao_suite::*;
+pub use modules::*;
 pub use token_suite::*;
