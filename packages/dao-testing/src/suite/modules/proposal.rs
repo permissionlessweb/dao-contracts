@@ -40,6 +40,8 @@ pub struct DaoPreProposeSuite<Chain: CwEnv> {
     pub pre_prop_single: DaoPreProposeSingle<Chain>,
 }
 
+pub use dao_calendar::contract::msg::ExecuteExtFns as _;
+
 impl<Chain: CwEnv> DaoPreProposeSuite<Chain> {
     pub fn new(chain: Chain) -> Self {
         Self {

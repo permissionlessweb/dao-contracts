@@ -32,14 +32,27 @@ pub type ExecuteMsg =
     cw721::msg::Cw721ExecuteMsg<MetadataExt, CalendarModuleCollectionExtension, ExecuteExt>;
 pub type QueryMsg =
     cw721::msg::Cw721QueryMsg<MetadataExt, CalendarModuleCollectionExtension, QueryExt>;
-
 #[cw_serde]
 pub struct MetadataExt {
-    /// The underlying NIP-52 calendar event metadata
+    /// `true` = full Nostr event stored on-chain in `e`.
+    /// `false` = only an IPFS CID pointer lives on-chain.
+    pub on_chain: bool,
+    /// Encoded NIP-52 `CalendarEventMetadata` (on-chain).
+    /// Empty `Binary` when off-chain.
     pub e: Binary,
-    /// Optional: Store the raw nostr event ID for verification
+    /// IPFS CID pointing to the full Nostr event JSON (off-chain only).
+    pub cid: Option<String>,
+    /// Optional IPFS gateway URL for content resolution.
+    pub gateway: Option<String>,
+    /// Nostr event kind (31922 date-based, 31923 time-based).
+    /// Always populated for efficient on-chain filtering.
+    pub kind: u16,
+    /// Cached d-tag for addressable events (kind 30000–39999).
+    /// Avoids decoding `e` just to read the identifier.
+    pub d_tag: Option<String>,
+    /// Optional: Store the raw nostr event ID for verification.
     pub nostr_event_id: Option<String>,
-    /// Optional: Store the author's pubkey
+    /// Optional: Store the author's pubkey.
     pub author_pubkey: Option<String>,
 }
 
@@ -100,61 +113,137 @@ pub mod state {
         cw::NostrCw721Ext,
         error::{NipError, NipResult},
         nips::nip52::{CalendarEventMetadata, Nip52Kind},
-        NipMetadata, RawNostrEvent,
+        NipMetadata, NostrExt, RawNostrEvent,
     };
 
     impl NipMetadata for MetadataExt {
         type Kind = Nip52Kind;
 
         fn kind(&self) -> Self::Kind {
-            CalendarEventMetadata::from_storage_binary(&self.e)
-                .map(|m| m.kind())
-                .unwrap_or(Nip52Kind::TimeEvent)
+            if self.on_chain {
+                CalendarEventMetadata::from_storage_binary(&self.e)
+                    .map(|m| m.kind())
+                    .unwrap_or(Nip52Kind::TimeEvent)
+            } else {
+                match self.kind {
+                    31922 => Nip52Kind::DateEvent,
+                    _ => Nip52Kind::TimeEvent,
+                }
+            }
         }
 
         fn validate(&self) -> NipResult<()> {
-            if self.e.is_empty() {
-                return Err(NipError::Validation(
-                    "No calendar event data in MetadataExt.e".to_string(),
-                ));
+            if self.on_chain {
+                if self.e.is_empty() {
+                    return Err(NipError::Validation(
+                        "No calendar event data in MetadataExt.e".into(),
+                    ));
+                }
+                CalendarEventMetadata::from_storage_binary(&self.e)
+                    .map_err(|e| NipError::Validation(format!("Failed to decode: {e}")))?
+                    .validate()
+            } else {
+                if self.cid.is_none() {
+                    return Err(NipError::Validation(
+                        "Off-chain metadata must have a CID".into(),
+                    ));
+                }
+                Ok(())
             }
-            CalendarEventMetadata::from_storage_binary(&self.e)
-                .map_err(|e| NipError::Validation(format!("Failed to decode calendar event: {e}")))?
-                .validate()
         }
 
         fn to_tags(&self) -> Vec<cw721_nips::Tag> {
-            CalendarEventMetadata::from_storage_binary(&self.e)
-                .map(|m| m.to_tags())
-                .unwrap_or_default()
+            if self.on_chain {
+                CalendarEventMetadata::from_storage_binary(&self.e)
+                    .map(|m| m.to_tags())
+                    .unwrap_or_default()
+            } else {
+                let mut tags: Vec<cw721_nips::Tag> = vec![];
+                if let Some(gw) = &self.gateway {
+                    tags.push(cw721_nips::Tag::new(vec![
+                        "gateway".to_string(),
+                        gw.clone(),
+                    ]));
+                }
+                tags
+            }
         }
 
         fn content(&self) -> String {
-            CalendarEventMetadata::from_storage_binary(&self.e)
-                .map(|m| m.content())
-                .unwrap_or_default()
+            if self.on_chain {
+                CalendarEventMetadata::from_storage_binary(&self.e)
+                    .map(|m| m.content())
+                    .unwrap_or_default()
+            } else {
+                self.cid.clone().unwrap_or_default()
+            }
         }
 
         fn d_tag(&self) -> Option<String> {
-            CalendarEventMetadata::from_storage_binary(&self.e)
-                .ok()
-                .and_then(|m| m.d_tag())
+            self.d_tag.clone()
         }
 
         fn from_raw_event(event: &RawNostrEvent) -> NipResult<Self> {
             let inner = CalendarEventMetadata::from_raw_event(event)?;
+            let d_tag = inner.d_tag();
             let e = Binary::from(serde_json::to_vec(&inner)?);
             Ok(Self {
+                on_chain: true,
                 e,
+                cid: None,
+                gateway: None,
+                kind: event.kind,
+                d_tag,
                 nostr_event_id: Some(event.id.clone()),
                 author_pubkey: Some(event.pubkey.clone()),
             })
         }
     }
 
-    impl PartialEq for ContractError {
-        fn eq(&self, other: &Self) -> bool {
-            core::mem::discriminant(self) == core::mem::discriminant(other)
+    // ── NostrExt (on-chain / off-chain discriminator) ──────────────
+    impl NostrExt for MetadataExt {
+        fn location(&self) -> bool {
+            if self.on_chain {
+                true
+            } else {
+                false
+            }
+        }
+
+        fn kind(&self) -> u16 {
+            self.kind
+        }
+
+        fn d_tag(&self) -> Option<&str> {
+            self.d_tag.as_deref()
+        }
+
+        fn into_event(self, pubkey: &str, created_at: u64) -> NipResult<RawNostrEvent> {
+            if self.on_chain {
+                let inner = CalendarEventMetadata::from_storage_binary(&self.e)
+                    .map_err(|e| NipError::Validation(format!("{e}")))?;
+                let tags: Vec<Vec<String>> = inner
+                    .to_tags()
+                    .into_iter()
+                    .map(|t| t.into_inner())
+                    .collect();
+                let content = inner.content();
+                let mut event = RawNostrEvent {
+                    id: Default::default(),
+                    pubkey: self.author_pubkey.unwrap_or_else(|| pubkey.to_string()),
+                    created_at,
+                    kind: self.kind,
+                    tags,
+                    content,
+                    sig: Default::default(),
+                };
+                event.id = event.compute_id()?;
+                Ok(event)
+            } else {
+                Err(NipError::MissingField(
+                    "Off-chain events must be resolved via CID; use the IPFS pointer".into(),
+                ))
+            }
         }
     }
 

@@ -14,6 +14,9 @@ use super::modules::{
     voting::{DaoVotingDeployData, DaoVotingSuite},
 };
 
+
+pub use dao_calendar::contract::msg::ExecuteExtFns as _;
+
 /// Top-level deploy data for a full DAO suite.
 ///
 /// `Default` yields empty `daos` vec with all sub-suite data defaulted,

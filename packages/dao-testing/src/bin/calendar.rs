@@ -1,8 +1,9 @@
 use cw_orch::environment::ZkCwEnv;
 use cw_orch::prelude::*;
+use dao_calendar::contract::msg::CreateEventInput;
+pub use dao_calendar::contract::msg::ExecuteExtFns as _;
 use dao_testing::{DaoDaoDeployData, DaoDaoSuite};
 use std::collections::HashMap;
-
 
 /// Unified deployment suite composing all website contract suites.
 pub struct MinDaoCalendarSuite<Chain: ZkCwEnv> {
@@ -19,7 +20,22 @@ where
         // deploy minimal default DAO with calendar for complete authority  + no wait for execute
         let dao = DaoDaoSuite::deploy_on(chain.clone(), data)?;
         // creat multiple events calendar events
-        dao.proposal.calendar.create_event()?;
+        dao.proposal.calendar.create_event(
+            1,
+            CreateEventInput {
+                title: todo!(),
+                description: todo!(),
+                kind: todo!(),
+                start_time: todo!(),
+                end_time: todo!(),
+                timezone: todo!(),
+                locations: todo!(),
+                geohash: todo!(),
+                hashtags: todo!(),
+                references: todo!(),
+                summary: todo!(),
+            },
+        )?;
 
         Ok(Self { chain, dao })
     }
