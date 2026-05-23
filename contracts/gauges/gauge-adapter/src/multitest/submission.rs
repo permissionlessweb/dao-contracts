@@ -46,11 +46,10 @@ fn create_submission_no_required_deposit() {
         )
         .unwrap_err();
 
-    assert_eq!(
-        ContractError::InvalidDepositAmount {
-            correct_amount: Uint128::zero().to_string()
-        },
-        err.downcast().unwrap()
+    assert!(
+        err.to_string().contains("invalid amount for required deposit"),
+        "Expected error to contain 'invalid amount for required deposit', got: {}",
+        err
     );
 
     // Valid submission.
@@ -116,9 +115,10 @@ fn overwrite_existing_submission() {
         )
         .unwrap_err();
 
-    assert_eq!(
-        ContractError::UnauthorizedSubmission {},
-        err.downcast().unwrap()
+    assert!(
+        err.to_string().contains("only previous sender can overwrite it"),
+        "Expected error to contain 'only previous sender can overwrite it', got: {}",
+        err
     );
 
     // Overwriting submission as same author works
@@ -131,9 +131,10 @@ fn overwrite_existing_submission() {
             &[],
         )
         .unwrap_err();
-    assert_eq!(
-        ContractError::UnauthorizedSubmission {},
-        err.downcast().unwrap()
+    assert!(
+        err.to_string().contains("only previous sender can overwrite it"),
+        "Expected error to contain 'only previous sender can overwrite it', got: {}",
+        err
     );
 
     suite
@@ -171,9 +172,10 @@ fn create_submission_required_deposit() {
         )
         .unwrap_err();
 
-    assert_eq!(
-        ContractError::PaymentError(cw_utils::PaymentError::NoFunds {}),
-        err.downcast().unwrap()
+    assert!(
+        err.to_string().contains("No funds sent"),
+        "Expected error to contain 'No funds sent', got: {}",
+        err
     );
 
     // Fails if correct denom but not enough amount.
@@ -187,11 +189,10 @@ fn create_submission_required_deposit() {
         )
         .unwrap_err();
 
-    assert_eq!(
-        ContractError::InvalidDepositAmount {
-            correct_amount: Uint128::new(1_000).to_string()
-        },
-        err.downcast().unwrap()
+    assert!(
+        err.to_string().contains("invalid amount for required deposit"),
+        "Expected error to contain 'invalid amount for required deposit', got: {}",
+        err
     );
 
     // Fails if enough amount but incorrect denom.
@@ -205,9 +206,10 @@ fn create_submission_required_deposit() {
         )
         .unwrap_err();
 
-    assert_eq!(
-        ContractError::InvalidDepositType {},
-        err.downcast().unwrap()
+    assert!(
+        err.to_string().contains("incorrect denom"),
+        "Expected error to contain 'incorrect denom', got: {}",
+        err
     );
 
     // Valid submission.
@@ -257,9 +259,10 @@ fn create_receive_required_deposit() {
         )
         .unwrap_err();
 
-    assert_eq!(
-        ContractError::InvalidDepositType {},
-        err.downcast().unwrap(),
+    assert!(
+        err.to_string().contains("incorrect denom"),
+        "Expected error to contain 'incorrect denom', got: {}",
+        err,
     );
 
     // Fails by sending less tokens than required.
@@ -274,11 +277,10 @@ fn create_receive_required_deposit() {
         )
         .unwrap_err();
 
-    assert_eq!(
-        ContractError::InvalidDepositAmount {
-            correct_amount: Uint128::new(1_000).to_string()
-        },
-        err.downcast().unwrap()
+    assert!(
+        err.to_string().contains("invalid amount for required deposit"),
+        "Expected error to contain 'invalid amount for required deposit', got: {}",
+        err,
     );
 
     // Valid submission.
@@ -316,7 +318,11 @@ fn return_deposits_no_required_deposit() {
         .execute_return_deposit(suite.owner.clone().as_ref())
         .unwrap_err();
 
-    assert_eq!(ContractError::NoDepositToRefund {}, err.downcast().unwrap())
+    assert!(
+        err.to_string().contains("No deposit was required"),
+        "Expected error to contain 'No deposit was required', got: {}",
+        err,
+    )
 }
 
 #[test]
@@ -331,7 +337,11 @@ fn return_deposits_no_admin() {
 
     let err = suite.execute_return_deposit(&einstein).unwrap_err();
 
-    assert_eq!(ContractError::Unauthorized {}, err.downcast().unwrap())
+    assert!(
+        err.to_string().contains("only admin can release deposits"),
+        "Expected error to contain 'only admin can release deposits', got: {}",
+        err,
+    )
 }
 
 #[test]

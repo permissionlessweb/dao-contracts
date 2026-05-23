@@ -342,7 +342,7 @@ pub(crate) fn instantiate_with_native_staked_balances_governance(
         }))
         .unwrap();
         app.execute_contract(
-            Addr::unchecked(&address),  // already bech32 from caller
+            Addr::unchecked(&address), // already bech32 from caller
             native_staking_addr.clone(),
             &dao_voting_token_staked::msg::ExecuteMsg::Stake {},
             &[Coin {
@@ -476,7 +476,7 @@ pub(crate) fn instantiate_with_staked_balances_governance(
     // Stake all the initial balances.
     for Cw20Coin { address, amount } in initial_balances {
         app.execute_contract(
-            Addr::unchecked(address),  // already bech32 from caller
+            Addr::unchecked(address), // already bech32 from caller
             token_contract.clone(),
             &cw20::Cw20ExecuteMsg::Send {
                 contract: staking_contract.to_string(),
@@ -606,6 +606,8 @@ pub(crate) fn instantiate_with_cw4_groups_governance(
             .collect()
     };
 
+    println!("{:#?}", initial_weights);
+    
     let governance_instantiate = dao_interface::msg::InstantiateMsg {
         admin: None,
         name: "DAO DAO".to_string(),

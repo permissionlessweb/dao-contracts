@@ -1,10 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-#[cfg(not(test))]
-use cosmwasm_std::SubMsg;
 use cosmwasm_std::{
     to_json_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, MigrateInfo, Reply,
-    Response, StdError, StdResult,
+    Response, StdError, StdResult, SubMsg,
 };
 
 use cw2::set_contract_version;
@@ -60,122 +58,35 @@ pub fn execute_issue(
         .querier
         .query_wasm_smart(info.sender, &dao_interface::voting::Query::Dao {})?;
 
-    #[cfg(test)]
-    {
-        CREATING_FAN_TOKEN.save(
-            deps.storage,
-            &CreatingFanToken {
-                token: token.clone(),
-                dao: dao.clone(),
-            },
-        )?;
+    CREATING_FAN_TOKEN.save(
+        deps.storage,
+        &CreatingFanToken {
+            token: token.clone(),
+            dao: dao.clone(),
+        },
+    )?;
 
-        let denom = MOCK_FANTOKEN_DENOM.to_string();
+    let msg = SubMsg::reply_on_success(
+        crate::bitsong::MsgIssue {
+            symbol: token.symbol,
+            name: token.name,
+            max_supply: token.max_supply.to_string(),
+            // this needs to be the current contract address as the authority is
+            // used to determine who is allowed to send this message. will be
+            // set to DAO in reply once token is issued.
+            authority: env.contract.address.to_string(),
+            // this needs to be the current contract address as we mint initial
+            // balances in the reply. will be set to DAO in reply once initial
+            // balances are minted.
+            minter: env.contract.address.to_string(),
+            uri: token.uri,
+        },
+        ISSUE_REPLY_ID,
+    );
 
-        // mgs to be executed to finalize setup
-        let mut msgs: Vec<CosmosMsg> = vec![];
-
-        // mint tokens for initial balances
-        token
-            .initial_balances
-            .iter()
-            .for_each(|b: &InitialBalance| {
-                msgs.push(
-                    MsgMint {
-                        recipient: b.address.clone(),
-                        coin: Some(Coin {
-                            amount: b.amount.to_string(),
-                            denom: denom.clone(),
-                        }),
-                        minter: env.contract.address.to_string(),
-                    }
-                    .into(),
-                );
-            });
-
-        // add initial DAO balance to initial_balances if nonzero
-        if let Some(initial_dao_balance) = token.initial_dao_balance {
-            if !initial_dao_balance.is_zero() {
-                msgs.push(
-                    MsgMint {
-                        recipient: dao.to_string(),
-                        coin: Some(Coin {
-                            amount: initial_dao_balance.to_string(),
-                            denom: denom.clone(),
-                        }),
-                        minter: env.contract.address.to_string(),
-                    }
-                    .into(),
-                );
-            }
-        }
-
-        // set authority and minter to DAO
-        msgs.push(
-            MsgSetAuthority {
-                denom: denom.clone(),
-                old_authority: env.contract.address.to_string(),
-                new_authority: dao.to_string(),
-            }
-            .into(),
-        );
-        msgs.push(
-            MsgSetMinter {
-                denom: denom.clone(),
-                old_minter: env.contract.address.to_string(),
-                new_minter: dao.to_string(),
-            }
-            .into(),
-        );
-
-        // create reply data for dao-voting-token-staked
-        let data = to_json_binary(&TokenFactoryCallback {
-            denom: denom.clone(),
-            token_contract: None,
-            module_instantiate_callback: None,
-        })?;
-
-        // remove since we don't need it anymore
-        CREATING_FAN_TOKEN.remove(deps.storage);
-
-        Ok(Response::default()
-            .add_messages(msgs)
-            .set_data(data)
-            .add_attribute("fantoken_denom", denom))
-    }
-
-    #[cfg(not(test))]
-    {
-        CREATING_FAN_TOKEN.save(
-            deps.storage,
-            &CreatingFanToken {
-                token: token.clone(),
-                dao: dao.clone(),
-            },
-        )?;
-
-        let msg = SubMsg::reply_on_success(
-            MsgIssue {
-                symbol: token.symbol,
-                name: token.name,
-                max_supply: token.max_supply.to_string(),
-                // this needs to be the current contract address as the authority is
-                // used to determine who is allowed to send this message. will be
-                // set to DAO in reply once token is issued.
-                authority: env.contract.address.to_string(),
-                // this needs to be the current contract address as we mint initial
-                // balances in the reply. will be set to DAO in reply once initial
-                // balances are minted.
-                minter: env.contract.address.to_string(),
-                uri: token.uri,
-            },
-            ISSUE_REPLY_ID,
-        );
-
-        Ok(Response::default()
-            .add_attribute("action", "issue")
-            .add_submessage(msg))
-    }
+    Ok(Response::default()
+        .add_attribute("action", "issue")
+        .add_submessage(msg))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -268,7 +179,12 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg, _migrate_info: MigrateInfo) -> Result<Response, ContractError> {
+pub fn migrate(
+    deps: DepsMut,
+    _env: Env,
+    _msg: MigrateMsg,
+    _migrate_info: MigrateInfo,
+) -> Result<Response, ContractError> {
     // Set contract to version to latest
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     Ok(Response::default())

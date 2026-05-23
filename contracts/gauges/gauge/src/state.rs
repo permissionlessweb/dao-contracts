@@ -594,8 +594,8 @@ mod tests {
             result,
             vec![
                 to_vote_info(&user1, &votes1, env.block.time.seconds()),
-                to_vote_info(&user2, &votes2, env.block.time.seconds()),
                 to_vote_info(&user3, &votes3, env.block.time.seconds()),
+                to_vote_info(&user2, &votes2, env.block.time.seconds()),
             ]
         );
 
@@ -691,7 +691,7 @@ mod tests {
             result,
             vec![
                 to_vote_info(&user1, &votes1, env.block.time.seconds()),
-                to_vote_info(&user2, &votes2, env.block.time.seconds())
+                to_vote_info(&user3, &votes3, env.block.time.seconds()),
             ]
         );
 
@@ -702,8 +702,8 @@ mod tests {
         assert_eq!(
             result,
             vec![
+                to_vote_info(&user3, &votes3, env.block.time.seconds()),
                 to_vote_info(&user2, &votes2, env.block.time.seconds()),
-                to_vote_info(&user3, &votes3, env.block.time.seconds())
             ]
         );
     }

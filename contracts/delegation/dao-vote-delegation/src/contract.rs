@@ -1,4 +1,4 @@
-use cosmwasm_std::{ensure, Addr, Order, Uint128};
+use cosmwasm_std::{ensure, Addr, Order, Uint256};
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::{
     entry_point, to_json_binary, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, MigrateInfo,
@@ -616,7 +616,7 @@ fn query_unvoted_delegated_vp(
     if let Some(vp_cap_percent) = vp_cap_percent {
         if vp_cap_percent < Decimal::one() {
             let dao = DAO.load(deps.storage)?;
-            let total_power: Uint128 = voting::get_total_power(deps, &dao, Some(height))?
+            let total_power: Uint256 = voting::get_total_power(deps, &dao, Some(height))?
                 .try_into()
                 .unwrap();
             let cap = calculate_delegated_vp(total_power, vp_cap_percent);
@@ -634,8 +634,8 @@ fn query_effective_unvoted_delegated_vote_power_reduction(
     proposal_id: u64,
     proposal_height: u64,
     delegate: String,
-    delegated_vp: Uint128,
-) -> StdResult<Uint128> {
+    delegated_vp: Uint256,
+) -> StdResult<Uint256> {
     let udvp = query_unvoted_delegated_vp(
         deps,
         delegate,

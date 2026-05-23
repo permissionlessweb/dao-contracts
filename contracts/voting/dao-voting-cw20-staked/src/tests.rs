@@ -65,7 +65,7 @@ fn test_instantiate_zero_supply() {
                 marketing: None,
                 unstaking_duration: None,
                 staking_code_id: staking_contract_id,
-                initial_dao_balance: Some(Uint128::zero()),
+                initial_dao_balance: Some(Uint256::zero()),
                 salt: None,
                 staking_salt: None,
             },
@@ -95,7 +95,7 @@ fn test_instantiate_no_balances() {
                 marketing: None,
                 unstaking_duration: None,
                 staking_code_id: staking_contract_id,
-                initial_dao_balance: Some(Uint128::zero()),
+                initial_dao_balance: Some(Uint128::zero().into()),
                 salt: None,
                 staking_salt: None,
             },
@@ -128,7 +128,7 @@ fn test_instantiate_zero_active_threshold_count() {
                 marketing: None,
                 unstaking_duration: None,
                 staking_code_id: staking_contract_id,
-                initial_dao_balance: Some(Uint128::zero()),
+                initial_dao_balance: Some(Uint256::zero()),
                 salt: None,
                 staking_salt: None,
             },
@@ -163,7 +163,7 @@ fn test_contract_info() {
                 marketing: None,
                 unstaking_duration: None,
                 staking_code_id: staking_contract_id,
-                initial_dao_balance: Some(Uint128::zero()),
+                initial_dao_balance: Some(Uint256::zero()),
                 salt: None,
                 staking_salt: None,
             },
@@ -216,7 +216,7 @@ fn test_new_cw20() {
                 marketing: None,
                 unstaking_duration: None,
                 staking_code_id: staking_contract_id,
-                initial_dao_balance: Some(Uint128::from(10u64)),
+                initial_dao_balance: Some(Uint256::from(10u64)),
                 salt: None,
                 staking_salt: None,
             },
@@ -934,7 +934,7 @@ fn test_active_threshold_absolute_count() {
                 marketing: None,
                 unstaking_duration: None,
                 staking_code_id: staking_contract_id,
-                initial_dao_balance: Some(Uint128::from(100u64)),
+                initial_dao_balance: Some(Uint256::from(100u64)),
                 salt: None,
                 staking_salt: None,
             },
@@ -996,7 +996,7 @@ fn test_active_threshold_percent() {
                 marketing: None,
                 unstaking_duration: None,
                 staking_code_id: staking_contract_id,
-                initial_dao_balance: Some(Uint128::from(100u64)),
+                initial_dao_balance: Some(Uint256::from(100u64)),
                 salt: None,
                 staking_salt: None,
             },
@@ -1135,7 +1135,7 @@ fn test_active_threshold_none() {
                 marketing: None,
                 unstaking_duration: None,
                 staking_code_id: staking_contract_id,
-                initial_dao_balance: Some(Uint128::from(100u64)),
+                initial_dao_balance: Some(Uint256::from(100u64)),
                 salt: None,
                 staking_salt: None,
             },
@@ -1175,7 +1175,7 @@ fn test_update_active_threshold() {
                 marketing: None,
                 unstaking_duration: None,
                 staking_code_id: staking_contract_id,
-                initial_dao_balance: Some(Uint128::from(100u64)),
+                initial_dao_balance: Some(Uint256::from(100u64)),
                 salt: None,
                 staking_salt: None,
             },
@@ -1205,8 +1205,13 @@ fn test_update_active_threshold() {
     .unwrap_err();
 
     // Expect success as sender is the DAO
-    app.execute_contract(MockApi::default().addr_make(DAO_ADDR), voting_addr.clone(), &msg, &[])
-        .unwrap();
+    app.execute_contract(
+        MockApi::default().addr_make(DAO_ADDR),
+        voting_addr.clone(),
+        &msg,
+        &[],
+    )
+    .unwrap();
 
     let resp: ActiveThresholdResponse = app
         .wrap()
@@ -1245,7 +1250,7 @@ fn test_active_threshold_percentage_gt_100() {
                 marketing: None,
                 unstaking_duration: None,
                 staking_code_id: staking_contract_id,
-                initial_dao_balance: Some(Uint128::from(100u64)),
+                initial_dao_balance: Some(Uint256::from(100u64)),
                 salt: None,
                 staking_salt: None,
             },
@@ -1281,7 +1286,7 @@ fn test_active_threshold_percentage_lte_0() {
                 marketing: None,
                 unstaking_duration: None,
                 staking_code_id: staking_contract_id,
-                initial_dao_balance: Some(Uint128::from(100u64)),
+                initial_dao_balance: Some(Uint256::from(100u64)),
                 salt: None,
                 staking_salt: None,
             },
@@ -1317,7 +1322,7 @@ fn test_active_threshold_absolute_count_invalid() {
                 marketing: None,
                 unstaking_duration: None,
                 staking_code_id: staking_contract_id,
-                initial_dao_balance: Some(Uint128::from(100u64)),
+                initial_dao_balance: Some(Uint256::from(100u64)),
                 salt: None,
                 staking_salt: None,
             },
@@ -1353,7 +1358,7 @@ fn test_migrate() {
                     marketing: None,
                     unstaking_duration: None,
                     staking_code_id: staking_contract_id,
-                    initial_dao_balance: Some(Uint128::zero()),
+                    initial_dao_balance: Some(Uint256::zero()),
                     salt: None,
                     staking_salt: None,
                 },
@@ -1397,7 +1402,16 @@ fn test_migrate() {
 pub fn test_migrate_update_version() {
     let mut deps = mock_dependencies();
     cw2::set_contract_version(&mut deps.storage, "my-contract", "1.0.0").unwrap();
-    migrate(deps.as_mut(), mock_env(), MigrateMsg {}, MigrateInfo { sender: Addr::unchecked("sender"), old_migrate_version: None }).unwrap();
+    migrate(
+        deps.as_mut(),
+        mock_env(),
+        MigrateMsg {},
+        MigrateInfo {
+            sender: Addr::unchecked("sender"),
+            old_migrate_version: None,
+        },
+    )
+    .unwrap();
     let version = cw2::get_contract_version(&deps.storage).unwrap();
     assert_eq!(version.version, CONTRACT_VERSION);
     assert_eq!(version.contract, CONTRACT_NAME);

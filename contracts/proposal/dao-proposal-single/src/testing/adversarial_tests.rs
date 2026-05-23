@@ -11,7 +11,7 @@ use crate::testing::{
     },
     queries::{query_balance_cw20, query_dao_token, query_proposal, query_single_proposal_module},
 };
-use cosmwasm_std::{to_json_binary, Addr, CosmosMsg, Decimal, Uint128, Uint256, WasmMsg};
+use cosmwasm_std::{to_json_binary, Addr, CosmosMsg, Decimal, Uint256, WasmMsg};
 use cw20::Cw20Coin;
 use cw_multi_test::{next_block, App};
 use cw_utils::Duration;
@@ -38,8 +38,20 @@ fn setup_test(messages: Vec<CosmosMsg>) -> CommonTest {
     let gov_token = query_dao_token(&app, &core_addr);
 
     // Mint some tokens to pay the proposal deposit.
-    mint_cw20s(&mut app, &gov_token, &core_addr, &addr_str(CREATOR_ADDR), 10_000_000);
-    let proposal_id = make_proposal(&mut app, &proposal_module, &addr_str(CREATOR_ADDR), messages, None);
+    mint_cw20s(
+        &mut app,
+        &gov_token,
+        &core_addr,
+        &addr_str(CREATOR_ADDR),
+        10_000_000,
+    );
+    let proposal_id = make_proposal(
+        &mut app,
+        &proposal_module,
+        &addr_str(CREATOR_ADDR),
+        messages,
+        None,
+    );
 
     CommonTest {
         app,
@@ -66,7 +78,12 @@ fn test_execute_proposal_open() {
     assert_eq!(proposal.proposal.status, Status::Open);
 
     // attempt to execute and assert that it fails
-    let err = execute_proposal_should_fail(&mut app, &proposal_module, &addr_str(CREATOR_ADDR), proposal_id);
+    let err = execute_proposal_should_fail(
+        &mut app,
+        &proposal_module,
+        &addr_str(CREATOR_ADDR),
+        proposal_id,
+    );
     assert!(err.to_string().contains("not in 'passed' state"))
 }
 
@@ -99,18 +116,33 @@ fn test_execute_proposal_rejected_closed() {
     assert_eq!(proposal.proposal.status, Status::Rejected);
 
     // Attempt to execute
-    let err = execute_proposal_should_fail(&mut app, &proposal_module, &addr_str(CREATOR_ADDR), proposal_id);
+    let err = execute_proposal_should_fail(
+        &mut app,
+        &proposal_module,
+        &addr_str(CREATOR_ADDR),
+        proposal_id,
+    );
     assert!(err.to_string().contains("not in 'passed' state"));
 
     app.update_block(next_block);
 
     // close the proposal
-    close_proposal(&mut app, &proposal_module, &addr_str(CREATOR_ADDR), proposal_id);
+    close_proposal(
+        &mut app,
+        &proposal_module,
+        &addr_str(CREATOR_ADDR),
+        proposal_id,
+    );
     let proposal = query_proposal(&app, &proposal_module, proposal_id);
     assert_eq!(proposal.proposal.status, Status::Closed);
 
     // Attempt to execute
-    let err = execute_proposal_should_fail(&mut app, &proposal_module, &addr_str(CREATOR_ADDR), proposal_id);
+    let err = execute_proposal_should_fail(
+        &mut app,
+        &proposal_module,
+        &addr_str(CREATOR_ADDR),
+        proposal_id,
+    );
     assert!(err.to_string().contains("not in 'passed' state"))
 }
 
@@ -140,15 +172,24 @@ fn test_execute_proposal_more_than_once() {
     // assert proposal is passed, execute it
     let proposal = query_proposal(&app, &proposal_module, proposal_id);
     assert_eq!(proposal.proposal.status, Status::Passed);
-    execute_proposal(&mut app, &proposal_module, &addr_str(CREATOR_ADDR), proposal_id);
+    execute_proposal(
+        &mut app,
+        &proposal_module,
+        &addr_str(CREATOR_ADDR),
+        proposal_id,
+    );
 
     app.update_block(next_block);
 
     // assert proposal executed and attempt to execute it again
     let proposal = query_proposal(&app, &proposal_module, proposal_id);
     assert_eq!(proposal.proposal.status, Status::Executed);
-    let err =
-        execute_proposal_should_fail(&mut app, &proposal_module, &addr_str(CREATOR_ADDR), proposal_id);
+    let err = execute_proposal_should_fail(
+        &mut app,
+        &proposal_module,
+        &addr_str(CREATOR_ADDR),
+        proposal_id,
+    );
     assert!(err.to_string().contains("not in 'passed' state"));
 }
 
@@ -204,8 +245,20 @@ pub fn test_executed_prop_state_remains_after_vote_swing() {
     let proposal_module = query_single_proposal_module(&app, &core_addr);
     let gov_token = query_dao_token(&app, &core_addr);
 
-    mint_cw20s(&mut app, &gov_token, &core_addr, &addr_str(CREATOR_ADDR), 10_000_000);
-    let proposal_id = make_proposal(&mut app, &proposal_module, &addr_str(CREATOR_ADDR), vec![], None);
+    mint_cw20s(
+        &mut app,
+        &gov_token,
+        &core_addr,
+        &addr_str(CREATOR_ADDR),
+        10_000_000,
+    );
+    let proposal_id = make_proposal(
+        &mut app,
+        &proposal_module,
+        &addr_str(CREATOR_ADDR),
+        vec![],
+        None,
+    );
 
     // someone quickly votes, proposal gets executed
     vote_on_proposal(
@@ -215,14 +268,19 @@ pub fn test_executed_prop_state_remains_after_vote_swing() {
         proposal_id,
         Vote::Yes,
     );
-    execute_proposal(&mut app, &proposal_module, &addr_str(CREATOR_ADDR), proposal_id);
+    execute_proposal(
+        &mut app,
+        &proposal_module,
+        &addr_str(CREATOR_ADDR),
+        proposal_id,
+    );
 
     app.update_block(next_block);
 
     // assert prop is executed prior to its expiry
     let proposal = query_proposal(&app, &proposal_module, proposal_id);
     assert_eq!(proposal.proposal.status, Status::Executed);
-    assert_eq!(proposal.proposal.votes.yes, Uint128::new(20));
+    assert_eq!(proposal.proposal.votes.yes, Uint256::new(20));
     assert!(!proposal.proposal.expiration.is_expired(&app.block_info()));
 
     // someone wakes up and casts their vote to express their
@@ -248,8 +306,8 @@ pub fn test_executed_prop_state_remains_after_vote_swing() {
     // and proposal remains in executed state
     let proposal = query_proposal(&app, &proposal_module, proposal_id);
     assert_eq!(proposal.proposal.status, Status::Executed);
-    assert_eq!(proposal.proposal.votes.yes, Uint128::new(20));
-    assert_eq!(proposal.proposal.votes.no, Uint128::new(80));
+    assert_eq!(proposal.proposal.votes.yes, Uint256::new(20));
+    assert_eq!(proposal.proposal.votes.no, Uint256::new(80));
 }
 
 // After reaching a passing state, no subsequent votes
@@ -311,7 +369,13 @@ pub fn test_passed_prop_state_remains_after_vote_swing() {
     };
     let binary_msg = to_json_binary(&msg).unwrap();
 
-    mint_cw20s(&mut app, &gov_token, &core_addr, &addr_str(CREATOR_ADDR), 10_000_000);
+    mint_cw20s(
+        &mut app,
+        &gov_token,
+        &core_addr,
+        &addr_str(CREATOR_ADDR),
+        10_000_000,
+    );
     let proposal_id = make_proposal(
         &mut app,
         &proposal_module,
@@ -327,7 +391,7 @@ pub fn test_passed_prop_state_remains_after_vote_swing() {
 
     // assert that the initial "threshold" address balance is 0
     let balance = query_balance_cw20(&app, gov_token.to_string(), &addr_str("threshold"));
-    assert_eq!(balance, Uint128::zero());
+    assert_eq!(Uint256::from(balance.u128()), Uint256::zero());
 
     // vote enough to pass the proposal
     vote_on_proposal(
@@ -341,8 +405,8 @@ pub fn test_passed_prop_state_remains_after_vote_swing() {
     // assert proposal is passed with 20 votes in favor and none opposed
     let proposal = query_proposal(&app, &proposal_module, proposal_id);
     assert_eq!(proposal.proposal.status, Status::Passed);
-    assert_eq!(proposal.proposal.votes.yes, Uint128::new(20));
-    assert_eq!(proposal.proposal.votes.no, Uint128::zero());
+    assert_eq!(proposal.proposal.votes.yes, Uint256::new(20));
+    assert_eq!(proposal.proposal.votes.no, Uint256::zero());
 
     app.update_block(next_block);
 
@@ -368,10 +432,15 @@ pub fn test_passed_prop_state_remains_after_vote_swing() {
     // is still in passed state before executing it
     let proposal = query_proposal(&app, &proposal_module, proposal_id);
     assert_eq!(proposal.proposal.status, Status::Passed);
-    assert_eq!(proposal.proposal.votes.yes, Uint128::new(20));
-    assert_eq!(proposal.proposal.votes.no, Uint128::new(80));
+    assert_eq!(proposal.proposal.votes.yes, Uint256::new(20));
+    assert_eq!(proposal.proposal.votes.no, Uint256::new(80));
 
-    execute_proposal(&mut app, &proposal_module, &addr_str(CREATOR_ADDR), proposal_id);
+    execute_proposal(
+        &mut app,
+        &proposal_module,
+        &addr_str(CREATOR_ADDR),
+        proposal_id,
+    );
 
     app.update_block(next_block);
 
@@ -379,8 +448,8 @@ pub fn test_passed_prop_state_remains_after_vote_swing() {
     // 100_000_000 and late votes did not make a difference
     let proposal = query_proposal(&app, &proposal_module, proposal_id);
     assert_eq!(proposal.proposal.status, Status::Executed);
-    assert_eq!(proposal.proposal.votes.yes, Uint128::new(20));
-    assert_eq!(proposal.proposal.votes.no, Uint128::new(80));
+    assert_eq!(proposal.proposal.votes.yes, Uint256::new(20));
+    assert_eq!(proposal.proposal.votes.no, Uint256::new(80));
     let balance = query_balance_cw20(&app, gov_token.to_string(), &addr_str("threshold"));
-    assert_eq!(balance, Uint128::new(100_000_000));
+    assert_eq!(Uint256::from(balance.u128()), Uint256::new(100_000_000));
 }

@@ -261,19 +261,19 @@ impl DaoTestingSuiteBase {
         }
     }
 
-    pub fn cw4(&mut self) -> DaoTestingSuiteCw4 {
+    pub fn cw4(&mut self) -> DaoTestingSuiteCw4<'_> {
         DaoTestingSuiteCw4::new(self)
     }
 
-    pub fn cw20(&mut self) -> DaoTestingSuiteCw20 {
+    pub fn cw20(&mut self) -> DaoTestingSuiteCw20<'_> {
         DaoTestingSuiteCw20::new(self)
     }
 
-    pub fn cw721(&mut self) -> DaoTestingSuiteCw721 {
+    pub fn cw721(&mut self) -> DaoTestingSuiteCw721<'_> {
         DaoTestingSuiteCw721::new(self)
     }
 
-    pub fn token(&mut self) -> DaoTestingSuiteToken {
+    pub fn token(&mut self) -> DaoTestingSuiteToken<'_> {
         DaoTestingSuiteToken::new(self)
     }
 }
@@ -781,7 +781,7 @@ impl DaoTestingSuiteBase {
         count: impl Into<Uint128>,
     ) {
         let proposal = self.get_single_choice_proposal(proposal_module, proposal_id);
-        assert_eq!(proposal.votes.get(vote), count.into());
+        assert_eq!(proposal.votes.get(vote), Uint256::from(count.into().u128()));
     }
 
     /// assert individual vote count on single choice proposal
@@ -793,7 +793,10 @@ impl DaoTestingSuiteBase {
         count: impl Into<Uint128>,
     ) {
         let proposal = self.get_single_choice_proposal(proposal_module, proposal_id);
-        assert_eq!(proposal.individual_votes.get(vote), count.into());
+        assert_eq!(
+            proposal.individual_votes.get(vote),
+            Uint256::from(count.into().u128())
+        );
     }
 
     /// assert status on single choice proposal

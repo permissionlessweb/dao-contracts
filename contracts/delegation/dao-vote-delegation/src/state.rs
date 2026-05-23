@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, Decimal, Uint128};
+use cosmwasm_std::{Addr, Decimal, Uint256};
 use cw_snapshot_vector_map::{SnapshotVectorMap, SnapshotVectorMapItemRef};
 use cw_storage_plus::{Item, Map, SnapshotItem, SnapshotMap, Strategy};
 
@@ -45,12 +45,12 @@ pub const DELEGATES: SnapshotMap<Addr, Delegate> = SnapshotMap::new(
 /// map (delegate, proposal_module, proposal_id) -> the VP delegated to the
 /// delegate that has not yet been used in votes cast by delegators in a
 /// specific proposal.
-pub const UNVOTED_DELEGATED_VP: Map<(&Addr, &Addr, u64), Uint128> = Map::new("udvp");
+pub const UNVOTED_DELEGATED_VP: Map<(&Addr, &Addr, u64), Uint256> = Map::new("udvp");
 
 /// the VP delegated to a delegate by height. Wormhole allows us to update
 /// delegated VP in the future, which we need for implementing automatic
 /// delegation expiration.
-pub const DELEGATED_VP: Wormhole<Addr, Uint128> = Wormhole::new("dvp");
+pub const DELEGATED_VP: Wormhole<Addr, Uint256> = Wormhole::new("dvp");
 
 /// the delegations of a delegator.
 pub const DELEGATIONS: SnapshotVectorMap<Addr, Delegation> = SnapshotVectorMap::new(

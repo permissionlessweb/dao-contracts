@@ -1,6 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
-use cosmwasm_std::{Addr, Decimal, StdError, Uint128};
+use cosmwasm_std::{Addr, Decimal, StdError, Uint128, Uint256};
 use dao_interface::helpers::{OptionalUpdate, Update};
 use dao_testing::DaoTestingSuiteBase;
 
@@ -308,8 +308,8 @@ impl DaoVoteDelegationTestingSuiteBase {
         proposal_module: impl Into<String>,
         proposal_id: u64,
         start_height: u64,
-        delegated_vp: impl Into<Uint128>,
-    ) -> Uint128 {
+        delegated_vp: impl Into<Uint256>,
+    ) -> Uint256 {
         self.querier()
             .query_wasm_smart(
                 &self.delegation_addr,
@@ -406,13 +406,11 @@ impl DaoVoteDelegationTestingSuiteBase {
         expiration_height: Option<u64>,
     ) {
         let delegations = self.delegations(delegator, height, None, None);
-        assert!(delegations
-            .delegations
-            .iter()
-            .any(|d| d.delegate == Addr::unchecked(delegate.into())
-                && d.percent == percent
-                && d.active
-                && d.expiration_height == expiration_height));
+        assert!(delegations.delegations.iter().any(|d| d.delegate
+            == Addr::unchecked(delegate.into())
+            && d.percent == percent
+            && d.active
+            && d.expiration_height == expiration_height));
     }
 
     /// assert that an active delegation exists
@@ -460,7 +458,7 @@ impl DaoVoteDelegationTestingSuiteBase {
         expected_total: impl Into<Uint128>,
     ) {
         let delegate_total = self.registration(delegate, height).power;
-        assert_eq!(delegate_total, expected_total.into());
+        assert_eq!(delegate_total, Uint256::from(expected_total.into().u128()));
     }
 
     /// assert a delegate's total delegated voting power
@@ -487,7 +485,7 @@ impl DaoVoteDelegationTestingSuiteBase {
             proposal_id,
             start_height,
         );
-        assert_eq!(udvp.total, total.into());
+        assert_eq!(udvp.total, Uint256::from(total.into().u128()));
     }
 
     /// assert a delegate's effective UDVP on a proposal
@@ -505,7 +503,7 @@ impl DaoVoteDelegationTestingSuiteBase {
             proposal_id,
             start_height,
         );
-        assert_eq!(udvp.effective, effective.into());
+        assert_eq!(udvp.effective, Uint256::from(effective.into().u128()));
     }
 
     /// assert the effective UDVP reduction on a proposal
@@ -523,9 +521,9 @@ impl DaoVoteDelegationTestingSuiteBase {
             proposal_module,
             proposal_id,
             start_height,
-            delegated_vp,
+            delegated_vp.into(),
         );
-        assert_eq!(reduction, expected.into());
+        assert_eq!(reduction, Uint256::from(expected.into().u128()));
     }
 
     /// assert that the max delegations is set

@@ -1,10 +1,10 @@
-use cosmwasm_std::{coins, Addr, Decimal, Uint128};
+use super::addr_str;
+use cosmwasm_std::{coins, Addr, Decimal, Uint128, Uint256};
 use cw20::Cw20Coin;
 use cw_denom::CheckedDenom;
 use cw_multi_test::{App, BankSudo, Executor};
 use dao_interface::state::ProposalModule;
 use dao_testing::{contracts::dao_proposal_multiple_contract, ShouldExecute};
-use super::{addr_str};
 use dao_voting::{
     deposit::{CheckedDepositInfo, UncheckedDepositInfo},
     multiple_choice::{
@@ -116,6 +116,7 @@ where
     }
 
     let pre_propose_info = get_pre_propose_info(&mut app, deposit_info, false);
+    println!("{:#?}", pre_propose_info);
 
     let proposer = match votes.first() {
         Some(vote) => vote.voter.clone(),
@@ -257,28 +258,28 @@ where
                         },
                     )
                     .unwrap();
-                let expected_power = match deposit_config.deposit_info {
+                let expected_power: Uint256 = match deposit_config.deposit_info {
                     Some(CheckedDepositInfo {
                         amount,
                         denom: CheckedDenom::Cw20(_),
                         ..
                     }) => {
                         if proposer == voter {
-                            weight - Uint128::try_from(amount).unwrap()
+                            Uint256::from(weight.u128()) - amount
                         } else {
-                            weight
+                            Uint256::from(weight.u128())
                         }
                     }
                     // Native token deposits shouldn't impact
                     // expected voting power.
-                    _ => weight,
+                    _ => Uint256::from(weight.u128()),
                 };
                 let expected = VoteResponse {
                     vote: Some(VoteInfo {
                         voter: Addr::unchecked(&voter),
                         vote: position,
-                        power: expected_power,
-                        individual_power: expected_power,
+                        power: expected_power.into(),
+                        individual_power: expected_power.into(),
                         rationale: None,
                     }),
                 };

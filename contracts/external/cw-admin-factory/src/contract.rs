@@ -141,7 +141,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
         INSTANTIATE_CONTRACT_REPLY_ID | INSTANTIATE2_CONTRACT_REPLY_ID => {
             match msg.result {
                 cosmwasm_std::SubMsgResult::Ok(res) => {
-        
+                    // since v3 cosmwasm: manually parse reply instantiate 
                     let contract_addr = deps.api.addr_validate(&res
                         .events
                         .iter()

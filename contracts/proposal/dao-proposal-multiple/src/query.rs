@@ -1,6 +1,6 @@
 use crate::{proposal::MultipleChoiceProposal, state::Config};
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Uint128};
+use cosmwasm_std::{Addr, Uint256};
 
 use dao_voting::multiple_choice::MultipleChoiceVote;
 
@@ -24,9 +24,9 @@ pub struct VoteInfo {
     /// Position on the vote.
     pub vote: MultipleChoiceVote,
     /// The voting power behind the vote.
-    pub power: Uint128,
+    pub power: Uint256,
     /// The individual voting power behind the vote (excluding delegation).
-    pub individual_power: Uint128,
+    pub individual_power: Uint256,
     /// The rationale behind the vote.
     pub rationale: Option<String>,
 }
@@ -43,7 +43,7 @@ pub struct VoteListResponse {
 
 #[cw_serde]
 pub struct VoterResponse {
-    pub weight: Option<Uint128>,
+    pub weight: Option<Uint256>,
 }
 
 #[cw_serde]

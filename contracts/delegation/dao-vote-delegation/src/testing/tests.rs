@@ -1717,8 +1717,8 @@ fn test_unauthorized_execute_vote_hook_caller() {
             proposal_id: 1,
             voter: "voter".to_string(),
             vote: "vote".to_string(),
-            power: Uint128::one(),
-            individual_power: Uint128::one(),
+            power: Uint128::one().into(),
+            individual_power: Uint128::one().into(),
             height: 1,
             is_first_vote: false,
         }),
@@ -2120,7 +2120,7 @@ fn test_gas_limits() {
     for delegate in suite.delegates(None, None) {
         assert_eq!(
             delegate.power,
-            Uint128::from(initial_staked).mul_floor(percent_delegated)
+            Uint256::from(initial_staked).mul_floor(percent_delegated)
         );
     }
 
@@ -2135,7 +2135,7 @@ fn test_gas_limits() {
     for delegate in suite.delegates(None, None) {
         assert_eq!(
             delegate.power,
-            Uint128::from(initial_balance).mul_floor(percent_delegated)
+            Uint256::from(initial_balance).mul_floor(percent_delegated)
         );
     }
 

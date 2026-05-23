@@ -1,6 +1,6 @@
 use crate::proposal::SingleChoiceProposal;
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Uint128};
+use cosmwasm_std::{Addr, Uint256};
 use dao_voting::voting::Vote;
 
 /// Information about a proposal returned by proposal queries.
@@ -19,9 +19,9 @@ pub struct VoteInfo {
     /// Position on the vote.
     pub vote: Vote,
     /// The voting power behind the vote.
-    pub power: Uint128,
+    pub power: Uint256,
     /// The individual voting power behind the vote (excluding delegation).
-    pub individual_power: Uint128,
+    pub individual_power: Uint256,
     /// Address-specified rationale for the vote.
     pub rationale: Option<String>,
 }

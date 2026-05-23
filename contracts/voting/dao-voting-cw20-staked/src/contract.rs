@@ -1,14 +1,14 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    Addr, Binary, Decimal, Decimal256, Deps, DepsMut, Env, MessageInfo, MigrateInfo, Reply, Response, StdResult, SubMsg, Uint128, Uint256, to_json_binary
+    to_json_binary, Addr, Binary, Decimal256, Deps, DepsMut, Env, MessageInfo, MigrateInfo, Reply,
+    Response, StdResult, SubMsg, Uint256,
 };
 use cw2::{get_contract_version, set_contract_version, ContractVersion};
 use cw20::{Cw20Coin, TokenInfoResponse};
 use dao_interface::state::{Admin, ModuleInstantiateInfo};
 use dao_interface::voting::IsActiveResponse;
 use dao_voting::threshold::{ActiveThreshold, ActiveThresholdResponse};
-use std::convert::TryInto;
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, StakingInfo, TokenInfo};
@@ -133,10 +133,10 @@ pub fn instantiate(
 
             // Add DAO initial balance to initial_balances vector if defined.
             if let Some(initial_dao_balance) = initial_dao_balance {
-                if initial_dao_balance > Uint128::zero() {
+                if initial_dao_balance > Uint256::zero() {
                     initial_balances.push(Cw20Coin {
                         address: info.sender.to_string(),
-                        amount: Uint256::new(initial_dao_balance.u128()),
+                        amount: initial_dao_balance,
                     });
                 }
             }
@@ -382,7 +382,12 @@ pub fn query_active_threshold(deps: Deps) -> StdResult<Binary> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg, _info: MigrateInfo) -> Result<Response, ContractError> {
+pub fn migrate(
+    deps: DepsMut,
+    _env: Env,
+    _msg: MigrateMsg,
+    _info: MigrateInfo,
+) -> Result<Response, ContractError> {
     let storage_version: ContractVersion = get_contract_version(deps.storage)?;
 
     // Only migrate if newer

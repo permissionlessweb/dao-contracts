@@ -69,13 +69,12 @@ fn status(block: &BlockInfo, proposal: &Proposal, tally: &Tally) -> Status {
 
             let winner = tally.winner;
             let expired = tally.expiration.is_expired(block);
-            let votes_cast: Uint128 = (proposal.total_power - tally.power_outstanding).try_into().unwrap();
+            let votes_cast: Uint128 = (proposal.total_power - tally.power_outstanding)
+                .try_into()
+                .unwrap();
             let total_power_u128: Uint128 = proposal.total_power.try_into().unwrap();
-            let quorum = does_vote_count_pass(
-                votes_cast,
-                total_power_u128,
-                proposal.quorum,
-            );
+            let quorum =
+                does_vote_count_pass(votes_cast.into(), total_power_u128.into(), proposal.quorum);
 
             if expired && !quorum {
                 Status::Rejected

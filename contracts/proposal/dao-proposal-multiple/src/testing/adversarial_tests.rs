@@ -1,3 +1,4 @@
+use super::{addr, addr_str};
 use crate::msg::{ExecuteMsg, InstantiateMsg};
 use crate::testing::execute::{make_proposal, mint_cw20s};
 use crate::testing::instantiate::{
@@ -7,7 +8,6 @@ use crate::testing::instantiate::{
 use crate::testing::queries::{
     query_balance_cw20, query_dao_token, query_multiple_proposal_module, query_proposal,
 };
-use super::{addr, addr_str};
 use crate::testing::tests::{get_pre_propose_info, ALTERNATIVE_ADDR, CREATOR_ADDR};
 use cosmwasm_std::{to_json_binary, Addr, CosmosMsg, Decimal, Uint128, WasmMsg};
 use cw20::Cw20Coin;
@@ -36,7 +36,13 @@ fn setup_test(_messages: Vec<CosmosMsg>) -> CommonTest {
     let gov_token = query_dao_token(&app, &core_addr);
 
     // Mint some tokens to pay the proposal deposit.
-    mint_cw20s(&mut app, &gov_token, &core_addr, &addr_str(CREATOR_ADDR), 10_000_000);
+    mint_cw20s(
+        &mut app,
+        &gov_token,
+        &core_addr,
+        &addr_str(CREATOR_ADDR),
+        10_000_000,
+    );
 
     let options = vec![
         MultipleChoiceOption {
@@ -53,7 +59,13 @@ fn setup_test(_messages: Vec<CosmosMsg>) -> CommonTest {
 
     let mc_options = MultipleChoiceOptions { options };
 
-    let proposal_id = make_proposal(&mut app, &proposal_module, &addr_str(CREATOR_ADDR), mc_options, None);
+    let proposal_id = make_proposal(
+        &mut app,
+        &proposal_module,
+        &addr_str(CREATOR_ADDR),
+        mc_options,
+        None,
+    );
 
     CommonTest {
         app,
@@ -176,7 +188,7 @@ fn test_execute_proposal_rejected_closed() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("passed'  state"));
+    assert!(err.to_string().contains("passed' state"));
 }
 
 // A proposal can only be executed once. Any subsequent
@@ -243,7 +255,7 @@ fn test_execute_proposal_more_than_once() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("passed'  state"));
+    assert!(err.to_string().contains("passed' state"));
 }
 
 // Users should be able to submit votes past the proposal
@@ -296,7 +308,13 @@ pub fn test_allow_voting_after_proposal_execution_pre_expiration_cw20() {
     let gov_token = query_dao_token(&app, &core_addr);
 
     // Mint some tokens to pay the proposal deposit.
-    mint_cw20s(&mut app, &gov_token, &core_addr, &addr_str(CREATOR_ADDR), 10_000_000);
+    mint_cw20s(
+        &mut app,
+        &gov_token,
+        &core_addr,
+        &addr_str(CREATOR_ADDR),
+        10_000_000,
+    );
 
     // Option 0 would mint 100_000_000 tokens for CREATOR_ADDR
     let msg = cw20::Cw20ExecuteMsg::Mint {
@@ -325,7 +343,13 @@ pub fn test_allow_voting_after_proposal_execution_pre_expiration_cw20() {
 
     let mc_options = MultipleChoiceOptions { options };
 
-    let proposal_id = make_proposal(&mut app, &proposal_module, &addr_str(CREATOR_ADDR), mc_options, None);
+    let proposal_id = make_proposal(
+        &mut app,
+        &proposal_module,
+        &addr_str(CREATOR_ADDR),
+        mc_options,
+        None,
+    );
 
     // assert initial CREATOR_ADDR address balance is 0
     let balance = query_balance_cw20(&app, gov_token.to_string(), addr_str(CREATOR_ADDR));
@@ -353,7 +377,10 @@ pub fn test_allow_voting_after_proposal_execution_pre_expiration_cw20() {
     // assert proposal is passed with expected votes
     let prop = query_proposal(&app, &proposal_module, proposal_id);
     assert_eq!(prop.proposal.status, Status::Passed);
-    assert_eq!(prop.proposal.votes.get_id(0), cosmwasm_std::Uint256::from(100000000u128));
+    assert_eq!(
+        prop.proposal.votes.get_id(0),
+        cosmwasm_std::Uint256::from(100000000u128)
+    );
     assert_eq!(prop.proposal.votes.get_id(1), cosmwasm_std::Uint256::zero());
 
     // someone wakes up and casts their vote to express their
@@ -376,8 +403,14 @@ pub fn test_allow_voting_after_proposal_execution_pre_expiration_cw20() {
     // assert proposal is passed with expected votes
     let prop = query_proposal(&app, &proposal_module, proposal_id);
     assert_eq!(prop.proposal.status, Status::Passed);
-    assert_eq!(prop.proposal.votes.get_id(0), cosmwasm_std::Uint256::from(100000000u128));
-    assert_eq!(prop.proposal.votes.get_id(1), cosmwasm_std::Uint256::from(50000000u128));
+    assert_eq!(
+        prop.proposal.votes.get_id(0),
+        cosmwasm_std::Uint256::from(100000000u128)
+    );
+    assert_eq!(
+        prop.proposal.votes.get_id(1),
+        cosmwasm_std::Uint256::from(50000000u128)
+    );
 
     // execute the proposal expecting
     app.execute_contract(
@@ -392,5 +425,3 @@ pub fn test_allow_voting_after_proposal_execution_pre_expiration_cw20() {
     let balance = query_balance_cw20(&app, gov_token.to_string(), addr_str(CREATOR_ADDR));
     assert_eq!(balance, Uint128::new(110_000_000));
 }
-
-

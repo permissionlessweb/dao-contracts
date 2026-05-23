@@ -1,5 +1,5 @@
-use cosmwasm_std::{Decimal, StdError, Uint256};
 use cosmwasm_std::testing::MockApi;
+use cosmwasm_std::{Decimal, StdError, Uint256};
 use dao_voting::voting::Vote;
 
 use crate::{
@@ -75,14 +75,11 @@ fn basic_gauge_reset() {
     assert_eq!(selected_set, vec![(voter1.clone(), Uint256::new(200))]);
 
     // cannot reset before epoch has passed
-    assert_eq!(
-        ContractError::ResetEpochNotPassed {},
-        suite
-            .reset_gauge("anyone", &gauge_contract, gauge_id, 10)
-            .unwrap_err()
-            .downcast()
-            .unwrap()
-    );
+    assert!(suite
+        .reset_gauge("anyone", &gauge_contract, gauge_id, 10)
+        .unwrap_err()
+        .to_string()
+        .contains(&ContractError::ResetEpochNotPassed {}.to_string()));
 
     // reset
     suite.advance_time(RESET_EPOCH);
@@ -96,11 +93,15 @@ fn basic_gauge_reset() {
     let votes = suite.query_list_votes(&gauge_contract, gauge_id).unwrap();
     assert_eq!(votes, vec![]);
     assert_eq!(
-        suite.query_vote(&gauge_contract, gauge_id, voter1.as_str()).unwrap(),
+        suite
+            .query_vote(&gauge_contract, gauge_id, voter1.as_str())
+            .unwrap(),
         None,
     );
     assert_eq!(
-        suite.query_vote(&gauge_contract, gauge_id, voter2.as_str()).unwrap(),
+        suite
+            .query_vote(&gauge_contract, gauge_id, voter2.as_str())
+            .unwrap(),
         None,
     );
     // options should still be there
@@ -108,8 +109,8 @@ fn basic_gauge_reset() {
     assert_eq!(
         options,
         vec![
-            (voter1.clone(), Uint256::zero()),
-            (voter2.clone(), Uint256::zero())
+            (voter2.clone(), Uint256::zero()),
+            (voter1.clone(), Uint256::zero())
         ]
     );
 
@@ -146,7 +147,9 @@ fn basic_gauge_reset() {
         .unwrap();
 
     assert_eq!(
-        suite.query_balance(voter2.as_str(), reward_to_distribute.1).unwrap(),
+        suite
+            .query_balance(voter2.as_str(), reward_to_distribute.1)
+            .unwrap(),
         2000u128
     );
 }
@@ -161,14 +164,18 @@ fn gauge_migrate_with_reset() {
 
     // setup gauge
     suite.next_block();
-    suite.propose_update_proposal_module(voter1.as_str(), None).unwrap();
+    suite
+        .propose_update_proposal_module(voter1.as_str(), None)
+        .unwrap();
     suite.next_block();
     let proposal = suite.list_proposals().unwrap()[0];
     suite
         .place_vote_single(voter1.as_str(), proposal, Vote::Yes)
         .unwrap();
     suite.next_block();
-    suite.execute_single_proposal(voter1.as_str(), proposal).unwrap();
+    suite
+        .execute_single_proposal(voter1.as_str(), proposal)
+        .unwrap();
     let gauge_contract = suite.find_gauge_module();
 
     // create adapter
@@ -205,28 +212,28 @@ fn gauge_migrate_with_reset() {
     // now let's migrate the gauge and make sure nothing breaks
     let gauge_id = 0;
     // try to migrate to past reset should fail
-    assert_eq!(
-        ContractError::from(StdError::msg(
-            "Next reset value cannot be earlier then current epoch!"
-        )),
-        suite
-            .auto_migrate_gauge(
-                &gauge_contract,
-                vec![(
-                    gauge_id,
-                    GaugeMigrationConfig {
-                        next_epoch: None,
-                        reset: Some(ResetMigrationConfig {
-                            reset_epoch: RESET_EPOCH,
-                            next_reset: suite.current_time() - 1,
-                        }),
-                    },
-                )],
-            )
-            .unwrap_err()
-            .downcast()
-            .unwrap()
-    );
+    assert!(suite
+        .auto_migrate_gauge(
+            &gauge_contract,
+            vec![(
+                gauge_id,
+                GaugeMigrationConfig {
+                    next_epoch: None,
+                    reset: Some(ResetMigrationConfig {
+                        reset_epoch: RESET_EPOCH,
+                        next_reset: suite.current_time() - 1,
+                    }),
+                },
+            )],
+        )
+        .unwrap_err()
+        .to_string()
+        .contains(
+            &ContractError::from(StdError::msg(
+                "Next reset value cannot be earlier then current epoch!"
+            ))
+            .to_string()
+        ));
 
     // migrate to reset epoch
     suite
@@ -279,14 +286,18 @@ fn gauge_migrate_keeps_last_reset() {
 
     // setup gauge
     suite.next_block();
-    suite.propose_update_proposal_module(voter1.as_str(), None).unwrap();
+    suite
+        .propose_update_proposal_module(voter1.as_str(), None)
+        .unwrap();
     suite.next_block();
     let proposal = suite.list_proposals().unwrap()[0];
     suite
         .place_vote_single(voter1.as_str(), proposal, Vote::Yes)
         .unwrap();
     suite.next_block();
-    suite.execute_single_proposal(voter1.as_str(), proposal).unwrap();
+    suite
+        .execute_single_proposal(voter1.as_str(), proposal)
+        .unwrap();
     let gauge_contract = suite.find_gauge_module();
 
     // create adapter
@@ -399,14 +410,16 @@ fn partial_reset() {
         .unwrap();
 
     // try to vote during reset
-    assert_eq!(
-        ContractError::GaugeResetting(gauge_id),
-        suite
-            .place_vote(&gauge_contract, voter1.as_str(), gauge_id, Some(voter2.clone()))
-            .unwrap_err()
-            .downcast()
-            .unwrap()
-    );
+    assert!(suite
+        .place_vote(
+            &gauge_contract,
+            voter1.as_str(),
+            gauge_id,
+            Some(voter2.clone())
+        )
+        .unwrap_err()
+        .to_string()
+        .contains(&ContractError::GaugeResetting(gauge_id).to_string()));
     // check selected set query
     let selected_set = suite.query_selected_set(&gauge_contract, gauge_id).unwrap();
     assert_eq!(selected_set, vec![]);
@@ -491,7 +504,9 @@ fn test_epoch_limit() -> anyhow::Result<()> {
         .execute_options(&gauge_contract, voter1.as_str(), gauge_id)
         .unwrap();
     // confirm gauge is now turned off
-    let res = suite.query_gauge(gauge_contract, gauge_id).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let res = suite
+        .query_gauge(gauge_contract, gauge_id)
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
     assert!(res.is_stopped);
     Ok(())
 }
@@ -587,7 +602,9 @@ fn test_epoch_limit_and_reset_epoch() -> anyhow::Result<()> {
         .unwrap();
 
     // confirm gauge is now turned off
-    let res = suite.query_gauge(gauge_contract.clone(), gauge_id).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let res = suite
+        .query_gauge(gauge_contract.clone(), gauge_id)
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
     assert!(res.is_stopped);
 
     // advance to 5th epoch time. Error.

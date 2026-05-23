@@ -1,7 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    Addr, Attribute, Binary, Deps, DepsMut, Empty, Env, MessageInfo, MigrateInfo, Order, Reply, Response, StdResult, Storage, SubMsg, Uint128, WasmMsg, to_json_binary
+    to_json_binary, Addr, Attribute, Binary, Deps, DepsMut, Empty, Env, MessageInfo, MigrateInfo,
+    Order, Reply, Response, StdResult, Storage, SubMsg, Uint256, WasmMsg,
 };
 
 use cw2::set_contract_version;
@@ -417,8 +418,8 @@ pub fn execute_vote(
         prop.start_height,
     )?;
     let vote_power = crate::proposal::VotePower {
-        total: Uint128::try_from(vote_power_raw.total).unwrap(),
-        individual: Uint128::try_from(vote_power_raw.individual).unwrap(),
+        total: Uint256::try_from(vote_power_raw.total).unwrap(),
+        individual: Uint256::try_from(vote_power_raw.individual).unwrap(),
     };
     if vote_power.individual.is_zero() {
         return Err(ContractError::NotRegistered {});
@@ -441,14 +442,12 @@ pub fn execute_vote(
                 } else {
                     // Remove the old vote if this is a re-vote.
                     prop.votes
-                        .remove_vote(current_ballot.vote, current_ballot.power.u128().into())?;
-                    prop.individual_votes.remove_vote(
-                        current_ballot.vote,
-                        current_ballot.individual_power.u128().into(),
-                    )?;
+                        .remove_vote(current_ballot.vote, current_ballot.power)?;
+                    prop.individual_votes
+                        .remove_vote(current_ballot.vote, current_ballot.individual_power)?;
                     Ok(Ballot {
-                        power: vote_power.total,
-                        individual_power: vote_power.individual,
+                        power: vote_power.total.into(),
+                        individual_power: vote_power.individual.into(),
                         vote,
                         rationale: rationale.clone(),
                     })
@@ -459,8 +458,8 @@ pub fn execute_vote(
         }
         None => Ok(Ballot {
             vote,
-            power: vote_power.total,
-            individual_power: vote_power.individual,
+            power: vote_power.total.into(),
+            individual_power: vote_power.individual.into(),
             rationale: rationale.clone(),
         }),
     })?;
@@ -475,17 +474,17 @@ pub fn execute_vote(
             &env.contract.address,
             proposal_id,
             prop.start_height,
-            &vote_power.individual,
+            &vote_power.individual.into(),
             BALLOTS,
-            &mut |vote, power| prop.votes.remove_vote(*vote, power.u128().into()),
+            &mut |vote, power| prop.votes.remove_vote(*vote, power),
         )?;
     }
 
     let old_status = prop.status;
 
-    prop.votes.add_vote(vote, vote_power.total.u128().into())?;
+    prop.votes.add_vote(vote, vote_power.total)?;
     prop.individual_votes
-        .add_vote(vote, vote_power.individual.u128().into())?;
+        .add_vote(vote, vote_power.individual)?;
     prop.update_status(&env.block)?;
     PROPOSALS.save(deps.storage, proposal_id, &prop)?;
     let new_status = prop.status;
@@ -502,8 +501,8 @@ pub fn execute_vote(
         proposal_id,
         sender.to_string(),
         vote.to_string(),
-        vote_power.total,
-        vote_power.individual,
+        vote_power.total.into(),
+        vote_power.individual.into(),
         prop.start_height,
         is_first_vote,
     )?;

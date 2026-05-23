@@ -159,8 +159,8 @@ pub fn instantiate(
                 }
 
                 // Sort denom units by exponent, must be in ascending order
-                denom_units.sort_by(|a, b| a.exponent.cmp(&b.exponent));
-
+                denom_units.sort_by_key(|a| a.exponent);
+                
                 to_json_binary(&IssuerInstantiateMsg::NewToken {
                     subdenom: subdenom.to_string(),
                     metadata: cosmwasm_std::DenomMetadata {

@@ -1,5 +1,5 @@
-use cosmwasm_std::{Addr, Decimal, Uint256};
 use cosmwasm_std::testing::MockApi;
+use cosmwasm_std::{Addr, Decimal, Uint256};
 use dao_voting::voting::Vote;
 
 use super::suite::{Suite, SuiteBuilder};
@@ -257,7 +257,9 @@ fn execute_gauge() {
         .unwrap();
 
     assert_eq!(
-        suite.query_balance(voter1.as_str(), reward_to_distribute.1).unwrap(),
+        suite
+            .query_balance(voter1.as_str(), reward_to_distribute.1)
+            .unwrap(),
         1000u128
     );
 }
@@ -326,7 +328,12 @@ fn query_last_execution() {
 
     // vote
     suite
-        .place_vote(&gauge_contract, voter1.clone(), gauge_id, Some(voter1.clone()))
+        .place_vote(
+            &gauge_contract,
+            voter1.clone(),
+            gauge_id,
+            Some(voter1.clone()),
+        )
         .unwrap();
     suite
         .place_votes(
@@ -361,7 +368,12 @@ fn query_last_execution() {
 
     // change votes
     suite
-        .place_vote(&gauge_contract, voter1.clone(), gauge_id, Some(voter2.clone()))
+        .place_vote(
+            &gauge_contract,
+            voter1.clone(),
+            gauge_id,
+            Some(voter2.clone()),
+        )
         .unwrap();
     suite
         .place_vote(&gauge_contract, voter2.clone(), gauge_id, None)
@@ -405,7 +417,13 @@ fn execute_gauge_twice_same_epoch() {
 
     suite.next_block();
     let gauge_config = suite
-        .instantiate_adapter_and_return_config(&[voter1.as_str(), voter2.as_str()], (1000, "ujuno"), None, None, None) // reward per
+        .instantiate_adapter_and_return_config(
+            &[voter1.as_str(), voter2.as_str()],
+            (1000, "ujuno"),
+            None,
+            None,
+            None,
+        ) // reward per
         // epoch
         .unwrap();
     suite
@@ -459,7 +477,9 @@ fn execute_gauge_twice_same_epoch() {
         .unwrap();
 
     assert_eq!(
-        suite.query_balance(voter1.as_str(), reward_to_distribute.1).unwrap(),
+        suite
+            .query_balance(voter1.as_str(), reward_to_distribute.1)
+            .unwrap(),
         1000u128
     );
 
@@ -468,28 +488,28 @@ fn execute_gauge_twice_same_epoch() {
         .execute_options(&gauge_contract, voter1.as_str(), gauge_id)
         .unwrap_err();
     let next_epoch = suite.current_time() + EPOCH;
-    assert_eq!(
-        ContractError::EpochNotReached {
+    assert!(err.to_string().contains(
+        &ContractError::EpochNotReached {
             gauge_id,
             current_epoch: suite.current_time(),
             next_epoch
-        },
-        err.downcast().unwrap()
-    );
+        }
+        .to_string()
+    ));
 
     // just before next epoch fails as well
     suite.advance_time(EPOCH - 1);
     let err = suite
         .execute_options(&gauge_contract, voter1.as_str(), gauge_id)
         .unwrap_err();
-    assert_eq!(
-        ContractError::EpochNotReached {
+    assert!(err.to_string().contains(
+        &ContractError::EpochNotReached {
             gauge_id,
             current_epoch: suite.current_time(),
             next_epoch
-        },
-        err.downcast().unwrap()
-    );
+        }
+        .to_string()
+    ));
 
     // another epoch is fine
     suite.advance_time(EPOCH);
@@ -498,7 +518,9 @@ fn execute_gauge_twice_same_epoch() {
         .unwrap();
 
     assert_eq!(
-        suite.query_balance(voter1.as_str(), reward_to_distribute.1).unwrap(),
+        suite
+            .query_balance(voter1.as_str(), reward_to_distribute.1)
+            .unwrap(),
         2000u128
     );
 }
@@ -549,10 +571,9 @@ fn execute_stopped_gauge() {
     let err = suite
         .stop_gauge(&gauge_contract, voter1.as_str(), gauge_id)
         .unwrap_err();
-    assert_eq!(
-        ContractError::Ownership(cw_ownable::OwnershipError::NotOwner),
-        err.downcast().unwrap()
-    );
+    assert!(err
+        .to_string()
+        .contains(&ContractError::Ownership(cw_ownable::OwnershipError::NotOwner).to_string()));
 
     // stop the gauge by owner
     suite
@@ -587,10 +608,9 @@ fn execute_stopped_gauge() {
     let err = suite
         .execute_options(&gauge_contract, voter1.as_str(), gauge_id)
         .unwrap_err();
-    assert_eq!(
-        ContractError::GaugeStopped(gauge_id),
-        err.downcast().unwrap()
-    );
+    assert!(err
+        .to_string()
+        .contains(&ContractError::GaugeStopped(gauge_id).to_string()));
 }
 
 #[test]
@@ -772,10 +792,9 @@ fn update_gauge() {
             None,
         )
         .unwrap_err();
-    assert_eq!(
-        ContractError::Ownership(cw_ownable::OwnershipError::NotOwner),
-        err.downcast().unwrap()
-    );
+    assert!(err
+        .to_string()
+        .contains(&ContractError::Ownership(cw_ownable::OwnershipError::NotOwner).to_string()));
 
     let err = suite
         .update_gauge(
@@ -789,7 +808,9 @@ fn update_gauge() {
             None,
         )
         .unwrap_err();
-    assert_eq!(ContractError::EpochSizeTooShort {}, err.downcast().unwrap());
+    assert!(err
+        .to_string()
+        .contains(&ContractError::EpochSizeTooShort {}.to_string()));
 
     let err = suite
         .update_gauge(
@@ -803,10 +824,9 @@ fn update_gauge() {
             None,
         )
         .unwrap_err();
-    assert_eq!(
-        ContractError::MinPercentSelectedTooBig {},
-        err.downcast().unwrap()
-    );
+    assert!(err
+        .to_string()
+        .contains(&ContractError::MinPercentSelectedTooBig {}.to_string()));
 
     let err = suite
         .update_gauge(
@@ -820,10 +840,9 @@ fn update_gauge() {
             None,
         )
         .unwrap_err();
-    assert_eq!(
-        ContractError::MaxOptionsSelectedTooSmall {},
-        err.downcast().unwrap()
-    );
+    assert!(err
+        .to_string()
+        .contains(&ContractError::MaxOptionsSelectedTooSmall {}.to_string()));
 
     let err = suite
         .update_gauge(
@@ -837,8 +856,7 @@ fn update_gauge() {
             Some(Decimal::percent(101)),
         )
         .unwrap_err();
-    assert_eq!(
-        ContractError::MaxAvailablePercentTooBig {},
-        err.downcast().unwrap()
-    );
+    assert!(err
+        .to_string()
+        .contains(&ContractError::MaxAvailablePercentTooBig {}.to_string()));
 }

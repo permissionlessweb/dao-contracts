@@ -69,8 +69,8 @@ pub fn instantiate(
                         symbol,
                         minter: Some(env.contract.address.to_string()),
                         collection_info_extension: None::<Empty>,
-                        creator: Some(info.sender.to_string()),
-                        withdraw_address: Some(info.sender.to_string()),
+                        creator: None,
+                        withdraw_address: None,
                     })?,
                     funds: None,
                     salt,
@@ -213,21 +213,18 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
                 INITIAL_NFTS.remove(deps.storage);
 
                 // Update minter message
-                let update_minter_msg =
-                        WasmMsg::Execute {
-                            contract_addr: nft_contract.clone(),
-                            msg: to_json_binary(&Cw721ExecuteMsg::<
-                                MetadataExt,
-                                Empty,
-                                ExecuteExt,
-                            >::UpdateMinterOwnership(
-                                Action::TransferOwnership {
-                                    new_owner: dao.to_string(),
-                                    expiry: None,
-                                },
-                            ))?,
-                            funds: vec![],
-                        };
+                let update_minter_msg = WasmMsg::Execute {
+                    contract_addr: nft_contract.clone(),
+                    msg: to_json_binary(
+                        &Cw721ExecuteMsg::<MetadataExt, Empty, ExecuteExt>::UpdateMinterOwnership(
+                            Action::TransferOwnership {
+                                new_owner: dao.to_string(),
+                                expiry: None,
+                            },
+                        ),
+                    )?,
+                    funds: vec![],
+                };
 
                 Ok(Response::default()
                     .add_attribute("method", "instantiate")

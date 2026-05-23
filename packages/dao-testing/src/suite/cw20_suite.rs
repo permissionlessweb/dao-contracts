@@ -168,7 +168,7 @@ impl DaoTestingSuite<Cw20DaoExtra> for DaoTestingSuiteCw20<'_> {
                     staking_code_id: self.cw20_stake_id,
                     staking_salt: None,
                     unstaking_duration: self.unstaking_duration,
-                    initial_dao_balance: Some(self.initial_dao_balance),
+                    initial_dao_balance: Some(self.initial_dao_balance.into()),
                 },
                 active_threshold: self.active_threshold.clone(),
             })

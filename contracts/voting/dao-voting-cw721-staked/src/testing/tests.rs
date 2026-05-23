@@ -76,7 +76,10 @@ fn test_instantiate_with_new_cw721_collection() -> StdResult<()> {
 
     // Check that the NFT contract was created
     let owner = query_nft_owner(&app, &cw721_addr, "1")?;
-    assert_eq!(owner.owner, MockApi::default().addr_make(CREATOR_ADDR).to_string());
+    assert_eq!(
+        owner.owner,
+        MockApi::default().addr_make(CREATOR_ADDR).to_string()
+    );
 
     Ok(())
 }
@@ -205,9 +208,11 @@ fn test_update_config() -> StdResult<()> {
 
     // Update config to invalid duration fails
     let err = update_config(&mut app, &module, CREATOR_ADDR, Some(Duration::Time(0))).unwrap_err();
-    assert_eq!(
-        err.to_string(),
-        "Invalid unstaking duration, unstaking duration cannot be 0".to_string()
+    assert!(
+        err.to_string()
+            .contains("Invalid unstaking duration, unstaking duration cannot be 0"),
+        "Expected error to contain 'Invalid unstaking duration...', got: {}",
+        err
     );
 
     // Update duration
@@ -306,7 +311,10 @@ fn test_claims() -> StdResult<()> {
     claim_nfts(&mut app, &module, CREATOR_ADDR)?;
 
     let owner = query_nft_owner(&app, &nft, "2")?;
-    assert_eq!(owner.owner, MockApi::default().addr_make(CREATOR_ADDR).to_string());
+    assert_eq!(
+        owner.owner,
+        MockApi::default().addr_make(CREATOR_ADDR).to_string()
+    );
 
     Ok(())
 }
@@ -439,9 +447,9 @@ fn test_instantiate_with_invalid_duration_fails() {
                         withdraw_address: None,
                     })
                     .unwrap(),
-                    initial_nfts: vec![to_json_binary(
-                        &Cw721ExecuteMsg::UpdateExtension { msg: Empty {} },
-                    )
+                    initial_nfts: vec![to_json_binary(&Cw721ExecuteMsg::UpdateExtension {
+                        msg: Empty {},
+                    })
                     .unwrap()],
                 },
                 unstaking_duration: None,
@@ -452,10 +460,9 @@ fn test_instantiate_with_invalid_duration_fails() {
             None,
         )
         .unwrap_err();
-    assert_eq!(
-        err.to_string(),
-        "New NFT contract must be instantiated with at least one NFT".to_string()
-    );
+    assert!(err
+        .to_string()
+        .contains("New NFT contract must be instantiated with at least one NFT"),);
 }
 
 #[test]
@@ -881,8 +888,13 @@ fn test_update_active_threshold() {
     };
 
     // Expect failure as sender is not the DAO
-    app.execute_contract(MockApi::default().addr_make("bob"), voting_addr.clone(), &msg, &[])
-        .unwrap_err();
+    app.execute_contract(
+        MockApi::default().addr_make("bob"),
+        voting_addr.clone(),
+        &msg,
+        &[],
+    )
+    .unwrap_err();
 
     // Expect success as sender is the DAO (in this case the creator)
     app.execute_contract(
@@ -1031,9 +1043,10 @@ fn test_invalid_instantiate_msg() {
             None,
         )
         .unwrap_err();
-    assert_eq!(
-        err.to_string(),
-        "Error instantiating NFT contract".to_string()
+    assert!(
+        err.to_string().contains("Error instantiating NFT contract"),
+        "Expected error to contain 'Error instantiating', got: {}",
+        err
     );
 }
 
@@ -1061,9 +1074,9 @@ fn test_invalid_initial_nft_msg() {
                         withdraw_address: None,
                     })
                     .unwrap(),
-                    initial_nfts: vec![to_json_binary(
-                        &Cw721ExecuteMsg::UpdateExtension { msg: Empty {} },
-                    )
+                    initial_nfts: vec![to_json_binary(&Cw721ExecuteMsg::UpdateExtension {
+                        msg: Empty {},
+                    })
                     .unwrap()],
                 },
                 unstaking_duration: None,
@@ -1074,9 +1087,11 @@ fn test_invalid_initial_nft_msg() {
             None,
         )
         .unwrap_err();
-    assert_eq!(
-        err.to_string(),
-        "New NFT contract must be instantiated with at least one NFT".to_string()
+    assert!(
+        err.to_string()
+            .contains("New NFT contract must be instantiated with at least one NFT"),
+        "Expected error to contain 'at least one NFT', got: {}",
+        err
     );
 }
 
@@ -1105,10 +1120,8 @@ fn test_invalid_initial_nft_msg_wrong_absolute_count() {
                     })
                     .unwrap(),
                     initial_nfts: vec![
-                        to_json_binary(&Cw721ExecuteMsg::UpdateExtension {
-                            msg: Empty {},
-                        })
-                        .unwrap(),
+                        to_json_binary(&Cw721ExecuteMsg::UpdateExtension { msg: Empty {} })
+                            .unwrap(),
                         to_json_binary(&Cw721ExecuteMsg::Mint {
                             owner: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
                             token_uri: Some("https://example.com".to_string()),
@@ -1128,9 +1141,11 @@ fn test_invalid_initial_nft_msg_wrong_absolute_count() {
             None,
         )
         .unwrap_err();
-    assert_eq!(
-        err.to_string(),
-        "Absolute count threshold cannot be greater than the total token supply".to_string()
+    assert!(
+        err.to_string()
+            .contains("Absolute count threshold cannot be greater than the total token supply"),
+        "Expected error to contain 'Absolute count threshold', got: {}",
+        err
     );
 }
 
@@ -1170,9 +1185,11 @@ fn test_no_initial_nfts_fails() {
             None,
         )
         .unwrap_err();
-    assert_eq!(
-        err.to_string(),
-        "New NFT contract must be instantiated with at least one NFT".to_string()
+    assert!(
+        err.to_string()
+            .contains("New NFT contract must be instantiated with at least one NFT"),
+        "Expected error to contain 'at least one NFT', got: {}",
+        err
     );
 }
 
@@ -1275,19 +1292,19 @@ fn test_factory_with_funds_pass_through() {
                             cw721_instantiate_msg: cw721::msg::Cw721InstantiateMsg {
                                 name: "Test NFT".to_string(),
                                 symbol: "TEST".to_string(),
-                                minter: Some(MockApi::default().addr_make(CREATOR_ADDR).to_string()),
+                                minter: Some(
+                                    MockApi::default().addr_make(CREATOR_ADDR).to_string(),
+                                ),
                                 collection_info_extension: None,
                                 creator: None,
                                 withdraw_address: None,
                             },
-                            initial_nfts: vec![to_json_binary(
-                                &Cw721ExecuteMsg::Mint {
-                                    owner: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
-                                    token_uri: Some("https://example.com".to_string()),
-                                    token_id: "1".to_string(),
-                                    extension: None,
-                                },
-                            )
+                            initial_nfts: vec![to_json_binary(&Cw721ExecuteMsg::Mint {
+                                owner: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
+                                token_uri: Some("https://example.com".to_string()),
+                                token_id: "1".to_string(),
+                                extension: None,
+                            })
                             .unwrap()],
                         },
                     )
@@ -1325,19 +1342,19 @@ fn test_factory_with_funds_pass_through() {
                             cw721_instantiate_msg: cw721::msg::Cw721InstantiateMsg {
                                 name: "Test NFT".to_string(),
                                 symbol: "TEST".to_string(),
-                                minter: Some(MockApi::default().addr_make(CREATOR_ADDR).to_string()),
+                                minter: Some(
+                                    MockApi::default().addr_make(CREATOR_ADDR).to_string(),
+                                ),
                                 collection_info_extension: None,
                                 creator: None,
                                 withdraw_address: None,
                             },
-                            initial_nfts: vec![to_json_binary(
-                                &Cw721ExecuteMsg::Mint {
-                                    owner: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
-                                    token_uri: Some("https://example.com".to_string()),
-                                    token_id: "1".to_string(),
-                                    extension: None,
-                                },
-                            )
+                            initial_nfts: vec![to_json_binary(&Cw721ExecuteMsg::Mint {
+                                owner: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
+                                token_uri: Some("https://example.com".to_string()),
+                                token_id: "1".to_string(),
+                                extension: None,
+                            })
                             .unwrap()],
                         },
                     )
@@ -1406,7 +1423,7 @@ fn test_unsupported_factory_msg() {
 
 #[test]
 #[should_panic(
-    expected = "Error parsing into type dao_interface::nft::NftFactoryCallback: missing field `nft_contract`"
+    expected = "missing field `nft_contract`"
 )]
 fn test_factory_wrong_callback() {
     let mut app = App::default();
@@ -1455,7 +1472,9 @@ fn test_factory_wrong_callback() {
 }
 
 #[test]
-#[should_panic(expected = "Factory contract did not implment the required NftFactoryCallback interface")]
+#[should_panic(
+    expected = "Factory contract did not implment the required NftFactoryCallback interface"
+)]
 fn test_factory_no_callback() {
     let mut app = App::default();
     let module_id = app.store_code(dao_voting_cw721_staked_contract());
@@ -1506,10 +1525,16 @@ fn test_factory_no_callback() {
 pub fn test_migrate_update_version() {
     let mut deps = mock_dependencies();
     cw2::set_contract_version(&mut deps.storage, "my-contract", "1.0.0").unwrap();
-    migrate(deps.as_mut(), mock_env(), MigrateMsg {}, MigrateInfo {
-        sender: MockApi::default().addr_make(CREATOR_ADDR),
-        old_migrate_version: None,
-    }).unwrap();
+    migrate(
+        deps.as_mut(),
+        mock_env(),
+        MigrateMsg {},
+        MigrateInfo {
+            sender: MockApi::default().addr_make(CREATOR_ADDR),
+            old_migrate_version: None,
+        },
+    )
+    .unwrap();
     let version = cw2::get_contract_version(&deps.storage).unwrap();
     assert_eq!(version.version, CONTRACT_VERSION);
     assert_eq!(version.contract, CONTRACT_NAME);

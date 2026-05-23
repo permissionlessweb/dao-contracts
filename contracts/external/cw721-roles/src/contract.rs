@@ -70,11 +70,9 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
-    // Authorization is enforced by the base cw721 contract for standard
-    // operations (Mint checks minter, ownership transfers check their
-    // respective owners). For custom role-management operations, we check
-    // that the sender is the cw_ownable owner (creator/admin of the NFT
-    // contract).
+    // Only owner / minter can execute
+    cw_ownable::assert_owner(deps.storage, &info.sender)?;
+
     match msg {
         ExecuteMsg::Mint {
             token_id,
@@ -84,24 +82,20 @@ pub fn execute(
         } => execute_mint(deps, env, info, token_id, owner, token_uri, extension),
         ExecuteMsg::Burn { token_id } => execute_burn(deps, env, info, token_id),
         #[allow(deprecated)]
-        ExecuteMsg::UpdateExtension { msg } => {
-            // Only the owner / minter can manage extensions
-            cw_ownable::assert_owner(deps.storage, &info.sender)?;
-            match msg {
-                ExecuteExt::AddHook { addr } => execute_add_hook(deps, info, addr),
-                ExecuteExt::RemoveHook { addr } => execute_remove_hook(deps, info, addr),
-                ExecuteExt::UpdateTokenRole { token_id, role } => {
-                    execute_update_token_role(deps, env, info, token_id, role)
-                }
-                ExecuteExt::UpdateTokenUri {
-                    token_id,
-                    token_uri,
-                } => execute_update_token_uri(deps, env, info, token_id, token_uri),
-                ExecuteExt::UpdateTokenWeight { token_id, weight } => {
-                    execute_update_token_weight(deps, env, info, token_id, weight)
-                }
+        ExecuteMsg::UpdateExtension { msg } => match msg {
+            ExecuteExt::AddHook { addr } => execute_add_hook(deps, info, addr),
+            ExecuteExt::RemoveHook { addr } => execute_remove_hook(deps, info, addr),
+            ExecuteExt::UpdateTokenRole { token_id, role } => {
+                execute_update_token_role(deps, env, info, token_id, role)
             }
-        }
+            ExecuteExt::UpdateTokenUri {
+                token_id,
+                token_uri,
+            } => execute_update_token_uri(deps, env, info, token_id, token_uri),
+            ExecuteExt::UpdateTokenWeight { token_id, weight } => {
+                execute_update_token_weight(deps, env, info, token_id, weight)
+            }
+        },
         ExecuteMsg::TransferNft {
             recipient,
             token_id,

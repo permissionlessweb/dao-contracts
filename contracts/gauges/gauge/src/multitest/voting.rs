@@ -1,6 +1,6 @@
+use cosmwasm_std::testing::MockApi;
 use cosmwasm_std::{Addr, Decimal, Uint256};
 use cw4::Member;
-use cosmwasm_std::testing::MockApi;
 use cw_multi_test::Executor;
 use dao_hooks::nft_stake::{NftStakeChangedExecuteMsg, NftStakeChangedHookMsg};
 use dao_hooks::stake::StakeChangedExecuteMsg;
@@ -80,8 +80,8 @@ fn add_option() {
         vec![
             ("addedoption1".to_owned(), Uint256::zero()),
             ("addedoption2".to_owned(), Uint256::zero()),
+            (voter2.clone(), Uint256::zero()),
             (voter1.clone(), Uint256::zero()),
-            (voter2.clone(), Uint256::zero())
         ]
     );
 
@@ -91,12 +91,18 @@ fn add_option() {
         .unwrap();
     // Non-voting members cannot add options
     let err = suite
-        .add_option(&gauge_contract, "random_voter", gauge_id, "addedoption3")
+        .add_option(
+            &gauge_contract,
+            suite.app.api().addr_make("random_voter"),
+            gauge_id,
+            "addedoption3",
+        )
         .unwrap_err();
-    assert_eq!(
-        ContractError::NoVotingPower("random_voter".to_owned()),
-        err.downcast().unwrap()
-    );
+    println!("{:#?}", err);
+    assert!(err.to_string().contains(
+        &ContractError::NoVotingPower(suite.app.api().addr_make("random_voter").into_string())
+            .to_string()
+    ));
 }
 
 #[test]
@@ -146,8 +152,8 @@ fn remove_option() {
     assert_eq!(
         options,
         vec![
+            (voter2.clone(), Uint256::zero()),
             (voter1.clone(), Uint256::zero()),
-            (voter2.clone(), Uint256::zero())
         ]
     );
 
@@ -169,8 +175,8 @@ fn remove_option() {
         vec![
             ("addedoption1".to_owned(), Uint256::zero()),
             ("addedoption2".to_owned(), Uint256::zero()),
+            (voter2.clone(), Uint256::zero()),
             (voter1.clone(), Uint256::zero()),
-            (voter2.clone(), Uint256::zero())
         ]
     );
 
@@ -184,10 +190,9 @@ fn remove_option() {
         .remove_option(&gauge_contract, voter1.as_str(), gauge_id, "addedoption2")
         .unwrap_err();
 
-    assert_eq!(
-        ContractError::Ownership(cw_ownable::OwnershipError::NotOwner),
-        err.downcast().unwrap()
-    );
+    assert!(err
+        .to_string()
+        .contains(&cw_ownable::OwnershipError::NotOwner.to_string()));
 
     let options = suite.query_list_options(&gauge_contract, gauge_id).unwrap();
     // one has been removed
@@ -195,8 +200,8 @@ fn remove_option() {
         options,
         vec![
             ("addedoption2".to_owned(), Uint256::zero()),
-            (voter1.clone(), Uint256::zero()),
-            (voter2.clone(), Uint256::zero())
+            (voter2.clone(), Uint256::zero()),
+            (voter1.clone(), Uint256::zero())
         ]
     );
 
@@ -212,8 +217,8 @@ fn remove_option() {
     assert_eq!(
         options,
         vec![
+            (voter2.clone(), Uint256::zero()),
             (voter1.clone(), Uint256::zero()),
-            (voter2.clone(), Uint256::zero())
         ]
     );
 }
@@ -337,12 +342,12 @@ fn vote_for_option() {
         .unwrap();
     assert_eq!(
         vec![
-            simple_vote(&voter1, &voter1, 90, suite.current_time()),
             multi_vote(
                 &voter2,
                 &[("option1", 50), ("option2", 50)],
                 suite.current_time()
             ),
+            simple_vote(&voter1, &voter1, 90, suite.current_time()),
         ],
         suite.query_list_votes(&gauge_contract, gauge_id).unwrap()
     );
@@ -366,8 +371,8 @@ fn vote_for_option() {
         .unwrap();
     assert_eq!(
         vec![
-            simple_vote(&voter1, "option1", 90, suite.current_time()),
             simple_vote(&voter2, "option1", 90, suite.current_time()),
+            simple_vote(&voter1, "option1", 90, suite.current_time()),
         ],
         suite.query_list_votes(&gauge_contract, gauge_id).unwrap()
     );
@@ -381,13 +386,13 @@ fn vote_for_option() {
             Some("random option".to_owned()),
         )
         .unwrap_err();
-    assert_eq!(
-        ContractError::OptionDoesNotExists {
+    assert!(err.to_string().contains(
+        &ContractError::OptionDoesNotExists {
             option: "random option".to_owned(),
             gauge_id
-        },
-        err.downcast().unwrap()
-    );
+        }
+        .to_string()
+    ));
 }
 
 #[test]
@@ -452,8 +457,8 @@ fn remove_vote() {
         .unwrap();
     assert_eq!(
         vec![
-            simple_vote(&voter1, &voter1, 100, suite.current_time()),
             simple_vote(&voter2, &voter1, 100, suite.current_time()),
+            simple_vote(&voter1, &voter1, 100, suite.current_time()),
         ],
         suite.query_list_votes(&gauge_contract, gauge_id).unwrap()
     );
@@ -467,11 +472,15 @@ fn remove_vote() {
         suite.query_list_votes(&gauge_contract, gauge_id).unwrap()
     );
     assert_eq!(
-        suite.query_vote(&gauge_contract, gauge_id, voter1.as_str()).unwrap(),
+        suite
+            .query_vote(&gauge_contract, gauge_id, voter1.as_str())
+            .unwrap(),
         None
     );
     assert_eq!(
-        suite.query_vote(&gauge_contract, gauge_id, voter2.as_str()).unwrap(),
+        suite
+            .query_vote(&gauge_contract, gauge_id, voter2.as_str())
+            .unwrap(),
         Some(simple_vote(&voter2, &voter1, 100, suite.current_time())),
     );
 
@@ -479,10 +488,9 @@ fn remove_vote() {
     let err = suite
         .place_vote(&gauge_contract, voter1.clone(), gauge_id, None)
         .unwrap_err();
-    assert_eq!(
-        ContractError::CannotRemoveNonexistingVote {},
-        err.downcast().unwrap()
-    );
+    assert!(err
+        .to_string()
+        .contains(&ContractError::CannotRemoveNonexistingVote {}.to_string()));
 }
 
 #[test]
@@ -554,8 +562,8 @@ fn votes_stays_the_same_after_execution() {
 
     assert_eq!(
         vec![
+            simple_vote(&voter2, &voter1, 100, suite.current_time() - EPOCH),
             simple_vote(&voter1, &voter1, 100, suite.current_time() - EPOCH),
-            simple_vote(&voter2, &voter1, 100, suite.current_time() - EPOCH)
         ],
         suite.query_list_votes(&gauge_contract, gauge_id).unwrap()
     );
@@ -565,13 +573,15 @@ fn votes_stays_the_same_after_execution() {
 
     assert_eq!(
         vec![
+            simple_vote(&voter2, &voter1, 100, suite.current_time() - EPOCH),
             simple_vote(&voter1, &voter1, 100, suite.current_time() - EPOCH),
-            simple_vote(&voter2, &voter1, 100, suite.current_time() - EPOCH)
         ],
         suite.query_list_votes(&gauge_contract, gauge_id).unwrap()
     );
     assert_eq!(
-        suite.query_vote(&gauge_contract, gauge_id, voter1.as_str()).unwrap(),
+        suite
+            .query_vote(&gauge_contract, gauge_id, voter1.as_str())
+            .unwrap(),
         Some(simple_vote(
             &voter1,
             &voter1,
@@ -580,7 +590,9 @@ fn votes_stays_the_same_after_execution() {
         )),
     );
     assert_eq!(
-        suite.query_vote(&gauge_contract, gauge_id, voter2.as_str()).unwrap(),
+        suite
+            .query_vote(&gauge_contract, gauge_id, voter2.as_str())
+            .unwrap(),
         Some(simple_vote(
             &voter2,
             &voter1,
@@ -668,8 +680,8 @@ fn vote_for_max_capped_option() {
 
     assert_eq!(
         vec![
-            multi_vote(&voter1, &[("option1", 100)], suite.current_time()),
             multi_vote(&voter2, &[("option2", 10)], suite.current_time()),
+            multi_vote(&voter1, &[("option1", 100)], suite.current_time()),
         ],
         suite.query_list_votes(&gauge_contract, gauge_id).unwrap()
     );
@@ -792,12 +804,12 @@ fn membership_voting_power_change() {
         .unwrap();
     assert_eq!(
         vec![
-            simple_vote(&voter1, &voter1, 90, suite.current_time()),
             multi_vote(
                 &voter2,
                 &[("option1", 50), ("option2", 50)],
                 suite.current_time()
             ),
+            simple_vote(&voter1, &voter1, 90, suite.current_time()),
         ],
         suite.query_list_votes(&gauge_contract, gauge_id).unwrap()
     );
@@ -973,12 +985,12 @@ fn token_staking_voting_power_change() {
         .unwrap();
     assert_eq!(
         vec![
-            simple_vote(&voter1, &voter1, 90, suite.current_time()),
             multi_vote(
                 &voter2,
                 &[("option1", 50), ("option2", 50)],
                 suite.current_time()
             ),
+            simple_vote(&voter1, &voter1, 90, suite.current_time()),
         ],
         suite.query_list_votes(&gauge_contract, gauge_id).unwrap()
     );
@@ -1136,11 +1148,11 @@ fn nft_staking_voting_power_change() {
         )
         .unwrap();
     assert_eq!(
-        simple_vote(&voter1, &voter1, 100, suite.current_time()),
         suite
             .query_vote(&gauge_contract, gauge_id, voter1.as_str())
             .unwrap()
             .unwrap(),
+        simple_vote(&voter1, &voter1, 100, suite.current_time()),
     );
     // check tally is proper
     let selected_set = suite.query_selected_set(&gauge_contract, gauge_id).unwrap();
@@ -1171,12 +1183,12 @@ fn nft_staking_voting_power_change() {
         .unwrap();
     assert_eq!(
         vec![
-            simple_vote(&voter1, &voter1, 100, suite.current_time()),
             multi_vote(
                 &voter2,
                 &[("option1", 50), ("option2", 50)],
                 suite.current_time()
             ),
+            simple_vote(&voter1, &voter1, 100, suite.current_time()),
         ],
         suite.query_list_votes(&gauge_contract, gauge_id).unwrap()
     );
@@ -1194,9 +1206,9 @@ fn nft_staking_voting_power_change() {
     assert_eq!(
         pre_voter1_takeover_gauge_set,
         vec![
-            (voter1.clone(), Uint256::new(1)),
             ("option2".to_string(), Uint256::new(1)),
             ("option1".to_string(), Uint256::new(1)),
+            (voter1.clone(), Uint256::new(1)),
         ]
     );
 

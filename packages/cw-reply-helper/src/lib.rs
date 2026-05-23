@@ -36,13 +36,11 @@ pub fn parse_reply_instantiate_data(
 /// wrapper and returns the inner data, falling back to the deprecated
 /// `SubMsgResponse::data` field for compatibility with older runtimes and
 /// cw-multi-test versions.
-pub fn parse_reply_execute_data(msg: &Reply) -> Result<Option<Binary>, ParseReplyError> {
-    let response = match &msg.result {
-        cosmwasm_std::SubMsgResult::Ok(res) => res,
-        cosmwasm_std::SubMsgResult::Err(e) => {
-            return Err(ParseReplyError::SubMsgFailure(e.clone()))
-        }
-    };
+pub fn parse_reply_execute_data(msg: Reply) -> Result<Option<Binary>, ParseReplyError> {
+    let response = msg
+        .result
+        .into_result()
+        .map_err(ParseReplyError::SubMsgFailure)?;
 
     // CosmWasm 2.0+: prefer msg_responses
     if let Some(msg_response) = response.msg_responses.first() {
@@ -80,7 +78,9 @@ fn parse_msg_execute_contract_response(raw: &[u8]) -> Result<Option<Vec<u8>>, St
         let wire_type = tag & 0x7;
 
         if wire_type != 2 {
-            return Err(format!("unexpected wire type {wire_type} for field {field_number}"));
+            return Err(format!(
+                "unexpected wire type {wire_type} for field {field_number}"
+            ));
         }
 
         let (len, new_pos) =

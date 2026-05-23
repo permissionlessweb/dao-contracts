@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, Decimal, Deps, DepsMut, Env, StdError, StdResult, Storage, Uint128};
+use cosmwasm_std::{Addr, Decimal, Deps, DepsMut, Env, StdError, StdResult, Storage, Uint256};
 
 use cw_snapshot_vector_map::SnapshotVectorMapItemRef;
 use dao_voting::{
@@ -30,10 +30,10 @@ pub fn is_delegate_registered(deps: Deps, delegate: &Addr, height: Option<u64>) 
     option.map(|d| d.is_some())
 }
 
-pub fn get_voting_power(deps: Deps, addr: &Addr, height: u64) -> StdResult<Uint128> {
+pub fn get_voting_power(deps: Deps, addr: &Addr, height: u64) -> StdResult<Uint256> {
     let dao = DAO.load(deps.storage)?;
     let vp = voting::get_voting_power(deps, addr.clone(), &dao, Some(height))?;
-    Ok(vp.try_into().unwrap())
+    Ok(vp)
 }
 
 /// Returns the unvoted delegated VP for a delegate on a proposal, falling back
@@ -48,7 +48,7 @@ pub fn get_udvp(
     proposal_module: &Addr,
     proposal_id: u64,
     proposal_height: u64,
-) -> StdResult<Uint128> {
+) -> StdResult<Uint256> {
     // if no unvoted delegated VP exists for the proposal, use the delegate's
     // total delegated VP at that height. UNVOTED_DELEGATED_VP gets set when one
     // of their delegators casts a vote. if empty, none of them have voted yet.
@@ -90,7 +90,7 @@ pub fn add_delegated_vp(
     storage: &mut dyn Storage,
     env: &Env,
     delegate: &Addr,
-    vp: Uint128,
+    vp: Uint256,
     expiration: Option<u64>,
 ) -> StdResult<()> {
     DELEGATED_VP.increment(
@@ -123,7 +123,7 @@ pub fn remove_delegated_vp_if_not_expired(
     storage: &mut dyn Storage,
     env: &Env,
     delegate: &Addr,
-    vp: Uint128,
+    vp: Uint256,
     original_expiration: Option<u64>,
 ) -> StdResult<()> {
     // if delegation already expired, do nothing.
@@ -162,7 +162,7 @@ pub fn update_delegated_vp_expiration(
     storage: &mut dyn Storage,
     env: &Env,
     delegate: &Addr,
-    vp: Uint128,
+    vp: Uint256,
     original_expiration: Option<u64>,
     new_expiration: Option<u64>,
 ) -> StdResult<()> {
@@ -199,7 +199,7 @@ pub fn validate_delegation(
     delegator: &Addr,
     delegate: &Addr,
     new_percent: Decimal,
-) -> Result<Uint128, ContractError> {
+) -> Result<Uint256, ContractError> {
     if new_percent <= Decimal::zero() || new_percent > Decimal::one() {
         return Err(ContractError::InvalidVotingPowerPercent {});
     }
@@ -240,7 +240,7 @@ pub fn handle_redelegation(
     new_percent: Decimal,
     config: &Config,
     current_percent_delegated: Decimal,
-    vp: Uint128,
+    vp: Uint256,
     existing_delegation_entry: SnapshotVectorMapItemRef,
 ) -> DelegationHandlerResult {
     let (existing_delegation_id, existing_delegation_expiration) = existing_delegation_entry;
@@ -364,7 +364,7 @@ pub fn validate_and_update_delegated_vp(
     delegate: &Addr,
     current_total_percent: Decimal,
     new_total_percent: Decimal,
-    delegated_vp: Uint128,
+    delegated_vp: Uint256,
     expiration: Option<u64>,
 ) -> Result<(), ContractError> {
     // ensure not delegating more than 100%

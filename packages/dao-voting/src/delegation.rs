@@ -3,7 +3,7 @@ use cosmwasm_schema::{
     serde::{de::DeserializeOwned, Serialize},
     QueryResponses,
 };
-use cosmwasm_std::{Addr, Decimal, DepsMut, StdResult, Uint128};
+use cosmwasm_std::{Addr, Decimal, DepsMut, StdResult, Uint256};
 use cw_storage_plus::Map;
 use dao_interface::voting::InfoResponse;
 
@@ -60,13 +60,13 @@ pub enum QueryMsg {
     /// to the delegate for this proposal. This query takes into account the
     /// configured VP cap and should be used by proposal modules when a
     /// delegator overrides a delegate's vote to compute ballot VP updates.
-    #[returns(Uint128)]
+    #[returns(Uint256)]
     EffectiveUnvotedDelegatedVotingPowerReduction {
         proposal_module: String,
         proposal_id: u64,
         proposal_height: u64,
         delegate: String,
-        delegated_vp: Uint128,
+        delegated_vp: Uint256,
     },
     /// Returns the proposal modules synced from the DAO.
     #[returns(Vec<Addr>)]
@@ -94,7 +94,7 @@ pub struct RegistrationResponse {
     pub registered: bool,
     /// The total voting power delegated to the delegate. If not registered,
     /// this may still be nonzero if the delegate was registered in the past.
-    pub power: Uint128,
+    pub power: Uint256,
     /// The height at which registration was checked.
     pub height: u64,
 }
@@ -110,7 +110,7 @@ pub struct DelegateResponse {
     /// The delegate.
     pub delegate: Addr,
     /// The total voting power delegated to the delegate.
-    pub power: Uint128,
+    pub power: Uint256,
 }
 
 #[cw_serde]
@@ -142,10 +142,10 @@ pub struct DelegationResponse {
 #[derive(Default)]
 pub struct UnvotedDelegatedVotingPowerResponse {
     /// The total unvoted delegated voting power.
-    pub total: Uint128,
+    pub total: Uint256,
     /// The unvoted delegated voting power in effect, with configured
     /// constraints applied, such as the VP cap.
-    pub effective: Uint128,
+    pub effective: Uint256,
 }
 
 #[cw_serde]
@@ -191,9 +191,9 @@ pub struct VotingPowerCapResponse {
 
 /// Calculate delegated voting power given a member's total voting power and a
 /// percent delegated.
-pub fn calculate_delegated_vp(vp: Uint128, percent: Decimal) -> Uint128 {
+pub fn calculate_delegated_vp(vp: Uint256, percent: Decimal) -> Uint256 {
     if percent.is_zero() || vp.is_zero() {
-        return Uint128::zero();
+        return Uint256::zero();
     }
 
     vp.mul_floor(percent)
@@ -218,9 +218,9 @@ pub fn handle_delegate_vote_override<Vote: Serialize + DeserializeOwned>(
     proposal_module: &Addr,
     proposal_id: u64,
     proposal_height: u64,
-    individual_vote_power: &Uint128,
+    individual_vote_power: &Uint256,
     ballots: Map<(u64, &Addr), Ballot<Vote>>,
-    remove_vote: &mut impl FnMut(&Vote, Uint128) -> StdResult<()>,
+    remove_vote: &mut impl FnMut(&Vote, Uint256) -> StdResult<()>,
 ) -> StdResult<()> {
     if let Some(delegation_module) = delegation_module {
         let delegations = deps
@@ -260,7 +260,7 @@ pub fn handle_delegate_vote_override<Vote: Serialize + DeserializeOwned>(
                 // delegator's vote override. this loss should be equal to the
                 // delegated VP or less if the delegated VP is already being
                 // capped due to the delegation module config.
-                let reduction: Uint128 = deps.querier.query_wasm_smart(
+                let reduction: Uint256 = deps.querier.query_wasm_smart(
                     delegation_module,
                     &QueryMsg::EffectiveUnvotedDelegatedVotingPowerReduction {
                         proposal_module: proposal_module.to_string(),

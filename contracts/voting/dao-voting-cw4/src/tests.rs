@@ -12,8 +12,8 @@ use dao_testing::contracts::{cw4_group_contract, dao_voting_cw4_contract};
 use crate::{
     contract::{migrate, CONTRACT_NAME, CONTRACT_VERSION},
     msg::{GroupContract, InstantiateMsg, MigrateMsg, QueryMsg},
+    ContractError,
 };
-use dao_voting_cw4::ContractError;
 
 const DAO_ADDR: &str = "dao";
 const ADDR1: &str = "addr1";
@@ -164,7 +164,9 @@ pub fn test_instantiate_existing_contract() {
             None,
         )
         .unwrap_err();
-    assert!(err.to_string().contains("NoMembers"));
+    assert!(err
+        .to_string()
+        .contains(&ContractError::NoMembers {}.to_string()));
 
     let cw4_addr = app
         .instantiate_contract(

@@ -16,8 +16,8 @@ use crate::query::ProposalResponse;
 
 /// Local struct to hold voting power as Uint128 (converted from Uint256).
 pub struct VotePower {
-    pub total: Uint128,
-    pub individual: Uint128,
+    pub total: Uint256,
+    pub individual: Uint256,
 }
 
 #[cw_serde]
@@ -90,12 +90,6 @@ pub enum VoteResult {
 }
 
 impl MultipleChoiceProposal {
-    /// Returns total_power as Uint128, panicking if it overflows
-    /// (should never happen as voting power originates from Uint128).
-    fn total_power_u128(&self) -> Uint128 {
-        Uint128::try_from(self.total_power).unwrap()
-    }
-
     /// Consumes the proposal and returns a version which may be used
     /// in a query response. The difference being that proposal
     /// statuses are only updated on vote, execute, and close
@@ -186,8 +180,8 @@ impl MultipleChoiceProposal {
 
         // Proposal can only pass if quorum has been met.
         if does_vote_count_pass(
-            Uint128::try_from(votes_to_consider.total()).unwrap(),
-            self.total_power_u128(),
+            votes_to_consider.total(),
+            self.total_power,
             self.voting_strategy.get_quorum(),
         ) {
             let vote_result = self.calculate_vote_result(block)?;
@@ -238,8 +232,8 @@ impl MultipleChoiceProposal {
             VoteResult::SingleWinner(winning_choice) => {
                 match (
                     does_vote_count_pass(
-                        Uint128::try_from(votes_to_consider.total()).unwrap(),
-                        self.total_power_u128(),
+                        votes_to_consider.total(),
+                        self.total_power,
                         self.voting_strategy.get_quorum(),
                     ),
                     is_expired,
@@ -420,7 +414,11 @@ mod tests {
         };
 
         let votes = MultipleChoiceVotes {
-            vote_weights: vec![Uint128::new(1).into(), Uint128::new(0).into(), Uint128::new(0).into()],
+            vote_weights: vec![
+                Uint128::new(1).into(),
+                Uint128::new(0).into(),
+                Uint128::new(0).into(),
+            ],
         };
 
         let prop = create_proposal(
@@ -437,7 +435,11 @@ mod tests {
         assert!(!prop.is_rejected(&env.block).unwrap());
 
         let votes = MultipleChoiceVotes {
-            vote_weights: vec![Uint128::new(0).into(), Uint128::new(0).into(), Uint128::new(1).into()],
+            vote_weights: vec![
+                Uint128::new(0).into(),
+                Uint128::new(0).into(),
+                Uint128::new(1).into(),
+            ],
         };
         let prop = create_proposal(
             &env.block,
@@ -453,7 +455,11 @@ mod tests {
         assert!(prop.is_rejected(&env.block).unwrap());
 
         let votes = MultipleChoiceVotes {
-            vote_weights: vec![Uint128::new(1).into(), Uint128::new(0).into(), Uint128::new(0).into()],
+            vote_weights: vec![
+                Uint128::new(1).into(),
+                Uint128::new(0).into(),
+                Uint128::new(0).into(),
+            ],
         };
         let prop = create_proposal(
             &env.block,
@@ -469,7 +475,11 @@ mod tests {
         assert!(!prop.is_rejected(&env.block).unwrap());
 
         let votes = MultipleChoiceVotes {
-            vote_weights: vec![Uint128::new(1).into(), Uint128::new(0).into(), Uint128::new(0).into()],
+            vote_weights: vec![
+                Uint128::new(1).into(),
+                Uint128::new(0).into(),
+                Uint128::new(0).into(),
+            ],
         };
         let prop = create_proposal(
             &env.block,
@@ -485,7 +495,11 @@ mod tests {
         assert!(prop.is_rejected(&env.block).unwrap());
 
         let votes = MultipleChoiceVotes {
-            vote_weights: vec![Uint128::new(50).into(), Uint128::new(50).into(), Uint128::new(0).into()],
+            vote_weights: vec![
+                Uint128::new(50).into(),
+                Uint128::new(50).into(),
+                Uint128::new(0).into(),
+            ],
         };
         let prop = create_proposal(
             &env.block,
@@ -501,7 +515,11 @@ mod tests {
         assert!(prop.is_rejected(&env.block).unwrap());
 
         let votes = MultipleChoiceVotes {
-            vote_weights: vec![Uint128::new(50).into(), Uint128::new(50).into(), Uint128::new(0).into()],
+            vote_weights: vec![
+                Uint128::new(50).into(),
+                Uint128::new(50).into(),
+                Uint128::new(0).into(),
+            ],
         };
         let prop = create_proposal(
             &env.block,
@@ -527,7 +545,11 @@ mod tests {
         };
 
         let votes = MultipleChoiceVotes {
-            vote_weights: vec![Uint128::new(1).into(), Uint128::new(0).into(), Uint128::new(0).into()],
+            vote_weights: vec![
+                Uint128::new(1).into(),
+                Uint128::new(0).into(),
+                Uint128::new(0).into(),
+            ],
         };
 
         let prop = create_proposal(
@@ -544,7 +566,11 @@ mod tests {
         assert!(!prop.is_rejected(&env.block).unwrap());
 
         let votes = MultipleChoiceVotes {
-            vote_weights: vec![Uint128::new(0).into(), Uint128::new(0).into(), Uint128::new(1).into()],
+            vote_weights: vec![
+                Uint128::new(0).into(),
+                Uint128::new(0).into(),
+                Uint128::new(1).into(),
+            ],
         };
         let prop = create_proposal(
             &env.block,
@@ -560,7 +586,11 @@ mod tests {
         assert!(prop.is_rejected(&env.block).unwrap());
 
         let votes = MultipleChoiceVotes {
-            vote_weights: vec![Uint128::new(1).into(), Uint128::new(0).into(), Uint128::new(0).into()],
+            vote_weights: vec![
+                Uint128::new(1).into(),
+                Uint128::new(0).into(),
+                Uint128::new(0).into(),
+            ],
         };
         let prop = create_proposal(
             &env.block,
@@ -576,7 +606,11 @@ mod tests {
         assert!(!prop.is_rejected(&env.block).unwrap());
 
         let votes = MultipleChoiceVotes {
-            vote_weights: vec![Uint128::new(1).into(), Uint128::new(0).into(), Uint128::new(0).into()],
+            vote_weights: vec![
+                Uint128::new(1).into(),
+                Uint128::new(0).into(),
+                Uint128::new(0).into(),
+            ],
         };
         let prop = create_proposal(
             &env.block,
@@ -592,7 +626,11 @@ mod tests {
         assert!(prop.is_rejected(&env.block).unwrap());
 
         let votes = MultipleChoiceVotes {
-            vote_weights: vec![Uint128::new(50).into(), Uint128::new(50).into(), Uint128::new(0).into()],
+            vote_weights: vec![
+                Uint128::new(50).into(),
+                Uint128::new(50).into(),
+                Uint128::new(0).into(),
+            ],
         };
         let prop = create_proposal(
             &env.block,
@@ -608,7 +646,11 @@ mod tests {
         assert!(prop.is_rejected(&env.block).unwrap());
 
         let votes = MultipleChoiceVotes {
-            vote_weights: vec![Uint128::new(50).into(), Uint128::new(50).into(), Uint128::new(0).into()],
+            vote_weights: vec![
+                Uint128::new(50).into(),
+                Uint128::new(50).into(),
+                Uint128::new(0).into(),
+            ],
         };
         let prop = create_proposal(
             &env.block,
@@ -633,7 +675,11 @@ mod tests {
             ),
         };
         let votes = MultipleChoiceVotes {
-            vote_weights: vec![Uint128::new(0).into(), Uint128::new(50).into(), Uint128::new(500).into()],
+            vote_weights: vec![
+                Uint128::new(0).into(),
+                Uint128::new(50).into(),
+                Uint128::new(500).into(),
+            ],
         };
         let prop = create_proposal(
             &env.block,
@@ -658,7 +704,11 @@ mod tests {
             ),
         };
         let votes = MultipleChoiceVotes {
-            vote_weights: vec![Uint128::new(10).into(), Uint128::new(0).into(), Uint128::new(0).into()],
+            vote_weights: vec![
+                Uint128::new(10).into(),
+                Uint128::new(0).into(),
+                Uint128::new(0).into(),
+            ],
         };
         let prop = create_proposal(
             &env.block,
@@ -681,7 +731,11 @@ mod tests {
         };
 
         let votes = MultipleChoiceVotes {
-            vote_weights: vec![Uint128::new(999999).into(), Uint128::new(0).into(), Uint128::new(0).into()],
+            vote_weights: vec![
+                Uint128::new(999999).into(),
+                Uint128::new(0).into(),
+                Uint128::new(0).into(),
+            ],
         };
         let prop = create_proposal(
             &env.block,
@@ -704,7 +758,11 @@ mod tests {
         };
 
         let votes = MultipleChoiceVotes {
-            vote_weights: vec![Uint128::new(9888889).into(), Uint128::new(0).into(), Uint128::new(0).into()],
+            vote_weights: vec![
+                Uint128::new(9888889).into(),
+                Uint128::new(0).into(),
+                Uint128::new(0).into(),
+            ],
         };
         let prop = create_proposal(
             &env.block,
@@ -729,7 +787,11 @@ mod tests {
             ),
         };
         let votes = MultipleChoiceVotes {
-            vote_weights: vec![Uint128::new(7).into(), Uint128::new(0).into(), Uint128::new(6).into()],
+            vote_weights: vec![
+                Uint128::new(7).into(),
+                Uint128::new(0).into(),
+                Uint128::new(6).into(),
+            ],
         };
         let prop = create_proposal(
             &env.block,
@@ -766,7 +828,11 @@ mod tests {
         };
 
         let votes = MultipleChoiceVotes {
-            vote_weights: vec![Uint128::new(7).into(), Uint128::new(0).into(), Uint128::new(0).into()],
+            vote_weights: vec![
+                Uint128::new(7).into(),
+                Uint128::new(0).into(),
+                Uint128::new(0).into(),
+            ],
         };
         let prop = create_proposal(
             &env.block,
@@ -804,7 +870,11 @@ mod tests {
             quorum: dao_voting::threshold::PercentageThreshold::Majority {},
         };
         let votes = MultipleChoiceVotes {
-            vote_weights: vec![Uint128::new(6).into(), Uint128::new(0).into(), Uint128::new(0).into()],
+            vote_weights: vec![
+                Uint128::new(6).into(),
+                Uint128::new(0).into(),
+                Uint128::new(0).into(),
+            ],
         };
 
         let prop = create_proposal(
@@ -839,7 +909,11 @@ mod tests {
             quorum: dao_voting::threshold::PercentageThreshold::Majority {},
         };
         let votes = MultipleChoiceVotes {
-            vote_weights: vec![Uint128::new(5).into(), Uint128::new(5).into(), Uint128::new(0).into()],
+            vote_weights: vec![
+                Uint128::new(5).into(),
+                Uint128::new(5).into(),
+                Uint128::new(0).into(),
+            ],
         };
 
         let prop = create_proposal(
@@ -881,7 +955,11 @@ mod tests {
         };
 
         let votes = MultipleChoiceVotes {
-            vote_weights: vec![Uint128::new(81).into(), Uint128::new(0).into(), Uint128::new(0).into()],
+            vote_weights: vec![
+                Uint128::new(81).into(),
+                Uint128::new(0).into(),
+                Uint128::new(0).into(),
+            ],
         };
 
         let prop = create_proposal(
@@ -919,7 +997,11 @@ mod tests {
         };
 
         let votes = MultipleChoiceVotes {
-            vote_weights: vec![Uint128::new(90).into(), Uint128::new(0).into(), Uint128::new(0).into()],
+            vote_weights: vec![
+                Uint128::new(90).into(),
+                Uint128::new(0).into(),
+                Uint128::new(0).into(),
+            ],
         };
 
         let prop = create_proposal(
@@ -934,7 +1016,11 @@ mod tests {
         assert!(!prop.is_rejected(&env.block).unwrap());
 
         let votes = MultipleChoiceVotes {
-            vote_weights: vec![Uint128::new(50).into(), Uint128::new(0).into(), Uint128::new(0).into()],
+            vote_weights: vec![
+                Uint128::new(50).into(),
+                Uint128::new(0).into(),
+                Uint128::new(0).into(),
+            ],
         };
 
         let prop = create_proposal(

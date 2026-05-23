@@ -1500,10 +1500,10 @@ fn test_withdraw_block_based() {
     suite.skip_blocks(100_000);
 
     // ensure cannot withdraw again
-    assert_eq!(
-        suite.withdraw_error(1),
-        ContractError::RewardsAlreadyDistributed {}
-    );
+    assert!(suite
+        .withdraw_error(1)
+        .to_string()
+        .contains(&ContractError::RewardsAlreadyDistributed {}.to_string()));
 
     // we assert that pending rewards did not change
     suite.assert_pending_rewards(ADDR0, 1, 6_666_666);
@@ -1587,10 +1587,10 @@ fn test_withdraw_time_based() {
     suite.skip_seconds(100_000);
 
     // ensure cannot withdraw again
-    assert_eq!(
-        suite.withdraw_error(1),
-        ContractError::RewardsAlreadyDistributed {}
-    );
+    assert!(suite
+        .withdraw_error(1)
+        .to_string()
+        .contains(&ContractError::RewardsAlreadyDistributed {}.to_string()));
 
     // we assert that pending rewards did not change
     suite.assert_pending_rewards(ADDR0, 1, 6_666_666);
@@ -1674,10 +1674,10 @@ fn test_withdraw_and_restart_with_continuous() {
     suite.skip_seconds(100_000);
 
     // ensure cannot withdraw again
-    assert_eq!(
-        suite.withdraw_error(1),
-        ContractError::RewardsAlreadyDistributed {}
-    );
+    assert!(suite
+        .withdraw_error(1)
+        .to_string()
+        .contains(&ContractError::RewardsAlreadyDistributed {}.to_string()));
 
     // we assert that pending rewards did not change
     suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
@@ -1758,10 +1758,10 @@ fn test_withdraw_and_restart_not_continuous() {
     suite.skip_seconds(100_000);
 
     // ensure cannot withdraw again
-    assert_eq!(
-        suite.withdraw_error(1),
-        ContractError::RewardsAlreadyDistributed {}
-    );
+    assert!(suite
+        .withdraw_error(1)
+        .to_string()
+        .contains(&ContractError::RewardsAlreadyDistributed {}.to_string()));
 
     // we assert that pending rewards did not change
     suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
@@ -2899,7 +2899,9 @@ fn test_closed_funding() {
             )
             .unwrap_err(),
     );
-    assert_eq!(err, ContractError::Ownable(OwnershipError::NotOwner));
+    assert!(err
+        .to_string()
+        .contains(&ContractError::Ownable(OwnershipError::NotOwner).to_string()));
 
     // update open funding
     suite.update_open_funding(2, true);
@@ -3050,7 +3052,9 @@ fn test_unsafe_force_withdraw() {
         100u128,
         UncheckedDenom::Native(suite.reward_denom.clone()),
     );
-    assert_eq!(err, ContractError::Ownable(OwnershipError::NotOwner));
+    assert!(err
+        .to_string()
+        .contains(&ContractError::Ownable(OwnershipError::NotOwner).to_string()));
 
     let after_balance =
         suite.get_balance_native(suite.distribution_contract.clone(), &suite.reward_denom);

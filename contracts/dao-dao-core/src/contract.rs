@@ -480,11 +480,9 @@ pub fn execute_update_cw721_list(
         return Err(ContractError::Unauthorized {});
     }
     do_update_addr_list(deps, CW721_LIST, to_add, to_remove, |addr, deps| {
-        let _info: cw721::msg::CollectionInfoAndExtensionResponse<
-            DefaultOptionalCollectionExtension,
-        > = deps.querier.query_wasm_smart(
+        let _: cw721::msg::NumTokensResponse = deps.querier.query_wasm_smart(
             addr,
-            &cw721::msg::Cw721QueryMsg::<Empty, DefaultOptionalCollectionExtension, Empty>::GetCollectionInfoAndExtension {},
+            &cw721::msg::Cw721QueryMsg::<Empty, Empty, Empty>::NumTokens {},
         )?;
         Ok(())
     })?;
@@ -900,97 +898,10 @@ pub fn migrate(
     msg: MigrateMsg,
     _info: MigrateInfo,
 ) -> Result<Response, ContractError> {
-    let ContractVersion { version, .. } = get_contract_version(deps.storage)?;
+    let ContractVersion { .. } = get_contract_version(deps.storage)?;
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     match msg {
-        MigrateMsg::FromV1 { dao_uri, params } => {
-            // `CONTRACT_VERSION` here is from the data section of the
-            // blob we are migrating to. `version` is from storage. If
-            // the version in storage matches the version in the blob
-            // we are not upgrading.
-            if version == CONTRACT_VERSION {
-                return Err(ContractError::AlreadyMigrated {});
-            }
-
-            // Redeclare v1 storage items using v2-compatible types.
-            // The raw storage format (key names + serde JSON) is identical
-            // across cosmwasm-std versions, so we can read v1 data directly.
-            use cw_storage_plus::Item as Item2;
-            use cw_storage_plus::Map as Map2;
-
-            #[derive(serde::Serialize, serde::Deserialize)]
-            struct V1Config {
-                name: String,
-                description: String,
-                image_url: Option<String>,
-                automatically_add_cw20s: bool,
-                automatically_add_cw721s: bool,
-            }
-            const V1_PROPOSAL_MODULES: Map2<Addr, Empty> = Map2::new("proposal_modules");
-            const V1_CONFIG: Item2<V1Config> = Item2::new("config");
-
-            let current_keys = V1_PROPOSAL_MODULES
-                .keys(deps.storage, None, None, Order::Ascending)
-                .collect::<StdResult<Vec<Addr>>>()?;
-
-            // All proposal modules are considered active in v1.
-            let module_count = &(current_keys.len() as u32);
-            TOTAL_PROPOSAL_MODULE_COUNT.save(deps.storage, module_count)?;
-            ACTIVE_PROPOSAL_MODULE_COUNT.save(deps.storage, module_count)?;
-
-            // Update proposal modules to v2.
-            current_keys
-                .into_iter()
-                .enumerate()
-                .try_for_each::<_, StdResult<()>>(|(idx, address)| {
-                    let prefix = derive_proposal_module_prefix(idx)?;
-                    let proposal_module = &ProposalModule {
-                        address: address.clone(),
-                        status: ProposalModuleStatus::Enabled {},
-                        prefix,
-                    };
-                    PROPOSAL_MODULES.save(deps.storage, address, proposal_module)?;
-                    Ok(())
-                })?;
-
-            // Update config to have the V2 "dao_uri" field.
-            let v1_config = V1_CONFIG.load(deps.storage)?;
-            CONFIG.save(
-                deps.storage,
-                &Config {
-                    name: v1_config.name,
-                    description: v1_config.description,
-                    image_url: v1_config.image_url,
-                    automatically_add_cw20s: v1_config.automatically_add_cw20s,
-                    automatically_add_cw721s: v1_config.automatically_add_cw721s,
-                    dao_uri,
-                },
-            )?;
-
-            let response = if let Some(migrate_params) = params {
-                let msg = WasmMsg::Execute {
-                    contract_addr: env.contract.address.to_string(),
-                    msg: to_json_binary(&ExecuteMsg::UpdateProposalModules {
-                        to_add: vec![ModuleInstantiateInfo {
-                            code_id: migrate_params.migrator_code_id,
-                            msg: to_json_binary(&migrate_params.params).unwrap(),
-                            admin: Some(Admin::CoreModule {}),
-                            label: "migrator".to_string(),
-                            funds: None,
-                            salt: None,
-                        }],
-                        to_disable: vec![],
-                    })
-                    .unwrap(),
-                    funds: vec![],
-                };
-                Response::default().add_message(msg)
-            } else {
-                Response::default()
-            };
-
-            Ok(response)
-        }
+        MigrateMsg::FromV1 { .. } => unimplemented!(),
         MigrateMsg::FromCompatible {} => Ok(Response::default()),
     }
 }
@@ -1002,7 +913,6 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
             let res = parse_reply_instantiate_data(msg)?;
             let prop_module_addr = deps.api.addr_validate(&res.contract_address)?;
             let total_module_count = TOTAL_PROPOSAL_MODULE_COUNT.load(deps.storage)?;
-
             let prefix = derive_proposal_module_prefix(total_module_count as usize)?;
             let prop_module = ProposalModule {
                 address: prop_module_addr.clone(),

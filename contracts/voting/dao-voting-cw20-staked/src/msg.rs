@@ -56,7 +56,7 @@ pub enum TokenInfo {
         /// this salt.
         staking_salt: Option<Binary>,
         unstaking_duration: Option<Duration>,
-        initial_dao_balance: Option<Uint128>,
+        initial_dao_balance: Option<cosmwasm_std::Uint256>,
     },
 }
 

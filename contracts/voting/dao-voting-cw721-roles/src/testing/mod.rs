@@ -31,12 +31,12 @@ pub(crate) struct CommonTest {
 pub(crate) fn setup_test(initial_nfts: Vec<NftMintMsg>) -> CommonTest {
     let mut app = App::default();
     let module_id = app.store_code(dao_voting_cw721_roles_contract());
-
-    let (_, cw721_id) = instantiate_cw721_roles(&mut app, &addr_str(CREATOR_ADDR), &addr_str(CREATOR_ADDR));
+    let minter = addr(CREATOR_ADDR);
+    let (_, cw721_id) = instantiate_cw721_roles(&mut app, &minter.to_string(), &minter.to_string());
     let module_addr = app
         .instantiate_contract(
             module_id,
-            addr(CREATOR_ADDR),
+            minter,
             &InstantiateMsg {
                 nft_contract: NftContract::New {
                     code_id: cw721_id,

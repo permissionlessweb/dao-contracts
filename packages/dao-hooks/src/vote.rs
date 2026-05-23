@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{to_json_binary, StdResult, Storage, SubMsg, Uint128, WasmMsg};
+use cosmwasm_std::{to_json_binary, StdResult, Storage, SubMsg, Uint256, WasmMsg};
 use cw_hooks::Hooks;
 use dao_voting::reply::mask_vote_hook_index;
 
@@ -14,10 +14,10 @@ pub enum VoteHookMsg {
         /// The vote that was cast.
         vote: String,
         /// The total voting power of the voter.
-        power: Uint128,
+        power: Uint256,
         /// The individual voting power of the voter (excluding any delegated
         /// voting power).
-        individual_power: Uint128,
+        individual_power: Uint256,
         /// The block height at which the voting power is calculated.
         height: u64,
         /// Whether this is the first vote cast by this voter on this proposal.
@@ -36,8 +36,8 @@ pub fn new_vote_hooks(
     proposal_id: u64,
     voter: String,
     vote: String,
-    power: Uint128,
-    individual_power: Uint128,
+    power: Uint256,
+    individual_power: Uint256,
     height: u64,
     is_first_vote: bool,
 ) -> StdResult<Vec<SubMsg>> {

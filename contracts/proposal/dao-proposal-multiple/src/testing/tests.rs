@@ -1,5 +1,6 @@
 use cosmwasm_std::{
-    Addr, Coin, CosmosMsg, Decimal, Empty, StdResult, Timestamp, Uint128, Uint256, WasmMsg, to_json_binary
+    to_json_binary, Addr, Coin, CosmosMsg, Decimal, Empty, StdResult, Timestamp, Uint128, Uint256,
+    WasmMsg,
 };
 use cw20::Cw20Coin;
 use cw_denom::{CheckedDenom, UncheckedDenom};
@@ -165,7 +166,13 @@ fn test_propose() {
     let mc_options = MultipleChoiceOptions { options };
 
     // Create a new proposal.
-    make_proposal(&mut app, &govmod, &addr_str(CREATOR_ADDR), mc_options.clone(), None);
+    make_proposal(
+        &mut app,
+        &govmod,
+        &addr_str(CREATOR_ADDR),
+        mc_options.clone(),
+        None,
+    );
 
     let created: ProposalResponse = query_proposal(&app, &govmod, 1);
 
@@ -399,10 +406,18 @@ fn test_propose_auto_vote_winner() {
         voting_strategy,
         total_power: Uint128::new(100_000_000).into(),
         votes: MultipleChoiceVotes {
-            vote_weights: vec![Uint128::new(100_000_000).into(), Uint128::zero().into(), Uint128::zero().into()],
+            vote_weights: vec![
+                Uint128::new(100_000_000).into(),
+                Uint128::zero().into(),
+                Uint128::zero().into(),
+            ],
         },
         individual_votes: MultipleChoiceVotes {
-            vote_weights: vec![Uint128::new(100_000_000).into(), Uint128::zero().into(), Uint128::zero().into()],
+            vote_weights: vec![
+                Uint128::new(100_000_000).into(),
+                Uint128::zero().into(),
+                Uint128::zero().into(),
+            ],
         },
         allow_revoting: false,
         min_voting_period: None,
@@ -495,10 +510,18 @@ fn test_propose_auto_vote_reject() {
         voting_strategy,
         total_power: Uint128::new(100_000_000).into(),
         votes: MultipleChoiceVotes {
-            vote_weights: vec![Uint128::zero().into(), Uint128::zero().into(), Uint128::new(100_000_000).into()],
+            vote_weights: vec![
+                Uint128::zero().into(),
+                Uint128::zero().into(),
+                Uint128::new(100_000_000).into(),
+            ],
         },
         individual_votes: MultipleChoiceVotes {
-            vote_weights: vec![Uint128::zero().into(), Uint128::zero().into(), Uint128::new(100_000_000).into()],
+            vote_weights: vec![
+                Uint128::zero().into(),
+                Uint128::zero().into(),
+                Uint128::new(100_000_000).into(),
+            ],
         },
         allow_revoting: false,
         min_voting_period: None,
@@ -1092,7 +1115,7 @@ fn test_different_token_proposal_deposit() {
 /// proposal deposit token. This should error as the `TokenInfo {}`
 /// query ought to fail.
 #[test]
-#[should_panic(expected = "Error parsing into type dao_voting_cw20_balance::msg::QueryMsg")]
+#[should_panic(expected = "invalid cw20 - did not respond to `TokenInfo` query")]
 fn test_bad_token_proposal_deposit() {
     let mut app = App::default();
     let _govmod_id = app.store_code(dao_proposal_multiple_contract());
@@ -1350,7 +1373,7 @@ fn test_take_native_proposal_deposit() {
         make_proposal(&mut app, &govmod, &addr_str("blue"), mc_options, None);
 
         // Proposal has been executed so deposit has been refunded.
-        let balance = query_balance_native(&app, &addr_str("blue"),denom);
+        let balance = query_balance_native(&app, &addr_str("blue"), denom);
         assert_eq!(balance, Uint128::new(1));
     } else {
         panic!()
@@ -1460,7 +1483,7 @@ fn test_native_proposal_deposit() {
         make_proposal(&mut app, &govmod, &addr_str("blue"), mc_options, None);
 
         // "blue" has been refunded
-        let balance = query_balance_native(&app, &addr_str("blue"),"ujuno");
+        let balance = query_balance_native(&app, &addr_str("blue"), "ujuno");
         assert_eq!(balance, Uint128::new(99));
 
         // Govmod has refunded the token
@@ -1491,7 +1514,7 @@ fn test_native_proposal_deposit() {
         .unwrap();
 
         // "blue" has been refunded
-        let balance = query_balance_native(&app, &addr_str("blue"),"ujuno");
+        let balance = query_balance_native(&app, &addr_str("blue"), "ujuno");
         assert_eq!(balance, Uint128::new(100));
 
         // Govmod has refunded the token
@@ -1666,15 +1689,15 @@ fn test_query_list_votes() {
         VoteInfo {
             voter: addr("blue"),
             vote: MultipleChoiceVote { option_id: 0 },
-            power: Uint128::new(10),
-            individual_power: Uint128::new(10),
+            power: Uint256::new(10),
+            individual_power: Uint256::new(10),
             rationale: None,
         },
         VoteInfo {
             voter: addr("note"),
             vote: MultipleChoiceVote { option_id: 1 },
-            power: Uint128::new(20),
-            individual_power: Uint128::new(20),
+            power: Uint256::new(20),
+            individual_power: Uint256::new(20),
             rationale: None,
         },
     ];
@@ -1963,7 +1986,7 @@ fn test_cant_vote_not_registered() {
         )
         .unwrap_err();
 
-    assert!(err.to_string().contains("NotRegistered"))
+    assert!(err.to_string().contains("Not registered to vote (no voting power) at time of proposal creation."))
 }
 
 #[test]
@@ -3530,8 +3553,14 @@ fn test_revoting() {
     // Assert that both vote options have equal vote weights at some block
     let proposal: ProposalResponse = query_proposal(&app, &govmod, 1);
     assert_eq!(proposal.proposal.status, Status::Open);
-    assert_eq!(proposal.proposal.votes.get_id(0), cosmwasm_std::Uint256::from(100_000_000u128));
-    assert_eq!(proposal.proposal.votes.get_id(1), cosmwasm_std::Uint256::from(100_000_000u128));
+    assert_eq!(
+        proposal.proposal.votes.get_id(0),
+        cosmwasm_std::Uint256::from(100_000_000u128)
+    );
+    assert_eq!(
+        proposal.proposal.votes.get_id(1),
+        cosmwasm_std::Uint256::from(100_000_000u128)
+    );
 
     // More time passes..
     app.update_block(|b| b.height += 3);
@@ -3555,8 +3584,14 @@ fn test_revoting() {
     // Assert that revote succeeded
     let proposal: ProposalResponse = query_proposal(&app, &govmod, 1);
     assert_eq!(proposal.proposal.status, Status::Passed);
-    assert_eq!(proposal.proposal.votes.get_id(0), cosmwasm_std::Uint256::from(200_000_000u128));
-    assert_eq!(proposal.proposal.votes.get_id(1), cosmwasm_std::Uint256::zero());
+    assert_eq!(
+        proposal.proposal.votes.get_id(0),
+        cosmwasm_std::Uint256::from(200_000_000u128)
+    );
+    assert_eq!(
+        proposal.proposal.votes.get_id(1),
+        cosmwasm_std::Uint256::zero()
+    );
 }
 
 /// Tests that revoting is stored at a per-proposal level.
@@ -3711,7 +3746,7 @@ fn test_allow_revoting_config_changes() {
         )
         .unwrap_err();
 
-    assert!(err.to_string().contains("AlreadyVoted"));
+    assert!(err.to_string().contains("Already voted."));
 }
 
 /// Tests that we error if a revote casts the same vote as the
@@ -3806,7 +3841,7 @@ fn test_revoting_same_vote_twice() {
         .unwrap_err();
 
     // Can't cast the same vote twice.
-    assert!(err.to_string().contains("AlreadyCast"));
+    assert!(err.to_string().contains("Already cast a vote with that option. Change your vote to revote."));
 }
 
 /// Tests that revoting into a non-existing vote option
@@ -3904,8 +3939,14 @@ fn test_invalid_revote_does_not_invalidate_initial_vote() {
     // Assert that both vote options have equal vote weights at some block
     let proposal: ProposalResponse = query_proposal(&app, &proposal_module, 1);
     assert_eq!(proposal.proposal.status, Status::Open);
-    assert_eq!(proposal.proposal.votes.get_id(0), cosmwasm_std::Uint256::from(100_000_000u128));
-    assert_eq!(proposal.proposal.votes.get_id(1), cosmwasm_std::Uint256::from(100_000_000u128));
+    assert_eq!(
+        proposal.proposal.votes.get_id(0),
+        cosmwasm_std::Uint256::from(100_000_000u128)
+    );
+    assert_eq!(
+        proposal.proposal.votes.get_id(1),
+        cosmwasm_std::Uint256::from(100_000_000u128)
+    );
 
     // Time passes..
     app.update_block(|b| b.height += 3);
@@ -3925,9 +3966,15 @@ fn test_invalid_revote_does_not_invalidate_initial_vote() {
         )
         .unwrap_err();
     // Assert that prior votes remained the same
-    assert_eq!(proposal.proposal.votes.get_id(0), cosmwasm_std::Uint256::from(100_000_000u128));
-    assert_eq!(proposal.proposal.votes.get_id(1), cosmwasm_std::Uint256::from(100_000_000u128));
-    assert!(err.to_string().contains("InvalidVote"));
+    assert_eq!(
+        proposal.proposal.votes.get_id(0),
+        cosmwasm_std::Uint256::from(100_000_000u128)
+    );
+    assert_eq!(
+        proposal.proposal.votes.get_id(1),
+        cosmwasm_std::Uint256::from(100_000_000u128)
+    );
+    assert!(err.to_string().contains("Invalid vote selected"));
 }
 
 #[test]
@@ -4043,13 +4090,8 @@ fn test_close_failed_proposal() {
         amount: Uint128::new(2000).into(),
         msg: to_json_binary(&cw20_stake::msg::ReceiveMsg::Stake {}).unwrap(),
     };
-    app.execute_contract(
-        addr(CREATOR_ADDR),
-        token_contract.clone(),
-        &msg,
-        &[],
-    )
-    .unwrap();
+    app.execute_contract(addr(CREATOR_ADDR), token_contract.clone(), &msg, &[])
+        .unwrap();
     app.update_block(next_block);
 
     let msg = cw20::Cw20ExecuteMsg::Burn {
@@ -4309,13 +4351,8 @@ fn test_no_double_refund_on_execute_fail_and_close() {
         amount: Uint128::new(1).into(),
         msg: to_json_binary(&cw20_stake::msg::ReceiveMsg::Stake {}).unwrap(),
     };
-    app.execute_contract(
-        addr(CREATOR_ADDR),
-        token_contract.clone(),
-        &msg,
-        &[],
-    )
-    .unwrap();
+    app.execute_contract(addr(CREATOR_ADDR), token_contract.clone(), &msg, &[])
+        .unwrap();
     app.update_block(next_block);
 
     // Send some tokens to the proposal module so it has the ability
@@ -4324,13 +4361,8 @@ fn test_no_double_refund_on_execute_fail_and_close() {
         recipient: govmod.to_string(),
         amount: Uint128::new(1).into(),
     };
-    app.execute_contract(
-        addr(CREATOR_ADDR),
-        token_contract.clone(),
-        &msg,
-        &[],
-    )
-    .unwrap();
+    app.execute_contract(addr(CREATOR_ADDR), token_contract.clone(), &msg, &[])
+        .unwrap();
 
     let msg = cw20::Cw20ExecuteMsg::Burn {
         amount: Uint128::new(2000).into(),
@@ -4370,13 +4402,7 @@ fn test_no_double_refund_on_execute_fail_and_close() {
         ],
     };
 
-    make_proposal(
-        &mut app,
-        &govmod,
-        &addr_str(CREATOR_ADDR),
-        choices,
-        None,
-    );
+    make_proposal(&mut app, &govmod, &addr_str(CREATOR_ADDR), choices, None);
 
     // Vote on proposal
     app.execute_contract(
@@ -4422,7 +4448,7 @@ fn test_no_double_refund_on_execute_fail_and_close() {
         )
         .unwrap_err();
 
-    assert!(err.to_string().contains("WrongCloseStatus"));
+    assert!(err.to_string().contains("Only rejected proposals may be closed"));
 
     // Check that our deposit was not refunded a second time on close.
     let balance = query_balance_cw20(&app, token_contract.to_string(), addr_str(CREATOR_ADDR));
@@ -4517,7 +4543,7 @@ pub fn test_not_allow_voting_on_expired_proposal() {
     let proposal = query_proposal(&app, &proposal_module, 1);
     assert_eq!(proposal.proposal.status, Status::Rejected);
     assert_eq!(proposal.proposal.votes.get_id(0), Uint256::zero());
-    assert!(err.to_string().contains("Expired"));
+    assert!(err.to_string().contains("is expired"));
 }
 
 // tests the next proposal id query.
@@ -5088,7 +5114,7 @@ fn test_open_proposal_passes_with_zero_timelock_veto_duration() {
         )
         .unwrap_err();
 
-    assert!(err.to_string().contains("TimelockExpired"));
+    assert!(err.to_string().contains("The veto timelock duration has expired."));
 }
 
 #[test]
@@ -5140,8 +5166,7 @@ fn test_veto_non_existing_prop_id() {
             &[],
         )
         .unwrap_err();
-
-    assert!(err.to_string().contains("NoSuchProposal"));
+    assert!(err.to_string().contains("No such proposal (69)"));
 }
 
 #[test]
@@ -5221,7 +5246,7 @@ fn test_veto_with_no_veto_configuration() {
         )
         .unwrap_err();
 
-    assert!(err.to_string().contains("NoVetoConfiguration"));
+    assert!(err.to_string().contains("Veto is not enabled"));
 }
 
 #[test]
@@ -5325,7 +5350,9 @@ fn test_veto_open_prop_with_veto_before_passed_disabled() {
         )
         .unwrap_err();
 
-    assert!(err.to_string().contains("NoVetoBeforePassed"));
+    assert!(err
+        .to_string()
+        .contains("Vetoing before a proposal passes is not enabled"));
 }
 
 #[test]
@@ -5437,7 +5464,9 @@ fn test_veto_when_veto_timelock_expired() -> StdResult<()> {
         )
         .unwrap_err();
 
-    assert!(err.to_string().contains("TimelockExpired"));
+    assert!(err
+        .to_string()
+        .contains("veto timelock duration has expired."));
 
     Ok(())
 }
@@ -5666,7 +5695,7 @@ fn test_veto_from_catchall_state() {
         )
         .unwrap_err();
 
-    assert!(err.to_string().contains("InvalidProposalStatus"));
+    assert!(err.to_string().contains("and thus is unable to be vetoed."));
 }
 
 #[test]

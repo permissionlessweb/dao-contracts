@@ -47,7 +47,7 @@ config](https://github.com/DA0-DA0/dao-contracts/blob/74bd3881fdd86829e5e8b132b9
 the DAO will add the token to the treasury upon receiving the token
 via cw20's `Send` method and cw721's `SendNft` method.
 
-```
+```rust
 pub enum ExecuteMsg {
     /// Executed when the contract receives a cw20 token. Depending on
     /// the contract's configuration the contract will automatically
@@ -57,7 +57,7 @@ pub enum ExecuteMsg {
     /// Executed when the contract receives a cw721 token. Depending
     /// on the contract's configuration the contract will
     /// automatically add the token to its treasury.
-    ReceiveNft(cw721::Cw721ReceiveMsg),
+    ReceiveNft(cw721::receiver::Cw721ReceiveMsg),
 	// ...
 }
 ```

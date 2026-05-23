@@ -16,18 +16,10 @@ pub enum NftClaimError {
     NotReady { token_id: String },
 }
 
-
 impl PartialEq for NftClaimError {
-    fn ne(&self, other: &Self) -> bool {
-        !self.eq(other)
-    }
-    
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Std(l0), Self::Std(r0)) => l0.to_string() == r0.to_string(),
-            (Self::NotFound { token_id: l_token_id }, Self::NotFound { token_id: r_token_id }) => l_token_id == r_token_id,
-            (Self::NotReady { token_id: l_token_id }, Self::NotReady { token_id: r_token_id }) => l_token_id == r_token_id,
-            _ => false,
+            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
         }
     }
 }
@@ -454,7 +446,12 @@ mod test {
             .unwrap();
 
         let queried_claims = claims
-            .query_claims(deps.as_ref(), &MockApi::default().addr_make("addr"), None, None)
+            .query_claims(
+                deps.as_ref(),
+                &MockApi::default().addr_make("addr"),
+                None,
+                None,
+            )
             .unwrap();
         let saved_claims = claims
             .0
@@ -485,7 +482,12 @@ mod test {
             .unwrap();
 
         let queried_claims = claims
-            .query_claims(deps.as_ref(), &MockApi::default().addr_make("addr"), None, None)
+            .query_claims(
+                deps.as_ref(),
+                &MockApi::default().addr_make("addr"),
+                None,
+                None,
+            )
             .unwrap();
         assert_eq!(
             queried_claims,
@@ -499,7 +501,12 @@ mod test {
         );
 
         let queried_claims = claims
-            .query_claims(deps.as_ref(), &MockApi::default().addr_make("addr"), None, Some(1))
+            .query_claims(
+                deps.as_ref(),
+                &MockApi::default().addr_make("addr"),
+                None,
+                Some(1),
+            )
             .unwrap();
         assert_eq!(
             queried_claims,
@@ -551,7 +558,12 @@ mod test {
             .unwrap();
 
         let queried_claims = claims
-            .query_claims(deps.as_ref(), &MockApi::default().addr_make("addr2"), None, None)
+            .query_claims(
+                deps.as_ref(),
+                &MockApi::default().addr_make("addr2"),
+                None,
+                None,
+            )
             .unwrap();
 
         assert_eq!(queried_claims.len(), 0);

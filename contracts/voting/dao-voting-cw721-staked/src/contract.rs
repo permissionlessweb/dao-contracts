@@ -847,7 +847,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
 
                     // Parse info from the callback, this will fail
                     // if incorrectly formatted.
-                    let callback_data = cw_reply_helper::parse_reply_execute_data(&msg)
+                    let callback_data = cw_reply_helper::parse_reply_execute_data(msg)
                         .map_err(|e| StdError::msg(e.to_string()))?
                         .ok_or(ContractError::NoFactoryCallback {})?;
                     let info: NftFactoryCallback = from_json(callback_data)?;
