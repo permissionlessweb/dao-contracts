@@ -967,83 +967,6 @@
         },
         "additionalProperties": false
       },
-      "CreateEventInput": {
-        "description": "Input for creating a NIP-52 calendar event within a calendar NFT.",
-        "type": "object",
-        "required": [
-          "end_time",
-          "hashtags",
-          "kind",
-          "locations",
-          "references",
-          "start_time",
-          "title"
-        ],
-        "properties": {
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "end_time": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
-          },
-          "geohash": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "hashtags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "kind": {
-            "description": "31922 (date-based) or 31923 (time-based).",
-            "type": "integer",
-            "format": "uint16",
-            "minimum": 0.0
-          },
-          "locations": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "references": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "start_time": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
-          },
-          "summary": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "timezone": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "title": {
-            "type": "string"
-          }
-        },
-        "additionalProperties": false
-      },
       "Duration": {
         "description": "Duration is a delta of time. You can add it to a BlockInfo or Expiration to move that further in the future. Note that an height-based Duration and a time-based Expiration cannot be combined",
         "oneOf": [
@@ -1090,14 +1013,11 @@
               "create_calendar": {
                 "type": "object",
                 "required": [
-                  "title"
+                  "extension"
                 ],
                 "properties": {
-                  "description": {
-                    "type": [
-                      "string",
-                      "null"
-                    ]
+                  "extension": {
+                    "$ref": "#/definitions/MetadataExt"
                   },
                   "owner": {
                     "description": "Optional initial owner. Defaults to sender if unset.",
@@ -1105,9 +1025,6 @@
                       "string",
                       "null"
                     ]
-                  },
-                  "title": {
-                    "type": "string"
                   }
                 },
                 "additionalProperties": false
@@ -1125,17 +1042,15 @@
               "transfer_calendar": {
                 "type": "object",
                 "required": [
-                  "recipient",
-                  "token_id"
+                  "d",
+                  "recipient"
                 ],
                 "properties": {
-                  "recipient": {
+                  "d": {
                     "type": "string"
                   },
-                  "token_id": {
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
+                  "recipient": {
+                    "type": "string"
                   }
                 },
                 "additionalProperties": false
@@ -1153,17 +1068,15 @@
               "create_event": {
                 "type": "object",
                 "required": [
-                  "calendar_token_id",
+                  "d",
                   "event"
                 ],
                 "properties": {
-                  "calendar_token_id": {
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
+                  "d": {
+                    "type": "string"
                   },
                   "event": {
-                    "$ref": "#/definitions/CreateEventInput"
+                    "$ref": "#/definitions/MetadataExt"
                   }
                 },
                 "additionalProperties": false
@@ -1181,31 +1094,23 @@
               "update_event": {
                 "type": "object",
                 "required": [
-                  "calendar_token_id",
-                  "event_id"
+                  "e_d"
                 ],
                 "properties": {
-                  "calendar_token_id": {
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
-                  },
                   "description": {
                     "type": [
                       "string",
                       "null"
                     ]
                   },
+                  "e_d": {
+                    "type": "string"
+                  },
                   "end_time": {
                     "type": [
                       "integer",
                       "null"
                     ],
-                    "format": "uint64",
-                    "minimum": 0.0
-                  },
-                  "event_id": {
-                    "type": "integer",
                     "format": "uint64",
                     "minimum": 0.0
                   },
@@ -1269,47 +1174,11 @@
               "cancel_event": {
                 "type": "object",
                 "required": [
-                  "calendar_token_id",
-                  "event_id"
+                  "e_d"
                 ],
                 "properties": {
-                  "calendar_token_id": {
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
-                  },
-                  "event_id": {
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
-                  }
-                },
-                "additionalProperties": false
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "description": "Activate / deactivate a calendar. DAO-only.",
-            "type": "object",
-            "required": [
-              "set_calendar_active"
-            ],
-            "properties": {
-              "set_calendar_active": {
-                "type": "object",
-                "required": [
-                  "active",
-                  "token_id"
-                ],
-                "properties": {
-                  "active": {
-                    "type": "boolean"
-                  },
-                  "token_id": {
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
+                  "e_d": {
+                    "type": "string"
                   }
                 },
                 "additionalProperties": false
@@ -1457,30 +1326,56 @@
       "MetadataExt": {
         "type": "object",
         "required": [
-          "e"
+          "e",
+          "kind",
+          "on_chain"
         ],
         "properties": {
           "author_pubkey": {
-            "description": "Optional: Store the author's pubkey",
+            "description": "Optional: Store the author's pubkey.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cid": {
+            "description": "IPFS CID pointing to the full Nostr event JSON (off-chain only).",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "d_tag": {
+            "description": "Cached d-tag for addressable events (kind 30000–39999). Avoids decoding `e` just to read the identifier.",
             "type": [
               "string",
               "null"
             ]
           },
           "e": {
-            "description": "The underlying NIP-52 calendar event metadata",
+            "description": "Encoded NIP-52 `CalendarEventMetadata` (on-chain). Empty `Binary` when off-chain.",
             "allOf": [
               {
                 "$ref": "#/definitions/Binary"
               }
             ]
           },
-          "nostr_event_id": {
-            "description": "Optional: Store the raw nostr event ID for verification",
+          "kind": {
+            "description": "Nostr event kind (31922 date-based, 31923 time-based). Always populated for efficient on-chain filtering.",
+            "type": "integer",
+            "format": "uint16",
+            "minimum": 0.0
+          },
+          "nostr_e_d": {
+            "description": "Optional: Store the raw nostr event ID for verification.",
             "type": [
               "string",
               "null"
             ]
+          },
+          "on_chain": {
+            "description": "`true` = full Nostr event stored on-chain in `e`. `false` = only an IPFS CID pointer lives on-chain.",
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -2326,30 +2221,56 @@
       "MetadataExt": {
         "type": "object",
         "required": [
-          "e"
+          "e",
+          "kind",
+          "on_chain"
         ],
         "properties": {
           "author_pubkey": {
-            "description": "Optional: Store the author's pubkey",
+            "description": "Optional: Store the author's pubkey.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cid": {
+            "description": "IPFS CID pointing to the full Nostr event JSON (off-chain only).",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "d_tag": {
+            "description": "Cached d-tag for addressable events (kind 30000–39999). Avoids decoding `e` just to read the identifier.",
             "type": [
               "string",
               "null"
             ]
           },
           "e": {
-            "description": "The underlying NIP-52 calendar event metadata",
+            "description": "Encoded NIP-52 `CalendarEventMetadata` (on-chain). Empty `Binary` when off-chain.",
             "allOf": [
               {
                 "$ref": "#/definitions/Binary"
               }
             ]
           },
-          "nostr_event_id": {
-            "description": "Optional: Store the raw nostr event ID for verification",
+          "kind": {
+            "description": "Nostr event kind (31922 date-based, 31923 time-based). Always populated for efficient on-chain filtering.",
+            "type": "integer",
+            "format": "uint16",
+            "minimum": 0.0
+          },
+          "nostr_e_d": {
+            "description": "Optional: Store the raw nostr event ID for verification.",
             "type": [
               "string",
               "null"
             ]
+          },
+          "on_chain": {
+            "description": "`true` = full Nostr event stored on-chain in `e`. `false` = only an IPFS CID pointer lives on-chain.",
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -2459,6 +2380,12 @@
       "QueryExt": {
         "oneOf": [
           {
+            "type": "string",
+            "enum": [
+              "hooks"
+            ]
+          },
+          {
             "type": "object",
             "required": [
               "config"
@@ -2481,13 +2408,11 @@
               "calendar": {
                 "type": "object",
                 "required": [
-                  "token_id"
+                  "d"
                 ],
                 "properties": {
-                  "token_id": {
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
+                  "d": {
+                    "type": "string"
                   }
                 },
                 "additionalProperties": false
@@ -2515,11 +2440,9 @@
                   },
                   "start_after": {
                     "type": [
-                      "integer",
+                      "string",
                       "null"
-                    ],
-                    "format": "uint64",
-                    "minimum": 0.0
+                    ]
                   }
                 },
                 "additionalProperties": false
@@ -2537,19 +2460,11 @@
               "calendar_event": {
                 "type": "object",
                 "required": [
-                  "calendar_token_id",
-                  "event_id"
+                  "e_d"
                 ],
                 "properties": {
-                  "calendar_token_id": {
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
-                  },
-                  "event_id": {
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
+                  "e_d": {
+                    "type": "string"
                   }
                 },
                 "additionalProperties": false
@@ -2567,13 +2482,11 @@
               "calendar_events": {
                 "type": "object",
                 "required": [
-                  "calendar_token_id"
+                  "d"
                 ],
                 "properties": {
-                  "calendar_token_id": {
-                    "type": "integer",
-                    "format": "uint64",
-                    "minimum": 0.0
+                  "d": {
+                    "type": "string"
                   },
                   "limit": {
                     "type": [
@@ -2585,11 +2498,9 @@
                   },
                   "start_after": {
                     "type": [
-                      "integer",
+                      "string",
                       "null"
-                    ],
-                    "format": "uint64",
-                    "minimum": 0.0
+                    ]
                   }
                 },
                 "additionalProperties": false
@@ -2645,45 +2556,6 @@
             ],
             "properties": {
               "delegation_module": {
-                "type": "object",
-                "additionalProperties": false
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "required": [
-              "calendar_hooks"
-            ],
-            "properties": {
-              "calendar_hooks": {
-                "type": "object",
-                "additionalProperties": false
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "required": [
-              "proposal_hooks"
-            ],
-            "properties": {
-              "proposal_hooks": {
-                "type": "object",
-                "additionalProperties": false
-              }
-            },
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "required": [
-              "vote_hooks"
-            ],
-            "properties": {
-              "vote_hooks": {
                 "type": "object",
                 "additionalProperties": false
               }
@@ -2890,30 +2762,56 @@
         "MetadataExt": {
           "type": "object",
           "required": [
-            "e"
+            "e",
+            "kind",
+            "on_chain"
           ],
           "properties": {
             "author_pubkey": {
-              "description": "Optional: Store the author's pubkey",
+              "description": "Optional: Store the author's pubkey.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "cid": {
+              "description": "IPFS CID pointing to the full Nostr event JSON (off-chain only).",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "d_tag": {
+              "description": "Cached d-tag for addressable events (kind 30000–39999). Avoids decoding `e` just to read the identifier.",
               "type": [
                 "string",
                 "null"
               ]
             },
             "e": {
-              "description": "The underlying NIP-52 calendar event metadata",
+              "description": "Encoded NIP-52 `CalendarEventMetadata` (on-chain). Empty `Binary` when off-chain.",
               "allOf": [
                 {
                   "$ref": "#/definitions/Binary"
                 }
               ]
             },
-            "nostr_event_id": {
-              "description": "Optional: Store the raw nostr event ID for verification",
+            "kind": {
+              "description": "Nostr event kind (31922 date-based, 31923 time-based). Always populated for efficient on-chain filtering.",
+              "type": "integer",
+              "format": "uint16",
+              "minimum": 0.0
+            },
+            "nostr_e_d": {
+              "description": "Optional: Store the raw nostr event ID for verification.",
               "type": [
                 "string",
                 "null"
               ]
+            },
+            "on_chain": {
+              "description": "`true` = full Nostr event stored on-chain in `e`. `false` = only an IPFS CID pointer lives on-chain.",
+              "type": "boolean"
             }
           },
           "additionalProperties": false
@@ -4877,30 +4775,56 @@
         "MetadataExt": {
           "type": "object",
           "required": [
-            "e"
+            "e",
+            "kind",
+            "on_chain"
           ],
           "properties": {
             "author_pubkey": {
-              "description": "Optional: Store the author's pubkey",
+              "description": "Optional: Store the author's pubkey.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "cid": {
+              "description": "IPFS CID pointing to the full Nostr event JSON (off-chain only).",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "d_tag": {
+              "description": "Cached d-tag for addressable events (kind 30000–39999). Avoids decoding `e` just to read the identifier.",
               "type": [
                 "string",
                 "null"
               ]
             },
             "e": {
-              "description": "The underlying NIP-52 calendar event metadata",
+              "description": "Encoded NIP-52 `CalendarEventMetadata` (on-chain). Empty `Binary` when off-chain.",
               "allOf": [
                 {
                   "$ref": "#/definitions/Binary"
                 }
               ]
             },
-            "nostr_event_id": {
-              "description": "Optional: Store the raw nostr event ID for verification",
+            "kind": {
+              "description": "Nostr event kind (31922 date-based, 31923 time-based). Always populated for efficient on-chain filtering.",
+              "type": "integer",
+              "format": "uint16",
+              "minimum": 0.0
+            },
+            "nostr_e_d": {
+              "description": "Optional: Store the raw nostr event ID for verification.",
               "type": [
                 "string",
                 "null"
               ]
+            },
+            "on_chain": {
+              "description": "`true` = full Nostr event stored on-chain in `e`. `false` = only an IPFS CID pointer lives on-chain.",
+              "type": "boolean"
             }
           },
           "additionalProperties": false
@@ -4987,30 +4911,56 @@
         "MetadataExt": {
           "type": "object",
           "required": [
-            "e"
+            "e",
+            "kind",
+            "on_chain"
           ],
           "properties": {
             "author_pubkey": {
-              "description": "Optional: Store the author's pubkey",
+              "description": "Optional: Store the author's pubkey.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "cid": {
+              "description": "IPFS CID pointing to the full Nostr event JSON (off-chain only).",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "d_tag": {
+              "description": "Cached d-tag for addressable events (kind 30000–39999). Avoids decoding `e` just to read the identifier.",
               "type": [
                 "string",
                 "null"
               ]
             },
             "e": {
-              "description": "The underlying NIP-52 calendar event metadata",
+              "description": "Encoded NIP-52 `CalendarEventMetadata` (on-chain). Empty `Binary` when off-chain.",
               "allOf": [
                 {
                   "$ref": "#/definitions/Binary"
                 }
               ]
             },
-            "nostr_event_id": {
-              "description": "Optional: Store the raw nostr event ID for verification",
+            "kind": {
+              "description": "Nostr event kind (31922 date-based, 31923 time-based). Always populated for efficient on-chain filtering.",
+              "type": "integer",
+              "format": "uint16",
+              "minimum": 0.0
+            },
+            "nostr_e_d": {
+              "description": "Optional: Store the raw nostr event ID for verification.",
               "type": [
                 "string",
                 "null"
               ]
+            },
+            "on_chain": {
+              "description": "`true` = full Nostr event stored on-chain in `e`. `false` = only an IPFS CID pointer lives on-chain.",
+              "type": "boolean"
             }
           },
           "additionalProperties": false
