@@ -1,7 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    Addr, Attribute, Binary, Deps, DepsMut, Env, MessageInfo, MigrateInfo, Order, Reply, Response, StdResult, Storage, SubMsg, Uint128, WasmMsg, to_json_binary
+    to_json_binary, Addr, Attribute, Binary, Deps, DepsMut, Env, MessageInfo, MigrateInfo, Order,
+    Reply, Response, StdResult, Storage, SubMsg, Uint128, WasmMsg,
 };
 use cw2::{get_contract_version, set_contract_version, ContractVersion};
 use cw_hooks::Hooks;
@@ -32,7 +33,6 @@ use dao_voting::voting::{
 use crate::msg::MigrateMsg;
 use crate::proposal::{next_proposal_id, SingleChoiceProposal};
 use crate::state::{Config, CREATION_POLICY, DELEGATION_MODULE};
-use crate::v1_state::{V1_CONFIG, V1_PROPOSALS};
 use crate::{
     error::ContractError,
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
@@ -1044,8 +1044,13 @@ pub fn query_info(deps: Deps) -> StdResult<Binary> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg, _info: MigrateInfo) -> Result<Response, ContractError> {
-    let ContractVersion {  .. } = get_contract_version(deps.storage)?;
+pub fn migrate(
+    deps: DepsMut,
+    _env: Env,
+    msg: MigrateMsg,
+    _info: MigrateInfo,
+) -> Result<Response, ContractError> {
+    let ContractVersion { .. } = get_contract_version(deps.storage)?;
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     match msg {

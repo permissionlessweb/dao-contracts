@@ -82,10 +82,7 @@ pub fn execute(
             token_uri,
             extension,
         } => execute_mint(deps, env, info, token_id, owner, token_uri, extension),
-        ExecuteMsg::Burn { token_id } => {
-            cw_ownable::assert_owner(deps.storage, &info.sender)?;
-            execute_burn(deps, env, info, token_id)
-        }
+        ExecuteMsg::Burn { token_id } => execute_burn(deps, env, info, token_id),
         #[allow(deprecated)]
         ExecuteMsg::UpdateExtension { msg } => {
             // Only the owner / minter can manage extensions
@@ -247,10 +244,7 @@ pub fn execute_burn(
 
     // Remove the token
     let contract = Cw721Roles::default();
-    contract
-        .config
-        .nft_info
-        .remove(deps.storage, &token_id)?;
+    contract.config.nft_info.remove(deps.storage, &token_id)?;
     // Decrement the count
     contract.config.decrement_tokens(deps.storage)?;
 

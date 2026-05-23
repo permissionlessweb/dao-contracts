@@ -23,6 +23,7 @@ cw-utils = { workspace = true }
 cosmwasm-schema = { workspace = true }
 cw-storage-plus = { workspace = true }
 cw2 = { workspace = true }
+cw-ownable = { workspace = true }
 dao-voting = { workspace = true }
 cw-hooks = { workspace = true }
 dao-dao-macros = { workspace = true }

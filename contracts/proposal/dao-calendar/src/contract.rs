@@ -2,11 +2,17 @@ use cosmwasm_schema::cw_serde;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    Addr, Binary, CustomMsg, Deps, DepsMut, Empty, Env, MessageInfo, MigrateInfo, Reply, Response,
-    StdResult,
+    to_json_binary, Addr, Binary, CustomMsg, Deps, DepsMut, Empty, Env, MessageInfo, MigrateInfo,
+    Reply, Response, StdResult,
 };
 use cw2::set_contract_version;
-use cw721::{extension::Cw721Extensions, msg::Cw721InstantiateMsg, traits::Cw721Execute};
+use cw721::{
+    extension::Cw721Extensions,
+    msg::Cw721InstantiateMsg,
+    traits::{Cw721Execute, Cw721Query},
+};
+
+use cw721_nips::{nips::nip52::Nip52Kind, NipKind};
 use cw_hooks::Hooks;
 use cw_storage_plus::{Item, Map};
 use cw_utils::{Duration, DAY};
@@ -32,6 +38,7 @@ pub type ExecuteMsg =
     cw721::msg::Cw721ExecuteMsg<MetadataExt, CalendarModuleCollectionExtension, ExecuteExt>;
 pub type QueryMsg =
     cw721::msg::Cw721QueryMsg<MetadataExt, CalendarModuleCollectionExtension, QueryExt>;
+
 #[cw_serde]
 pub struct MetadataExt {
     /// `true` = full Nostr event stored on-chain in `e`.
@@ -42,8 +49,6 @@ pub struct MetadataExt {
     pub e: Binary,
     /// IPFS CID pointing to the full Nostr event JSON (off-chain only).
     pub cid: Option<String>,
-    /// Optional IPFS gateway URL for content resolution.
-    pub gateway: Option<String>,
     /// Nostr event kind (31922 date-based, 31923 time-based).
     /// Always populated for efficient on-chain filtering.
     pub kind: u16,
@@ -51,9 +56,23 @@ pub struct MetadataExt {
     /// Avoids decoding `e` just to read the identifier.
     pub d_tag: Option<String>,
     /// Optional: Store the raw nostr event ID for verification.
-    pub nostr_event_id: Option<String>,
+    pub nostr_e_d: Option<String>,
     /// Optional: Store the author's pubkey.
     pub author_pubkey: Option<String>,
+}
+
+impl Default for MetadataExt {
+    fn default() -> Self {
+        Self {
+            on_chain: Default::default(),
+            e: Default::default(),
+            cid: Default::default(),
+            kind: Nip52Kind::DateEvent.kind_value(),
+            d_tag: Default::default(),
+            nostr_e_d: Default::default(),
+            author_pubkey: Default::default(),
+        }
+    }
 }
 
 impl Default for CalendarModuleCollectionExtension {
@@ -77,21 +96,34 @@ pub struct CalendarModuleCollectionExtension {
     pub delegation_module: Option<String>,
 }
 
-pub const CONFIG: Item<Config> = Item::new("config");
 pub const DAO: Item<Addr> = Item::new("dao");
-pub const CALENDAR_COUNT: Item<u64> = Item::new("calendar_count");
-pub const CALENDARS: Map<u64, Calendar> = Map::new("calendars");
-pub const EVENT_COUNT: Map<u64, u64> = Map::new("event_count");
-pub const EVENTS: Map<(u64, u64), CalendarEvent> = Map::new("events");
 pub const CREATION_POLICY: Item<ProposalCreationPolicy> = Item::new("creation_policy");
 pub const DELEGATION_MODULE: Item<Addr> = Item::new("delegation_module");
 pub const CALENDAR_HOOKS: Hooks = Hooks::new("calendar_hooks");
-pub const CONTRACT_NAME: &str = "crates.io:dao-calendar";
+
+pub const DAO_CALENDAR: &str = "crates.io:dao-calendar";
 pub const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const FAILED_HOOK_REPLY_ID_BASE: u64 = 1_000_000;
 
+pub const CALENDAR_COUNT: Item<u64> = Item::new("calendar_count");
+pub const EVENT_COUNT: Map<&str, u64> = Map::new("event_count");
+
+// Constants
+pub const CALENDAR_PREFIX: &str = "c";
+pub const EVENT_PREFIX: &str = "e";
+
+// Token ID generation
+fn cal_d(counter: u64) -> String {
+    format!("{}{}", CALENDAR_PREFIX, counter)
+}
+
+fn event_d(d: &str, event_counter: u64) -> String {
+    format!("{}{}-{}", EVENT_PREFIX, d, event_counter)
+}
+
 pub mod state {
     use super::*;
+    use cosmwasm_std::{from_json, StdError};
     use cw721::{
         error::Cw721ContractError,
         traits::{
@@ -135,9 +167,7 @@ pub mod state {
         fn validate(&self) -> NipResult<()> {
             if self.on_chain {
                 if self.e.is_empty() {
-                    return Err(NipError::Validation(
-                        "No calendar event data in MetadataExt.e".into(),
-                    ));
+                    return Err(NipError::Validation("Empty event data".into()));
                 }
                 CalendarEventMetadata::from_storage_binary(&self.e)
                     .map_err(|e| NipError::Validation(format!("Failed to decode: {e}")))?
@@ -158,14 +188,7 @@ pub mod state {
                     .map(|m| m.to_tags())
                     .unwrap_or_default()
             } else {
-                let mut tags: Vec<cw721_nips::Tag> = vec![];
-                if let Some(gw) = &self.gateway {
-                    tags.push(cw721_nips::Tag::new(vec![
-                        "gateway".to_string(),
-                        gw.clone(),
-                    ]));
-                }
-                tags
+                vec![]
             }
         }
 
@@ -191,10 +214,10 @@ pub mod state {
                 on_chain: true,
                 e,
                 cid: None,
-                gateway: None,
+
                 kind: event.kind,
                 d_tag,
-                nostr_event_id: Some(event.id.clone()),
+                nostr_e_d: Some(event.id.clone()),
                 author_pubkey: Some(event.pubkey.clone()),
             })
         }
@@ -293,19 +316,19 @@ pub mod state {
             for attr in value {
                 match attr.key.as_str() {
                     "min_event_period" => {
-                        min_event_period = Some(attr.value::<Option<Duration>>()?);
+                        min_event_period = Some(from_json(attr.value.clone())?);
                     }
                     "max_event_period" => {
-                        max_event_period = Some(attr.value::<Duration>()?);
+                        max_event_period = Some(from_json(attr.value.clone())?);
                     }
                     "pre_propose_info" => {
-                        pre_propose_info = Some(attr.value::<PreProposeInfo>()?);
+                        pre_propose_info = Some(from_json(attr.value.clone())?);
                     }
                     "veto" => {
-                        veto = Some(attr.value::<Option<VetoConfig>>()?);
+                        veto = Some(from_json(attr.value.clone())?);
                     }
                     "delegation_module" => {
-                        delegation_module = Some(attr.value::<Option<String>>()?);
+                        delegation_module = Some(from_json(attr.value.clone())?);
                     }
                     _ => {}
                 }
@@ -336,11 +359,12 @@ pub mod state {
     impl StateFactory<CalendarModuleCollectionExtension> for CalendarModuleCollectionExtension {
         fn create(
             &self,
-            _deps: Deps,
-            _env: &Env,
-            _info: Option<&MessageInfo>,
-            _current: Option<&CalendarModuleCollectionExtension>,
+            deps: Deps,
+            env: &Env,
+            info: Option<&MessageInfo>,
+            current: Option<&CalendarModuleCollectionExtension>,
         ) -> Result<CalendarModuleCollectionExtension, Cw721ContractError> {
+            self.validate(deps, env, info, current)?;
             Ok(self.clone())
         }
 
@@ -349,9 +373,17 @@ pub mod state {
             _deps: Deps,
             _env: &Env,
             _info: Option<&MessageInfo>,
-            _current: Option<&CalendarModuleCollectionExtension>,
+            current: Option<&CalendarModuleCollectionExtension>,
         ) -> Result<(), Cw721ContractError> {
-            Ok(())
+            //  we require top-level dao calendar parameters for anti-lockout
+            match current {
+                Some(ext) => {
+                    validate_voting_period(ext.min_event_period, ext.max_event_period)
+                        .map_err(|e| StdError::msg(e.to_string()))?;
+                    Ok(())
+                }
+                None => Err(Cw721ContractError::NoInfo {}),
+            }
         }
     }
 
@@ -399,6 +431,9 @@ pub enum ContractError {
     Std(#[from] cosmwasm_std::StdError),
 
     #[error(transparent)]
+    OwnershipError(#[from] cw_ownable::OwnershipError),
+
+    #[error(transparent)]
     HookError(#[from] cw_hooks::HookError),
 
     #[error(transparent)]
@@ -413,17 +448,17 @@ pub enum ContractError {
     #[error("unauthorized")]
     Unauthorized {},
 
-    #[error("no such calendar ({token_id})")]
-    NoSuchCalendar { token_id: u64 },
+    #[error("no such calendar ({d})")]
+    NoSuchCalendar { d: String },
 
-    #[error("no such event (calendar {calendar_id}, event {event_id})")]
-    NoSuchEvent { calendar_id: u64, event_id: u64 },
+    #[error("no such event (calendar {d}, event {e_d})")]
+    NoSuchEvent { d: String, e_d: String },
 
     #[error("calendar ({0}) is not active")]
-    CalendarNotActive(u64),
+    CalendarNotActive(String),
 
-    #[error("event ({event_id}) is not upcoming")]
-    EventNotUpcoming { event_id: u64 },
+    #[error("event ({e_d}) is not upcoming")]
+    EventNotUpcoming { e_d: String },
 
     #[error("invalid time range: start must be before end")]
     InvalidTimeRange {},
@@ -442,48 +477,25 @@ pub mod msg {
     use super::*;
     use cosmwasm_schema::{cw_serde, QueryResponses};
     use cw721::traits::Cw721CustomMsg;
-
-    /// Input for creating a NIP-52 calendar event within a calendar NFT.
-    #[cw_serde]
-    pub struct CreateEventInput {
-        pub title: String,
-        pub description: Option<String>,
-        /// 31922 (date-based) or 31923 (time-based).
-        pub kind: u16,
-        pub start_time: u64,
-        pub end_time: u64,
-        pub timezone: Option<String>,
-        pub locations: Vec<String>,
-        pub geohash: Option<String>,
-        pub hashtags: Vec<String>,
-        pub references: Vec<String>,
-        pub summary: Option<String>,
-    }
-
+    #[cfg(not(target_arch = "wasm32"))]
     #[cw_serde]
     #[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
     pub enum ExecuteExt {
         /// Create a new calendar NFT. The pre-propose module validates
         /// who may call this.
         CreateCalendar {
-            title: String,
-            description: Option<String>,
             /// Optional initial owner. Defaults to sender if unset.
             owner: Option<String>,
-            // extension: NostrExtension, // TODO: replace with collection extension
+            extension: MetadataExt,
         },
         /// Transfer a calendar NFT to a new owner.
-        TransferCalendar { token_id: u64, recipient: String },
+        TransferCalendar { d: String, recipient: String },
         /// Create a NIP-52 event within a calendar NFT. The calendar
         /// owner must be the sender.
-        CreateEvent {
-            calendar_token_id: u64,
-            event: CreateEventInput,
-        },
+        CreateEvent { d: String, event: MetadataExt },
         /// Update a NIP-52 event's mutable fields.
         UpdateEvent {
-            calendar_token_id: u64,
-            event_id: u64,
+            e_d: String,
             title: Option<String>,
             description: Option<String>,
             start_time: Option<u64>,
@@ -494,12 +506,7 @@ pub mod msg {
             summary: Option<String>,
         },
         /// Cancel a NIP-52 event.
-        CancelEvent {
-            calendar_token_id: u64,
-            event_id: u64,
-        },
-        /// Activate / deactivate a calendar. DAO-only.
-        SetCalendarActive { token_id: u64, active: bool },
+        CancelEvent { e_d: String },
         /// Update proposal creation policy. DAO-only.
         UpdatePreProposeInfo { info: PreProposeInfo },
         /// Update delegation module address. DAO-only.
@@ -519,25 +526,22 @@ pub mod msg {
         #[returns(Config)]
         Config {},
         /// Calendar info by NFT token ID.
-        #[returns(crate::contract::calendar::Calendar)]
-        Calendar { token_id: u64 },
+        #[returns(MetadataExt)]
+        Calendar { d: String },
         /// Paginated list of all calendar NFTs.
-        #[returns(Vec<crate::contract::calendar::Calendar>)]
+        #[returns(Vec<MetadataExt>)]
         ListCalendars {
-            start_after: Option<u64>,
+            start_after: Option<String>,
             limit: Option<u32>,
         },
         /// A specific event within a calendar.
-        #[returns(crate::contract::calendar::CalendarEvent)]
-        CalendarEvent {
-            calendar_token_id: u64,
-            event_id: u64,
-        },
+        #[returns(String)]
+        CalendarEvent { e_d: String },
         /// Events within a calendar, paginated.
-        #[returns(Vec<crate::contract::calendar::CalendarEvent>)]
+        #[returns(Vec<String>)]
         CalendarEvents {
-            calendar_token_id: u64,
-            start_after: Option<u64>,
+            d: String,
+            start_after: Option<String>,
             limit: Option<u32>,
         },
         /// Total number of calendar NFTs minted.
@@ -551,11 +555,7 @@ pub mod msg {
         #[returns(Option<::cosmwasm_std::Addr>)]
         DelegationModule {},
         #[returns(::cw_hooks::HooksResponse)]
-        CalendarHooks {},
-        #[returns(::cw_hooks::HooksResponse)]
-        ProposalHooks {},
-        #[returns(::cw_hooks::HooksResponse)]
-        VoteHooks {},
+        Hooks,
         #[returns(::dao_interface::voting::InfoResponse)]
         Info {},
         /// Address of the DAO this module belongs to.
@@ -583,115 +583,8 @@ impl From<msg::QueryExt> for QueryMsg {
     }
 }
 
-pub mod calendar {
-    use cosmwasm_schema::cw_serde;
-    use cosmwasm_std::{Addr, Timestamp};
-    use sha2::Digest;
-
-    /// A calendar represented as a single NFT within the DAO's collection.
-    ///
-    /// Each calendar has a unique `token_id`. The `owner` controls
-    /// event creation and management. The `extension` field holds
-    /// Nostr-compatible metadata (on-chain event or off-chain CID pointer).
-    #[cw_serde]
-    pub struct Calendar {
-        pub token_id: u64,
-        pub title: String,
-        pub description: Option<String>,
-        pub owner: Addr,
-        pub created_at: Timestamp,
-        pub created_by: Addr,
-        pub active: bool,
-    }
-
-    impl Calendar {
-        pub fn new(
-            token_id: u64,
-            title: String,
-            description: Option<String>,
-            owner: Addr,
-            created_at: Timestamp,
-            created_by: Addr,
-        ) -> Self {
-            Self {
-                token_id,
-                title,
-                description,
-                owner,
-                created_at,
-                created_by,
-                active: true,
-            }
-        }
-    }
-
-    /// NIP-52 calendar event status.
-    #[cw_serde]
-    pub enum EventStatus {
-        Upcoming,
-        Active,
-        Completed,
-        Cancelled,
-    }
-
-    impl EventStatus {
-        pub fn as_u8(&self) -> u8 {
-            match self {
-                EventStatus::Upcoming => 0,
-                EventStatus::Active => 1,
-                EventStatus::Completed => 2,
-                EventStatus::Cancelled => 3,
-            }
-        }
-    }
-
-    impl std::fmt::Display for EventStatus {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            match self {
-                EventStatus::Upcoming => write!(f, "upcoming"),
-                EventStatus::Active => write!(f, "active"),
-                EventStatus::Completed => write!(f, "completed"),
-                EventStatus::Cancelled => write!(f, "cancelled"),
-            }
-        }
-    }
-
-    /// A NIP-52 calendar event within a calendar NFT.
-    #[cw_serde]
-    pub struct CalendarEvent {
-        pub event_id: u64,
-        pub calendar_token_id: u64,
-        pub title: String,
-        pub description: String,
-        pub kind: u16,
-        pub start_time: u64,
-        pub end_time: u64,
-        pub timezone: Option<String>,
-        pub locations: Vec<String>,
-        pub geohash: Option<String>,
-        pub hashtags: Vec<String>,
-        pub references: Vec<String>,
-        pub status: EventStatus,
-        pub summary: Option<String>,
-        pub d_tag: String,
-        pub created_by: Addr,
-        pub created_at: Timestamp,
-    }
-
-    impl CalendarEvent {
-        pub fn compute_d_tag(title: &str, calendar_token_id: u64, event_id: u64) -> String {
-            let hash =
-                sha2::Sha256::digest(format!("{title}:{calendar_token_id}:{event_id}").as_bytes());
-            hex::encode(hash)[..16].to_string()
-        }
-    }
-}
-
 // ── Entry Points ──
-use crate::contract::{
-    calendar::{Calendar, CalendarEvent},
-    msg::*,
-};
+use crate::contract::msg::*;
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     mut deps: DepsMut,
@@ -700,30 +593,16 @@ pub fn instantiate(
     msg: Cw721InstantiateMsg<CalendarModuleCollectionExtension>,
 ) -> Result<Response, ContractError> {
     DaoNostrCalendar::default().instantiate(deps.branch(), &env, &info, msg.clone())?;
+    set_contract_version(deps.storage, DAO_CALENDAR, CONTRACT_VERSION)?;
     let dao = &info.sender;
     let msg = msg.collection_info_extension;
-
-    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-
-    let (min_voting_period, max_voting_period) =
-        validate_voting_period(msg.min_event_period, msg.max_event_period)?;
-
-    CONFIG.save(
-        deps.storage,
-        &Config {
-            min_event_period: min_voting_period,
-            max_event_period: max_voting_period,
-            veto: msg.veto,
-        },
-    )?;
-    DAO.save(deps.storage, dao)?;
-    CALENDAR_COUNT.save(deps.storage, &0)?;
-
     let (initial_policy, pre_propose_messages) = msg
         .pre_propose_info
         .into_initial_policy_and_messages(dao.clone())?;
 
+    // internal collection state
     CREATION_POLICY.save(deps.storage, &initial_policy)?;
+    DAO.save(deps.storage, dao)?;
 
     if let Some(module) = msg.delegation_module {
         let addr = deps.api.addr_validate(&module)?;
@@ -743,25 +622,20 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
+    cw_ownable::assert_owner(deps.storage, &info.sender)?;
     match msg {
-        // _ => DaoNostrCalendar::default().execute(deps, &env, &info, msg).map_err(Into::into)
         cw721::msg::Cw721ExecuteMsg::UpdateExtension { msg } => match msg {
-            ExecuteExt::CreateCalendar {
-                title,
-                description,
-                owner,
-            } => execute::create_calendar(deps, env, info, title, description, owner),
-            ExecuteExt::TransferCalendar {
-                token_id,
-                recipient,
-            } => execute::transfer_calendar(deps, info, token_id, recipient),
-            ExecuteExt::CreateEvent {
-                calendar_token_id,
-                event,
-            } => execute::create_event(deps, env, info, calendar_token_id, event),
+            ExecuteExt::CreateCalendar { owner, extension } => {
+                execute::create_calendar(deps, env, info, owner, extension)
+            }
+            ExecuteExt::TransferCalendar { d, recipient } => {
+                execute::transfer_calendar(deps, info, d, recipient)
+            }
+            ExecuteExt::CreateEvent { d, event } => {
+                execute::create_event(deps, env, info, d, event)
+            }
             ExecuteExt::UpdateEvent {
-                calendar_token_id,
-                event_id,
+                e_d,
                 title,
                 description,
                 start_time,
@@ -773,8 +647,7 @@ pub fn execute(
             } => execute::update_event(
                 deps,
                 info,
-                calendar_token_id,
-                event_id,
+                e_d,
                 title,
                 description,
                 start_time,
@@ -784,13 +657,8 @@ pub fn execute(
                 hashtags,
                 summary,
             ),
-            ExecuteExt::CancelEvent {
-                calendar_token_id,
-                event_id,
-            } => execute::cancel_event(deps, info, calendar_token_id, event_id),
-            ExecuteExt::SetCalendarActive { token_id, active } => {
-                execute::set_calendar_active(deps, info, token_id, active)
-            }
+            ExecuteExt::CancelEvent { e_d } => execute::cancel_event(deps, info, e_d),
+
             ExecuteExt::UpdatePreProposeInfo { info: i } => {
                 execute::update_pre_propose_info(deps, info)
             }
@@ -805,103 +673,77 @@ pub fn execute(
             }
         },
         _ => unimplemented!(),
-        // cw721::msg::Cw721ExecuteMsg::UpdateMinterOwnership(action) => todo!(),
-        // cw721::msg::Cw721ExecuteMsg::UpdateCreatorOwnership(action) => todo!(),
-        // cw721::msg::Cw721ExecuteMsg::UpdateCollectionInfo { collection_info } => todo!(),
-        // cw721::msg::Cw721ExecuteMsg::UpdateExtension { msg } => todo!(),
-        // cw721::msg::Cw721ExecuteMsg::UpdateNftInfo { token_id, token_uri, extension } => todo!(),
-        // cw721::msg::Cw721ExecuteMsg::SetWithdrawAddress { address } => todo!(),
-        // cw721::msg::Cw721ExecuteMsg::RemoveWithdrawAddress {} => todo!(),
-        // cw721::msg::Cw721ExecuteMsg::WithdrawFunds { amount } => todo!(),
     }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        // msg::QueryMsg::Config {} => to_json_binary(&CONFIG.load(deps.storage)?),
-        // msg::QueryMsg::Dao {} => to_json_binary(&DAO.load(deps.storage)?),
-        // msg::QueryMsg::Calendar { token_id } => to_json_binary(&query_calendar(deps, token_id)?),
-        // msg::QueryMsg::ListCalendars { start_after, limit } => {
-        //     to_json_binary(&query_list_calendars(deps, start_after, limit)?)
-        // }
-        // msg::QueryMsg::CalendarEvent {
-        //     calendar_token_id,
-        //     event_id,
-        // } => to_json_binary(&query_event(deps, calendar_token_id, event_id)?),
-        // msg::QueryMsg::CalendarEvents {
-        //     calendar_token_id,
-        //     start_after,
-        //     limit,
-        // } => to_json_binary(&query_calendar_events(
-        //     deps,
-        //     calendar_token_id,
-        //     start_after,
-        //     limit,
-        // )?),
-        // msg::QueryMsg::CalendarCount {} => {
-        //     to_json_binary(&CALENDAR_COUNT.load(deps.storage)?)
-        // }
-        // msg::QueryMsg::EventCount {} => to_json_binary(&query_event_count(deps)?),
-        // msg::QueryMsg::ProposalCreationPolicy {} => {
-        //     to_json_binary(&CREATION_POLICY.load(deps.storage)?)
-        // }
-        // msg::QueryMsg::DelegationModule {} => {
-        //     to_json_binary(&DELEGATION_MODULE.may_load(deps.storage)?)
-        // }
-        // msg::QueryMsg::CalendarHooks {} => {
-        //     to_json_binary(&CALENDAR_HOOKS.query_hooks(deps)?)
-        // }
-        // msg::QueryMsg::ProposalHooks {} => {
-        //     to_json_binary(&CALENDAR_HOOKS.query_hooks(deps)?)
-        // }
-        // msg::QueryMsg::VoteHooks {} => to_json_binary(&CALENDAR_HOOKS.query_hooks(deps)?),
-        // msg::QueryMsg::Info {} => {
-        //     let info = cw2::get_contract_version(deps.storage)?;
-        //     to_json_binary(&InfoResponse { info })
-        // }
-        // ownership and operator avoidance
         QueryMsg::Extension { msg } => match msg {
             QueryExt::Config {} => todo!(),
-            QueryExt::Calendar { token_id } => todo!(),
-            QueryExt::ListCalendars { start_after, limit } => todo!(),
-            QueryExt::CalendarEvent {
-                calendar_token_id,
-                event_id,
-            } => todo!(),
+            QueryExt::Calendar { d } => {
+                to_json_binary(&DaoNostrCalendar::default().query_nft_info(deps.storage, d)?)
+            }
+            QueryExt::ListCalendars { start_after, limit } => {
+                to_json_binary(&DaoNostrCalendar::default().query_nft_by_extension(
+                    deps.storage,
+                    MetadataExt {
+                        kind: Nip52Kind::Calendar.kind_value(),
+                        ..Default::default()
+                    },
+                    start_after,
+                    limit,
+                )?)
+            }
+            QueryExt::CalendarEvent { e_d } => {
+                to_json_binary(&DaoNostrCalendar::default().query_nft_info(deps.storage, e_d)?)
+            }
             QueryExt::CalendarEvents {
-                calendar_token_id,
+                d,
                 start_after,
                 limit,
-            } => todo!(),
-            QueryExt::CalendarCount {} => todo!(),
-            QueryExt::EventCount {} => todo!(),
-            QueryExt::ProposalCreationPolicy {} => todo!(),
-            QueryExt::DelegationModule {} => todo!(),
-            QueryExt::CalendarHooks {} => todo!(),
-            QueryExt::ProposalHooks {} => todo!(),
-            QueryExt::VoteHooks {} => todo!(),
+            } => to_json_binary(&DaoNostrCalendar::default().query_nft_by_extension(
+                deps.storage,
+                MetadataExt {
+                    kind: Nip52Kind::TimeEvent.kind_value(),
+                    ..Default::default()
+                },
+                start_after,
+                limit,
+            )?),
+            QueryExt::CalendarCount {} => {
+                let count = CALENDAR_COUNT.load(deps.storage)?;
+                to_json_binary(&count)
+            }
+            QueryExt::EventCount {} => {
+                // Sum all events across all calendars
+                let total: u64 = EVENT_COUNT
+                    .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
+                    .map(|item| item.map(|(_, v)| v).unwrap_or(0))
+                    .sum();
+                to_json_binary(&total)
+            }
+            QueryExt::ProposalCreationPolicy {} => to_json_binary(&query_creation_policy(deps)?),
+            QueryExt::DelegationModule {} => to_json_binary(&query_delegation_module(deps)?),
             QueryExt::Info {} => todo!(),
-            QueryExt::Dao {} => todo!(),
+            QueryExt::Hooks {} => {
+                // load all hooks
+                to_json_binary(&CALENDAR_HOOKS.query_hooks(deps)?)
+            }
+            QueryExt::Dao {} => to_json_binary(&DAO.load(deps.storage)?),
         },
-        // cw721::msg::Cw721QueryMsg::NumTokens {} => todo!(),
-        // cw721::msg::Cw721QueryMsg::GetConfig {} => todo!(),
-        // cw721::msg::Cw721QueryMsg::GetCollectionInfoAndExtension {} => todo!(),
-        // cw721::msg::Cw721QueryMsg::GetAllInfo {} => todo!(),
-        // cw721::msg::Cw721QueryMsg::GetCollectionExtensionAttributes {} => todo!(),
-
-        // cw721::msg::Cw721QueryMsg::GetMinterOwnership {} => todo!(),
-        // cw721::msg::Cw721QueryMsg::GetCreatorOwnership {} => todo!(),
-        // cw721::msg::Cw721QueryMsg::GetAdditionalMinters { .. } => todo!(),
-        // cw721::msg::Cw721QueryMsg::NftInfo { .. } => todo!(),
-        // cw721::msg::Cw721QueryMsg::GetNftByExtension { .. } => todo!(),
-        // cw721::msg::Cw721QueryMsg::AllNftInfo { .. } => todo!(),
-        // cw721::msg::Cw721QueryMsg::Tokens { .. } => todo!(),
-        // cw721::msg::Cw721QueryMsg::AllTokens { .. } => todo!(),
-        // cw721::msg::Cw721QueryMsg::GetCollectionExtension { .. } => todo!(),
-        // cw721::msg::Cw721QueryMsg::GetWithdrawAddress {} => todo!(),
         _ => unimplemented!(),
     }
+}
+
+pub fn query_creation_policy(deps: Deps) -> StdResult<Binary> {
+    let policy = CREATION_POLICY.load(deps.storage)?;
+    to_json_binary(&policy)
+}
+
+pub fn query_delegation_module(deps: Deps) -> StdResult<Binary> {
+    let module = DELEGATION_MODULE.may_load(deps.storage)?;
+    to_json_binary(&module)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -913,7 +755,7 @@ pub fn migrate(
 ) -> Result<Response, ContractError> {
     match msg {
         MigrateMsg::FromCompatible {} => {
-            set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+            set_contract_version(deps.storage, DAO_CALENDAR, CONTRACT_VERSION)?;
             Ok(Response::new().add_attribute("method", "migrate"))
         }
     }
@@ -935,138 +777,97 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
 
 pub mod execute {
     use super::*;
-    use crate::contract::{
-        calendar::{Calendar, CalendarEvent, EventStatus},
-        msg::*,
-    };
     use cosmwasm_std::{Addr, DepsMut, Env, MessageInfo, Response};
+    use cw721::traits::Cw721Query;
     pub fn create_calendar(
         deps: DepsMut,
         env: Env,
         info: MessageInfo,
-        title: String,
-        description: Option<String>,
         owner: Option<String>,
+        extension: MetadataExt,
     ) -> Result<Response, ContractError> {
-        let _dao = DAO.load(deps.storage)?;
+        let dao = DAO.load(deps.storage)?;
         let owner_addr = owner
             .map(|o| deps.api.addr_validate(&o))
             .transpose()?
-            .unwrap_or_else(|| info.sender.clone());
-
-        let token_id = CALENDAR_COUNT.load(deps.storage)? + 1;
-        let calendar = Calendar::new(
-            token_id,
-            title,
-            description,
-            owner_addr,
-            env.block.time,
-            info.sender,
-        );
-
-        CALENDARS.save(deps.storage, token_id, &calendar)?;
-        CALENDAR_COUNT.save(deps.storage, &token_id)?;
-        EVENT_COUNT.save(deps.storage, token_id, &0)?;
-
-        let hook_msgs =
-            fire_calendar_hooks(deps.storage, format!("calendar_created:{}", token_id))?;
+            .unwrap_or_else(|| dao);
+        let cal_count = CALENDAR_COUNT.load(deps.storage)? + 1;
+        let d = cal_d(cal_count);
+        let hook_msgs = fire_calendar_hooks(deps.storage, format!("calendar_created:{}", d))?;
+        DaoNostrCalendar::default().execute(
+            deps,
+            &env,
+            &info,
+            ExecuteMsg::Mint {
+                token_id: d.clone(),
+                owner: owner_addr.to_string(),
+                token_uri: None,
+                extension,
+            },
+        )?;
 
         Ok(Response::new()
             .add_submessages(hook_msgs)
             .add_attribute("action", "create_calendar")
-            .add_attribute("token_id", token_id.to_string())
-            .add_attribute("owner", calendar.owner))
+            .add_attribute("d", d.to_string())
+            .add_attribute("owner", owner_addr.to_string()))
     }
 
     pub fn transfer_calendar(
         deps: DepsMut,
         info: MessageInfo,
-        token_id: u64,
+        d: String,
         recipient: String,
     ) -> Result<Response, ContractError> {
-        let mut calendar = CALENDARS
-            .may_load(deps.storage, token_id)?
-            .ok_or(ContractError::NoSuchCalendar { token_id })?;
-
-        if calendar.owner != info.sender {
+        let contract = DaoNostrCalendar::default();
+        let mut cal = contract.config.nft_info.load(deps.storage, &d)?;
+        if cal.owner != info.sender {
             return Err(ContractError::Unauthorized {});
         }
-
         let recipient_addr = deps.api.addr_validate(&recipient)?;
-        calendar.owner = recipient_addr;
-        CALENDARS.save(deps.storage, token_id, &calendar)?;
+
+        cal.owner = recipient_addr;
 
         Ok(Response::new()
             .add_attribute("action", "transfer_calendar")
-            .add_attribute("token_id", token_id.to_string())
-            .add_attribute("new_owner", &calendar.owner))
+            .add_attribute("d", d.to_string())
+            .add_attribute("new_owner", &cal.owner))
     }
 
     pub fn create_event(
         deps: DepsMut,
         env: Env,
         info: MessageInfo,
-        calendar_token_id: u64,
-        input: CreateEventInput,
+        d: String,
+        input: MetadataExt,
     ) -> Result<Response, ContractError> {
-        let calendar = CALENDARS.may_load(deps.storage, calendar_token_id)?.ok_or(
-            ContractError::NoSuchCalendar {
-                token_id: calendar_token_id,
-            },
-        )?;
-
-        if !calendar.active {
-            return Err(ContractError::CalendarNotActive(calendar_token_id));
-        }
-        if calendar.owner != info.sender {
-            return Err(ContractError::Unauthorized {});
-        }
-        if input.start_time >= input.end_time {
-            return Err(ContractError::StartAfterEnd {});
+        // load calendar by querying the calendar
+        let contract = DaoNostrCalendar::default();
+        if d != String::default() {
+            let mut cal = contract.config.nft_info.load(deps.storage, &d)?;
         }
 
-        let event_id = EVENT_COUNT.load(deps.storage, calendar_token_id)? + 1;
-        let event = CalendarEvent {
-            event_id,
-            calendar_token_id,
-            title: input.title,
-            description: input.description.unwrap_or_default(),
-            kind: input.kind,
-            start_time: input.start_time,
-            end_time: input.end_time,
-            timezone: input.timezone,
-            locations: input.locations,
-            geohash: input.geohash,
-            hashtags: input.hashtags,
-            references: input.references,
-            status: EventStatus::Upcoming,
-            summary: input.summary,
-            d_tag: CalendarEvent::compute_d_tag("event", calendar_token_id, event_id),
-            created_by: info.sender.clone(),
-            created_at: env.block.time,
-        };
+        let me = contract.query_all_collection_info(deps.as_ref(), env.contract.address)?;
+        let e_count = EVENT_COUNT.load(deps.storage, &d)? + 1;
+        // event d tag (e_d) = <cal-event-prefix> + <cal-d> + <cal-event-count>
+        let e_d = event_d(&d, e_count);
+        EVENT_COUNT.save(deps.storage, &d, &e_count)?;
+        let hook_msgs = fire_calendar_hooks(deps.storage, format!("event_created:{}:{}", d, e_d))?;
 
-        EVENTS.save(deps.storage, (calendar_token_id, event_id), &event)?;
-        EVENT_COUNT.save(deps.storage, calendar_token_id, &event_id)?;
-
-        let hook_msgs = fire_calendar_hooks(
-            deps.storage,
-            format!("event_created:{}:{}", calendar_token_id, event_id),
-        )?;
+        // TODO: encode event into nip-metatdata extension: input
 
         Ok(Response::new()
             .add_submessages(hook_msgs)
             .add_attribute("action", "create_event")
-            .add_attribute("calendar_token_id", calendar_token_id.to_string())
-            .add_attribute("event_id", event_id.to_string()))
+            .add_attribute("d", d.to_string())
+            .add_attribute("e_d", e_d.to_string()))
     }
 
     #[allow(clippy::too_many_arguments)]
     pub fn update_event(
         deps: DepsMut,
         info: MessageInfo,
-        calendar_token_id: u64,
-        event_id: u64,
+        e_d: String,
         title: Option<String>,
         description: Option<String>,
         start_time: Option<u64>,
@@ -1076,134 +877,83 @@ pub mod execute {
         hashtags: Option<Vec<String>>,
         summary: Option<String>,
     ) -> Result<Response, ContractError> {
-        let calendar = CALENDARS.may_load(deps.storage, calendar_token_id)?.ok_or(
-            ContractError::NoSuchCalendar {
-                token_id: calendar_token_id,
-            },
-        )?;
+        let cals = DaoNostrCalendar::default();
+        let mut event = cals.config.nft_info.load(deps.storage, &e_d)?;
+        match event.extension.on_chain {
+            true => {
+                // if let Some(t) = title {
+                //     title = t;
+                // }
+                // if let Some(d) = description {
+                //     event.description = d;
+                // }
+                // if let Some(st) = start_time {
+                //     event.start_time = st;
+                // }
+                // if let Some(et) = end_time {
+                //     event.end_time = et;
+                // }
+                // if let Some(tz) = timezone {
+                //     event.timezone = Some(tz);
+                // }
+                // if let Some(l) = locations {
+                //     event.locations = l;
+                // }
+                // if let Some(h) = hashtags {
+                //     event.hashtags = h;
+                // }
+                // if let Some(s) = summary {
+                //     event.summary = Some(s);
+                // }
 
-        if calendar.owner != info.sender {
-            return Err(ContractError::Unauthorized {});
-        }
+                // if event.start_time >= event.end_time {
+                //     return Err(ContractError::InvalidTimeRange {});
+                // }
 
-        let mut event = EVENTS
-            .may_load(deps.storage, (calendar_token_id, event_id))?
-            .ok_or(ContractError::NoSuchEvent {
-                calendar_id: calendar_token_id,
-                event_id,
-            })?;
+                // EVENTS.save(deps.storage, (d, e_d), &event)?;
+            }
+            false => {
 
-        if let Some(t) = title {
-            event.title = t;
+                // validate new ipfs and update on-chain pointers
+            }
         }
-        if let Some(d) = description {
-            event.description = d;
-        }
-        if let Some(st) = start_time {
-            event.start_time = st;
-        }
-        if let Some(et) = end_time {
-            event.end_time = et;
-        }
-        if let Some(tz) = timezone {
-            event.timezone = Some(tz);
-        }
-        if let Some(l) = locations {
-            event.locations = l;
-        }
-        if let Some(h) = hashtags {
-            event.hashtags = h;
-        }
-        if let Some(s) = summary {
-            event.summary = Some(s);
-        }
-
-        if event.start_time >= event.end_time {
-            return Err(ContractError::InvalidTimeRange {});
-        }
-
-        EVENTS.save(deps.storage, (calendar_token_id, event_id), &event)?;
 
         Ok(Response::new()
             .add_attribute("action", "update_event")
-            .add_attribute("calendar_token_id", calendar_token_id.to_string())
-            .add_attribute("event_id", event_id.to_string()))
+            .add_attribute("e_d", e_d.to_string()))
     }
 
     pub fn cancel_event(
         deps: DepsMut,
         info: MessageInfo,
-        calendar_token_id: u64,
-        event_id: u64,
+        e_d: String,
     ) -> Result<Response, ContractError> {
-        let calendar = CALENDARS.may_load(deps.storage, calendar_token_id)?.ok_or(
-            ContractError::NoSuchCalendar {
-                token_id: calendar_token_id,
-            },
-        )?;
+        let cals = DaoNostrCalendar::default();
+        let mut event = cals.config.nft_info.load(deps.storage, &e_d)?;
 
-        if calendar.owner != info.sender {
-            return Err(ContractError::Unauthorized {});
-        }
+        // let mut event = EVENTS
+        //     .may_load(deps.storage, (d, e_d))?
+        //     .ok_or(ContractError::NoSuchEvent { d: d, e_d })?;
 
-        let mut event = EVENTS
-            .may_load(deps.storage, (calendar_token_id, event_id))?
-            .ok_or(ContractError::NoSuchEvent {
-                calendar_id: calendar_token_id,
-                event_id,
-            })?;
+        // if event.status == EventStatus::Completed {
+        //     return Err(ContractError::EventNotUpcoming { e_d });
+        // }
 
-        if event.status == EventStatus::Completed {
-            return Err(ContractError::EventNotUpcoming { event_id });
-        }
+        // event.status = EventStatus::Cancelled;
+        // EVENTS.save(deps.storage, (d, e_d), &event)?;
 
-        event.status = EventStatus::Cancelled;
-        EVENTS.save(deps.storage, (calendar_token_id, event_id), &event)?;
-
-        let hook_msgs = fire_calendar_hooks(
-            deps.storage,
-            format!("event_cancelled:{}:{}", calendar_token_id, event_id),
-        )?;
+        let hook_msgs = fire_calendar_hooks(deps.storage, format!("event_cancelled:{}", e_d))?;
 
         Ok(Response::new()
             .add_submessages(hook_msgs)
             .add_attribute("action", "cancel_event")
-            .add_attribute("calendar_token_id", calendar_token_id.to_string())
-            .add_attribute("event_id", event_id.to_string()))
-    }
-
-    pub fn set_calendar_active(
-        deps: DepsMut,
-        info: MessageInfo,
-        token_id: u64,
-        active: bool,
-    ) -> Result<Response, ContractError> {
-        assert_dao(deps.storage, &info.sender)?;
-
-        let mut calendar = CALENDARS
-            .may_load(deps.storage, token_id)?
-            .ok_or(ContractError::NoSuchCalendar { token_id })?;
-
-        calendar.active = active;
-        CALENDARS.save(deps.storage, token_id, &calendar)?;
-
-        Ok(Response::new()
-            .add_attribute(
-                "action",
-                if active {
-                    "activate_calendar"
-                } else {
-                    "deactivate_calendar"
-                },
-            )
-            .add_attribute("token_id", token_id.to_string()))
+            .add_attribute("e_d", e_d.to_string()))
     }
 
     pub fn update_pre_propose_info(
         deps: DepsMut,
         info: MessageInfo,
     ) -> Result<Response, ContractError> {
-        assert_dao(deps.storage, &info.sender)?;
         CREATION_POLICY.save(
             deps.storage,
             &dao_voting::pre_propose::ProposalCreationPolicy::Anyone {},
@@ -1274,71 +1024,5 @@ pub mod execute {
             ))
         })?;
         Ok(msgs)
-    }
-}
-
-// ── Query Handlers ──
-
-pub mod query {
-    use super::*;
-    use cosmwasm_std::{Deps, Order, StdResult};
-    use cw_storage_plus::Bound;
-
-    use crate::contract::calendar::{Calendar, CalendarEvent};
-
-    const DEFAULT_LIMIT: u32 = 30;
-    const MAX_LIMIT: u32 = 100;
-
-    fn clamp_limit(limit: Option<u32>) -> usize {
-        (limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT)) as usize
-    }
-
-    pub fn query_calendar(deps: Deps, token_id: u64) -> StdResult<Calendar> {
-        CALENDARS.load(deps.storage, token_id)
-    }
-
-    pub fn query_list_calendars(
-        deps: Deps,
-        start_after: Option<u64>,
-        limit: Option<u32>,
-    ) -> StdResult<Vec<Calendar>> {
-        let limit = clamp_limit(limit);
-        let start = start_after.map(Bound::exclusive);
-        CALENDARS
-            .range(deps.storage, start, None, Order::Ascending)
-            .take(limit)
-            .map(|r| r.map(|(_, cal)| cal))
-            .collect()
-    }
-
-    pub fn query_event(
-        deps: Deps,
-        calendar_token_id: u64,
-        event_id: u64,
-    ) -> StdResult<CalendarEvent> {
-        EVENTS.load(deps.storage, (calendar_token_id, event_id))
-    }
-
-    pub fn query_calendar_events(
-        deps: Deps,
-        calendar_token_id: u64,
-        start_after: Option<u64>,
-        limit: Option<u32>,
-    ) -> StdResult<Vec<CalendarEvent>> {
-        let limit = clamp_limit(limit);
-        let start = start_after.map(Bound::exclusive);
-        EVENTS
-            .prefix(calendar_token_id)
-            .range(deps.storage, start, None, Order::Ascending)
-            .take(limit)
-            .map(|r| r.map(|(_, ev)| ev))
-            .collect()
-    }
-
-    pub fn query_event_count(deps: Deps) -> StdResult<u64> {
-        let count = EVENTS
-            .keys(deps.storage, None, None, Order::Ascending)
-            .count() as u64;
-        Ok(count)
     }
 }

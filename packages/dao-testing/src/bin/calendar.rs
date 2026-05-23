@@ -1,7 +1,7 @@
 use cw_orch::environment::ZkCwEnv;
 use cw_orch::prelude::*;
-use dao_calendar::contract::msg::CreateEventInput;
 pub use dao_calendar::contract::msg::ExecuteExtFns as _;
+use dao_calendar::contract::MetadataExt;
 use dao_testing::{DaoDaoDeployData, DaoDaoSuite};
 use std::collections::HashMap;
 
@@ -21,19 +21,15 @@ where
         let dao = DaoDaoSuite::deploy_on(chain.clone(), data)?;
         // creat multiple events calendar events
         dao.proposal.calendar.create_event(
-            1,
-            CreateEventInput {
-                title: todo!(),
-                description: todo!(),
+            String::default(),
+            MetadataExt {
                 kind: todo!(),
-                start_time: todo!(),
-                end_time: todo!(),
-                timezone: todo!(),
-                locations: todo!(),
-                geohash: todo!(),
-                hashtags: todo!(),
-                references: todo!(),
-                summary: todo!(),
+                on_chain: todo!(),
+                e: todo!(),
+                cid: todo!(),
+                d_tag: todo!(),
+                nostr_e_d: todo!(),
+                author_pubkey: todo!(),
             },
         )?;
 
@@ -56,3 +52,5 @@ where
         }
     }
 }
+
+fn main() {}
