@@ -1,13 +1,5 @@
 {
   "permissions": {
-    "allow": [
-      "Bash(grep:*)",
-      "Bash(cargo check:*)",
-      "Bash(cargo test:*)",
-      "Bash(cp:*)",
-      "Bash(xargs -I{} dirname {})",
-      "Bash(git:*)",
-      "Bash(perl:*)"
-    ]
+    "allow": []
   }
 }

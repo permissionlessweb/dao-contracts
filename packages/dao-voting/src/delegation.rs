@@ -5,7 +5,6 @@ use cosmwasm_schema::{
 };
 use cosmwasm_std::{Addr, Decimal, DepsMut, StdResult, Uint256};
 use cw_storage_plus::Map;
-use dao_interface::voting::InfoResponse;
 
 use crate::proposal::Ballot;
 
@@ -15,7 +14,7 @@ use crate::proposal::Ballot;
 
 pub enum QueryMsg {
     /// Returns contract version info
-    #[returns(InfoResponse)]
+    #[returns(dao_interface::voting::InfoResponse)]
     Info {},
     /// Returns registration info for a delegate, optionally at a given height.
     #[returns(RegistrationResponse)]

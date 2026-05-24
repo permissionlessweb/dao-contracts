@@ -1,7 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    to_json_binary, Addr, CosmosMsg, Deps, MessageInfo, StdError, StdResult, Uint128, Uint256,
-    WasmMsg,
+    to_json_binary, Addr, CosmosMsg, Deps, MessageInfo, StdError, StdResult, Uint256, WasmMsg,
 };
 use cw_utils::{must_pay, PaymentError};
 

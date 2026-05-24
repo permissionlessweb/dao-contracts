@@ -1,7 +1,7 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Uint256;
 use dao_dao_macros::{active_query, voting_module_query};
-use dao_voting::threshold::{ActiveThreshold, ActiveThresholdResponse};
+use dao_voting::threshold::ActiveThreshold;
 
 // ---------------------------------------------------------------------------
 // Instantiate
@@ -70,11 +70,9 @@ pub enum QueryMsg {
     PollRegistry {},
     /// Returns snapshot details for a given proposal ID.
     #[returns(SnapshotResponse)]
-    Snapshot {
-        proposal_id: u64,
-    },
+    Snapshot { proposal_id: u64 },
     /// Returns the active threshold configuration.
-    #[returns(ActiveThresholdResponse)]
+    #[returns(dao_voting::threshold::ActiveThresholdResponse)]
     ActiveThreshold {},
 }
 
@@ -100,16 +98,9 @@ pub struct SnapshotResponse {
 /// The expected query message for PollRegistry's GetPoll query.
 #[cw_serde]
 pub enum PollRegistryQuery {
-    GetPoll {
-        poll_id: String,
-    },
-    GetTally {
-        poll_id: String,
-    },
-    VerifyNullifier {
-        poll_id: String,
-        nullifier: String,
-    },
+    GetPoll { poll_id: String },
+    GetTally { poll_id: String },
+    VerifyNullifier { poll_id: String, nullifier: String },
 }
 
 #[cw_serde]

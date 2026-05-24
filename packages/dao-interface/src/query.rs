@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, CosmosMsg, Uint128, Uint256};
+use cosmwasm_std::{Addr, CosmosMsg, Uint256};
 use cw2::ContractVersion;
 use cw_utils::Expiration;
 
