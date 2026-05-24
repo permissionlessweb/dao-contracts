@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, Deps, Order, StdResult, Uint128, Uint256};
+use cosmwasm_std::{Addr, Deps, Order, StdResult, Uint256};
 use cw_storage_plus::{Bound, Map};
 
 use crate::msg::{

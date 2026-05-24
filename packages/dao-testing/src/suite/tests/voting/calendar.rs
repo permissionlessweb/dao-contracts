@@ -1,11 +1,14 @@
 
 use cosmwasm_std::testing::MockApi;
 use cosmwasm_std::{to_json_binary, Addr, Binary};
-use cw721_nips::nips::nip52::{CalendarEventMetadata, Nip52Kind};
-use cw721_nips::NipKind;
+use cw721::msg::OwnerOfResponse;
+use cw721_nips::{
+    cw::NostrCw721Builder as _,
+    nips::nip52::{CalendarEventMetadata, Nip52Kind},
+    NipKind, NipMetadata, RawNostrEvent, Tag,
+};
 use cw_orch::mock::Mock;
 use cw_orch::prelude::*;
-
 use dao_calendar::contract::{
     msg::{ExecuteExtFns as _, QueryExtFns as _},
     CalendarModuleCollectionExtension, InstantiateMsg, MetadataExt, QueryMsg,
@@ -60,30 +63,30 @@ fn onchain_metadata(d_tag: &str, kind: Nip52Kind) -> MetadataExt {
         end_time: 2000000,
         participants: vec![],
     };
-    MetadataExt {
-        on_chain: true,
-        e: to_json_binary(&event).unwrap(),
-        cid: None,
+    let tags: Vec<Vec<String>> = event
+        .to_tags()
+        .into_iter()
+        .map(Tag::into_inner)
+        .collect();
+    let raw = RawNostrEvent {
+        id: format!("test-event-{d_tag}"),
+        pubkey: "test-pubkey".to_string(),
+        created_at: 1000000,
         kind: kind.kind_value(),
-        d_tag: Some(d_tag.to_string()),
-        nostr_e_d: None,
-        author_pubkey: None,
-        calendar_d: None,
-    }
+        tags,
+        content: event.content(),
+        sig: "test-sig".to_string(),
+    };
+    MetadataExt::onchain_metadata(&raw).unwrap()
 }
 
 /// Off-chain metadata: only IPFS CID stored on-chain.
 fn offchain_metadata() -> MetadataExt {
-    MetadataExt {
-        on_chain: false,
-        e: Binary::default(),
-        cid: Some("QmTest123".to_string()),
-        kind: Nip52Kind::DateEvent.kind_value(),
-        d_tag: Some("cal-off".to_string()),
-        nostr_e_d: None,
-        author_pubkey: None,
-        calendar_d: None,
-    }
+    MetadataExt::offchain_metadata(
+        "QmTest123".to_string(),
+        Nip52Kind::DateEvent.kind_value(),
+    )
+    .unwrap()
 }
 
 #[cfg(test)]

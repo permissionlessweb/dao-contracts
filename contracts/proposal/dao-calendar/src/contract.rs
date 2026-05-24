@@ -161,10 +161,10 @@ pub mod state {
 
     // ── NIP-52 integration ──────────────────────────────────────────
     use cw721_nips::{
-        cw::NostrCw721Ext,
+        cw::{NostrCw721Builder, NostrCw721Ext},
         error::{NipError, NipResult},
-        nips::nip52::{CalendarEventMetadata, Nip52Kind},
-        NipMetadata, NostrExt, RawNostrEvent,
+        nips::nip52::{CalendarEventMetadata, CalendarMetadata, Nip52Kind},
+        NipKind, NipMetadata, NostrExt, RawNostrEvent,
     };
 
     impl NipMetadata for MetadataExt {
@@ -226,21 +226,45 @@ pub mod state {
         }
 
         fn from_raw_event(event: &RawNostrEvent) -> NipResult<Self> {
-            let inner = CalendarEventMetadata::from_raw_event(event)?;
-            let d_tag = inner.d_tag();
-            let e = Binary::from(serde_json::to_vec(&inner)?);
-            Ok(Self {
-                on_chain: true,
-                e,
-                cid: None,
-
-                kind: event.kind,
-                d_tag,
-                nostr_e_d: Some(event.id.clone()),
-                author_pubkey: Some(event.pubkey.clone()),
-                // Calendar association is set by create_event, not known here
-                calendar_d: None,
-            })
+            let kind = match event.kind {
+                31924 => Nip52Kind::Calendar,
+                31922 => Nip52Kind::DateEvent,
+                31923 => Nip52Kind::TimeEvent,
+                other => return Err(NipError::Validation(format!("unsupported kind {other} for calendar/event"))),
+            };
+            match kind {
+                Nip52Kind::Calendar => {
+                    let inner = CalendarMetadata::from_raw_event(event)?;
+                    let d_tag = inner.d_tag();
+                    let e = Binary::from(serde_json::to_vec(&inner)?);
+                    Ok(Self {
+                        on_chain: true,
+                        e,
+                        cid: None,
+                        kind: event.kind,
+                        d_tag,
+                        nostr_e_d: None,
+                        author_pubkey: None,
+                        calendar_d: None,
+                    })
+                }
+                _ => {
+                    // DateEvent (31922) or TimeBased (31923)
+                    let inner = CalendarEventMetadata::from_raw_event(event)?;
+                    let d_tag = inner.d_tag();
+                    let e = Binary::from(serde_json::to_vec(&inner)?);
+                    Ok(Self {
+                        on_chain: true,
+                        e,
+                        cid: None,
+                        kind: event.kind,
+                        d_tag,
+                        nostr_e_d: Some(event.id.clone()),
+                        author_pubkey: Some(event.pubkey.clone()),
+                        calendar_d: None,
+                    })
+                }
+            }
         }
     }
 
@@ -288,6 +312,34 @@ pub mod state {
                     "Off-chain events must be resolved via CID; use the IPFS pointer".into(),
                 ))
             }
+        }
+    }
+
+    // ── NostrCw721Builder (on-chain / off-chain constructors) ──────
+
+    impl NostrCw721Builder for MetadataExt {
+        type Extension = Self;
+
+        fn onchain_metadata(event: &RawNostrEvent) -> StdResult<Self> {
+            // Reuse the NipMetadata::from_raw_event logic
+            Self::from_raw_event(event).map_err(|e| {
+                cosmwasm_std::StdError::msg(format!(
+                    "Failed to build on-chain metadata: {e}"
+                ))
+            })
+        }
+
+        fn offchain_metadata(cid: String, kind: u16) -> StdResult<Self> {
+            Ok(Self {
+                on_chain: false,
+                e: Binary::default(),
+                cid: Some(cid),
+                kind,
+                d_tag: None,
+                nostr_e_d: None,
+                author_pubkey: None,
+                calendar_d: None,
+            })
         }
     }
 

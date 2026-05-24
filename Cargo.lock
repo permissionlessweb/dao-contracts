@@ -2443,6 +2443,7 @@ dependencies = [
  "cw20-stake-reward-distributor",
  "cw4",
  "cw4-group",
+ "cw721",
  "cw721-base",
  "cw721-nips",
  "cw721-roles",
