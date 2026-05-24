@@ -22,23 +22,6 @@ use dao_voting::{
     voting::validate_voting_period,
 };
 
-pub type DaoNostrCalendar<'a> = Cw721Extensions<
-    'a,
-    MetadataExt,                       // TNftExtension
-    MetadataExt,                       // TNftExtensionMsg
-    CalendarModuleCollectionExtension, // TCollectionExtension
-    CalendarModuleCollectionExtension, // TCollectionExtensionMsg
-    ExecuteExt,                        // TExtensionMsg
-    QueryExt,                          // TExtensionQueryMsg
-    Empty,                             // TCustomResponseMsg
->;
-
-pub type InstantiateMsg = cw721::msg::Cw721InstantiateMsg<CalendarModuleCollectionExtension>;
-pub type ExecuteMsg =
-    cw721::msg::Cw721ExecuteMsg<MetadataExt, CalendarModuleCollectionExtension, ExecuteExt>;
-pub type QueryMsg =
-    cw721::msg::Cw721QueryMsg<MetadataExt, CalendarModuleCollectionExtension, QueryExt>;
-
 #[cw_serde]
 pub struct MetadataExt {
     /// `true` = full Nostr event stored on-chain in `e`.
@@ -86,6 +69,26 @@ impl Default for CalendarModuleCollectionExtension {
         }
     }
 }
+
+pub type InstantiateMsg = cw721::msg::Cw721InstantiateMsg<CalendarModuleCollectionExtension>;
+pub type ExecuteMsg =
+    cw721::msg::Cw721ExecuteMsg<MetadataExt, CalendarModuleCollectionExtension, ExecuteExt>;
+pub type QueryMsg =
+    cw721::msg::Cw721QueryMsg<MetadataExt, CalendarModuleCollectionExtension, QueryExt>;
+
+
+pub type DaoNostrCalendar<'a> = Cw721Extensions<
+    'a,
+    MetadataExt,                       // TNftExtension
+    MetadataExt,                       // TNftExtensionMsg
+    CalendarModuleCollectionExtension, // TCollectionExtension
+    CalendarModuleCollectionExtension, // TCollectionExtensionMsg
+    ExecuteExt,                        // TExtensionMsg
+    QueryExt,                          // TExtensionQueryMsg
+    Empty,                             // TCustomResponseMsg
+>;
+
+
 
 #[cw_serde]
 pub struct CalendarModuleCollectionExtension {
@@ -477,7 +480,7 @@ pub mod msg {
     use super::*;
     use cosmwasm_schema::{cw_serde, QueryResponses};
     use cw721::traits::Cw721CustomMsg;
-    #[cfg(not(target_arch = "wasm32"))]
+
     #[cw_serde]
     #[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
     pub enum ExecuteExt {
@@ -523,7 +526,7 @@ pub mod msg {
     #[derive(QueryResponses)]
     #[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
     pub enum QueryExt {
-        #[returns(Config)]
+        #[returns(CalendarModuleCollectionExtension)]
         Config {},
         /// Calendar info by NFT token ID.
         #[returns(MetadataExt)]
