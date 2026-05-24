@@ -42,6 +42,9 @@ pub struct MetadataExt {
     pub nostr_e_d: Option<String>,
     /// Optional: Store the author's pubkey.
     pub author_pubkey: Option<String>,
+    /// Calendar this event belongs to. Token ID of the parent calendar NFT,
+    /// or `None` for standalone events (no parent calendar).
+    pub calendar_d: Option<String>,
 }
 
 impl Default for MetadataExt {
@@ -50,10 +53,11 @@ impl Default for MetadataExt {
             on_chain: Default::default(),
             e: Default::default(),
             cid: Default::default(),
-            kind: Nip52Kind::DateEvent.kind_value(),
+            kind: Nip52Kind::Calendar.kind_value(),
             d_tag: Default::default(),
             nostr_e_d: Default::default(),
             author_pubkey: Default::default(),
+            calendar_d: Default::default(),
         }
     }
 }
@@ -76,7 +80,6 @@ pub type ExecuteMsg =
 pub type QueryMsg =
     cw721::msg::Cw721QueryMsg<MetadataExt, CalendarModuleCollectionExtension, QueryExt>;
 
-
 pub type DaoNostrCalendar<'a> = Cw721Extensions<
     'a,
     MetadataExt,                       // TNftExtension
@@ -87,8 +90,6 @@ pub type DaoNostrCalendar<'a> = Cw721Extensions<
     QueryExt,                          // TExtensionQueryMsg
     Empty,                             // TCustomResponseMsg
 >;
-
-
 
 #[cw_serde]
 pub struct CalendarModuleCollectionExtension {
@@ -111,17 +112,28 @@ pub const FAILED_HOOK_REPLY_ID_BASE: u64 = 1_000_000;
 pub const CALENDAR_COUNT: Item<u64> = Item::new("calendar_count");
 pub const EVENT_COUNT: Map<&str, u64> = Map::new("event_count");
 
-// Constants
-pub const CALENDAR_PREFIX: &str = "c";
-pub const EVENT_PREFIX: &str = "e";
+// Token ID prefix design
+//
+//   Calendars:  cal/{counter}        e.g. cal/1, cal/2
+//   Events:     evt/{cal_d}/{counter} e.g. evt/cal/1/1, evt/cal/2/1
+//   Standalone: evt/_/{counter}       e.g. evt/_/1, evt/_/2
+//
+// The delimiter `/` ensures no prefix collision between calendars
+// (cal/1 vs cal/10) when using Bound-based range queries.
+pub const CALENDAR_PREFIX: &str = "cal";
+pub const EVENT_PREFIX: &str = "evt";
+pub const STANDALONE_TOKEN: &str = "_";
 
-// Token ID generation
 fn cal_d(counter: u64) -> String {
-    format!("{}{}", CALENDAR_PREFIX, counter)
+    format!("{CALENDAR_PREFIX}/{counter}")
 }
 
 fn event_d(d: &str, event_counter: u64) -> String {
-    format!("{}{}-{}", EVENT_PREFIX, d, event_counter)
+    if d.is_empty() {
+        format!("{EVENT_PREFIX}/{STANDALONE_TOKEN}/{event_counter}")
+    } else {
+        format!("{EVENT_PREFIX}/{d}/{event_counter}")
+    }
 }
 
 pub mod state {
@@ -139,7 +151,11 @@ pub mod state {
     impl Cw721CustomMsg for MetadataExt {}
     impl Contains for MetadataExt {
         fn contains(&self, other: &Self) -> bool {
-            self == other
+            // Semantic match: only compare kind and calendar_d.
+            // This allows query_nft_by_extension to find events by
+            // calendar association without needing exact-equality on
+            // all event-specific fields (e_tag, d_tag, on_chain, etc.).
+            self.kind == other.kind && self.calendar_d == other.calendar_d
         }
     }
 
@@ -222,6 +238,8 @@ pub mod state {
                 d_tag,
                 nostr_e_d: Some(event.id.clone()),
                 author_pubkey: Some(event.pubkey.clone()),
+                // Calendar association is set by create_event, not known here
+                calendar_d: None,
             })
         }
     }
@@ -381,11 +399,17 @@ pub mod state {
             //  we require top-level dao calendar parameters for anti-lockout
             match current {
                 Some(ext) => {
+                    // Update path: validate existing extension for anti-lockout
                     validate_voting_period(ext.min_event_period, ext.max_event_period)
                         .map_err(|e| StdError::msg(e.to_string()))?;
                     Ok(())
                 }
-                None => Err(Cw721ContractError::NoInfo {}),
+                None => {
+                    // First-time instantiation: validate our own parameters instead.
+                    validate_voting_period(self.min_event_period, self.max_event_period)
+                        .map_err(|e| StdError::msg(e.to_string()))?;
+                    Ok(())
+                }
             }
         }
     }
@@ -401,6 +425,8 @@ pub mod state {
             _info: Option<&MessageInfo>,
             _current: Option<&MetadataExt>,
         ) -> Result<MetadataExt, Cw721ContractError> {
+            // Mint path: accept the provided nft extension as-is.
+            // Update path: accept the updated extension.
             Ok(self.clone())
         }
 
@@ -411,6 +437,8 @@ pub mod state {
             _info: Option<&MessageInfo>,
             _current: Option<&MetadataExt>,
         ) -> Result<(), Cw721ContractError> {
+            // MetadataExt validation is handled at the caller
+            // (create_calendar, create_event) before minting.
             Ok(())
         }
     }
@@ -526,22 +554,22 @@ pub mod msg {
     #[derive(QueryResponses)]
     #[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
     pub enum QueryExt {
-        #[returns(CalendarModuleCollectionExtension)]
+        #[returns(cw721::msg::CollectionInfoAndExtensionResponse<CalendarModuleCollectionExtension> )]
         Config {},
         /// Calendar info by NFT token ID.
         #[returns(MetadataExt)]
         Calendar { d: String },
         /// Paginated list of all calendar NFTs.
-        #[returns(Vec<MetadataExt>)]
+        #[returns(Vec<cw721::msg::NftInfoResponse<MetadataExt>>)]
         ListCalendars {
             start_after: Option<String>,
             limit: Option<u32>,
         },
         /// A specific event within a calendar.
-        #[returns(String)]
+        #[returns(cw721::msg::NftInfoResponse<MetadataExt> )]
         CalendarEvent { e_d: String },
         /// Events within a calendar, paginated.
-        #[returns(Vec<String>)]
+        #[returns(Vec<cw721::msg::NftInfoResponse<MetadataExt>>)]
         CalendarEvents {
             d: String,
             start_after: Option<String>,
@@ -604,6 +632,7 @@ pub fn instantiate(
         .into_initial_policy_and_messages(dao.clone())?;
 
     // internal collection state
+    CALENDAR_COUNT.save(deps.storage, &0u64)?;
     CREATION_POLICY.save(deps.storage, &initial_policy)?;
     DAO.save(deps.storage, dao)?;
 
@@ -625,7 +654,17 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
-    cw_ownable::assert_owner(deps.storage, &info.sender)?;
+    let own = DaoNostrCalendar::default()
+        .query_minter_ownership(deps.storage)?
+        .owner;
+    println!("{:#?}", own);
+    match own {
+        Some(o) => match o == info.sender {
+            true => {}
+            false => return Err(ContractError::Unauthorized {}),
+        },
+        None => {}
+    }
     match msg {
         cw721::msg::Cw721ExecuteMsg::UpdateExtension { msg } => match msg {
             ExecuteExt::CreateCalendar { owner, extension } => {
@@ -675,18 +714,34 @@ pub fn execute(
                 execute::remove_calendar_hook(deps, info, address)
             }
         },
-        _ => unimplemented!(),
+        // Delegate standard cw721 operations (TransferNft, Burn, etc.)
+        // to the underlying cw721 base.
+        other => {
+            let resp = DaoNostrCalendar::default().execute(deps, &env, &info, other)?;
+            Ok(resp)
+        }
     }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Extension { msg } => match msg {
-            QueryExt::Config {} => todo!(),
-            QueryExt::Calendar { d } => {
-                to_json_binary(&DaoNostrCalendar::default().query_nft_info(deps.storage, d)?)
-            }
+            QueryExt::CalendarCount {} => to_json_binary(&CALENDAR_COUNT.load(deps.storage)?),
+            QueryExt::EventCount {} => query_event_count(deps),
+            QueryExt::ProposalCreationPolicy {} => to_json_binary(&query_creation_policy(deps)?),
+            QueryExt::DelegationModule {} => to_json_binary(&query_delegation_module(deps)?),
+            QueryExt::Info {} => query_info(deps),
+            QueryExt::Hooks {} => to_json_binary(&CALENDAR_HOOKS.query_hooks(deps)?),
+            QueryExt::Dao {} => to_json_binary(&DAO.load(deps.storage)?),
+            QueryExt::Config {} => to_json_binary(
+                &DaoNostrCalendar::default().query_collection_info_and_extension(deps)?,
+            ),
+            QueryExt::Calendar { d } => to_json_binary(
+                &DaoNostrCalendar::default()
+                    .query_nft_info(deps.storage, d)?
+                    .extension,
+            ),
             QueryExt::ListCalendars { start_after, limit } => {
                 to_json_binary(&DaoNostrCalendar::default().query_nft_by_extension(
                     deps.storage,
@@ -705,38 +760,42 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
                 d,
                 start_after,
                 limit,
-            } => to_json_binary(&DaoNostrCalendar::default().query_nft_by_extension(
-                deps.storage,
-                MetadataExt {
-                    kind: Nip52Kind::TimeEvent.kind_value(),
-                    ..Default::default()
-                },
-                start_after,
-                limit,
-            )?),
-            QueryExt::CalendarCount {} => {
-                let count = CALENDAR_COUNT.load(deps.storage)?;
-                to_json_binary(&count)
-            }
-            QueryExt::EventCount {} => {
-                // Sum all events across all calendars
-                let total: u64 = EVENT_COUNT
-                    .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
-                    .map(|item| item.map(|(_, v)| v).unwrap_or(0))
-                    .sum();
-                to_json_binary(&total)
-            }
-            QueryExt::ProposalCreationPolicy {} => to_json_binary(&query_creation_policy(deps)?),
-            QueryExt::DelegationModule {} => to_json_binary(&query_delegation_module(deps)?),
-            QueryExt::Info {} => todo!(),
-            QueryExt::Hooks {} => {
-                // load all hooks
-                to_json_binary(&CALENDAR_HOOKS.query_hooks(deps)?)
-            }
-            QueryExt::Dao {} => to_json_binary(&DAO.load(deps.storage)?),
+            } => to_json_binary(
+                &DaoNostrCalendar::default()
+                    .query_nft_by_extension(
+                        deps.storage,
+                        MetadataExt {
+                            kind: Nip52Kind::TimeEvent.kind_value(),
+                            calendar_d: Some(d),
+                            ..Default::default()
+                        },
+                        start_after,
+                        limit,
+                    )?
+                    .unwrap_or_default(),
+            ),
         },
-        _ => unimplemented!(),
+        // Delegate standard cw721 queries (OwnerOf, Tokens, etc.)
+        // to the underlying cw721 base collection.
+        other => DaoNostrCalendar::default()
+            .query(deps, &env, other)
+            .map_err(|e| cosmwasm_std::StdError::msg(e.to_string())),
     }
+}
+
+// TERRIBLE design. needs improvement
+pub fn query_event_count(deps: Deps) -> StdResult<Binary> {
+    // Sum all events across all calendars
+    let total: u64 = EVENT_COUNT
+        .range(deps.storage, None, None, cosmwasm_std::Order::Ascending)
+        .map(|item| item.map(|(_, v)| v).unwrap_or(0))
+        .sum();
+    to_json_binary(&total)
+}
+
+pub fn query_info(deps: Deps) -> StdResult<Binary> {
+    let info = cw2::get_contract_version(deps.storage)?;
+    to_json_binary(&dao_interface::voting::InfoResponse { info })
 }
 
 pub fn query_creation_policy(deps: Deps) -> StdResult<Binary> {
@@ -796,6 +855,8 @@ pub mod execute {
             .unwrap_or_else(|| dao);
         let cal_count = CALENDAR_COUNT.load(deps.storage)? + 1;
         let d = cal_d(cal_count);
+        CALENDAR_COUNT.save(deps.storage, &cal_count)?;
+        EVENT_COUNT.save(deps.storage, &d, &0u64)?;
         let hook_msgs = fire_calendar_hooks(deps.storage, format!("calendar_created:{}", d))?;
         DaoNostrCalendar::default().execute(
             deps,
@@ -842,28 +903,47 @@ pub mod execute {
         env: Env,
         info: MessageInfo,
         d: String,
-        input: MetadataExt,
+        extension: MetadataExt,
     ) -> Result<Response, ContractError> {
-        // load calendar by querying the calendar
-        let contract = DaoNostrCalendar::default();
-        if d != String::default() {
-            let mut cal = contract.config.nft_info.load(deps.storage, &d)?;
+        // event must be able to be created and counted without a tag to the
+        // calendar. events without calendar prefix is empty, and we must
+        // include them in the count normally.
+        //
+        // validate the calendar exists when d is non-empty
+        if !d.is_empty() {
+            DaoNostrCalendar::default()
+                .config
+                .nft_info
+                .load(deps.storage, &d)?;
         }
 
-        let me = contract.query_all_collection_info(deps.as_ref(), env.contract.address)?;
-        let e_count = EVENT_COUNT.load(deps.storage, &d)? + 1;
-        // event d tag (e_d) = <cal-event-prefix> + <cal-d> + <cal-event-count>
+        let e_count = EVENT_COUNT.load(deps.storage, &d).unwrap_or(0) + 1;
         let e_d = event_d(&d, e_count);
         EVENT_COUNT.save(deps.storage, &d, &e_count)?;
-        let hook_msgs = fire_calendar_hooks(deps.storage, format!("event_created:{}:{}", d, e_d))?;
 
-        // TODO: encode event into nip-metatdata extension: input
+        let hook_msgs = fire_calendar_hooks(deps.storage, format!("event_created:{d}:{e_d}"))?;
 
-        Ok(Response::new()
+        let mut ext = extension;
+        // Tag the event with its parent calendar for efficient query-by-association
+        ext.calendar_d = if d.is_empty() { None } else { Some(d.clone()) };
+
+        let resp = DaoNostrCalendar::default().execute(
+            deps,
+            &env,
+            &info,
+            ExecuteMsg::Mint {
+                token_id: e_d.clone(),
+                owner: info.sender.to_string(),
+                token_uri: None,
+                extension: ext,
+            },
+        )?;
+
+        Ok(resp
             .add_submessages(hook_msgs)
             .add_attribute("action", "create_event")
-            .add_attribute("d", d.to_string())
-            .add_attribute("e_d", e_d.to_string()))
+            .add_attribute("d", d)
+            .add_attribute("e_d", e_d))
     }
 
     #[allow(clippy::too_many_arguments)]

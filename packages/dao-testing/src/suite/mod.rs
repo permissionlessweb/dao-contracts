@@ -7,6 +7,9 @@ pub mod deploy_data;
 mod modules;
 mod token_suite;
 
+#[cfg(test)]
+mod tests;
+
 pub const OWNER: &str = "cosmwasm1fsgzj6t7udv8zhf6zj32mkqhcjcpv52yph5qsdcl0qt94jgdckqs2g053y";
 
 pub const ADDR0: &str = "cosmwasm1phjtlrk4fw73vay42g4hrdy20cmmpkfn80msl7jjmta9k800n32s3mfntm";

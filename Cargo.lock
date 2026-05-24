@@ -2444,6 +2444,7 @@ dependencies = [
  "cw4",
  "cw4-group",
  "cw721-base",
+ "cw721-nips",
  "cw721-roles",
  "dao-calendar",
  "dao-cw-orch",

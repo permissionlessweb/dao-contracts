@@ -50,8 +50,10 @@ cw-vesting = { workspace = true }
 cw20-stake = { workspace = true }
 cw20-stake-external-rewards = { workspace = true }
 cw20-stake-reward-distributor = { workspace = true }
+cw721 = { workspace = true }
 cw721-base = { workspace = true }
 cw721-roles = { workspace = true }
+cw721-nips = { workspace = true }
 cw-tokenfactory-issuer = { workspace = true }
 dao-calendar = { workspace = true , features = ["interface"]}
 dao-dao-core = { workspace = true }
