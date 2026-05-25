@@ -124,11 +124,32 @@ pub const CALENDAR_PREFIX: &str = "cal";
 pub const EVENT_PREFIX: &str = "evt";
 pub const STANDALONE_TOKEN: &str = "_";
 
-fn cal_d(counter: u64) -> String {
+/// Generate a calendar token ID.
+///
+/// Calendars use token IDs of the form `cal/{counter}`.
+///
+/// ```
+/// # use dao_calendar::contract::cal_d;
+/// assert_eq!(cal_d(1), "cal/1");
+/// assert_eq!(cal_d(10), "cal/10");
+/// assert_eq!(cal_d(100), "cal/100");
+/// ```
+pub fn cal_d(counter: u64) -> String {
     format!("{CALENDAR_PREFIX}/{counter}")
 }
 
-fn event_d(d: &str, event_counter: u64) -> String {
+/// Generate an event token ID.
+///
+/// Events use token IDs of the form `evt/{cal_d}/{counter}`.
+/// Standalone events (no parent calendar) use `evt/_/{counter}`.
+///
+/// ```
+/// # use dao_calendar::contract::event_d;
+/// assert_eq!(event_d("cal/1", 1), "evt/cal/1/1");
+/// assert_eq!(event_d("", 1), "evt/_/1");
+/// assert_eq!(event_d("cal/2", 10), "evt/cal/2/10");
+/// ```
+pub fn event_d(d: &str, event_counter: u64) -> String {
     if d.is_empty() {
         format!("{EVENT_PREFIX}/{STANDALONE_TOKEN}/{event_counter}")
     } else {
