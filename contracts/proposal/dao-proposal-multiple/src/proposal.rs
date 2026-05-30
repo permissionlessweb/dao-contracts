@@ -1,7 +1,7 @@
 use std::ops::Add;
 
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, BlockInfo, StdError, StdResult, Uint128, Uint256};
+use cosmwasm_std::{Addr, BlockInfo, StdError, StdResult, Uint256};
 use cw_utils::Expiration;
 use dao_voting::{
     multiple_choice::{
@@ -354,7 +354,7 @@ impl MultipleChoiceProposal {
 mod tests {
     use super::*;
 
-    use cosmwasm_std::testing::mock_env;
+    use cosmwasm_std::{Uint128, testing::mock_env};
     use dao_voting::multiple_choice::{MultipleChoiceOption, MultipleChoiceOptions};
 
     fn create_proposal(

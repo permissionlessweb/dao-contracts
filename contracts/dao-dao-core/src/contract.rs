@@ -2,10 +2,9 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     from_json, to_json_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo,
-    MigrateInfo, Order, Reply, Response, StdError, StdResult, SubMsg, WasmMsg,
+    MigrateInfo, Reply, Response, StdError, StdResult, SubMsg,
 };
 use cw2::{get_contract_version, set_contract_version, ContractVersion};
-use cw721::DefaultOptionalCollectionExtension;
 use cw_paginate_storage::{paginate_map, paginate_map_keys, paginate_map_values};
 use cw_reply_helper::parse_reply_instantiate_data;
 use cw_storage_plus::Map;
@@ -17,7 +16,7 @@ use dao_interface::{
         GetItemResponse, PauseInfoResponse, ProposalModuleCountResponse, SubDao,
     },
     state::{
-        Admin, Config, ModuleInstantiateCallback, ModuleInstantiateInfo, ProposalModule,
+        Config, ModuleInstantiateCallback, ModuleInstantiateInfo, ProposalModule,
         ProposalModuleStatus,
     },
     voting,
@@ -894,7 +893,7 @@ pub fn query_initial_actions(deps: Deps) -> StdResult<Binary> {
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     msg: MigrateMsg,
     _info: MigrateInfo,
 ) -> Result<Response, ContractError> {

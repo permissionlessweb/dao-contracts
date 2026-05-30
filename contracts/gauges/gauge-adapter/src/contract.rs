@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    coins, from_json, to_json_binary, Addr, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Empty, Env,
-    MessageInfo, Order, Response, StdResult, Storage, Uint256,MigrateInfo,
+    from_json, to_json_binary, Addr, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Empty, Env,
+    MessageInfo, MigrateInfo, Order, Response, StdResult, Storage, Uint256,
 };
 use cw2::set_contract_version;
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
@@ -387,7 +387,12 @@ mod query {
 
 /// Manages the contract migration.
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg,info: MigrateInfo) -> Result<Response, ContractError> {
+pub fn migrate(
+    _deps: DepsMut,
+    _env: Env,
+    _msg: MigrateMsg,
+    info: MigrateInfo,
+) -> Result<Response, ContractError> {
     Ok(Response::new())
 }
 
@@ -458,7 +463,13 @@ mod tests {
             required_deposit: None,
             ..msg
         };
-        instantiate(deps.as_mut(), mock_env(), message_info(&api.addr_make("user"), &[]), msg).unwrap();
+        instantiate(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&api.addr_make("user"), &[]),
+            msg,
+        )
+        .unwrap();
         let config = CONFIG.load(deps.as_ref().storage).unwrap();
         assert_eq!(config.required_deposit, None);
     }
@@ -480,7 +491,13 @@ mod tests {
                 max_amount: None,
             }],
         };
-        instantiate(deps.as_mut(), mock_env(), message_info(&api.addr_make("user"), &[]), msg).unwrap();
+        instantiate(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&api.addr_make("user"), &[]),
+            msg,
+        )
+        .unwrap();
 
         let selected = vec![
             (
@@ -534,7 +551,13 @@ mod tests {
                 max_amount: None,
             }],
         };
-        instantiate(deps.as_mut(), mock_env(), message_info(&api.addr_make("user"), &[]), msg).unwrap();
+        instantiate(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&api.addr_make("user"), &[]),
+            msg,
+        )
+        .unwrap();
 
         let selected = vec![
             (
@@ -608,18 +631,24 @@ mod tests {
         )
         .unwrap();
 
-        let err = execute::return_deposits(deps.as_mut(), mock_env(), api.addr_make("user"))
-            .unwrap_err();
+        let err =
+            execute::return_deposits(deps.as_mut(), mock_env(), api.addr_make("user")).unwrap_err();
         assert_eq!(err, ContractError::NoDepositToRefund {});
 
         let msg = InstantiateMsg {
             required_deposit: Some(AssetUnchecked::new_native("ujuno", 10_000_000)),
             ..msg
         };
-        instantiate(deps.as_mut(), mock_env(), message_info(&api.addr_make("user"), &[]), msg).unwrap();
+        instantiate(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&api.addr_make("user"), &[]),
+            msg,
+        )
+        .unwrap();
 
-        let err = execute::return_deposits(deps.as_mut(), mock_env(), api.addr_make("user"))
-            .unwrap_err();
+        let err =
+            execute::return_deposits(deps.as_mut(), mock_env(), api.addr_make("user")).unwrap_err();
         assert_eq!(err, ContractError::Unauthorized {});
     }
 }

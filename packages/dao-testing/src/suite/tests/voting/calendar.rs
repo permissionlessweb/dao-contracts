@@ -1,7 +1,4 @@
-
 use cosmwasm_std::testing::MockApi;
-use cosmwasm_std::{to_json_binary, Addr, Binary};
-use cw721::msg::OwnerOfResponse;
 use cw721_nips::{
     cw::NostrCw721Builder as _,
     nips::nip52::{CalendarEventMetadata, Nip52Kind},
@@ -63,11 +60,7 @@ fn onchain_metadata(d_tag: &str, kind: Nip52Kind) -> MetadataExt {
         end_time: 2000000,
         participants: vec![],
     };
-    let tags: Vec<Vec<String>> = event
-        .to_tags()
-        .into_iter()
-        .map(Tag::into_inner)
-        .collect();
+    let tags: Vec<Vec<String>> = event.to_tags().into_iter().map(Tag::into_inner).collect();
     let raw = RawNostrEvent {
         id: format!("test-event-{d_tag}"),
         pubkey: "test-pubkey".to_string(),
@@ -82,11 +75,8 @@ fn onchain_metadata(d_tag: &str, kind: Nip52Kind) -> MetadataExt {
 
 /// Off-chain metadata: only IPFS CID stored on-chain.
 fn offchain_metadata() -> MetadataExt {
-    MetadataExt::offchain_metadata(
-        "QmTest123".to_string(),
-        Nip52Kind::DateEvent.kind_value(),
-    )
-    .unwrap()
+    MetadataExt::offchain_metadata("QmTest123".to_string(), Nip52Kind::DateEvent.kind_value())
+        .unwrap()
 }
 
 #[cfg(test)]
@@ -107,7 +97,7 @@ mod tests {
     #[test]
     fn test_calendar_count_starts_at_zero() {
         let (_, cal) = setup();
-        let count = cal.calendar_count().unwrap();
+        let count = cal.next_proposal_id().unwrap();
         assert_eq!(count, 0);
     }
 
@@ -120,7 +110,7 @@ mod tests {
         };
         cal.create_calendar(meta, None).unwrap();
 
-        let count = cal.calendar_count().unwrap();
+        let count = cal.next_proposal_id().unwrap();
         assert_eq!(count, 1);
 
         let d = format!("cal/{count}");
@@ -139,7 +129,7 @@ mod tests {
         cal.create_calendar(meta.clone(), None).unwrap();
         cal.create_calendar(meta, None).unwrap();
 
-        let count = cal.calendar_count().unwrap();
+        let count = cal.next_proposal_id().unwrap();
         assert_eq!(count, 2);
         let calendars = cal.list_calendars(None, None).unwrap();
         assert_eq!(calendars.len(), 2);
@@ -173,7 +163,9 @@ mod tests {
         let count = cal.event_count().unwrap();
         assert_eq!(count, 1);
 
-        let events = cal.calendar_events("cal/1".to_string(), None, None).unwrap();
+        let events = cal
+            .calendar_events("cal/1".to_string(), None, None)
+            .unwrap();
         assert_eq!(events.len(), 1);
 
         let e_d = "evt/cal/1/1".to_string();
@@ -284,10 +276,14 @@ mod tests {
         )
         .unwrap();
 
-        let events_c1 = cal.calendar_events("cal/1".to_string(), None, None).unwrap();
+        let events_c1 = cal
+            .calendar_events("cal/1".to_string(), None, None)
+            .unwrap();
         assert_eq!(events_c1.len(), 1);
 
-        let events_c2 = cal.calendar_events("cal/2".to_string(), None, None).unwrap();
+        let events_c2 = cal
+            .calendar_events("cal/2".to_string(), None, None)
+            .unwrap();
         assert_eq!(events_c2.len(), 2);
 
         let total = cal.event_count().unwrap();
@@ -327,8 +323,7 @@ mod tests {
             kind: Nip52Kind::Calendar.kind_value(),
             ..Default::default()
         };
-        cal.create_calendar(meta, Some(other.to_string()))
-            .unwrap();
+        cal.create_calendar(meta, Some(other.to_string())).unwrap();
 
         use cw721::msg::OwnerOfResponse;
         let owner: OwnerOfResponse = cal
@@ -381,8 +376,7 @@ mod tests {
             kind: Nip52Kind::Calendar.kind_value(),
             ..Default::default()
         };
-        cal.create_calendar(meta, Some(other.to_string()))
-            .unwrap();
+        cal.create_calendar(meta, Some(other.to_string())).unwrap();
 
         // The test sender (dao, not "other") can still create
         // events in the calendar because no ownership check exists.
@@ -463,7 +457,8 @@ mod tests {
 
         // Document the current broken behaviour:
         assert_eq!(
-            owner.owner, dao.to_string(),
+            owner.owner,
+            dao.to_string(),
             "BUG: transfer_calendar reads owner, modifies in-memory, \
              but never calls nft_info.save() — change is lost"
         );

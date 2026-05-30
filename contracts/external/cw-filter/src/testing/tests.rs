@@ -1,6 +1,5 @@
-use cosmwasm_std::{coins, to_json_binary, AnyMsg, BankMsg, CosmosMsg};
+use cosmwasm_std::{coins, to_json_binary, BankMsg, CosmosMsg};
 use cw_filter::ContractError;
-use cw_ownable::OwnershipError;
 use dao_interface::state::{ModuleInstantiateInfo, ModuleUpdate};
 use dao_testing::OWNER;
 use serde_json::json;
@@ -109,7 +108,9 @@ fn test_update_protobuf_registry() {
 
     // only the owner can update the protobuf registry
     let err = suite.update_protobuf_registry_err("not_owner", None);
-    assert!(err.to_string().contains("Caller is not the contract's current owner"));
+    assert!(err
+        .to_string()
+        .contains("Caller is not the contract's current owner"));
 
     suite.assert_protobuf_registry(Some(suite.protobuf_registry_addr.clone()));
 

@@ -130,6 +130,7 @@ impl<Chain: CwEnv> DaoProposalSuite<Chain> {
         self.prop_condorcet.upload()?;
         self.prop_sudo.upload()?;
         self.pre_prop_suite.upload()?;
+        self.calendar.upload()?;
         Ok(())
     }
 
@@ -139,6 +140,7 @@ impl<Chain: CwEnv> DaoProposalSuite<Chain> {
             Box::new(&mut self.prop_multiple),
             Box::new(&mut self.prop_condorcet),
             Box::new(&mut self.prop_sudo),
+            Box::new(&mut self.calendar),
         ];
         cs.extend(self.pre_prop_suite.get_contracts_mut());
         cs

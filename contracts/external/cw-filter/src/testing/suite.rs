@@ -1,5 +1,4 @@
 use cosmwasm_std::{to_json_binary, Addr, CosmosMsg, Timestamp};
-use cw_filter::ContractError;
 use cw_ownable::Action;
 use dao_interface::{
     proposal::InfoResponse,

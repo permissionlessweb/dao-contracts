@@ -1,72 +1,15 @@
-use cw_orch::{anyhow, prelude::*};
+use cw_orch::prelude::*;
 use dao_cw_orch::*;
 
-use crate::{
-    distribution::DaoDistributionDeployData,
-    gauges::DaoGaugeDeployData,
-    proposal::{CalendarDeployData, DaoProposalDeployData},
-    staking::DaoStakingDeployData,
-    voting::DaoVotingDeployData,
-    DaoConfig, DaoDaoDeployData, ProposalModuleConfig, VotingModuleConfig,
-};
-
-/// Single DAO with dao-calendar module as a proposal module.
-pub fn dao_deploy_data_single(sender: Addr) -> anyhow::Result<Option<DaoDaoDeployData>> {
-    // Calendar deploy data — minimal config for local testing
-    let calendar_data = super::proposal::CalendarDeployData {
-        name: todo!(),
-        symbol: todo!(),
-        ext: todo!(),
-        minter: todo!(),
-        creator: todo!(),
-        withdrawer: todo!(),
-    };
-
-    // DAO config with calendar as a proposal module
-    let dao_config = DaoConfig {
-        key: "terp_dao".to_string(),
-        admin: Some(sender.to_string()),
-        name: "Terp DAO".to_string(),
-        description: "Terp Network DAO with calendar governance module".to_string(),
-        voting: VotingModuleConfig::Cw4 {
-            cw4_group_code_id: 0, // Resolved from suite code IDs during deploy
-            initial_members: vec![cw4::Member {
-                addr: sender.to_string(),
-                weight: 1,
-            }],
-        },
-        proposal_modules: vec![ProposalModuleConfig::Calendar(calendar_data.clone())],
-    };
-
-    Ok(Some(DaoDaoDeployData {
-        proposal: DaoProposalDeployData::default(),
-        voting: DaoVotingDeployData::default(),
-        staking: DaoStakingDeployData::default(),
-        distribution: DaoDistributionDeployData::default(),
-        external: DaoExternalDeployData {
-            calendar: Some(calendar_data),
-            ..Default::default()
-        },
-        gauges: DaoGaugeDeployData::default(),
-        daos: vec![dao_config],
-    }))
-}
-
-// TODO: implement array of depoydata trait implement for all external suite dd.
 /// Composite deploy data for external modules.
 #[derive(Clone, Debug, Default)]
 pub struct DaoExternalDeployData {
     pub admin: Option<Addr>,
-    pub calendar: Option<CalendarDeployData>,
 }
 
 impl DaoExternalDeployData {
     /// Run preflight validation on all present module deploy data.
     pub fn preflight(&self) -> Result<(), String> {
-        use super::super::deploy_data::DaoDeployData;
-        if let Some(ref cal) = self.calendar {
-            cal.preflight().map_err(|e| format!("calendar: {e}"))?;
-        }
         Ok(())
     }
 }
@@ -80,7 +23,6 @@ pub struct DaoExternalSuite<Chain: CwEnv> {
     pub cw_tokenfactory_issuer: DaoExternalTokenfactoryIssuer<Chain>,
     pub cw_vesting: DaoExternalCwVesting<Chain>,
     pub cw721_roles: DaoExternalCw721Roles<Chain>,
-    pub calendar: DaoCalendar<Chain>,
 }
 
 impl<Chain: CwEnv> DaoExternalSuite<Chain> {
@@ -95,8 +37,7 @@ impl<Chain: CwEnv> DaoExternalSuite<Chain> {
                 chain.clone(),
             ),
             cw_vesting: DaoExternalCwVesting::new("cw_vesting", chain.clone()),
-            cw721_roles: DaoExternalCw721Roles::new("cw721_roles", chain.clone()),
-            calendar: DaoCalendar::new(chain.clone()),
+            cw721_roles: DaoExternalCw721Roles::new("cw721_roles", chain),
         }
     }
 
@@ -108,7 +49,6 @@ impl<Chain: CwEnv> DaoExternalSuite<Chain> {
         self.cw_tokenfactory_issuer.upload()?;
         self.cw_vesting.upload()?;
         self.cw721_roles.upload()?;
-        self.calendar.upload()?;
         Ok(())
     }
 
@@ -121,7 +61,6 @@ impl<Chain: CwEnv> DaoExternalSuite<Chain> {
             Box::new(&mut self.cw_tokenfactory_issuer),
             Box::new(&mut self.cw_vesting),
             Box::new(&mut self.cw721_roles),
-            Box::new(&mut self.calendar),
         ]
     }
 }

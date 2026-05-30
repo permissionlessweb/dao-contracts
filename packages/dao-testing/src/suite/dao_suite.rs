@@ -14,17 +14,16 @@ use super::modules::{
     voting::{DaoVotingDeployData, DaoVotingSuite},
 };
 
-
 pub use dao_calendar::contract::msg::ExecuteExtFns as _;
 
 /// Top-level deploy data for a full DAO suite.
 ///
-/// `Default` yields empty `daos` vec with all sub-suite data defaulted,
+/// `Default` yields empty `dao` with all sub-suite data defaulted,
 /// so `deploy_on(chain, DaoDaoDeployData::default())` just uploads all codes.
 #[derive(Clone, Debug, Default)]
 pub struct DaoDaoDeployData {
-    /// Array of DAO instances to bootstrap.
-    pub daos: Vec<DaoConfig>,
+    /// Singular DAO instance to bootstrap.
+    pub dao: DaoConfig,
     /// Suite-level deploy data (affects code uploads, not per-DAO).
     pub proposal: DaoProposalDeployData,
     pub voting: DaoVotingDeployData,
@@ -55,6 +54,14 @@ pub enum VotingModuleConfig {
     },
 }
 
+impl Default for VotingModuleConfig {
+    fn default() -> Self {
+        VotingModuleConfig::Cw4 {
+            cw4_group_code_id: 0,
+            initial_members: vec![],
+        }
+    }
+}
 impl VotingModuleConfig {
     /// Build a `ModuleInstantiateInfo` from uploaded suite code IDs.
     pub fn to_module_info<Chain: CwEnv>(
@@ -68,7 +75,10 @@ impl VotingModuleConfig {
             } => {
                 let msg = dao_voting_cw4::msg::InstantiateMsg {
                     group_contract: dao_voting_cw4::msg::GroupContract::New {
-                        cw4_group_code_id: *cw4_group_code_id,
+                        cw4_group_code_id: match cw4_group_code_id != &0u64 {
+                            true => *cw4_group_code_id,
+                            false => suite.voting.cw4_group.code_id()?,
+                        },
                         cw4_group_salt: None,
                         initial_members: initial_members.clone(),
                     },
@@ -163,7 +173,7 @@ impl ProposalModuleConfig {
             ProposalModuleConfig::Calendar(cal_data) => {
                 use super::deploy_data::DaoDeployData;
                 Ok(ModuleInstantiateInfo {
-                    code_id: suite.external.calendar.code_id()?,
+                    code_id: suite.proposal.calendar.code_id()?,
                     msg: to_json_binary(&cal_data.clone().into_init())
                         .map_err(|e| CwOrchError::StdErr(e.to_string()))?,
                     admin: Some(Admin::CoreModule {}),
@@ -177,7 +187,7 @@ impl ProposalModuleConfig {
 }
 
 /// Per-DAO instance configuration.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct DaoConfig {
     /// Registry key for this DAO.
     pub key: String,
@@ -628,9 +638,9 @@ define_suite! {
         schema: "contracts/external/cw721-roles/schema/cw721-roles.json",
     },
     CALENDAR, "calendar" => {
-        path: external.calendar,
+        path: proposal.calendar,
         name: "DAO Calendar",
-        category: "External",
+        category: "Proposal",
         description: "On-chain event calendar with groups, gauges, scheduling",
         schema: "schema/dao-calendar.json",
     },
@@ -899,6 +909,8 @@ impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for DaoDaoSuite<Chain> {
         // 1. Deploy all sub-suites (uploads all code)
         let dao_core = DaoDaoCore::new("dao_dao_core", chain.clone());
         dao_core.upload()?;
+        // mutable to ovverride default voting module information
+        let dao_cfg = data.dao.clone();
 
         let proposal = DaoProposalSuite::deploy_on(chain.clone(), data.proposal)?;
         let voting = DaoVotingSuite::deploy_on(chain.clone(), data.voting)?;
@@ -918,41 +930,40 @@ impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for DaoDaoSuite<Chain> {
             registry: DaoStateRegistry::new(),
         };
 
-        // 2. Instantiate each DAO
-        for dao_cfg in data.daos {
-            let voting_info = dao_cfg.voting.to_module_info(&suite)?;
-            let proposal_infos: Vec<ModuleInstantiateInfo> = dao_cfg
-                .proposal_modules
-                .iter()
-                .map(|pm| pm.to_module_info(&suite))
-                .collect::<Result<_, _>>()?;
+        // 2. Instantiate DAO
+        let voting_info = dao_cfg.voting.to_module_info(&suite)?;
 
-            let init_msg = dao_interface::msg::InstantiateMsg {
-                admin: dao_cfg.admin.clone(),
-                name: dao_cfg.name,
-                description: dao_cfg.description,
-                image_url: None,
-                automatically_add_cw20s: true,
-                automatically_add_cw721s: true,
-                voting_module_instantiate_info: voting_info,
-                proposal_modules_instantiate_info: proposal_infos,
-                initial_items: None,
-                initial_actions: None,
-                dao_uri: None,
-            };
+        let proposal_infos: Vec<ModuleInstantiateInfo> = dao_cfg
+            .proposal_modules
+            .iter()
+            .map(|pm| pm.to_module_info(&suite))
+            .collect::<Result<_, _>>()?;
 
-            suite.dao_core.instantiate(
-                &init_msg,
-                dao_cfg
-                    .admin
-                    .as_deref()
-                    .map(|a| Addr::unchecked(a))
-                    .as_ref(),
-                &[],
-            )?;
-            let core_addr = suite.dao_core.address()?;
-            suite.save_dao(&dao_cfg.key, core_addr);
-        }
+        let init_msg = dao_interface::msg::InstantiateMsg {
+            admin: dao_cfg.admin.clone(),
+            name: dao_cfg.name,
+            description: dao_cfg.description,
+            image_url: None,
+            automatically_add_cw20s: true,
+            automatically_add_cw721s: true,
+            voting_module_instantiate_info: voting_info,
+            proposal_modules_instantiate_info: proposal_infos,
+            initial_items: None,
+            initial_actions: None,
+            dao_uri: None,
+        };
+
+        suite.dao_core.instantiate(
+            &init_msg,
+            dao_cfg
+                .admin
+                .as_deref()
+                .map(|a| Addr::unchecked(a))
+                .as_ref(),
+            &[],
+        )?;
+        let core_addr = suite.dao_core.address()?;
+        suite.save_dao(&dao_cfg.key, core_addr);
 
         Ok(suite)
     }

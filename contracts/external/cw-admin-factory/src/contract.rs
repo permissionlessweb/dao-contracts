@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdResult, SubMsg,
-    WasmMsg,MigrateInfo,
+    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, MigrateInfo, Reply, Response,
+    StdResult, SubMsg, WasmMsg,
 };
 
 use crate::error::ContractError;
@@ -141,19 +141,21 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
         INSTANTIATE_CONTRACT_REPLY_ID | INSTANTIATE2_CONTRACT_REPLY_ID => {
             match msg.result {
                 cosmwasm_std::SubMsgResult::Ok(res) => {
-                    // since v3 cosmwasm: manually parse reply instantiate 
-                    let contract_addr = deps.api.addr_validate(&res
-                        .events
-                        .iter()
-                        .find(|e| e.ty == "instantiate")
-                        .and_then(|ev| {
-                            ev.attributes.iter().find(|a| {
-                                a.key == "_contract_address" || a.key == "contract_address"
+                    // since v3 cosmwasm: manually parse reply instantiate
+                    let contract_addr = deps.api.addr_validate(
+                        &res.events
+                            .iter()
+                            .find(|e| e.ty == "instantiate")
+                            .and_then(|ev| {
+                                ev.attributes.iter().find(|a| {
+                                    a.key == "_contract_address" || a.key == "contract_address"
+                                })
                             })
-                        })
-                        .ok_or_else(|| ContractError::ReplyParseError {
-                            err: "contract_address not found in reply".to_string(),
-                        })?.value)?;
+                            .ok_or_else(|| ContractError::ReplyParseError {
+                                err: "contract_address not found in reply".to_string(),
+                            })?
+                            .value,
+                    )?;
 
                     if msg_id == INSTANTIATE2_CONTRACT_REPLY_ID {
                         // If saved an expected address, verify it matches and clear it.
@@ -188,7 +190,12 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg,info: MigrateInfo) -> Result<Response, ContractError> {
+pub fn migrate(
+    deps: DepsMut,
+    _env: Env,
+    _msg: MigrateMsg,
+    _info: MigrateInfo,
+) -> Result<Response, ContractError> {
     // Set contract to version to latest
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     Ok(Response::default())

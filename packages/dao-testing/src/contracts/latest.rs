@@ -16,9 +16,7 @@ pub fn cw20_base_contract() -> Box<dyn Contract<Empty>> {
         cw20_base::contract::instantiate,
         cw20_base::contract::query,
     )
-    .with_migrate(|deps, env, msg, info| {
-        cw20_base::contract::migrate(deps, env, msg, dummy_migrate_info())
-    });
+    .with_migrate(|deps, env, msg, info| cw20_base::contract::migrate(deps, env, msg, info));
     Box::new(contract)
 }
 

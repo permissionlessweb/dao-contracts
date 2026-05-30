@@ -1,7 +1,7 @@
 use crate::msg::{AdapterAuthzMsg, PossibleMsg, SubmissionMsg};
 use anybuf::{Anybuf, Bufany};
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Binary, CosmosMsg, Decimal, Deps, Empty, StdResult};
+use cosmwasm_std::{Addr, AnyMsg, Binary, CosmosMsg, Decimal, Deps, Empty, StdResult};
 
 #[cw_serde]
 pub struct ParseAuthzGrantSubmissionResponse {
@@ -76,10 +76,10 @@ pub fn encode_authz_exec_msg_anybuf(
         .append_repeated_bytes(2, &msgs)
         .into_vec();
 
-    let msg: CosmosMsg<Empty> = CosmosMsg::Stargate {
+    let msg: CosmosMsg<Empty> = CosmosMsg::Any(AnyMsg {
         type_url: "/cosmos.authz.v1beta1.MsgExec".to_string(),
         value: proto.into(),
-    };
+    });
     Ok(msg)
 }
 
@@ -94,9 +94,9 @@ pub fn encode_authz_grant_msg_anybuf(
         .append_string(2, grantee)
         .into_vec();
 
-    let msg: CosmosMsg<Empty> = CosmosMsg::Stargate {
+    let msg: CosmosMsg<Empty> = CosmosMsg::Any(AnyMsg {
         type_url: "/cosmos.authz.v1beta1.MsgGrant".to_string(),
         value: proto.into(),
-    };
+    });
     Ok(msg)
 }

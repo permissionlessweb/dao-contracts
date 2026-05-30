@@ -16,7 +16,8 @@ use cw721_nips::{nips::nip52::Nip52Kind, NipKind};
 use cw_hooks::Hooks;
 use cw_storage_plus::{Item, Map};
 use cw_utils::{Duration, DAY};
-use dao_voting::{
+use dao_dao_macros::proposal_module_query;
+pub use dao_voting::{
     pre_propose::{PreProposeInfo, ProposalCreationPolicy},
     veto::VetoConfig,
     voting::validate_voting_period,
@@ -185,7 +186,7 @@ pub mod state {
         cw::{NostrCw721Builder, NostrCw721Ext},
         error::{NipError, NipResult},
         nips::nip52::{CalendarEventMetadata, CalendarMetadata, Nip52Kind},
-        NipKind, NipMetadata, NostrExt, RawNostrEvent,
+        NipMetadata, NostrExt, RawNostrEvent,
     };
 
     impl NipMetadata for MetadataExt {
@@ -251,7 +252,11 @@ pub mod state {
                 31924 => Nip52Kind::Calendar,
                 31922 => Nip52Kind::DateEvent,
                 31923 => Nip52Kind::TimeEvent,
-                other => return Err(NipError::Validation(format!("unsupported kind {other} for calendar/event"))),
+                other => {
+                    return Err(NipError::Validation(format!(
+                        "unsupported kind {other} for calendar/event"
+                    )))
+                }
             };
             match kind {
                 Nip52Kind::Calendar => {
@@ -344,9 +349,7 @@ pub mod state {
         fn onchain_metadata(event: &RawNostrEvent) -> StdResult<Self> {
             // Reuse the NipMetadata::from_raw_event logic
             Self::from_raw_event(event).map_err(|e| {
-                cosmwasm_std::StdError::msg(format!(
-                    "Failed to build on-chain metadata: {e}"
-                ))
+                cosmwasm_std::StdError::msg(format!("Failed to build on-chain metadata: {e}"))
             })
         }
 
@@ -532,6 +535,9 @@ pub struct Config {
 #[derive(thiserror::Error, Debug)]
 pub enum ContractError {
     #[error(transparent)]
+    NipError(#[from] cw721_nips::NipError),
+
+    #[error(transparent)]
     Std(#[from] cosmwasm_std::StdError),
 
     #[error(transparent)]
@@ -598,17 +604,7 @@ pub mod msg {
         /// owner must be the sender.
         CreateEvent { d: String, event: MetadataExt },
         /// Update a NIP-52 event's mutable fields.
-        UpdateEvent {
-            e_d: String,
-            title: Option<String>,
-            description: Option<String>,
-            start_time: Option<u64>,
-            end_time: Option<u64>,
-            timezone: Option<String>,
-            locations: Option<Vec<String>>,
-            hashtags: Option<Vec<String>>,
-            summary: Option<String>,
-        },
+        UpdateEvent { e_d: String, event: MetadataExt },
         /// Cancel a NIP-52 event.
         CancelEvent { e_d: String },
         /// Update proposal creation policy. DAO-only.
@@ -623,6 +619,7 @@ pub mod msg {
     impl CustomMsg for ExecuteExt {}
     impl Cw721CustomMsg for ExecuteExt {}
 
+    #[proposal_module_query]
     #[cw_serde]
     #[derive(QueryResponses)]
     #[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
@@ -648,9 +645,6 @@ pub mod msg {
             start_after: Option<String>,
             limit: Option<u32>,
         },
-        /// Total number of calendar NFTs minted.
-        #[returns(::std::primitive::u64)]
-        CalendarCount {},
         /// Total events across all calendars.
         #[returns(::std::primitive::u64)]
         EventCount {},
@@ -660,11 +654,6 @@ pub mod msg {
         DelegationModule {},
         #[returns(::cw_hooks::HooksResponse)]
         Hooks,
-        #[returns(::dao_interface::voting::InfoResponse)]
-        Info {},
-        /// Address of the DAO this module belongs to.
-        #[returns(Addr)]
-        Dao {},
     }
 }
 
@@ -749,33 +738,11 @@ pub fn execute(
             ExecuteExt::CreateEvent { d, event } => {
                 execute::create_event(deps, env, info, d, event)
             }
-            ExecuteExt::UpdateEvent {
-                e_d,
-                title,
-                description,
-                start_time,
-                end_time,
-                timezone,
-                locations,
-                hashtags,
-                summary,
-            } => execute::update_event(
-                deps,
-                info,
-                e_d,
-                title,
-                description,
-                start_time,
-                end_time,
-                timezone,
-                locations,
-                hashtags,
-                summary,
-            ),
+            ExecuteExt::UpdateEvent { e_d, event } => execute::update_event(deps, info, e_d, event),
             ExecuteExt::CancelEvent { e_d } => execute::cancel_event(deps, info, e_d),
 
             ExecuteExt::UpdatePreProposeInfo { info: i } => {
-                execute::update_pre_propose_info(deps, info)
+                execute::execute_update_proposal_creation_policy(deps, info, i)
             }
             ExecuteExt::UpdateDelegationModule { module } => {
                 execute::update_delegation_module(deps, info, module)
@@ -800,11 +767,10 @@ pub fn execute(
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Extension { msg } => match msg {
-            QueryExt::CalendarCount {} => to_json_binary(&CALENDAR_COUNT.load(deps.storage)?),
             QueryExt::EventCount {} => query_event_count(deps),
             QueryExt::ProposalCreationPolicy {} => to_json_binary(&query_creation_policy(deps)?),
             QueryExt::DelegationModule {} => to_json_binary(&query_delegation_module(deps)?),
-            QueryExt::Info {} => query_info(deps),
+
             QueryExt::Hooks {} => to_json_binary(&CALENDAR_HOOKS.query_hooks(deps)?),
             QueryExt::Dao {} => to_json_binary(&DAO.load(deps.storage)?),
             QueryExt::Config {} => to_json_binary(
@@ -847,6 +813,8 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
                     )?
                     .unwrap_or_default(),
             ),
+            QueryExt::Info {} => query_info(deps),
+            QueryExt::NextProposalId {} => to_json_binary(&CALENDAR_COUNT.load(deps.storage)?),
         },
         // Delegate standard cw721 queries (OwnerOf, Tokens, etc.)
         // to the underlying cw721 base collection.
@@ -854,6 +822,11 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             .query(deps, &env, other)
             .map_err(|e| cosmwasm_std::StdError::msg(e.to_string())),
     }
+}
+
+pub fn query_info(deps: Deps) -> StdResult<Binary> {
+    let info = cw2::get_contract_version(deps.storage)?;
+    to_json_binary(&dao_interface::voting::InfoResponse { info })
 }
 
 // TERRIBLE design. needs improvement
@@ -864,11 +837,6 @@ pub fn query_event_count(deps: Deps) -> StdResult<Binary> {
         .map(|item| item.map(|(_, v)| v).unwrap_or(0))
         .sum();
     to_json_binary(&total)
-}
-
-pub fn query_info(deps: Deps) -> StdResult<Binary> {
-    let info = cw2::get_contract_version(deps.storage)?;
-    to_json_binary(&dao_interface::voting::InfoResponse { info })
 }
 
 pub fn query_creation_policy(deps: Deps) -> StdResult<Binary> {
@@ -913,7 +881,8 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
 pub mod execute {
     use super::*;
     use cosmwasm_std::{Addr, DepsMut, Env, MessageInfo, Response};
-    use cw721::traits::Cw721Query;
+    use cw721_nips::NipMetadata;
+
     pub fn create_calendar(
         deps: DepsMut,
         env: Env,
@@ -1022,58 +991,24 @@ pub mod execute {
     #[allow(clippy::too_many_arguments)]
     pub fn update_event(
         deps: DepsMut,
-        info: MessageInfo,
+        _info: MessageInfo,
         e_d: String,
-        title: Option<String>,
-        description: Option<String>,
-        start_time: Option<u64>,
-        end_time: Option<u64>,
-        timezone: Option<String>,
-        locations: Option<Vec<String>>,
-        hashtags: Option<Vec<String>>,
-        summary: Option<String>,
+        new: MetadataExt,
     ) -> Result<Response, ContractError> {
+        new.validate().map_err(ContractError::NipError)?;
         let cals = DaoNostrCalendar::default();
-        let mut event = cals.config.nft_info.load(deps.storage, &e_d)?;
-        match event.extension.on_chain {
-            true => {
-                // if let Some(t) = title {
-                //     title = t;
-                // }
-                // if let Some(d) = description {
-                //     event.description = d;
-                // }
-                // if let Some(st) = start_time {
-                //     event.start_time = st;
-                // }
-                // if let Some(et) = end_time {
-                //     event.end_time = et;
-                // }
-                // if let Some(tz) = timezone {
-                //     event.timezone = Some(tz);
-                // }
-                // if let Some(l) = locations {
-                //     event.locations = l;
-                // }
-                // if let Some(h) = hashtags {
-                //     event.hashtags = h;
-                // }
-                // if let Some(s) = summary {
-                //     event.summary = Some(s);
-                // }
-
-                // if event.start_time >= event.end_time {
-                //     return Err(ContractError::InvalidTimeRange {});
-                // }
-
-                // EVENTS.save(deps.storage, (d, e_d), &event)?;
+        if let Some(mut event) = cals.config.nft_info.may_load(deps.storage, &e_d)? {
+            // potentially invoke specific hooks based on on/offchain event
+            match event.extension.on_chain {
+                true => {
+                    event.extension = new;
+                }
+                false => {
+                    event.extension = new;
+                }
             }
-            false => {
-
-                // validate new ipfs and update on-chain pointers
-            }
+        } else {
         }
-
         Ok(Response::new()
             .add_attribute("action", "update_event")
             .add_attribute("e_d", e_d.to_string()))
@@ -1084,20 +1019,10 @@ pub mod execute {
         info: MessageInfo,
         e_d: String,
     ) -> Result<Response, ContractError> {
-        let cals = DaoNostrCalendar::default();
-        let mut event = cals.config.nft_info.load(deps.storage, &e_d)?;
-
-        // let mut event = EVENTS
-        //     .may_load(deps.storage, (d, e_d))?
-        //     .ok_or(ContractError::NoSuchEvent { d: d, e_d })?;
-
-        // if event.status == EventStatus::Completed {
-        //     return Err(ContractError::EventNotUpcoming { e_d });
-        // }
-
-        // event.status = EventStatus::Cancelled;
-        // EVENTS.save(deps.storage, (d, e_d), &event)?;
-
+        DaoNostrCalendar::default()
+            .config
+            .nft_info
+            .remove(deps.storage, &e_d)?;
         let hook_msgs = fire_calendar_hooks(deps.storage, format!("event_cancelled:{}", e_d))?;
 
         Ok(Response::new()
@@ -1106,15 +1031,20 @@ pub mod execute {
             .add_attribute("e_d", e_d.to_string()))
     }
 
-    pub fn update_pre_propose_info(
+    pub fn execute_update_proposal_creation_policy(
         deps: DepsMut,
         info: MessageInfo,
+        new_info: PreProposeInfo,
     ) -> Result<Response, ContractError> {
-        CREATION_POLICY.save(
-            deps.storage,
-            &dao_voting::pre_propose::ProposalCreationPolicy::Anyone {},
-        )?;
-        Ok(Response::new().add_attribute("action", "update_pre_propose_info"))
+        let (initial_policy, messages) =
+            new_info.into_initial_policy_and_messages(info.sender.clone())?;
+        CREATION_POLICY.save(deps.storage, &initial_policy)?;
+
+        Ok(Response::default()
+            .add_submessages(messages)
+            .add_attribute("action", "update_proposal_creation_policy")
+            .add_attribute("sender", info.sender)
+            .add_attribute("new_policy", format!("{initial_policy:?}")))
     }
 
     pub fn update_delegation_module(
