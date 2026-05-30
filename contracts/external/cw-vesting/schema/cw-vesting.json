@@ -69,7 +69,7 @@
         "description": "The total amount of tokens to be vested.",
         "allOf": [
           {
-            "$ref": "#/definitions/Uint128"
+            "$ref": "#/definitions/Uint256"
           }
         ]
       },
@@ -137,6 +137,10 @@
       },
       "Uint128": {
         "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding, such that the full u128 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n``` # use cosmwasm_std::Uint128; let a = Uint128::from(123u128); assert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64); assert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32); assert_eq!(c.u128(), 70); ```",
+        "type": "string"
+      },
+      "Uint256": {
+        "description": "An implementation of u256 that is using strings for JSON encoding/decoding, such that the full u256 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types or `from_be_bytes` to provide big endian bytes:\n\n``` # use cosmwasm_std::Uint256; let a = Uint256::new(258u128); let b = Uint256::from(258u16); let c = Uint256::from_be_bytes([ 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8, ]); assert_eq!(a, b); assert_eq!(a, c); ```",
         "type": "string"
       },
       "Uint64": {
@@ -207,7 +211,7 @@
                 "description": "The amount of tokens to distribute. If none are specified all claimable tokens will be distributed.",
                 "anyOf": [
                   {
-                    "$ref": "#/definitions/Uint128"
+                    "$ref": "#/definitions/Uint256"
                   },
                   {
                     "type": "null"
@@ -252,7 +256,7 @@
                 "description": "The amount to delegate.",
                 "allOf": [
                   {
-                    "$ref": "#/definitions/Uint128"
+                    "$ref": "#/definitions/Uint256"
                   }
                 ]
               },
@@ -282,7 +286,7 @@
             ],
             "properties": {
               "amount": {
-                "$ref": "#/definitions/Uint128"
+                "$ref": "#/definitions/Uint256"
               },
               "dst_validator": {
                 "type": "string"
@@ -314,7 +318,7 @@
                 "description": "The amount to delegate",
                 "allOf": [
                   {
-                    "$ref": "#/definitions/Uint128"
+                    "$ref": "#/definitions/Uint256"
                   }
                 ]
               },
@@ -387,7 +391,7 @@
                 "description": "The amount to withdraw.",
                 "anyOf": [
                   {
-                    "$ref": "#/definitions/Uint128"
+                    "$ref": "#/definitions/Uint256"
                   },
                   {
                     "type": "null"
@@ -420,7 +424,7 @@
                 "description": "The number of tokens that THIS CONTRACT lost as a result of the slash. Note that this differs from the total amount slashed from the validator.",
                 "allOf": [
                   {
-                    "$ref": "#/definitions/Uint128"
+                    "$ref": "#/definitions/Uint256"
                   }
                 ]
               },
@@ -526,7 +530,7 @@
         ],
         "properties": {
           "amount": {
-            "$ref": "#/definitions/Uint128"
+            "$ref": "#/definitions/Uint256"
           },
           "msg": {
             "$ref": "#/definitions/Binary"
@@ -592,8 +596,8 @@
           }
         ]
       },
-      "Uint128": {
-        "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding, such that the full u128 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n``` # use cosmwasm_std::Uint128; let a = Uint128::from(123u128); assert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64); assert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32); assert_eq!(c.u128(), 70); ```",
+      "Uint256": {
+        "description": "An implementation of u256 that is using strings for JSON encoding/decoding, such that the full u256 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types or `from_be_bytes` to provide big endian bytes:\n\n``` # use cosmwasm_std::Uint256; let a = Uint256::new(258u128); let b = Uint256::from(258u16); let c = Uint256::from_be_bytes([ 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8, ]); assert_eq!(a, b); assert_eq!(a, c); ```",
         "type": "string"
       },
       "Uint64": {
@@ -820,8 +824,8 @@
   "responses": {
     "distributable": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Uint128",
-      "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding, such that the full u128 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n``` # use cosmwasm_std::Uint128; let a = Uint128::from(123u128); assert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64); assert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32); assert_eq!(c.u128(), 70); ```",
+      "title": "Uint256",
+      "description": "An implementation of u256 that is using strings for JSON encoding/decoding, such that the full u256 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types or `from_be_bytes` to provide big endian bytes:\n\n``` # use cosmwasm_std::Uint256; let a = Uint256::new(258u128); let b = Uint256::from(258u16); let c = Uint256::from_be_bytes([ 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8, ]); assert_eq!(a, b); assert_eq!(a, c); ```",
       "type": "string"
     },
     "info": {
@@ -843,7 +847,7 @@
           "description": "The number of tokens that have been claimed by the vest receiver.",
           "allOf": [
             {
-              "$ref": "#/definitions/Uint128"
+              "$ref": "#/definitions/Uint256"
             }
           ]
         },
@@ -863,7 +867,7 @@
           "description": "The number of tokens that have been slashed while staked by the vest receiver. Slashed tokens count against the number of tokens the receiver is entitled to.",
           "allOf": [
             {
-              "$ref": "#/definitions/Uint128"
+              "$ref": "#/definitions/Uint256"
             }
           ]
         },
@@ -939,7 +943,8 @@
                     "y": {
                       "$ref": "#/definitions/Uint128"
                     }
-                  }
+                  },
+                  "additionalProperties": false
                 }
               },
               "additionalProperties": false
@@ -995,7 +1000,8 @@
                 "minItems": 2
               }
             }
-          }
+          },
+          "additionalProperties": false
         },
         "SaturatingLinear": {
           "description": "min_y for all x <= min_x, max_y for all x >= max_x, linear in between",
@@ -1023,7 +1029,8 @@
             "min_y": {
               "$ref": "#/definitions/Uint128"
             }
-          }
+          },
+          "additionalProperties": false
         },
         "Status": {
           "oneOf": [
@@ -1050,7 +1057,7 @@
                       "description": "owner_withdrawable(t). This is monotonically decreasing and will be zero once the owner has completed withdrawing their funds.",
                       "allOf": [
                         {
-                          "$ref": "#/definitions/Uint128"
+                          "$ref": "#/definitions/Uint256"
                         }
                       ]
                     }
@@ -1072,6 +1079,10 @@
         },
         "Uint128": {
           "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding, such that the full u128 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n``` # use cosmwasm_std::Uint128; let a = Uint128::from(123u128); assert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64); assert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32); assert_eq!(c.u128(), 70); ```",
+          "type": "string"
+        },
+        "Uint256": {
+          "description": "An implementation of u256 that is using strings for JSON encoding/decoding, such that the full u256 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types or `from_be_bytes` to provide big endian bytes:\n\n``` # use cosmwasm_std::Uint256; let a = Uint256::new(258u128); let b = Uint256::from(258u16); let c = Uint256::from_be_bytes([ 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8, ]); assert_eq!(a, b); assert_eq!(a, c); ```",
           "type": "string"
         },
         "Uint64": {
@@ -1189,14 +1200,14 @@
     },
     "stake": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Uint128",
-      "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding, such that the full u128 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n``` # use cosmwasm_std::Uint128; let a = Uint128::from(123u128); assert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64); assert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32); assert_eq!(c.u128(), 70); ```",
+      "title": "Uint256",
+      "description": "An implementation of u256 that is using strings for JSON encoding/decoding, such that the full u256 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types or `from_be_bytes` to provide big endian bytes:\n\n``` # use cosmwasm_std::Uint256; let a = Uint256::new(258u128); let b = Uint256::from(258u16); let c = Uint256::from_be_bytes([ 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8, ]); assert_eq!(a, b); assert_eq!(a, c); ```",
       "type": "string"
     },
     "total_to_vest": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Uint128",
-      "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding, such that the full u128 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n``` # use cosmwasm_std::Uint128; let a = Uint128::from(123u128); assert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64); assert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32); assert_eq!(c.u128(), 70); ```",
+      "title": "Uint256",
+      "description": "An implementation of u256 that is using strings for JSON encoding/decoding, such that the full u256 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types or `from_be_bytes` to provide big endian bytes:\n\n``` # use cosmwasm_std::Uint256; let a = Uint256::new(258u128); let b = Uint256::from(258u16); let c = Uint256::from_be_bytes([ 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8, ]); assert_eq!(a, b); assert_eq!(a, c); ```",
       "type": "string"
     },
     "vest_duration": {
@@ -1219,8 +1230,8 @@
     },
     "vested": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Uint128",
-      "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding, such that the full u128 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n``` # use cosmwasm_std::Uint128; let a = Uint128::from(123u128); assert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64); assert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32); assert_eq!(c.u128(), 70); ```",
+      "title": "Uint256",
+      "description": "An implementation of u256 that is using strings for JSON encoding/decoding, such that the full u256 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types or `from_be_bytes` to provide big endian bytes:\n\n``` # use cosmwasm_std::Uint256; let a = Uint256::new(258u128); let b = Uint256::from(258u16); let c = Uint256::from_be_bytes([ 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8, ]); assert_eq!(a, b); assert_eq!(a, c); ```",
       "type": "string"
     }
   }
