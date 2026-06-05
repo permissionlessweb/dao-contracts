@@ -739,7 +739,7 @@ pub fn migrate(
     deps: DepsMut,
     _env: Env,
     _msg: MigrateMsg,
-    info: MigrateInfo,
+    _info: MigrateInfo,
 ) -> Result<Response, ContractError> {
     let contract_version = get_contract_version(deps.storage)?;
 

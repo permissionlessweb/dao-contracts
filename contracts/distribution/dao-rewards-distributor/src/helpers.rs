@@ -47,7 +47,7 @@ pub fn get_transfer_msg(recipient: Addr, amount: Uint256, denom: Denom) -> StdRe
         Denom::Cw20(addr) => {
             let cw20_msg = to_json_binary(&cw20::Cw20ExecuteMsg::Transfer {
                 recipient: recipient.into_string(),
-                amount: amount.into(),
+                amount,
             })?;
             Ok(WasmMsg::Execute {
                 contract_addr: addr.into_string(),

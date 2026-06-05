@@ -394,7 +394,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
                             previous + new_balance.amount
                         });
                     let total_supply =
-                        Uint256::from(token.initial_dao_balance.unwrap_or_default()) + initial_supply;
+                        token.initial_dao_balance.unwrap_or_default() + initial_supply;
 
                     // Here we validate the active threshold to show how validation should be done
                     // in a factory contract.

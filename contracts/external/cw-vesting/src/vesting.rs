@@ -197,7 +197,7 @@ impl Payment {
         } else {
             Ok(vesting
                 .denom
-                .get_transfer_to_message(&vesting.recipient, request.into())?)
+                .get_transfer_to_message(&vesting.recipient, request)?)
         }
     }
 
@@ -227,7 +227,7 @@ impl Payment {
 
             // Use liquid tokens to settle vestee as much as possible
             // and return any remaining liquid funds to the owner.
-            let liquid = self.liquid(&vesting, staked.into());
+            let liquid = self.liquid(&vesting, staked);
             let claimable = (Uint256::new(vesting.vested(t).u128()) - vesting.claimed)
                 .saturating_sub(vesting.slashed);
             let to_vestee = min(claimable, liquid);
@@ -262,14 +262,14 @@ impl Payment {
                 msgs.push(
                     vesting
                         .denom
-                        .get_transfer_to_message(owner, to_owner.into())?,
+                        .get_transfer_to_message(owner, to_owner)?,
                 );
             }
             if !to_vestee.is_zero() {
                 msgs.push(
                     vesting
                         .denom
-                        .get_transfer_to_message(&vesting.recipient, to_vestee.into())?,
+                        .get_transfer_to_message(&vesting.recipient, to_vestee)?,
                 );
             }
 
@@ -301,7 +301,7 @@ impl Payment {
 
                 Ok(vesting
                     .denom
-                    .get_transfer_to_message(owner, request.into())?)
+                    .get_transfer_to_message(owner, request)?)
             }
         } else {
             Err(ContractError::NotCancelled)
@@ -394,10 +394,10 @@ impl Payment {
             self.vesting.save(storage, &vest)?;
             if during_unbonding {
                 self.staking
-                    .on_unbonding_slash(storage, t, validator, amount.into())?;
+                    .on_unbonding_slash(storage, t, validator, amount)?;
             } else {
                 self.staking
-                    .on_bonded_slash(storage, t, validator, amount.into())?;
+                    .on_bonded_slash(storage, t, validator, amount)?;
             }
             Ok(())
         }
@@ -448,7 +448,7 @@ impl Vest {
     /// Gets the number of tokens that have vested at `time`.
     pub fn vested(&self, t: Timestamp) -> Uint128 {
         let elapsed = t.seconds().saturating_sub(self.start_time.seconds());
-        self.vested.value(elapsed).into()
+        self.vested.value(elapsed)
     }
 
     /// Cancels the current vest. No additional tokens will vest after `t`.

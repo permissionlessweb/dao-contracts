@@ -106,7 +106,7 @@ pub fn execute(
 }
 
 mod execute {
-    use cosmwasm_std::{CosmosMsg,MigrateInfo, Decimal256, Uint256};
+    use cosmwasm_std::{CosmosMsg, Uint256};
     use cw4::MemberDiff;
     use cw_utils::nonpayable;
     use dao_hooks::{nft_stake::NftStakeChangedHookMsg, stake::StakeChangedHookMsg};
@@ -168,7 +168,7 @@ mod execute {
                 update_tallies(deps.storage, vote.gauge_id, updates)?;
 
                 // store new vote power for this user
-                vote.power = new.into();
+                vote.power = new;
                 votes().save(deps.storage, &voter, vote.gauge_id, &vote)?;
             }
         }
@@ -1073,7 +1073,7 @@ mod query {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg,info: MigrateInfo) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg,_info: MigrateInfo) -> Result<Response, ContractError> {
     ensure_from_older_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     for (gauge_id, config) in msg.gauge_config.unwrap_or_default() {

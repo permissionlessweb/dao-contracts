@@ -196,7 +196,7 @@ fn execute_create(
         },
         vp_contract,
         hook_caller: hook_caller.clone(),
-        funded_amount: Uint256::zero().into(),
+        funded_amount: Uint256::zero(),
         open_funding,
         withdraw_destination,
         historical_earned_puvp: Uint256::zero(),
@@ -515,7 +515,7 @@ fn execute_claim(
     Ok(Response::new()
         .add_message(get_transfer_msg(
             info.sender.clone(),
-            claim_amount.into(),
+            claim_amount,
             distribution.denom,
         )?)
         .add_attribute("action", "claim")
@@ -563,7 +563,7 @@ fn execute_withdraw(
     let clawback_amount = distribution.funded_amount - rewards_distributed;
 
     // remove withdrawn funds from amount funded since they are no longer funded
-    distribution.funded_amount = rewards_distributed.into();
+    distribution.funded_amount = rewards_distributed;
 
     let clawback_msg = get_transfer_msg(
         distribution.withdraw_destination.clone(),
@@ -615,7 +615,7 @@ fn execute_unsafe_force_withdraw(
         Denom::Cw20(address) => address.to_string(),
     };
 
-    let send = get_transfer_msg(info.sender, amount.into(), checked_denom)?;
+    let send = get_transfer_msg(info.sender, amount, checked_denom)?;
 
     Ok(Response::new()
         .add_message(send)

@@ -37,7 +37,7 @@ pub fn query_mint_allowance(deps: Deps, address: String) -> StdResult<AllowanceR
         .may_load(deps.storage, &deps.api.addr_validate(&address)?)?
         .unwrap_or_else(Uint256::zero);
     Ok(AllowanceResponse {
-        allowance: allowance.into(),
+        allowance,
     })
 }
 
@@ -47,7 +47,7 @@ pub fn query_burn_allowance(deps: Deps, address: String) -> StdResult<AllowanceR
         .may_load(deps.storage, &deps.api.addr_validate(&address)?)?
         .unwrap_or_else(Uint256::zero);
     Ok(AllowanceResponse {
-        allowance: allowance.into(),
+        allowance,
     })
 }
 
@@ -77,7 +77,7 @@ pub fn query_allowances(
             let (k, v) = item?;
             Ok(AllowanceInfo {
                 address: k.to_string(),
-                allowance: v.into(),
+                allowance: v,
             })
         })
         .collect()

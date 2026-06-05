@@ -237,9 +237,9 @@ pub fn migrate(
     _msg: MigrateMsg,
     _info: MigrateInfo,
 ) -> Result<Response, ContractError> {
-    return Err(ContractError::Std(cosmwasm_std::StdError::msg(
+    Err(ContractError::Std(cosmwasm_std::StdError::msg(
         "cannot migrate from v1 -> v3. DAOs must first migrate to  =< v2.8.0-alpha.2",
-    )));
+    )))
     // let ContractVersion { version, .. } = get_contract_version(deps.storage)?;
     // set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 }

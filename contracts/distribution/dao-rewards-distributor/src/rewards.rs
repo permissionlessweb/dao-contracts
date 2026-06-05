@@ -64,7 +64,7 @@ pub fn update_rewards(
     // get the amount of newly earned rewards for the distribution
     user_reward_state
         .pending_rewards
-        .insert(distribution_id, amount_sum.into());
+        .insert(distribution_id, amount_sum);
 
     // update the accounted for amount to that of the total applicable puvp
     user_reward_state
@@ -126,13 +126,13 @@ pub fn get_active_total_earned_puvp(
                 let complete_distribution_periods =
                     new_reward_distribution_duration.ratio(&duration)?;
 
-                let new_rewards_distributed = Uint256::from(amount)
+                let new_rewards_distributed = amount
                     .checked_mul_floor(complete_distribution_periods)?
                     .checked_mul(scale_factor())?;
 
                 // the new rewards per unit voting power that have been
                 // distributed since the last update
-                let new_rewards_puvp = new_rewards_distributed.checked_div(total_power.into())?;
+                let new_rewards_puvp = new_rewards_distributed.checked_div(total_power)?;
                 Ok(curr.checked_add(new_rewards_puvp)?)
             }
         }
@@ -151,7 +151,7 @@ pub fn get_accrued_rewards_not_yet_accounted_for(
 ) -> StdResult<Uint256> {
     // get the user's voting power at the current height
     let voting_power: Uint256 =
-        get_voting_power_at_block(deps, &env.block, &distribution.vp_contract, addr)?.into();
+        get_voting_power_at_block(deps, &env.block, &distribution.vp_contract, addr)?;
 
     // get previous reward per unit voting power accounted for
     let user_last_reward_puvp = user_reward_state

@@ -113,7 +113,7 @@ pub fn parse_stargate_wire_wasm(
     }
 }
 
-//// TRANSFER  ////
+/// TRANSFER  ////
 pub fn parse_cw20_bufany(msg: Binary) -> ParseCw20Response {
     let deserialized = Bufany::deserialize(&msg).unwrap();
     // msg metadata
@@ -143,7 +143,7 @@ pub fn encode_cw20_transfer_anybuf(
     fraction: Decimal,
 ) -> StdResult<CosmosMsg> {
     let mut transfer_msg: Cw20TransferMsg = from_json(&msg)?;
-    transfer_msg.amount = new_amount_gauge_fraction(transfer_msg.amount, fraction.clone())?;
+    transfer_msg.amount = new_amount_gauge_fraction(transfer_msg.amount, fraction)?;
 
     let proto = anybuf
         .append_string(1, sender.clone()) // sender
@@ -159,7 +159,7 @@ pub fn encode_cw20_transfer_anybuf(
     Ok(msg)
 }
 
-//// SEND  ////
+/// SEND  ////
 
 pub fn encode_cw20_send_anybuf(
     anybuf: Anybuf,
@@ -172,7 +172,7 @@ pub fn encode_cw20_send_anybuf(
     // unwraps the cw20 msg from binary
     let mut send_msg: Cw20SendMsg = from_json(&msg)?;
     // updates the amount with the gauge fraction
-    send_msg.amount = new_amount_gauge_fraction(send_msg.amount, fraction.clone())?;
+    send_msg.amount = new_amount_gauge_fraction(send_msg.amount, fraction)?;
 
     let proto = anybuf
         .append_string(1, sender.clone()) // sender (dao)
@@ -188,7 +188,7 @@ pub fn encode_cw20_send_anybuf(
     Ok(msg)
 }
 
-//// INCREASE OR DECREASE ALLOWANCE ////
+/// INCREASE OR DECREASE ALLOWANCE ////
 pub fn encode_cw20_allowance_anybuf(
     anybuf: Anybuf,
     contract: String,
@@ -200,7 +200,7 @@ pub fn encode_cw20_allowance_anybuf(
     // unwraps the cw20 msg from binary
     let mut allowance: Cw20Allowance = from_json(&msg)?;
     // updates the amount with the gauge fraction
-    allowance.amount = new_amount_gauge_fraction(allowance.amount, fraction.clone())?;
+    allowance.amount = new_amount_gauge_fraction(allowance.amount, fraction)?;
 
     let proto = anybuf
         .append_string(1, sender.clone()) // sender (DAO)
@@ -216,7 +216,7 @@ pub fn encode_cw20_allowance_anybuf(
     Ok(msg)
 }
 
-//// MINT CW20 ////
+/// MINT CW20 ////
 pub fn encode_cw20_mint_anybuf(
     anybuf: Anybuf,
     contract: String,
@@ -228,7 +228,7 @@ pub fn encode_cw20_mint_anybuf(
     // unwraps the cw20 msg from binary
     let mut mint: Cw20MintMsg = from_json(&msg)?;
     // updates the amount with the gauge fraction
-    mint.amount = new_amount_gauge_fraction(mint.amount, fraction.clone())?;
+    mint.amount = new_amount_gauge_fraction(mint.amount, fraction)?;
 
     let proto = anybuf
         .append_string(1, sender.clone()) // sender (DAO)

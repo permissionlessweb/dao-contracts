@@ -8,8 +8,6 @@ use cosmwasm_std::{
 use cw2::set_contract_version;
 use dao_interface::token::{InitialBalance, TokenFactoryCallback};
 
-#[cfg(not(test))]
-use crate::bitsong::MsgIssue;
 use crate::bitsong::{Coin, MsgIssueResponse, MsgMint, MsgSetAuthority, MsgSetMinter};
 use crate::error::ContractError;
 use crate::msg::{CreatingFanToken, ExecuteMsg, InstantiateMsg, MigrateMsg, NewFanToken, QueryMsg};

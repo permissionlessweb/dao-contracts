@@ -38,7 +38,7 @@ pub fn parse_stargate_wire_staking(
                 bufany.amount,
                 dao.to_string(),
                 bufany.recipient,
-                fraction.clone(),
+                fraction,
             )?)
         }
         AdapterStakingMsg::MsgRedelegate() => {

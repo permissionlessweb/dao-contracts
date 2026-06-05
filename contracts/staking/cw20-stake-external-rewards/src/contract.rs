@@ -83,9 +83,9 @@ pub fn instantiate(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg, _info: MigrateInfo) -> Result<Response, ContractError> {
-    return Err(ContractError::Std(cosmwasm_std::StdError::msg(
+    Err(ContractError::Std(cosmwasm_std::StdError::msg(
         "cannot migrate from v1 -> v3. DAOs must first migrate to  =< v2.8.0-alpha.2",
-    )));
+    )))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -303,7 +303,7 @@ pub fn get_reward_per_token(deps: Deps, env: &Env, staking_contract: &Addr) -> S
                 last_time_reward_applicable - last_update_block,
             ))
             .checked_mul(scale_factor())?;
-        let denominator = Uint256::from(total_staked);
+        let denominator = total_staked;
         numerator.checked_div(denominator)?
     };
 
@@ -318,7 +318,7 @@ pub fn get_rewards_earned(
     staking_contract: &Addr,
 ) -> StdResult<Uint128> {
     let _config = CONFIG.load(deps.storage)?;
-    let staked_balance = Uint256::from(get_staked_balance(deps, staking_contract, addr)?);
+    let staked_balance = get_staked_balance(deps, staking_contract, addr)?;
     let user_reward_per_token = USER_REWARD_PER_TOKEN
         .load(deps.storage, addr.clone())
         .unwrap_or_default();

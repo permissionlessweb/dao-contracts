@@ -399,10 +399,10 @@ impl DistributionState {
             Err(ContractError::NoVotingPowerNoRewards {})
         } else {
             // the new rewards per unit voting power based on the funded amount
-            let new_rewards_puvp = Uint256::from(funded_amount_delta)
+            let new_rewards_puvp = funded_amount_delta
                 // this can never overflow since funded_amount is a Uint256
                 .checked_mul(scale_factor())?
-                .checked_div(total_power.into())?;
+                .checked_div(total_power)?;
 
             self.active_epoch.total_earned_puvp = curr.checked_add(new_rewards_puvp)?;
 

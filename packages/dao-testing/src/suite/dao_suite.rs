@@ -958,7 +958,7 @@ impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for DaoDaoSuite<Chain> {
             dao_cfg
                 .admin
                 .as_deref()
-                .map(|a| Addr::unchecked(a))
+                .map(Addr::unchecked)
                 .as_ref(),
             &[],
         )?;

@@ -91,7 +91,7 @@ pub fn execute_receive_cw20(
             if receive_msg.amount != instantiate_msg.total {
                 return Err(ContractError::WrongFundAmount {
                     sent: receive_msg.amount,
-                    expected: instantiate_msg.total.into(),
+                    expected: instantiate_msg.total,
                 });
             }
             instantiate_contract(deps, sender, None, instantiate_msg, label)

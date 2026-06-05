@@ -4,7 +4,6 @@ use cw20::{Cw20ReceiveMsg, Denom, UncheckedDenom};
 use cw4::MemberChangedHookMsg;
 use cw_ownable::cw_ownable_execute;
 use dao_hooks::{nft_stake::NftStakeChangedHookMsg, stake::StakeChangedHookMsg};
-use dao_interface::voting::InfoResponse;
 
 // so that consumers don't need a cw_ownable or cw_controllers dependency
 // to consume this contract's queries.
@@ -114,7 +113,7 @@ pub enum ReceiveCw20Msg {
 #[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 pub enum QueryMsg {
     /// Returns contract version info
-    #[returns(InfoResponse)]
+    #[returns(dao_interface::voting::InfoResponse)]
     Info {},
     /// Returns information about the ownership of this contract.
     #[returns(::cw_ownable::Ownership<::cosmwasm_std::Addr>)]

@@ -38,7 +38,7 @@ pub fn parse_stargate_wire_gov(
                 bufany.title,
                 bufany.metadata,
                 bufany.summary,
-                fraction.clone(),
+                fraction,
             )?)
         }
     }

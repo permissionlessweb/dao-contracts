@@ -417,7 +417,7 @@ pub fn execute_execute(
                 .ok_or(VetoError::NoVetoConfiguration {})?;
 
             // check that the sender is the vetoer
-            if &veto_config.vetoer != info.sender.as_str() {
+            if veto_config.vetoer != info.sender.as_str() {
                 // if the sender can normally execute, but is not the vetoer,
                 // return timelocked error. otherwise return unauthorized.
                 if sender_can_execute {
@@ -546,8 +546,8 @@ pub fn execute_vote(
                     prop.individual_votes
                         .remove_vote(current_ballot.vote, current_ballot.individual_power);
                     Ok(Ballot {
-                        power: vote_power.total.into(),
-                        individual_power: vote_power.individual.into(),
+                        power: vote_power.total,
+                        individual_power: vote_power.individual,
                         vote,
                         // Roll over the previous rationale. If
                         // you're changing your vote, you've also
@@ -560,8 +560,8 @@ pub fn execute_vote(
             }
         }
         None => Ok(Ballot {
-            power: vote_power.total.into(),
-            individual_power: vote_power.individual.into(),
+            power: vote_power.total,
+            individual_power: vote_power.individual,
             vote,
             rationale: rationale.clone(),
         }),
@@ -577,7 +577,7 @@ pub fn execute_vote(
             &env.contract.address,
             proposal_id,
             prop.start_height,
-            &vote_power.individual.into(),
+            &vote_power.individual,
             BALLOTS,
             &mut |vote, power| {
                 prop.votes.remove_vote(*vote, power);
@@ -588,9 +588,9 @@ pub fn execute_vote(
 
     let old_status = prop.status;
 
-    prop.votes.add_vote(vote, vote_power.total.into());
+    prop.votes.add_vote(vote, vote_power.total);
     prop.individual_votes
-        .add_vote(vote, vote_power.individual.into());
+        .add_vote(vote, vote_power.individual);
     prop.update_status(&env.block)?;
 
     PROPOSALS.save(deps.storage, proposal_id, &prop)?;
@@ -610,8 +610,8 @@ pub fn execute_vote(
         proposal_id,
         sender.to_string(),
         vote.to_string(),
-        vote_power.total.into(),
-        vote_power.individual.into(),
+        vote_power.total,
+        vote_power.individual,
         prop.start_height,
         is_first_vote,
     )?;
@@ -1029,8 +1029,8 @@ pub fn query_list_votes(
             Ok(VoteInfo {
                 voter,
                 vote: ballot.vote,
-                power: ballot.power.into(),
-                individual_power: ballot.individual_power.into(),
+                power: ballot.power,
+                individual_power: ballot.individual_power,
                 rationale: ballot.rationale,
             })
         })
@@ -1056,9 +1056,9 @@ pub fn migrate(
 
     match msg {
         MigrateMsg::FromV1 { .. } => {
-            return Err(ContractError::Std(cosmwasm_std::StdError::msg(
+            Err(ContractError::Std(cosmwasm_std::StdError::msg(
                 "cannot migrate from v1 -> v3. DAOs must first migrate to  =< v2.8.0-alpha.2",
-            )));
+            )))
         }
         MigrateMsg::FromCompatible {} => Ok(Response::default()
             .add_attribute("action", "migrate")

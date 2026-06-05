@@ -168,7 +168,7 @@ pub fn execute_stake(
         deps.storage,
         &balance.checked_add(amount).map_err(StdError::msg)?,
     )?;
-    let hook_msgs = stake_hook_msgs(HOOKS, deps.storage, sender.clone(), amount_to_stake.into())?;
+    let hook_msgs = stake_hook_msgs(HOOKS, deps.storage, sender.clone(), amount_to_stake)?;
     Ok(Response::new()
         .add_submessages(hook_msgs)
         .add_attribute("action", "stake")
@@ -218,7 +218,7 @@ pub fn execute_unstake(
             .checked_sub(amount_to_claim)
             .map_err(StdError::msg)?,
     )?;
-    let hook_msgs = unstake_hook_msgs(HOOKS, deps.storage, info.sender.clone(), amount.into())?;
+    let hook_msgs = unstake_hook_msgs(HOOKS, deps.storage, info.sender.clone(), amount)?;
     match config.unstaking_duration {
         None => {
             let cw_send_msg = cw20::Cw20ExecuteMsg::Transfer {
@@ -474,7 +474,7 @@ pub fn migrate(
     _msg: MigrateMsg,
     _info: MigrateInfo,
 ) -> Result<Response, ContractError> {
-    return Err(ContractError::Std(cosmwasm_std::StdError::msg(
+    Err(ContractError::Std(cosmwasm_std::StdError::msg(
         "cannot migrate from v1 -> v3. DAOs must first migrate to  =< v2.8.0-alpha.2",
-    )));
+    )))
 }

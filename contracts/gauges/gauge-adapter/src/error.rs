@@ -1,4 +1,4 @@
-use cosmwasm_std::{StdError, Uint128};
+use cosmwasm_std::StdError;
 use cw_denom::DenomError;
 use cw_utils::PaymentError;
 use thiserror::Error;
@@ -38,8 +38,6 @@ pub enum ContractError {
 
 impl PartialEq for ContractError {
     fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
-        }
+        core::mem::discriminant(self) == core::mem::discriminant(other)
     }
 }

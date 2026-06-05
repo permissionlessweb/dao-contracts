@@ -32,7 +32,7 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     let denom = msg.reward.denom.clone();
-    let amount = msg.reward.amount.clone();
+    let amount = msg.reward.amount;
     let treasury = deps.api.addr_validate(&msg.treasury)?;
 
     initialize_submissions(
@@ -40,7 +40,7 @@ pub fn instantiate(
         env.contract.address,
         treasury.clone(),
         denom.clone(),
-        amount.clone(),
+        amount,
     )?;
 
     // set owner
@@ -89,7 +89,7 @@ fn initialize_submissions(
                 contract_addr: c,
                 msg: to_json_binary(&Cw20ExecuteMsg::Transfer {
                     recipient: treasury.to_string(),
-                    amount: amount.into(),
+                    amount,
                 })?,
                 funds: vec![],
             }))?,
@@ -391,7 +391,7 @@ pub fn migrate(
     _deps: DepsMut,
     _env: Env,
     _msg: MigrateMsg,
-    info: MigrateInfo,
+    _info: MigrateInfo,
 ) -> Result<Response, ContractError> {
     Ok(Response::new())
 }

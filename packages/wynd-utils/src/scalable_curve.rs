@@ -1,8 +1,6 @@
 use cosmwasm_schema::cw_serde;
-use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-
-use cosmwasm_std::{Decimal, Uint128, Uint256};
+use cosmwasm_std::{Decimal, Uint128};
 
 use crate::{Curve, CurveError, PiecewiseLinear, SaturatingLinear};
 
@@ -18,10 +16,10 @@ impl ScalableCurve {
     pub fn scale(self, amount: Uint128) -> Curve {
         match self {
             ScalableCurve::Constant { ratio } => Curve::Constant {
-                y: amount.mul_floor(ratio).into(),
+                y: amount.mul_floor(ratio),
             },
             ScalableCurve::ScalableLinear(s) => s.scale(amount),
-            ScalableCurve::ScalablePiecewise(p) => p.scale(amount.into()),
+            ScalableCurve::ScalablePiecewise(p) => p.scale(amount),
         }
     }
 
@@ -60,9 +58,9 @@ impl ScalableLinear {
     pub fn scale(self, amount: Uint128) -> Curve {
         Curve::SaturatingLinear(SaturatingLinear {
             min_x: self.min_x,
-            min_y: amount.mul_floor(self.min_y).into(),
+            min_y: amount.mul_floor(self.min_y),
             max_x: self.max_x,
-            max_y: amount.mul_floor(self.max_y).into(),
+            max_y: amount.mul_floor(self.max_y),
         })
     }
 }

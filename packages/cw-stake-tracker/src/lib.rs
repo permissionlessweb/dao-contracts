@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Binary, StdResult, Storage, Timestamp, Uint128, Uint256, to_json_binary};
+use cosmwasm_std::{Binary, StdResult, Storage, Timestamp, Uint256, to_json_binary};
 use cw_wormhole::Wormhole;
 
 #[cfg(test)]

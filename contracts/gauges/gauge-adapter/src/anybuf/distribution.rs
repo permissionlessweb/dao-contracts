@@ -30,7 +30,7 @@ pub fn parse_stargate_wire_distribution(
                 anybuf,
                 bufany.coins,
                 dao.to_string(),
-                fraction.clone(),
+                fraction,
             )?)
         }
     }

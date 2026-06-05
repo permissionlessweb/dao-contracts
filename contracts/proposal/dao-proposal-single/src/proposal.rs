@@ -199,7 +199,7 @@ impl SingleChoiceProposal {
                 }
             }
             Threshold::AbsoluteCount { threshold } => {
-                Uint256::from(votes_to_consider.yes) >= threshold
+                votes_to_consider.yes >= threshold
             }
         }
     }
@@ -323,7 +323,7 @@ impl SingleChoiceProposal {
                 // cause this proposal to pass then it is rejected.
 
                 let outstanding_votes = self.total_power - votes_to_consider.total();
-                Uint256::from(votes_to_consider.yes) + outstanding_votes < threshold
+                votes_to_consider.yes + outstanding_votes < threshold
             }
         }
     }

@@ -297,11 +297,7 @@ pub mod state {
     // ── NostrExt (on-chain / off-chain discriminator) ──────────────
     impl NostrExt for MetadataExt {
         fn location(&self) -> bool {
-            if self.on_chain {
-                true
-            } else {
-                false
-            }
+            self.on_chain
         }
 
         fn kind(&self) -> u16 {
@@ -720,13 +716,10 @@ pub fn execute(
         .query_minter_ownership(deps.storage)?
         .owner;
     println!("{:#?}", own);
-    match own {
-        Some(o) => match o == info.sender {
-            true => {}
-            false => return Err(ContractError::Unauthorized {}),
-        },
-        None => {}
-    }
+    if let Some(o) = own { match o == info.sender {
+        true => {}
+        false => return Err(ContractError::Unauthorized {}),
+    } }
     match msg {
         cw721::msg::Cw721ExecuteMsg::UpdateExtension { msg } => match msg {
             ExecuteExt::CreateCalendar { owner, extension } => {
@@ -771,7 +764,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             QueryExt::ProposalCreationPolicy {} => to_json_binary(&query_creation_policy(deps)?),
             QueryExt::DelegationModule {} => to_json_binary(&query_delegation_module(deps)?),
 
-            QueryExt::Hooks {} => to_json_binary(&CALENDAR_HOOKS.query_hooks(deps)?),
+            QueryExt::Hooks => to_json_binary(&CALENDAR_HOOKS.query_hooks(deps)?),
             QueryExt::Dao {} => to_json_binary(&DAO.load(deps.storage)?),
             QueryExt::Config {} => to_json_binary(
                 &DaoNostrCalendar::default().query_collection_info_and_extension(deps)?,
@@ -894,7 +887,7 @@ pub mod execute {
         let owner_addr = owner
             .map(|o| deps.api.addr_validate(&o))
             .transpose()?
-            .unwrap_or_else(|| dao);
+            .unwrap_or(dao);
         let cal_count = CALENDAR_COUNT.load(deps.storage)? + 1;
         let d = cal_d(cal_count);
         CALENDAR_COUNT.save(deps.storage, &cal_count)?;
@@ -1007,8 +1000,7 @@ pub mod execute {
                     event.extension = new;
                 }
             }
-        } else {
-        }
+        } 
         Ok(Response::new()
             .add_attribute("action", "update_event")
             .add_attribute("e_d", e_d.to_string()))
@@ -1016,7 +1008,7 @@ pub mod execute {
 
     pub fn cancel_event(
         deps: DepsMut,
-        info: MessageInfo,
+        _info: MessageInfo,
         e_d: String,
     ) -> Result<Response, ContractError> {
         DaoNostrCalendar::default()

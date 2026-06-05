@@ -19,7 +19,6 @@ use dao_testing::{
     },
     helpers::instantiate_with_cw4_groups_governance,
 };
-use dao_voting::multiple_choice::MultipleChoiceAutoVote;
 use dao_voting::pre_propose::PreProposeSubmissionPolicy;
 use dao_voting::{
     deposit::{CheckedDepositInfo, DepositRefundPolicy, DepositToken, UncheckedDepositInfo},
@@ -2485,7 +2484,7 @@ fn test_migrate_from_v241() {
                         },
                     ],
                 },
-                vote: Some(MultipleChoiceAutoVote {
+                vote: Some(dao_voting::multiple_choice::MultipleChoiceAutoVote {
                     vote: MultipleChoiceVote { option_id: 1 },
                     rationale: None,
                 }),

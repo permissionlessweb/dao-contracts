@@ -551,7 +551,7 @@ pub fn query_cw20_entitlements(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg,info: MigrateInfo) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg,_info: MigrateInfo) -> Result<Response, ContractError> {
     match msg {
         MigrateMsg::RedistributeUnclaimedFunds {
             distribution_height,

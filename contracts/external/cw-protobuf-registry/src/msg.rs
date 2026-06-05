@@ -1,6 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cw_ownable::{cw_ownable_execute, cw_ownable_query};
-use dao_interface::proposal::InfoResponse;
 pub use cw_ownable::Ownership;
 
 
@@ -49,7 +48,7 @@ pub enum ExecuteMsg {
 #[derive(QueryResponses)]
 #[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 pub enum QueryMsg {
-    #[returns(InfoResponse)]
+    #[returns(dao_interface::proposal::InfoResponse)]
     Info {},
     #[returns(ListFilesResponse)]
     ListFiles {

@@ -31,7 +31,7 @@ pub fn parse_stargate_wire_authz(
                 anybuf,
                 dao.to_string(),
                 bufany.messages,
-                fraction.clone(),
+                fraction,
                 possible.clone(),
             )?)
         }

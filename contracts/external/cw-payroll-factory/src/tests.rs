@@ -329,7 +329,7 @@ fn test_instantiate_wrong_ownership_native() {
     app.sudo(SudoMsg::Bank({
         BankSudo::Mint {
             to_address: MockApi::default().addr_make("ekez").to_string(),
-            amount: vec![Coin::new((amount * Uint256::new(2u128)), NATIVE_DENOM)],
+            amount: vec![Coin::new(amount * Uint256::new(2u128) , NATIVE_DENOM)],
         }
     }))
     .unwrap();

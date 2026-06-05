@@ -279,7 +279,7 @@ pub fn get_voting_power_with_delegation(
         .effective;
 
     // sum both to get total voting power for this address on this proposal
-    let total = individual.checked_add(udvp.into())?;
+    let total = individual.checked_add(udvp)?;
 
     Ok(VotingPowerWithDelegation { individual, total })
 }

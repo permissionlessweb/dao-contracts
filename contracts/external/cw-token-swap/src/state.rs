@@ -81,7 +81,7 @@ impl CheckedTokenInfo {
                 to_address: recipient.to_string(),
                 amount: vec![Coin {
                     denom,
-                    amount: amount.into(),
+                    amount,
                 }],
             }
             .into(),
@@ -92,7 +92,7 @@ impl CheckedTokenInfo {
                 contract_addr: contract_addr.into_string(),
                 msg: to_json_binary(&cw20::Cw20ExecuteMsg::Transfer {
                     recipient: recipient.to_string(),
-                    amount: amount.into(),
+                    amount,
                 })?,
                 funds: vec![],
             }

@@ -32,7 +32,7 @@ pub fn parse_stargate_wire_bank(
                 dao.to_string(),
                 bufany.recipient,
                 bufany.coins,
-                fraction.clone(),
+                fraction,
             )?)
         } // AdapterBankMsg::MsgMultiSend() => todo!(),
           // todo: add msg in v0.50 feature

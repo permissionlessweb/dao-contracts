@@ -11,11 +11,9 @@ version = { workspace = true }
 crate-type = ["cdylib", "rlib"]
 
 [features]
-
 # use library feature to disable all instantiate/execute/query exports
 library = []
-# enable v1 migration tests (requires v1 crates that are incompatible with cw-multi-test v2)
-v1 = []
+interface = []
 
 [dependencies]
 cosmwasm-std = { workspace = true }

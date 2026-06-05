@@ -4,7 +4,6 @@ use cw20::Cw20ReceiveMsg;
 use cw_denom::UncheckedDenom;
 use cw_ownable::{cw_ownable_execute, cw_ownable_query};
 
-use crate::ContractError;
 
 #[cw_serde]
 pub struct InstantiateMsg {

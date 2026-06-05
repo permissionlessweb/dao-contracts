@@ -61,7 +61,7 @@ pub fn instantiate(
             if vest.total() != sent {
                 return Err(ContractError::WrongFundAmount {
                     sent,
-                    expected: vest.total().into(),
+                    expected: vest.total(),
                 });
             }
             PAYMENT.set_funded(deps.storage)?;
@@ -159,7 +159,7 @@ pub fn execute_receive_cw20(
             if vest.total() != receive_msg.amount {
                 return Err(ContractError::WrongFundAmount {
                     sent: receive_msg.amount,
-                    expected: vest.total().into(),
+                    expected: vest.total(),
                 });
             } // correct amount
 
@@ -273,7 +273,7 @@ pub fn execute_delegate(
         validator: validator.clone(),
         amount: Coin {
             denom,
-            amount: amount.into(),
+            amount,
         },
     };
 
@@ -323,7 +323,7 @@ pub fn execute_redelegate(
     let delegation = resp
         .delegation
         .ok_or(ContractError::NoDelegation(src_validator.clone()))?;
-    if delegation.can_redelegate.amount < amount.into() {
+    if delegation.can_redelegate.amount < amount {
         return Err(ContractError::NonImmediateRedelegate {
             max: delegation.can_redelegate.amount,
         });
@@ -342,7 +342,7 @@ pub fn execute_redelegate(
         dst_validator: dst_validator.clone(),
         amount: Coin {
             denom,
-            amount: amount.into(),
+            amount,
         },
     };
 
@@ -389,7 +389,7 @@ pub fn execute_undelegate(
         validator: validator.clone(),
         amount: Coin {
             denom,
-            amount: amount.into(),
+            amount,
         },
     };
 

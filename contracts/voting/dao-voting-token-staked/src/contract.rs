@@ -507,7 +507,7 @@ pub fn query_voting_power_at_height(
         .may_load_at_height(deps.storage, &address, height)?
         .unwrap_or_default();
     Ok(VotingPowerAtHeightResponse {
-        power: power.into(),
+        power,
         height,
     })
 }
@@ -522,7 +522,7 @@ pub fn query_total_power_at_height(
         .may_load_at_height(deps.storage, height)?
         .unwrap_or_default();
     Ok(TotalPowerAtHeightResponse {
-        power: power.into(),
+        power,
         height,
     })
 }
@@ -601,7 +601,7 @@ pub fn query_is_active(deps: Deps) -> StdResult<Binary> {
                         .query(&cosmwasm_std::QueryRequest::Bank(BankQuery::Supply {
                             denom,
                         }))?;
-                let total_power = Uint256::from(total_potential_power.amount.amount)
+                let total_power = total_potential_power.amount.amount
                     .checked_mul(Uint256::from(PRECISION_FACTOR))?;
                 // under the hood decimals are `atomics / 10^decimal_places`.
                 // cosmwasm doesn't give us a Decimal * Uint256
@@ -705,7 +705,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
                         {
                             // We use initial_supply here because the DAO balance is not
                             // able to be staked by users.
-                            assert_valid_absolute_count_threshold(count, initial_supply.into())?;
+                            assert_valid_absolute_count_threshold(count, initial_supply)?;
                         }
 
                         // Cannot instantiate with no initial token owners because it would
@@ -750,7 +750,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
                             }
 
                             // Sort denom units by exponent, must be in ascending order
-                            denom_units.sort_by(|a, b| a.exponent.cmp(&b.exponent));
+                            denom_units.sort_by_key(|a| a.exponent);
 
                             msgs.push(WasmMsg::Execute {
                                 contract_addr: issuer_addr.clone(),

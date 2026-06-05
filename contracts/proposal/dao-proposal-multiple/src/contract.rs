@@ -446,8 +446,8 @@ pub fn execute_vote(
                     prop.individual_votes
                         .remove_vote(current_ballot.vote, current_ballot.individual_power)?;
                     Ok(Ballot {
-                        power: vote_power.total.into(),
-                        individual_power: vote_power.individual.into(),
+                        power: vote_power.total,
+                        individual_power: vote_power.individual,
                         vote,
                         rationale: rationale.clone(),
                     })
@@ -458,8 +458,8 @@ pub fn execute_vote(
         }
         None => Ok(Ballot {
             vote,
-            power: vote_power.total.into(),
-            individual_power: vote_power.individual.into(),
+            power: vote_power.total,
+            individual_power: vote_power.individual,
             rationale: rationale.clone(),
         }),
     })?;
@@ -474,7 +474,7 @@ pub fn execute_vote(
             &env.contract.address,
             proposal_id,
             prop.start_height,
-            &vote_power.individual.into(),
+            &vote_power.individual,
             BALLOTS,
             &mut |vote, power| prop.votes.remove_vote(*vote, power),
         )?;
@@ -501,8 +501,8 @@ pub fn execute_vote(
         proposal_id,
         sender.to_string(),
         vote.to_string(),
-        vote_power.total.into(),
-        vote_power.individual.into(),
+        vote_power.total,
+        vote_power.individual,
         prop.start_height,
         is_first_vote,
     )?;

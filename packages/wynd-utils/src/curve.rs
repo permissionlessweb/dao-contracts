@@ -3,7 +3,7 @@ use cosmwasm_schema::cw_serde;
 use std::cmp::Ordering;
 use thiserror::Error;
 
-use cosmwasm_std::{Uint128, Uint256};
+use cosmwasm_std::Uint128;
 
 #[derive(Error, Debug)]
 pub enum CurveError {
@@ -25,9 +25,7 @@ pub enum CurveError {
 
 impl PartialEq for CurveError {
     fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
-        }
+        core::mem::discriminant(self) == core::mem::discriminant(other)
     }
 }
 

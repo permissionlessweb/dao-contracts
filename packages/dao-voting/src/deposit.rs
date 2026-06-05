@@ -30,9 +30,7 @@ pub enum DepositError {
 
 impl PartialEq for DepositError {
     fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
-        }
+        core::mem::discriminant(self) == core::mem::discriminant(other)
     }
 }
 
@@ -228,7 +226,7 @@ impl CheckedDepositInfo {
         }
         let message = self
             .denom
-            .get_transfer_to_message(depositor, self.amount.into())?;
+            .get_transfer_to_message(depositor, self.amount)?;
         Ok(vec![message])
     }
 }

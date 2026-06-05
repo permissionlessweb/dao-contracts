@@ -126,7 +126,7 @@ pub fn execute(
             execute::update_contract_owner(deps, env, info, action)
         }
         ExecuteMsg::SetMinterAllowance { address, allowance } => {
-            execute::set_minter(deps, info, address, allowance.into())
+            execute::set_minter(deps, info, address, allowance)
         }
         ExecuteMsg::SetBurnerAllowance { address, allowance } => {
             execute::set_burner(deps, info, address, allowance.into())
