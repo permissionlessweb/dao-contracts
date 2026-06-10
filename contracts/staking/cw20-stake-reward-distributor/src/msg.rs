@@ -1,6 +1,6 @@
 use crate::state::Config;
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{Uint128, Uint256};
 
 use cw_ownable::cw_ownable_execute;
 
@@ -18,6 +18,7 @@ pub struct InstantiateMsg {
 
 #[cw_ownable_execute]
 #[cw_serde]
+#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
     UpdateConfig {
         staking_addr: String,
@@ -30,6 +31,7 @@ pub enum ExecuteMsg {
 
 #[cw_serde]
 #[derive(QueryResponses)]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 pub enum QueryMsg {
     #[returns(InfoResponse)]
     Info {},
@@ -42,12 +44,8 @@ pub enum QueryMsg {
 pub struct InfoResponse {
     pub config: Config,
     pub last_payment_block: u64,
-    pub balance: Uint128,
+    pub balance: Uint256,
 }
 
 #[cw_serde]
-pub enum MigrateMsg {
-    /// Updates the contract from v1 -> v2. Version two implements a
-    /// two step ownership transfer.
-    FromV1 {},
-}
+pub enum MigrateMsg {}

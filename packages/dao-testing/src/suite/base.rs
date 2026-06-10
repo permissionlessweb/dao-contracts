@@ -1,13 +1,15 @@
 use std::{
-    fmt::{Debug, Display},
+    fmt::Debug,
     ops::{Deref, DerefMut},
 };
 
+use cosmwasm_std::StdResult;
 use cosmwasm_std::{
     to_json_binary, Addr, BlockInfo, Coin, CosmosMsg, Empty, QuerierWrapper, Timestamp, Uint128,
+    Uint256,
 };
 use cw20::Cw20Coin;
-use cw_multi_test::{error::AnyResult, App, AppResponse, BankSudo, Contract, Executor, SudoMsg};
+use cw_multi_test::{App, AppResponse, BankSudo, Contract, Executor, SudoMsg};
 use cw_utils::Duration;
 use serde::Serialize;
 
@@ -259,19 +261,19 @@ impl DaoTestingSuiteBase {
         }
     }
 
-    pub fn cw4(&mut self) -> DaoTestingSuiteCw4 {
+    pub fn cw4(&mut self) -> DaoTestingSuiteCw4<'_> {
         DaoTestingSuiteCw4::new(self)
     }
 
-    pub fn cw20(&mut self) -> DaoTestingSuiteCw20 {
+    pub fn cw20(&mut self) -> DaoTestingSuiteCw20<'_> {
         DaoTestingSuiteCw20::new(self)
     }
 
-    pub fn cw721(&mut self) -> DaoTestingSuiteCw721 {
+    pub fn cw721(&mut self) -> DaoTestingSuiteCw721<'_> {
         DaoTestingSuiteCw721::new(self)
     }
 
-    pub fn token(&mut self) -> DaoTestingSuiteToken {
+    pub fn token(&mut self) -> DaoTestingSuiteToken<'_> {
         DaoTestingSuiteToken::new(self)
     }
 }
@@ -324,7 +326,7 @@ impl DaoTestingSuiteBase {
             .unwrap();
 
         // get proposal modules
-        let proposal_modules: Vec<dao_interface::state::ProposalModule> = self
+        let mut proposal_modules: Vec<dao_interface::state::ProposalModule> = self
             .app
             .wrap()
             .query_wasm_smart(
@@ -335,6 +337,11 @@ impl DaoTestingSuiteBase {
                 },
             )
             .unwrap();
+
+        // sort by prefix to maintain instantiation order (A=0, B=1, etc.)
+        // since the map query returns modules sorted by address which may
+        // differ from instantiation order with bech32 addresses
+        proposal_modules.sort_by(|a, b| a.prefix.cmp(&b.prefix));
 
         let proposal_modules = proposal_modules
             .into_iter()
@@ -382,7 +389,7 @@ impl DaoTestingSuiteBase {
     pub fn mint(
         &mut self,
         addr: impl Into<String>,
-        amount: impl Into<Uint128>,
+        amount: impl Into<Uint256>,
         denom: impl Into<String>,
     ) {
         self.app
@@ -430,7 +437,7 @@ impl DaoTestingSuiteBase {
         contract_addr: impl Into<String>,
         msg: &T,
         send_funds: &[Coin],
-    ) -> AnyResult<AppResponse> {
+    ) -> StdResult<AppResponse> {
         self.app.execute_contract(
             Addr::unchecked(sender.into()),
             Addr::unchecked(contract_addr.into()),
@@ -452,17 +459,15 @@ impl DaoTestingSuiteBase {
     }
 
     /// execute a smart contract and return the error
-    pub fn execute_smart_err<T: Serialize + Debug, E: Display + Debug + Send + Sync + 'static>(
+    pub fn execute_smart_err<T: Serialize + Debug>(
         &mut self,
         sender: impl Into<String>,
         contract_addr: impl Into<String>,
         msg: &T,
         send_funds: &[Coin],
-    ) -> E {
+    ) -> cosmwasm_std::StdError {
         self.execute_smart(sender, contract_addr, msg, send_funds)
             .unwrap_err()
-            .downcast()
-            .unwrap()
     }
 
     /// migrate a smart contract and return the result
@@ -472,7 +477,7 @@ impl DaoTestingSuiteBase {
         contract_addr: impl Into<String>,
         msg: &T,
         code_id: u64,
-    ) -> AnyResult<AppResponse> {
+    ) -> StdResult<AppResponse> {
         self.app.migrate_contract(
             Addr::unchecked(sender),
             Addr::unchecked(contract_addr),
@@ -493,17 +498,15 @@ impl DaoTestingSuiteBase {
     }
 
     /// migrate a smart contract and return the error
-    pub fn migrate_err<T: Serialize + Debug, E: Display + Debug + Send + Sync + 'static>(
+    pub fn migrate_err<T: Serialize + Debug>(
         &mut self,
         sender: impl Into<String>,
         contract_addr: impl Into<String>,
         msg: &T,
         code_id: u64,
-    ) -> E {
+    ) -> cosmwasm_std::StdError {
         self.migrate(sender, contract_addr, msg, code_id)
             .unwrap_err()
-            .downcast()
-            .unwrap()
     }
 
     /// instantiate a cw20 contract and return its address
@@ -729,7 +732,7 @@ impl DaoTestingSuiteBase {
     }
 
     /// get the total voting power of the DAO
-    pub fn total_voting_power(&self, core_addr: impl Into<String>) -> Uint128 {
+    pub fn total_voting_power(&self, core_addr: impl Into<String>) -> Uint256 {
         self.querier()
             .query_wasm_smart::<dao_interface::voting::TotalPowerAtHeightResponse>(
                 Addr::unchecked(core_addr.into()),
@@ -778,7 +781,7 @@ impl DaoTestingSuiteBase {
         count: impl Into<Uint128>,
     ) {
         let proposal = self.get_single_choice_proposal(proposal_module, proposal_id);
-        assert_eq!(proposal.votes.get(vote), count.into());
+        assert_eq!(proposal.votes.get(vote), Uint256::from(count.into().u128()));
     }
 
     /// assert individual vote count on single choice proposal
@@ -790,7 +793,10 @@ impl DaoTestingSuiteBase {
         count: impl Into<Uint128>,
     ) {
         let proposal = self.get_single_choice_proposal(proposal_module, proposal_id);
-        assert_eq!(proposal.individual_votes.get(vote), count.into());
+        assert_eq!(
+            proposal.individual_votes.get(vote),
+            Uint256::from(count.into().u128())
+        );
     }
 
     /// assert status on single choice proposal
@@ -810,7 +816,7 @@ impl DaoTestingSuiteBase {
         proposal_module: impl Into<String>,
         proposal_id: u64,
         vote_option_id: u32,
-        count: impl Into<Uint128>,
+        count: impl Into<Uint256>,
     ) {
         let proposal = self.get_multiple_choice_proposal(proposal_module, proposal_id);
         assert_eq!(proposal.votes.get_id(vote_option_id), count.into());
@@ -822,7 +828,7 @@ impl DaoTestingSuiteBase {
         proposal_module: impl Into<String>,
         proposal_id: u64,
         vote_option_id: u32,
-        count: impl Into<Uint128>,
+        count: impl Into<Uint256>,
     ) {
         let proposal = self.get_multiple_choice_proposal(proposal_module, proposal_id);
         assert_eq!(

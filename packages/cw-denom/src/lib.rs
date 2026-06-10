@@ -7,13 +7,12 @@ use std::fmt::{self};
 
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    to_json_binary, Addr, BankMsg, Coin, CosmosMsg, CustomQuery, Deps, QuerierWrapper, StdError,
-    StdResult, Uint128, WasmMsg,
+    Addr, BankMsg, Coin, CosmosMsg, CustomQuery, Deps, QuerierWrapper, StdError, StdResult, Uint256, WasmMsg, to_json_binary
 };
 
 use thiserror::Error;
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum DenomError {
     #[error(transparent)]
     Std(#[from] StdError),
@@ -30,6 +29,13 @@ pub enum DenomError {
     #[error("invalid character ({c}) in native denom")]
     InvalidCharacter { c: char },
 }
+
+impl PartialEq for DenomError {
+    fn eq(&self, other: &Self) -> bool {
+        core::mem::discriminant(self) == core::mem::discriminant(other)
+    }
+}
+
 
 /// A denom that has been checked to point to a valid asset. This enum
 /// should never be constructed literally and should always be built
@@ -121,7 +127,7 @@ impl CheckedDenom {
         &self,
         querier: &QuerierWrapper<C>,
         who: &Addr,
-    ) -> StdResult<Uint128> {
+    ) -> StdResult<Uint256> {
         match self {
             CheckedDenom::Native(denom) => Ok(querier.query_balance(who, denom)?.amount),
             CheckedDenom::Cw20(address) => {
@@ -139,7 +145,7 @@ impl CheckedDenom {
     /// Gets a `CosmosMsg` that, when executed, will transfer AMOUNT
     /// tokens to WHO. AMOUNT being zero will cause the message
     /// execution to fail.
-    pub fn get_transfer_to_message(&self, who: &Addr, amount: Uint128) -> StdResult<CosmosMsg> {
+    pub fn get_transfer_to_message(&self, who: &Addr, amount: Uint256) -> StdResult<CosmosMsg> {
         Ok(match self {
             CheckedDenom::Native(denom) => BankMsg::Send {
                 to_address: who.to_string(),
@@ -202,7 +208,7 @@ impl fmt::Display for CheckedDenom {
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::{
-        testing::{mock_dependencies, MockQuerier},
+        testing::{mock_dependencies, MockApi, MockQuerier},
         to_json_binary, Addr, ContractResult, QuerierResult, StdError, SystemError, Uint128,
         WasmQuery,
     };
@@ -211,25 +217,28 @@ mod tests {
 
     const CW20_ADDR: &str = "cw20";
 
+    fn cw20_addr() -> Addr {
+        MockApi::default().addr_make(CW20_ADDR)
+    }
+
     fn token_info_mock_querier(works: bool) -> impl Fn(&WasmQuery) -> QuerierResult {
+        let cw20 = cw20_addr().to_string();
         move |query: &WasmQuery| -> QuerierResult {
             match query {
                 WasmQuery::Smart { contract_addr, .. } => {
-                    if *contract_addr == CW20_ADDR {
+                    if *contract_addr == cw20 {
                         if works {
                             QuerierResult::Ok(ContractResult::Ok(
                                 to_json_binary(&cw20::TokenInfoResponse {
                                     name: "coin".to_string(),
                                     symbol: "symbol".to_string(),
                                     decimals: 6,
-                                    total_supply: Uint128::new(10),
+                                    total_supply: Uint256::new(10),
                                 })
                                 .unwrap(),
                             ))
                         } else {
-                            QuerierResult::Err(SystemError::NoSuchContract {
-                                addr: CW20_ADDR.to_string(),
-                            })
+                            QuerierResult::Err(SystemError::NoSuchContract { addr: cw20.clone() })
                         }
                     } else {
                         unimplemented!()
@@ -248,10 +257,10 @@ mod tests {
         let mut deps = mock_dependencies();
         deps.querier = querier;
 
-        let unchecked = UncheckedDenom::Cw20(CW20_ADDR.to_string());
+        let unchecked = UncheckedDenom::Cw20(cw20_addr().to_string());
         let checked = unchecked.into_checked(deps.as_ref()).unwrap();
 
-        assert_eq!(checked, CheckedDenom::Cw20(Addr::unchecked(CW20_ADDR)))
+        assert_eq!(checked, CheckedDenom::Cw20(cw20_addr()))
     }
 
     #[test]
@@ -262,14 +271,15 @@ mod tests {
         let mut deps = mock_dependencies();
         deps.querier = querier;
 
-        let unchecked = UncheckedDenom::Cw20(CW20_ADDR.to_string());
+        let cw20 = cw20_addr();
+        let unchecked = UncheckedDenom::Cw20(cw20.to_string());
         let err = unchecked.into_checked(deps.as_ref()).unwrap_err();
         assert_eq!(
             err,
             DenomError::InvalidCw20 {
-                err: StdError::GenericErr {
-                    msg: format!("Querier system error: No such contract: {CW20_ADDR}",)
-                }
+                err: StdError::msg(format!(
+                    "Querier system error: No such contract: {cw20}",
+                ))
             }
         )
     }
@@ -286,9 +296,7 @@ mod tests {
         let err = unchecked.into_checked(deps.as_ref()).unwrap_err();
         assert_eq!(
             err,
-            DenomError::Std(StdError::GenericErr {
-                msg: "Invalid input: address not normalized".to_string()
-            })
+            DenomError::Std(StdError::msg("Error decoding bech32"))
         )
     }
 
@@ -363,7 +371,8 @@ mod tests {
     fn test_display() {
         let denom = CheckedDenom::Native("hello".to_string());
         assert_eq!(denom.to_string(), "hello".to_string());
-        let denom = CheckedDenom::Cw20(Addr::unchecked("hello"));
-        assert_eq!(denom.to_string(), "hello".to_string());
+        let hello_addr = MockApi::default().addr_make("hello");
+        let denom = CheckedDenom::Cw20(hello_addr.clone());
+        assert_eq!(denom.to_string(), hello_addr.to_string());
     }
 }

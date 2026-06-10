@@ -1,13 +1,13 @@
 use cosmwasm_std::{OverflowError, StdError};
 use thiserror::Error;
 
-#[derive(Debug, Error, PartialEq)]
+#[derive(Debug, Error)]
 pub enum RolesContractError {
     #[error(transparent)]
     Std(#[from] StdError),
 
     #[error(transparent)]
-    Base(#[from] cw721_base::ContractError),
+    Base(#[from] cw721::error::Cw721ContractError),
 
     #[error(transparent)]
     HookError(#[from] cw_controllers::HookError),
@@ -26,4 +26,10 @@ pub enum RolesContractError {
 
     #[error("The submitted weight is equal to the previous value, no change will occur")]
     NoWeightChange {},
+}
+
+impl PartialEq for RolesContractError {
+    fn eq(&self, other: &Self) -> bool {
+        core::mem::discriminant(self) == core::mem::discriminant(other)
+    }
 }

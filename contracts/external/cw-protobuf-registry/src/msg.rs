@@ -1,8 +1,7 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cw_ownable::{cw_ownable_execute, cw_ownable_query};
-use dao_interface::proposal::InfoResponse;
-
 pub use cw_ownable::Ownership;
+
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -13,6 +12,7 @@ pub struct InstantiateMsg {
 
 #[cw_ownable_execute]
 #[cw_serde]
+#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
     /// Register protobuf file descriptor sets.
     Register {
@@ -46,8 +46,9 @@ pub enum ExecuteMsg {
 #[cw_ownable_query]
 #[cw_serde]
 #[derive(QueryResponses)]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 pub enum QueryMsg {
-    #[returns(InfoResponse)]
+    #[returns(dao_interface::proposal::InfoResponse)]
     Info {},
     #[returns(ListFilesResponse)]
     ListFiles {
@@ -123,5 +124,6 @@ pub struct FileDescriptorSetResponse {
 
 #[cw_serde]
 pub struct DecodeResponse {
-    pub value: serde_json::Value,
+    /// JSON-encoded decoded protobuf message.
+    pub value: String,
 }

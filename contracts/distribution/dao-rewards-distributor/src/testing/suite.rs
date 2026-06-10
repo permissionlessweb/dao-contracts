@@ -1,5 +1,7 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, to_json_binary, Addr, Coin, Timestamp, Uint128};
+use cosmwasm_std::{
+    coin, testing::MockApi, to_json_binary, Addr, Coin, Timestamp, Uint128, Uint256,
+};
 use cw20::{Cw20Coin, Expiration, UncheckedDenom};
 use cw4::{Member, MemberListResponse};
 use cw_multi_test::{BankSudo, Executor, SudoMsg};
@@ -117,15 +119,15 @@ impl SuiteBuilder {
                     .with_initial_balances(vec![
                         Cw20Coin {
                             address: ADDR0.to_string(),
-                            amount: Uint128::new(100),
+                            amount: Uint256::new(100),
                         },
                         Cw20Coin {
                             address: ADDR1.to_string(),
-                            amount: Uint128::new(50),
+                            amount: Uint256::new(50),
                         },
                         Cw20Coin {
                             address: ADDR2.to_string(),
-                            amount: Uint128::new(50),
+                            amount: Uint256::new(50),
                         },
                     ])
                     .dao();
@@ -172,15 +174,15 @@ impl SuiteBuilder {
                     .with_initial_balances(vec![
                         InitialBalance {
                             address: ADDR0.to_string(),
-                            amount: Uint128::new(100),
+                            amount: Uint256::new(100),
                         },
                         InitialBalance {
                             address: ADDR1.to_string(),
-                            amount: Uint128::new(50),
+                            amount: Uint256::new(50),
                         },
                         InitialBalance {
                             address: ADDR2.to_string(),
-                            amount: Uint128::new(50),
+                            amount: Uint256::new(50),
                         },
                     ])
                     .dao();
@@ -233,7 +235,7 @@ impl SuiteBuilder {
                             1,
                             Cw20Coin {
                                 address: suite_built.cw20_addr.to_string(),
-                                amount: Uint128::new(100_000_000),
+                                amount: Uint256::new(100_000_000),
                             },
                         );
                     }
@@ -249,7 +251,7 @@ impl SuiteBuilder {
                                 "rewardcw",
                                 vec![Cw20Coin {
                                     address: OWNER.to_string(),
-                                    amount: Uint128::new(1_000_000_000),
+                                    amount: Uint256::new(1_000_000_000),
                                 }],
                             )
                             .to_string(),
@@ -275,7 +277,7 @@ impl SuiteBuilder {
                             1,
                             Cw20Coin {
                                 address: addr.to_string(),
-                                amount: Uint128::new(100_000_000),
+                                amount: Uint256::new(100_000_000),
                             },
                         );
                     }
@@ -328,21 +330,20 @@ impl Suite {
         &self,
         address: T,
         denom: U,
-    ) -> u128 {
+    ) -> Uint256 {
         self.base
             .app
             .wrap()
             .query_balance(address, denom)
             .unwrap()
             .amount
-            .u128()
     }
 
     pub fn get_balance_cw20<T: Into<String>, U: Into<String>>(
         &self,
         contract_addr: T,
         address: U,
-    ) -> u128 {
+    ) -> Uint256 {
         let msg = cw20::Cw20QueryMsg::Balance {
             address: address.into(),
         };
@@ -352,7 +353,7 @@ impl Suite {
             .wrap()
             .query_wasm_smart(contract_addr, &msg)
             .unwrap();
-        result.balance.u128()
+        result.balance
     }
 
     pub fn get_distributions(&mut self) -> DistributionsResponse {
@@ -382,8 +383,8 @@ impl Suite {
         resp
     }
 
-    pub fn get_undistributed_rewards(&mut self, id: u64) -> Uint128 {
-        let undistributed_rewards: Uint128 = self
+    pub fn get_undistributed_rewards(&mut self, id: u64) -> Uint256 {
+        let undistributed_rewards: Uint256 = self
             .base
             .app
             .wrap()
@@ -431,7 +432,7 @@ impl Suite {
         match distribution.active_epoch.emission_rate {
             EmissionRate::Paused {} => panic!("expected non-paused emission rate"),
             EmissionRate::Immediate {} => panic!("expected non-immediate emission rate"),
-            EmissionRate::Linear { amount, .. } => assert_eq!(amount, Uint128::new(expected)),
+            EmissionRate::Linear { amount, .. } => assert_eq!(amount, Uint256::new(expected)),
         }
     }
 
@@ -474,7 +475,7 @@ impl Suite {
 
         assert_eq!(
             pending,
-            &Uint128::new(expected),
+            &Uint256::new(expected),
             "expected {} pending rewards, got {}",
             expected,
             pending
@@ -485,7 +486,7 @@ impl Suite {
         let undistributed_rewards = self.get_undistributed_rewards(id);
         assert_eq!(
             undistributed_rewards,
-            &Uint128::new(expected),
+            &Uint256::new(expected),
             "expected {} undistributed rewards, got {}",
             expected,
             undistributed_rewards
@@ -494,12 +495,12 @@ impl Suite {
 
     pub fn assert_native_balance(&self, address: &str, denom: &str, expected: u128) {
         let balance = self.get_balance_native(address, denom);
-        assert_eq!(balance, expected);
+        assert_eq!(balance, Uint256::new(expected));
     }
 
     pub fn assert_cw20_balance(&self, cw20: &str, address: &str, expected: u128) {
         let balance = self.get_balance_cw20(cw20, address);
-        assert_eq!(balance, expected);
+        assert_eq!(balance, Uint256::new(expected));
     }
 }
 
@@ -520,7 +521,7 @@ impl Suite {
 
     pub fn withdraw_error(&mut self, id: u64) -> ContractError {
         let msg = ExecuteMsg::Withdraw { id };
-        self.base
+        dao_rewards_distributor::ContractError::Std(self.base
             .app
             .execute_contract(
                 Addr::unchecked(OWNER),
@@ -528,9 +529,7 @@ impl Suite {
                 &msg,
                 &[],
             )
-            .unwrap_err()
-            .downcast()
-            .unwrap()
+            .unwrap_err())
     }
 
     pub fn register_hook(&mut self, addr: Addr) {
@@ -547,12 +546,12 @@ impl Suite {
         &mut self,
         reward_config: RewardsConfig,
         hook_caller: &str,
-        funds: Option<Uint128>,
+        funds: Option<Uint256>,
     ) {
         let execute_create_msg = ExecuteMsg::Create(CreateMsg {
             denom: reward_config.denom.clone(),
             emission_rate: EmissionRate::Linear {
-                amount: Uint128::new(reward_config.amount),
+                amount: Uint256::new(reward_config.amount),
                 duration: reward_config.duration,
                 continuous: reward_config.continuous,
             },
@@ -565,7 +564,7 @@ impl Suite {
         // include funds if provided
         let send_funds = if let Some(funds) = funds {
             match reward_config.denom {
-                UncheckedDenom::Native(denom) => vec![coin(funds.u128(), denom)],
+                UncheckedDenom::Native(denom) => vec![Coin::new(funds, denom)],
                 UncheckedDenom::Cw20(_) => vec![],
             }
         } else {
@@ -702,7 +701,7 @@ impl Suite {
     pub fn stake_cw20_tokens(&mut self, amount: u128, sender: &str) {
         let msg = cw20::Cw20ExecuteMsg::Send {
             contract: self.staking_addr.to_string(),
-            amount: Uint128::new(amount),
+            amount: Uint256::new(amount),
             msg: to_json_binary(&cw20_stake::msg::ReceiveMsg::Stake {}).unwrap(),
         };
         self.base
@@ -713,7 +712,7 @@ impl Suite {
 
     pub fn unstake_cw20_tokens(&mut self, amount: u128, sender: &str) {
         let msg = cw20_stake::msg::ExecuteMsg::Unstake {
-            amount: Uint128::new(amount),
+            amount: Uint256::new(amount),
         };
         self.base
             .app
@@ -742,7 +741,7 @@ impl Suite {
         )
     }
 
-    pub fn stake_native_tokens(&mut self, address: &str, amount: u128) {
+    pub fn stake_native_tokens(&mut self, address: &str, amount: Uint256) {
         self.base
             .token()
             .stake(&self.token_dao.clone().unwrap(), address, amount)
@@ -764,7 +763,7 @@ impl Suite {
         let msg: ExecuteMsg = ExecuteMsg::Update {
             id,
             emission_rate: Some(EmissionRate::Linear {
-                amount: Uint128::new(epoch_rewards),
+                amount: Uint256::new(epoch_rewards),
                 duration: epoch_duration,
                 continuous,
             }),
@@ -996,16 +995,14 @@ impl Suite {
             amount: amount.into(),
             denom,
         };
-        self.base
+        dao_rewards_distributor::ContractError::Std(self.base
             .app
             .execute_contract(
-                Addr::unchecked("no_one"),
+                MockApi::default().addr_make("no_one"),
                 self.distribution_contract.clone(),
                 &msg,
                 &[],
             )
-            .unwrap_err()
-            .downcast()
-            .unwrap()
+            .unwrap_err())
     }
 }

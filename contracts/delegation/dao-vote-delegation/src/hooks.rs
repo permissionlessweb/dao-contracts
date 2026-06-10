@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, DepsMut, Env, Response, Uint128};
+use cosmwasm_std::{Addr, DepsMut, Env, Response, Uint256};
 use cw4::MemberChangedHookMsg;
 use cw_snapshot_vector_map::LoadedItem;
 use dao_hooks::{nft_stake::NftStakeChangedHookMsg, stake::StakeChangedHookMsg, vote::VoteHookMsg};
@@ -30,9 +30,11 @@ pub(crate) fn execute_stake_changed(
 
     match msg {
         StakeChangedHookMsg::Stake { addr, amount } => {
+            let amount: Uint256 = amount.try_into().unwrap();
             handle_voting_power_changed_hook(deps, &env, addr, amount, true)
         }
         StakeChangedHookMsg::Unstake { addr, amount } => {
+            let amount: Uint256 = amount.try_into().unwrap();
             handle_voting_power_changed_hook(deps, &env, addr, amount, false)
         }
     }
@@ -84,7 +86,7 @@ pub(crate) fn execute_nft_stake_changed(
     match msg {
         NftStakeChangedHookMsg::Stake { addr, .. } => {
             // NFTs are staked one at a time
-            handle_voting_power_changed_hook(deps, &env, addr, Uint128::one(), true)
+            handle_voting_power_changed_hook(deps, &env, addr, Uint256::one(), true)
         }
         NftStakeChangedHookMsg::Unstake { addr, token_ids } => {
             // more than one NFT can be unstaked at once
@@ -98,12 +100,13 @@ fn handle_voting_power_changed_hook(
     deps: DepsMut,
     env: &Env,
     addr: Addr,
-    vp_delta: impl Into<Uint128>,
+    w: impl Into<Uint256>,
     increased: bool,
 ) -> Result<Response, ContractError> {
+    let vp_delta: Uint256 = w.into();
     let dao = DAO.load(deps.storage)?;
 
-    let new_vp = dao_voting::voting::get_voting_power(
+    let new_vp: Uint256 = dao_voting::voting::get_voting_power(
         deps.as_ref(),
         addr.clone(),
         &dao,
@@ -111,7 +114,9 @@ fn handle_voting_power_changed_hook(
         // the next block. since the member changed their voting power in the
         // current block, we need to use the new value.
         Some(env.block.height + 1),
-    )?;
+    )?
+    .try_into()
+    .unwrap();
 
     // depending on whether the voting power hook was fired for a delegate or
     // delegator, we need to handle the voting power change differently. check
@@ -127,7 +132,7 @@ fn handle_voting_power_changed_hook(
             env,
             addr,
             new_vp,
-            vp_delta.into(),
+            vp_delta,
             increased,
         )
     }
@@ -139,7 +144,7 @@ fn handle_delegate_voting_power_changed_hook(
     deps: DepsMut,
     env: &Env,
     delegate: Addr,
-    new_vp: Uint128,
+    new_vp: Uint256,
 ) -> Result<Response, ContractError> {
     // unregister if no more voting power
     if new_vp.is_zero() {
@@ -158,8 +163,8 @@ fn handle_delegator_voting_power_changed_hook(
     deps: DepsMut,
     env: &Env,
     delegator: Addr,
-    new_vp: Uint128,
-    vp_delta: Uint128,
+    new_vp: Uint256,
+    vp_delta: Uint256,
     increased: bool,
 ) -> Result<Response, ContractError> {
     // need to get the latest delegations in case any were updated earlier in

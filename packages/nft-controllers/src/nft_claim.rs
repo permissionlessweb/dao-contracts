@@ -4,7 +4,7 @@ use cw_storage_plus::{Bound, Map};
 use cw_utils::Expiration;
 use thiserror::Error;
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum NftClaimError {
     #[error(transparent)]
     Std(#[from] StdError),
@@ -16,6 +16,11 @@ pub enum NftClaimError {
     NotReady { token_id: String },
 }
 
+impl PartialEq for NftClaimError {
+    fn eq(&self, other: &Self) -> bool {
+        core::mem::discriminant(self) == core::mem::discriminant(other)
+    }
+}
 #[cw_serde]
 pub struct NftClaim {
     pub token_id: String,
@@ -31,10 +36,10 @@ impl NftClaim {
     }
 }
 
-pub struct NftClaims<'a>(Map<'a, (&'a Addr, &'a String), Expiration>);
+pub struct NftClaims<'a>(Map<(&'a Addr, &'a String), Expiration>);
 
 impl<'a> NftClaims<'a> {
-    pub const fn new(storage_key: &'a str) -> Self {
+    pub const fn new(storage_key: &'static str) -> Self {
         NftClaims(Map::new(storage_key))
     }
 
@@ -124,7 +129,7 @@ impl<'a> NftClaims<'a> {
 #[cfg(test)]
 mod test {
     use cosmwasm_std::{
-        testing::{mock_dependencies, mock_env},
+        testing::{mock_dependencies, mock_env, MockApi},
         Order,
     };
 
@@ -164,7 +169,7 @@ mod test {
         claims
             .create_nft_claims(
                 deps.as_mut().storage,
-                &Addr::unchecked("addr"),
+                &MockApi::default().addr_make("addr"),
                 vec![TEST_BAYC_TOKEN_ID.into()],
                 TEST_EXPIRATION,
             )
@@ -173,7 +178,7 @@ mod test {
         // Assert that claims creates a map and there is one claim for the address.
         let saved_claims = claims
             .0
-            .prefix(&Addr::unchecked("addr"))
+            .prefix(&MockApi::default().addr_make("addr"))
             .range(deps.as_mut().storage, None, None, Order::Ascending)
             .collect::<StdResult<Vec<_>>>()
             .unwrap();
@@ -185,7 +190,7 @@ mod test {
         claims
             .create_nft_claims(
                 deps.as_mut().storage,
-                &Addr::unchecked("addr"),
+                &MockApi::default().addr_make("addr"),
                 vec![TEST_CRYPTO_PUNKS_TOKEN_ID.into()],
                 TEST_EXPIRATION,
             )
@@ -194,7 +199,7 @@ mod test {
         // Assert that both claims exist for the address.
         let saved_claims = claims
             .0
-            .prefix(&Addr::unchecked("addr"))
+            .prefix(&MockApi::default().addr_make("addr"))
             .range(deps.as_mut().storage, None, None, Order::Ascending)
             .collect::<StdResult<Vec<_>>>()
             .unwrap();
@@ -208,7 +213,7 @@ mod test {
         claims
             .create_nft_claims(
                 deps.as_mut().storage,
-                &Addr::unchecked("addr2"),
+                &MockApi::default().addr_make("addr2"),
                 vec![TEST_CRYPTO_PUNKS_TOKEN_ID.to_string()],
                 TEST_EXPIRATION,
             )
@@ -217,14 +222,14 @@ mod test {
         // Assert that both claims exist for the address.
         let saved_claims = claims
             .0
-            .prefix(&Addr::unchecked("addr"))
+            .prefix(&MockApi::default().addr_make("addr"))
             .range(deps.as_mut().storage, None, None, Order::Ascending)
             .collect::<StdResult<Vec<_>>>()
             .unwrap();
 
         let saved_claims_addr2 = claims
             .0
-            .prefix(&Addr::unchecked("addr2"))
+            .prefix(&MockApi::default().addr_make("addr2"))
             .range(deps.as_mut().storage, None, None, Order::Ascending)
             .collect::<StdResult<Vec<_>>>()
             .unwrap();
@@ -241,7 +246,7 @@ mod test {
         let error = claims
             .claim_nfts(
                 deps.as_mut().storage,
-                &Addr::unchecked("addr"),
+                &MockApi::default().addr_make("addr"),
                 &["404".to_string()],
                 &env.block,
             )
@@ -256,14 +261,14 @@ mod test {
         claims
             .claim_nfts(
                 deps.as_mut().storage,
-                &Addr::unchecked("addr"),
+                &MockApi::default().addr_make("addr"),
                 &[],
                 &mock_env().block,
             )
             .unwrap();
         let saved_claims = claims
             .0
-            .prefix(&Addr::unchecked("addr"))
+            .prefix(&MockApi::default().addr_make("addr"))
             .range_raw(deps.as_mut().storage, None, None, Order::Ascending)
             .collect::<StdResult<Vec<_>>>()
             .unwrap();
@@ -279,7 +284,7 @@ mod test {
         claims
             .create_nft_claims(
                 deps.as_mut().storage,
-                &Addr::unchecked("addr"),
+                &MockApi::default().addr_make("addr"),
                 vec![TEST_CRYPTO_PUNKS_TOKEN_ID.to_string()],
                 Expiration::AtHeight(10),
             )
@@ -288,7 +293,7 @@ mod test {
         claims
             .create_nft_claims(
                 deps.as_mut().storage,
-                &Addr::unchecked("addr"),
+                &MockApi::default().addr_make("addr"),
                 vec![TEST_BAYC_TOKEN_ID.to_string()],
                 Expiration::AtHeight(100),
             )
@@ -300,7 +305,7 @@ mod test {
         let error = claims
             .claim_nfts(
                 deps.as_mut().storage,
-                &Addr::unchecked("addr"),
+                &MockApi::default().addr_make("addr"),
                 &[
                     TEST_CRYPTO_PUNKS_TOKEN_ID.to_string(),
                     TEST_BAYC_TOKEN_ID.to_string(),
@@ -317,7 +322,7 @@ mod test {
 
         let saved_claims = claims
             .0
-            .prefix(&Addr::unchecked("addr"))
+            .prefix(&MockApi::default().addr_make("addr"))
             .range(deps.as_mut().storage, None, None, Order::Ascending)
             .collect::<StdResult<Vec<_>>>()
             .unwrap();
@@ -337,7 +342,7 @@ mod test {
         claims
             .create_nft_claims(
                 deps.as_mut().storage,
-                &Addr::unchecked("addr"),
+                &MockApi::default().addr_make("addr"),
                 vec![TEST_BAYC_TOKEN_ID.to_string()],
                 Expiration::AtHeight(10),
             )
@@ -346,7 +351,7 @@ mod test {
         claims
             .create_nft_claims(
                 deps.as_mut().storage,
-                &Addr::unchecked("addr"),
+                &MockApi::default().addr_make("addr"),
                 vec![TEST_CRYPTO_PUNKS_TOKEN_ID.to_string()],
                 Expiration::AtHeight(100),
             )
@@ -358,7 +363,7 @@ mod test {
         claims
             .claim_nfts(
                 deps.as_mut().storage,
-                &Addr::unchecked("addr"),
+                &MockApi::default().addr_make("addr"),
                 &[TEST_BAYC_TOKEN_ID.to_string()],
                 &env.block,
             )
@@ -366,7 +371,7 @@ mod test {
 
         let saved_claims = claims
             .0
-            .prefix(&Addr::unchecked("addr"))
+            .prefix(&MockApi::default().addr_make("addr"))
             .range(deps.as_mut().storage, None, None, Order::Ascending)
             .collect::<StdResult<Vec<_>>>()
             .unwrap();
@@ -384,7 +389,7 @@ mod test {
         claims
             .create_nft_claims(
                 deps.as_mut().storage,
-                &Addr::unchecked("addr"),
+                &MockApi::default().addr_make("addr"),
                 vec![TEST_BAYC_TOKEN_ID.to_string()],
                 Expiration::AtHeight(10),
             )
@@ -393,7 +398,7 @@ mod test {
         claims
             .create_nft_claims(
                 deps.as_mut().storage,
-                &Addr::unchecked("addr"),
+                &MockApi::default().addr_make("addr"),
                 vec![TEST_CRYPTO_PUNKS_TOKEN_ID.to_string()],
                 Expiration::AtHeight(100),
             )
@@ -405,7 +410,7 @@ mod test {
         claims
             .claim_nfts(
                 deps.as_mut().storage,
-                &Addr::unchecked("addr"),
+                &MockApi::default().addr_make("addr"),
                 &[
                     TEST_BAYC_TOKEN_ID.to_string(),
                     TEST_CRYPTO_PUNKS_TOKEN_ID.to_string(),
@@ -416,7 +421,7 @@ mod test {
 
         let saved_claims = claims
             .0
-            .prefix(&Addr::unchecked("addr"))
+            .prefix(&MockApi::default().addr_make("addr"))
             .range(deps.as_mut().storage, None, None, Order::Ascending)
             .collect::<StdResult<Vec<_>>>()
             .unwrap();
@@ -432,18 +437,23 @@ mod test {
         claims
             .create_nft_claims(
                 deps.as_mut().storage,
-                &Addr::unchecked("addr"),
+                &MockApi::default().addr_make("addr"),
                 vec![TEST_CRYPTO_PUNKS_TOKEN_ID.to_string()],
                 Expiration::AtHeight(10),
             )
             .unwrap();
 
         let queried_claims = claims
-            .query_claims(deps.as_ref(), &Addr::unchecked("addr"), None, None)
+            .query_claims(
+                deps.as_ref(),
+                &MockApi::default().addr_make("addr"),
+                None,
+                None,
+            )
             .unwrap();
         let saved_claims = claims
             .0
-            .prefix(&Addr::unchecked("addr"))
+            .prefix(&MockApi::default().addr_make("addr"))
             .range(deps.as_mut().storage, None, None, Order::Ascending)
             .map(|item| item.map(|(token_id, v)| NftClaim::new(token_id, v)))
             .collect::<StdResult<Vec<_>>>()
@@ -460,7 +470,7 @@ mod test {
         claims
             .create_nft_claims(
                 deps.as_mut().storage,
-                &Addr::unchecked("addr"),
+                &MockApi::default().addr_make("addr"),
                 vec![
                     TEST_BAYC_TOKEN_ID.to_string(),
                     TEST_CRYPTO_PUNKS_TOKEN_ID.to_string(),
@@ -470,7 +480,12 @@ mod test {
             .unwrap();
 
         let queried_claims = claims
-            .query_claims(deps.as_ref(), &Addr::unchecked("addr"), None, None)
+            .query_claims(
+                deps.as_ref(),
+                &MockApi::default().addr_make("addr"),
+                None,
+                None,
+            )
             .unwrap();
         assert_eq!(
             queried_claims,
@@ -484,7 +499,12 @@ mod test {
         );
 
         let queried_claims = claims
-            .query_claims(deps.as_ref(), &Addr::unchecked("addr"), None, Some(1))
+            .query_claims(
+                deps.as_ref(),
+                &MockApi::default().addr_make("addr"),
+                None,
+                Some(1),
+            )
             .unwrap();
         assert_eq!(
             queried_claims,
@@ -497,7 +517,7 @@ mod test {
         let queried_claims = claims
             .query_claims(
                 deps.as_ref(),
-                &Addr::unchecked("addr"),
+                &MockApi::default().addr_make("addr"),
                 Some(&TEST_BAYC_TOKEN_ID.to_string()),
                 None,
             )
@@ -513,7 +533,7 @@ mod test {
         let queried_claims = claims
             .query_claims(
                 deps.as_ref(),
-                &Addr::unchecked("addr"),
+                &MockApi::default().addr_make("addr"),
                 Some(&TEST_CRYPTO_PUNKS_TOKEN_ID.to_string()),
                 None,
             )
@@ -529,14 +549,19 @@ mod test {
         claims
             .create_nft_claims(
                 deps.as_mut().storage,
-                &Addr::unchecked("addr"),
+                &MockApi::default().addr_make("addr"),
                 vec![TEST_CRYPTO_PUNKS_TOKEN_ID.to_string()],
                 Expiration::AtHeight(10),
             )
             .unwrap();
 
         let queried_claims = claims
-            .query_claims(deps.as_ref(), &Addr::unchecked("addr2"), None, None)
+            .query_claims(
+                deps.as_ref(),
+                &MockApi::default().addr_make("addr2"),
+                None,
+                None,
+            )
             .unwrap();
 
         assert_eq!(queried_claims.len(), 0);

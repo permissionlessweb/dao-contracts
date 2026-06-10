@@ -4,13 +4,14 @@ use std::collections::HashSet;
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     attr, to_json_binary, Attribute, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order,
-    Reply, Response, StdError, StdResult, SubMsg, WasmMsg,
+    Reply, Response, StdError, StdResult, SubMsg, WasmMsg,MigrateInfo,
 };
 use cw_storage_plus::Bound;
 
 use cw2::set_contract_version;
 use cw_ownable::initialize_owner;
-use cw_utils::{nonpayable, parse_reply_instantiate_data};
+use cw_reply_helper::parse_reply_instantiate_data;
+use cw_utils::nonpayable;
 use dao_interface::helpers::OptionalUpdate;
 use dao_interface::proposal::InfoResponse;
 use dao_interface::state::ModuleUpdate;
@@ -453,7 +454,7 @@ fn execute_create_authorization(
     role_id: u64,
     name: String,
     metadata: Option<String>,
-    filter: Option<serde_json::Value>,
+    filter: Option<String>,
     enabled: Option<bool>,
     skip_prepare: Option<bool>,
 ) -> Result<Response, ContractError> {
@@ -496,7 +497,7 @@ fn execute_update_authorization(
     authorization_id: u64,
     name: Option<String>,
     metadata: OptionalUpdate<String>,
-    filter: OptionalUpdate<serde_json::Value>,
+    filter: OptionalUpdate<String>,
     enabled: Option<bool>,
     skip_prepare: Option<bool>,
 ) -> Result<Response, ContractError> {
@@ -798,7 +799,7 @@ fn query_enabled(deps: Deps) -> StdResult<EnabledResponse> {
 }
 
 fn query_get_role(deps: Deps, id: u64) -> StdResult<RoleResponse> {
-    let role = Role::load(&deps, id).map_err(|e| StdError::generic_err(e.to_string()))?;
+    let role = Role::load(&deps, id).map_err(|e| StdError::msg(e.to_string()))?;
     Ok(RoleResponse { role })
 }
 
@@ -821,7 +822,7 @@ fn query_list_roles(
 
 fn query_get_authorization(deps: Deps, id: u64) -> StdResult<AuthorizationResponse> {
     let authorization =
-        Authorization::load(&deps, id).map_err(|e| StdError::generic_err(e.to_string()))?;
+        Authorization::load(&deps, id).map_err(|e| StdError::msg(e.to_string()))?;
     Ok(AuthorizationResponse { authorization })
 }
 
@@ -945,7 +946,7 @@ fn query_list_assignments_by_address(
 
 fn query_get_action(deps: Deps, action_id: u64) -> StdResult<ActionResponse> {
     let action = LOG.load(deps.storage, action_id).map_err(|_| {
-        StdError::generic_err(ContractError::ActionNotFound { id: action_id }.to_string())
+        StdError::msg(ContractError::ActionNotFound { id: action_id }.to_string())
     })?;
     Ok(ActionResponse { action })
 }
@@ -1099,7 +1100,7 @@ fn query_authorized(
         ));
 
         // Should not error since this role ID is assigned.
-        let role = Role::load(&deps, role_id).map_err(|e| StdError::generic_err(e.to_string()))?;
+        let role = Role::load(&deps, role_id).map_err(|e| StdError::msg(e.to_string()))?;
         // Skip if the role is disabled.
         if !role.enabled {
             continue;
@@ -1142,7 +1143,7 @@ fn query_authorized(
             let allowed = authorization
                 .allows(&deps, &filter_contract, msg.clone(), true)
                 // Should not happen since we ignore filter errors.
-                .map_err(|e| StdError::generic_err(e.to_string()))?;
+                .map_err(|e| StdError::msg(e.to_string()))?;
 
             if allowed {
                 return Ok(AuthorizedResponse::Authorized {
@@ -1249,7 +1250,7 @@ fn query_authorized_by_role(
         let allowed = authorization
             .allows(&deps, &filter_contract, msg.clone(), true)
             // Should not happen since we ignore filter errors.
-            .map_err(|e| StdError::generic_err(e.to_string()))?;
+            .map_err(|e| StdError::msg(e.to_string()))?;
 
         if allowed {
             return Ok(AuthorizedByRoleResponse::Authorized {
@@ -1349,7 +1350,7 @@ fn query_authorized_by(
 
 fn query_test_filter(
     deps: Deps,
-    filter: serde_json::Value,
+    filter: String,
     msg: CosmosMsg,
 ) -> StdResult<TestFilterResponse> {
     let filter_contract = FILTER.load(deps.storage)?;
@@ -1377,7 +1378,7 @@ fn query_test_filter(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg,_info: MigrateInfo) -> Result<Response, ContractError> {
     // Set contract to version to latest
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     Ok(Response::default())

@@ -1,4 +1,4 @@
-use cosmwasm_std::{to_json_binary, Addr, Coin, Decimal, Empty, Uint128};
+use cosmwasm_std::{to_json_binary, Addr, Coin, Decimal, Empty, Uint128, Uint256};
 use cw20::Cw20Coin;
 
 use cw_multi_test::{next_block, App, BankSudo, Executor, SudoMsg};
@@ -21,7 +21,7 @@ use dao_voting_cw4::msg::GroupContract;
 
 use crate::msg::InstantiateMsg;
 
-use super::CREATOR_ADDR;
+use super::{addr, addr_str, CREATOR_ADDR};
 
 pub(crate) fn get_pre_propose_info(
     app: &mut App,
@@ -74,7 +74,7 @@ pub(crate) fn get_default_token_dao_proposal_module_instantiate(app: &mut App) -
                 denom: dao_voting::deposit::DepositToken::VotingModuleToken {
                     token_type: VotingModuleTokenType::Cw20,
                 },
-                amount: Uint128::new(10_000_000),
+                amount: Uint256::from(10_000_000u128),
                 refund_policy: DepositRefundPolicy::OnlyPassed,
             }),
             false,
@@ -113,8 +113,8 @@ pub(crate) fn instantiate_with_staked_cw721_governance(
 
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![Cw20Coin {
-            address: CREATOR_ADDR.to_string(),
-            amount: Uint128::new(100_000_000),
+            address: addr_str(CREATOR_ADDR),
+            amount: Uint256::from(100_000_000u128),
         }]
     });
 
@@ -140,11 +140,14 @@ pub(crate) fn instantiate_with_staked_cw721_governance(
     let nft_address = app
         .instantiate_contract(
             cw721_id,
-            Addr::unchecked("ekez"),
+            addr("ekez"),
             &cw721_base::msg::InstantiateMsg {
-                minter: "ekez".to_string(),
+                minter: Some(addr_str("ekez")),
                 symbol: "token".to_string(),
                 name: "ekez token best token".to_string(),
+                collection_info_extension: None,
+                creator: None,
+                withdraw_address: None,
             },
             &[],
             "nft-staking",
@@ -190,7 +193,7 @@ pub(crate) fn instantiate_with_staked_cw721_governance(
     let core_addr = app
         .instantiate_contract(
             core_contract_id,
-            Addr::unchecked(CREATOR_ADDR),
+            addr(CREATOR_ADDR),
             &instantiate_core,
             &[],
             "DAO DAO",
@@ -208,11 +211,11 @@ pub(crate) fn instantiate_with_staked_cw721_governance(
     let staking_addr = core_state.voting_module;
 
     for Cw20Coin { address, amount } in initial_balances {
-        for i in 0..amount.u128() {
+        for i in 0..Uint128::try_from(amount).unwrap().u128() {
             app.execute_contract(
-                Addr::unchecked("ekez"),
+                addr("ekez"),
                 nft_address.clone(),
-                &cw721_base::msg::ExecuteMsg::<Option<Empty>, Empty>::Mint {
+                &cw721_base::msg::ExecuteMsg::Mint {
                     token_id: format!("{address}_{i}"),
                     owner: address.clone(),
                     token_uri: None,
@@ -224,7 +227,7 @@ pub(crate) fn instantiate_with_staked_cw721_governance(
             app.execute_contract(
                 Addr::unchecked(address.clone()),
                 nft_address.clone(),
-                &cw721_base::msg::ExecuteMsg::SendNft::<Option<Empty>, Empty> {
+                &cw721_base::msg::ExecuteMsg::SendNft {
                     contract: staking_addr.to_string(),
                     token_id: format!("{address}_{i}"),
                     msg: to_json_binary("").unwrap(),
@@ -250,8 +253,8 @@ pub(crate) fn instantiate_with_native_staked_balances_governance(
 
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![Cw20Coin {
-            address: CREATOR_ADDR.to_string(),
-            amount: Uint128::new(100_000_000),
+            address: addr_str(CREATOR_ADDR),
+            amount: Uint256::from(100_000_000u128),
         }]
     });
 
@@ -312,7 +315,7 @@ pub(crate) fn instantiate_with_native_staked_balances_governance(
     let core_addr = app
         .instantiate_contract(
             core_contract_id,
-            Addr::unchecked(CREATOR_ADDR),
+            addr(CREATOR_ADDR),
             &instantiate_core,
             &[],
             "DAO DAO",
@@ -339,7 +342,7 @@ pub(crate) fn instantiate_with_native_staked_balances_governance(
         }))
         .unwrap();
         app.execute_contract(
-            Addr::unchecked(&address),
+            Addr::unchecked(&address), // already bech32 from caller
             native_staking_addr.clone(),
             &dao_voting_token_staked::msg::ExecuteMsg::Stake {},
             &[Coin {
@@ -364,8 +367,8 @@ pub(crate) fn instantiate_with_staked_balances_governance(
 
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![Cw20Coin {
-            address: CREATOR_ADDR.to_string(),
-            amount: Uint128::new(100_000_000),
+            address: addr_str(CREATOR_ADDR),
+            amount: Uint256::from(100_000_000u128),
         }]
     });
 
@@ -438,7 +441,7 @@ pub(crate) fn instantiate_with_staked_balances_governance(
     let core_addr = app
         .instantiate_contract(
             core_contract_id,
-            Addr::unchecked(CREATOR_ADDR),
+            addr(CREATOR_ADDR),
             &instantiate_core,
             &[],
             "DAO DAO",
@@ -473,7 +476,7 @@ pub(crate) fn instantiate_with_staked_balances_governance(
     // Stake all the initial balances.
     for Cw20Coin { address, amount } in initial_balances {
         app.execute_contract(
-            Addr::unchecked(address),
+            Addr::unchecked(address), // already bech32 from caller
             token_contract.clone(),
             &cw20::Cw20ExecuteMsg::Send {
                 contract: staking_contract.to_string(),
@@ -505,8 +508,8 @@ pub(crate) fn instantiate_with_staking_active_threshold(
 
     let initial_balances = initial_balances.unwrap_or_else(|| {
         vec![Cw20Coin {
-            address: CREATOR_ADDR.to_string(),
-            amount: Uint128::new(100_000_000),
+            address: addr_str(CREATOR_ADDR),
+            amount: Uint256::from(100_000_000u128),
         }]
     });
 
@@ -557,7 +560,7 @@ pub(crate) fn instantiate_with_staking_active_threshold(
 
     app.instantiate_contract(
         core_id,
-        Addr::unchecked(CREATOR_ADDR),
+        addr(CREATOR_ADDR),
         &governance_instantiate,
         &[],
         "DAO DAO",
@@ -578,8 +581,8 @@ pub(crate) fn instantiate_with_cw4_groups_governance(
 
     let initial_weights = initial_weights.unwrap_or_else(|| {
         vec![Cw20Coin {
-            address: CREATOR_ADDR.to_string(),
-            amount: Uint128::new(1),
+            address: addr_str(CREATOR_ADDR),
+            amount: Uint256::from(1u128),
         }]
     });
 
@@ -598,11 +601,13 @@ pub(crate) fn instantiate_with_cw4_groups_governance(
             })
             .map(|Cw20Coin { address, amount }| cw4::Member {
                 addr: address,
-                weight: amount.u128() as u64,
+                weight: Uint128::try_from(amount).unwrap().u128() as u64,
             })
             .collect()
     };
 
+    println!("{:#?}", initial_weights);
+    
     let governance_instantiate = dao_interface::msg::InstantiateMsg {
         admin: None,
         name: "DAO DAO".to_string(),
@@ -641,7 +646,7 @@ pub(crate) fn instantiate_with_cw4_groups_governance(
     let addr = app
         .instantiate_contract(
             core_id,
-            Addr::unchecked(CREATOR_ADDR),
+            addr(CREATOR_ADDR),
             &governance_instantiate,
             &[],
             "DAO DAO",

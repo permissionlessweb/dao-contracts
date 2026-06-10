@@ -8,4 +8,4 @@ test-tube = "test --features test-tube"
 schema = "run --example schema"
 
 [env]
-RUSTFLAGS = "-C link-arg=-s"
+RUSTFLAGS = "-C link-arg=-s target-feature=-bulk-memory"

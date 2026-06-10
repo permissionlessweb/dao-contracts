@@ -20,7 +20,8 @@ target/
 *.wasm
 hash.txt
 contracts.txt
-artifacts/
+#@hard-nett: we publish artifacts for cw-orch library to access
+#artifacts/
 
 # code coverage
 tarpaulin-report.*
@@ -34,3 +35,7 @@ packages/**/Cargo.lock
 debug/**/Cargo.lock
 ci/**/Cargo.lock
 .aider*
+
+# git worktrees
+.worktrees/
+.claude/

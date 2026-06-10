@@ -3,7 +3,7 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, CosmosMsg};
 pub use cw_ownable::Ownership;
 use cw_ownable::{cw_ownable_execute, cw_ownable_query};
-use dao_interface::{proposal::InfoResponse, state::ModuleUpdate};
+use dao_interface::state::ModuleUpdate;
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -16,6 +16,7 @@ pub struct InstantiateMsg {
 
 #[cw_ownable_execute]
 #[cw_serde]
+#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
     /// Update the protobuf registry.
     UpdateProtobufRegistry {
@@ -26,14 +27,16 @@ pub enum ExecuteMsg {
 #[cw_ownable_query]
 #[cw_serde]
 #[derive(QueryResponses)]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 pub enum QueryMsg {
-    #[returns(InfoResponse)]
+    #[returns(dao_interface::proposal::InfoResponse)]
     Info {},
     #[returns(ProtobufRegistryResponse)]
     ProtobufRegistry {},
     #[returns(FilterResponse)]
     Filter {
-        filter: serde_json::Value,
+        /// JSON-encoded filter expression.
+        filter: String,
         msg: CosmosMsg,
     },
 }

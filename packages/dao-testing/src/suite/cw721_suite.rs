@@ -101,7 +101,7 @@ impl<'a> DaoTestingSuiteCw721<'a> {
         self.execute_smart_ok(
             staker,
             &dao.x.cw721_addr,
-            &cw721_base::msg::ExecuteMsg::<Empty, Empty>::SendNft {
+            &cw721_base::msg::ExecuteMsg::SendNft {
                 contract: dao.voting_module_addr.to_string(),
                 token_id: token_id.into(),
                 msg: Binary::default(),
@@ -148,18 +148,21 @@ impl DaoTestingSuite<Cw721DaoExtra> for DaoTestingSuiteCw721<'_> {
                     msg: to_json_binary(&cw721_base::msg::InstantiateMsg {
                         name: "Voting NFT".to_string(),
                         symbol: "VOTE".to_string(),
-                        minter: OWNER.to_string(),
+                        collection_info_extension: None,
+                        minter: Some(OWNER.to_string()),
+                        creator: None,
+                        withdraw_address: None,
                     })
                     .unwrap(),
                     initial_nfts: self
                         .initial_nfts
                         .iter()
                         .map(|x| {
-                            to_json_binary(&cw721_base::msg::ExecuteMsg::<Empty, Empty>::Mint {
+                            to_json_binary(&cw721_base::msg::ExecuteMsg::Mint {
                                 token_id: x.token_id.clone(),
                                 owner: x.owner.clone(),
                                 token_uri: None,
-                                extension: Empty {},
+                                extension: Some(Empty {}),
                             })
                             .unwrap()
                         })
@@ -203,7 +206,7 @@ impl DaoTestingSuite<Cw721DaoExtra> for DaoTestingSuiteCw721<'_> {
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::Uint128;
+    use cosmwasm_std::Uint256;
 
     use super::*;
 
@@ -252,7 +255,7 @@ mod tests {
             .unwrap();
         assert_eq!(
             total_weight.power,
-            Uint128::from(suite.initial_nfts.len() as u128)
+            Uint256::from(suite.initial_nfts.len() as u128)
         );
     }
 }

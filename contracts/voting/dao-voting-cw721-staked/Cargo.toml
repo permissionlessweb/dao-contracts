@@ -11,8 +11,6 @@ version = { workspace = true }
 crate-type = ["cdylib", "rlib"]
 
 [features]
-# for more explicit tests, cargo test --features=backtraces
-backtraces = ["cosmwasm-std/backtraces"]
 # use library feature to disable all instantiate/execute/query exports
 library = []
 # use test tube feature to enable test-tube integration tests, for example
@@ -20,17 +18,19 @@ library = []
 test-tube = []
 # when writing tests you may wish to enable test-tube as a default feature
 # default = ["test-tube"]
-
+interface = ["cw-orch"]
 
 [dependencies]
+cw-orch = { workspace = true, optional = true }
 cosmwasm-std = { workspace = true }
 cosmwasm-schema = { workspace = true }
+cw-reply-helper = { workspace = true }
 cw-storage-plus = { workspace = true }
 cw-controllers = { workspace = true }
 cw-hooks = { workspace = true }
 cw721 = { workspace = true }
 cw721-base = { workspace = true, features = ["library"] }
-cw721-controllers-v250 = { workspace = true }
+# cw721-controllers-v250 = { workspace = true, optional = true }
 cw-utils = { workspace = true }
 cw2 = { workspace = true }
 dao-dao-macros = { workspace = true }

@@ -1,4 +1,4 @@
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{StdResult, Uint256};
 use cw_multi_test::next_block;
 
 use crate::testing::{
@@ -18,7 +18,7 @@ use super::{
 /// access to the NFT. If I immediately stake an unstaked NFT, my
 /// voting power should not change.
 #[test]
-fn test_circular_stake() -> anyhow::Result<()> {
+fn test_circular_stake() -> StdResult<()> {
     let CommonTest {
         mut app,
         module,
@@ -31,30 +31,30 @@ fn test_circular_stake() -> anyhow::Result<()> {
     app.update_block(next_block);
 
     let (total, voting) = query_total_and_voting_power(&app, &module, CREATOR_ADDR, None)?;
-    assert_eq!(total, Uint128::new(2));
-    assert_eq!(voting, Uint128::new(2));
+    assert_eq!(total, Uint256::new(2));
+    assert_eq!(voting, Uint256::new(2));
 
     unstake_nfts(&mut app, &module, CREATOR_ADDR, &["1", "2"])?;
 
     // Unchanged, one block delay.
     let (total, voting) = query_total_and_voting_power(&app, &module, CREATOR_ADDR, None)?;
-    assert_eq!(total, Uint128::new(2));
-    assert_eq!(voting, Uint128::new(2));
+    assert_eq!(total, Uint256::new(2));
+    assert_eq!(voting, Uint256::new(2));
 
     stake_nft(&mut app, &nft, &module, CREATOR_ADDR, "1")?;
     stake_nft(&mut app, &nft, &module, CREATOR_ADDR, "2")?;
 
     // Unchanged.
     let (total, voting) = query_total_and_voting_power(&app, &module, CREATOR_ADDR, None)?;
-    assert_eq!(total, Uint128::new(2));
-    assert_eq!(voting, Uint128::new(2));
+    assert_eq!(total, Uint256::new(2));
+    assert_eq!(voting, Uint256::new(2));
 
     app.update_block(next_block);
 
     // Still unchanged.
     let (total, voting) = query_total_and_voting_power(&app, &module, CREATOR_ADDR, None)?;
-    assert_eq!(total, Uint128::new(2));
-    assert_eq!(voting, Uint128::new(2));
+    assert_eq!(total, Uint256::new(2));
+    assert_eq!(voting, Uint256::new(2));
 
     Ok(())
 }
@@ -63,7 +63,7 @@ fn test_circular_stake() -> anyhow::Result<()> {
 /// aren't updated until one block later. Voting power does not change
 /// if I do this.
 #[test]
-fn test_immediate_unstake() -> anyhow::Result<()> {
+fn test_immediate_unstake() -> StdResult<()> {
     let CommonTest {
         mut app,
         module,
@@ -78,8 +78,8 @@ fn test_immediate_unstake() -> anyhow::Result<()> {
     app.update_block(next_block);
 
     let (total, voting) = query_total_and_voting_power(&app, &module, CREATOR_ADDR, None)?;
-    assert_eq!(total, Uint128::zero());
-    assert_eq!(voting, Uint128::zero());
+    assert_eq!(total, Uint256::zero());
+    assert_eq!(voting, Uint256::zero());
 
     Ok(())
 }
@@ -87,7 +87,7 @@ fn test_immediate_unstake() -> anyhow::Result<()> {
 /// I can not stake NFTs from a collection other than the one this has
 /// been configured for.
 #[test]
-fn test_stake_wrong_nft() -> anyhow::Result<()> {
+fn test_stake_wrong_nft() -> StdResult<()> {
     let CommonTest {
         mut app, module, ..
     } = setup_test(None);
@@ -98,7 +98,7 @@ fn test_stake_wrong_nft() -> anyhow::Result<()> {
 
     app.update_block(next_block);
     let voting = query_voting_power(&app, &module, CREATOR_ADDR, None)?;
-    assert_eq!(voting.power, Uint128::new(0));
+    assert_eq!(voting.power, Uint256::zero());
 
     Ok(())
 }
@@ -106,7 +106,7 @@ fn test_stake_wrong_nft() -> anyhow::Result<()> {
 /// I can determine what my voting power _will_ be after staking by
 /// asking for my voting power one block in the future.
 #[test]
-fn test_query_the_future() -> anyhow::Result<()> {
+fn test_query_the_future() -> StdResult<()> {
     let CommonTest {
         mut app,
         module,
@@ -122,11 +122,11 @@ fn test_query_the_future() -> anyhow::Result<()> {
         CREATOR_ADDR,
         Some(app.block_info().height + 100),
     )?;
-    assert_eq!(voting.power, Uint128::new(1));
+    assert_eq!(voting.power, Uint256::new(1));
 
     // Current voting power is zero.
     let voting = query_voting_power(&app, &module, CREATOR_ADDR, None)?;
-    assert_eq!(voting.power, Uint128::new(0));
+    assert_eq!(voting.power, Uint256::zero());
 
     unstake_nfts(&mut app, &module, CREATOR_ADDR, &["1"])?;
 
@@ -137,7 +137,7 @@ fn test_query_the_future() -> anyhow::Result<()> {
         CREATOR_ADDR,
         Some(app.block_info().height + 100),
     )?;
-    assert_eq!(voting.power, Uint128::zero());
+    assert_eq!(voting.power, Uint256::zero());
 
     Ok(())
 }

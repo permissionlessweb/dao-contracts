@@ -453,7 +453,7 @@ fn query_file_descriptor_set(
             PREPARED.load(deps.storage, messages[0].to_string())?
         } else {
             create_file_descriptor_set_for_messages(&deps, &messages)
-                .map_err(|e| StdError::generic_err(e.to_string()))?
+                .map_err(|e| StdError::msg(e.to_string()))?
                 .encode_to_vec()
         };
 
@@ -470,32 +470,32 @@ fn query_decode(deps: Deps, message_name: String, value: Vec<u8>) -> StdResult<D
         .map_or_else(
             || {
                 create_file_descriptor_set_for_messages(&deps, &[message_name.clone()]).map_err(
-                    |e| StdError::generic_err(format!("failed to create file descriptor set: {e}")),
+                    |e| StdError::msg(format!("failed to create file descriptor set: {e}")),
                 )
             },
             |fds| {
                 FileDescriptorSet::decode(fds.as_slice())
-                    .map_err(|e| StdError::generic_err(e.to_string()))
+                    .map_err(|e| StdError::msg(e.to_string()))
             },
         )?;
 
     let pool = DescriptorPool::from_file_descriptor_set(file_descriptor_set).map_err(|e| {
-        StdError::generic_err(format!("failed to create descriptor pool from FDS: {e}"))
+        StdError::msg(format!("failed to create descriptor pool from FDS: {e}"))
     })?;
 
     // should never error since we created the FDS from the message name, but
     // check just in case.
     let message_descriptor = pool.get_message_by_name(&message_name).ok_or_else(|| {
-        StdError::generic_err(format!(
+        StdError::msg(format!(
             "message descriptor not found for name: {message_name}"
         ))
     })?;
 
     let message = DynamicMessage::decode(message_descriptor, value.as_slice())
-        .map_err(|e| StdError::generic_err(e.to_string()))?;
+        .map_err(|e| StdError::msg(e.to_string()))?;
 
-    let json = serde_json::to_value(message).map_err(|e| {
-        StdError::generic_err(format!(
+    let json = serde_json::to_string(&message).map_err(|e| {
+        StdError::msg(format!(
             "failed to serialize decoded protobuf value as JSON: {e}"
         ))
     })?;

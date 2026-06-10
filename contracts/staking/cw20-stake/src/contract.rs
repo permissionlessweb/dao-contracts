@@ -1,11 +1,12 @@
+use std::convert::TryInto;
+
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 
 use cosmwasm_std::{
-    from_json, to_json_binary, Addr, Binary, Deps, DepsMut, Empty, Env, MessageInfo, Response,
-    StdError, StdResult, Uint128,
+    Addr, Binary, Deps, DepsMut, Empty, Env, MessageInfo, MigrateInfo, Response, StdError, StdResult, Uint128, Uint256, from_json, to_json_binary
 };
-use cw2::{get_contract_version, set_contract_version, ContractVersion};
+use cw2::set_contract_version;
 use cw20::{Cw20ReceiveMsg, TokenInfoResponse};
 pub use cw20_base::allowances::{
     execute_burn_from, execute_decrease_allowance, execute_increase_allowance, execute_send_from,
@@ -132,8 +133,10 @@ pub fn execute_receive(
     let msg: ReceiveMsg = from_json(&wrapper.msg)?;
     let sender = deps.api.addr_validate(&wrapper.sender)?;
     match msg {
-        ReceiveMsg::Stake {} => execute_stake(deps, env, sender, wrapper.amount),
-        ReceiveMsg::Fund {} => execute_fund(deps, env, &sender, wrapper.amount),
+        ReceiveMsg::Stake {} => {
+            execute_stake(deps, env, sender, wrapper.amount.try_into().unwrap())
+        }
+        ReceiveMsg::Fund {} => execute_fund(deps, env, &sender, wrapper.amount.try_into().unwrap()),
     }
 }
 
@@ -145,24 +148,25 @@ pub fn execute_stake(
 ) -> Result<Response, ContractError> {
     let balance = BALANCE.load(deps.storage)?;
     let staked_total = STAKED_TOTAL.load(deps.storage)?;
-    let amount_to_stake = math::amount_to_stake(staked_total, balance, amount);
+    let amount_to_stake = math::amount_to_stake(staked_total.into(), balance.into(), amount.into());
+    let amount_to_stake_u128: Uint128 = amount_to_stake.try_into().map_err(StdError::msg)?;
     STAKED_BALANCES.update(
         deps.storage,
         &sender,
         env.block.height,
-        |bal| -> StdResult<Uint128> { Ok(bal.unwrap_or_default().checked_add(amount_to_stake)?) },
+        |bal| -> StdResult<Uint128> { Ok(bal.unwrap_or_default().checked_add(amount_to_stake_u128)?) },
     )?;
     STAKED_TOTAL.update(
         deps.storage,
         env.block.height,
         |total| -> StdResult<Uint128> {
             // Initialized during instantiate - OK to unwrap.
-            Ok(total.unwrap().checked_add(amount_to_stake)?)
+            Ok(total.unwrap().checked_add(amount_to_stake_u128)?)
         },
     )?;
     BALANCE.save(
         deps.storage,
-        &balance.checked_add(amount).map_err(StdError::overflow)?,
+        &balance.checked_add(amount).map_err(StdError::msg)?,
     )?;
     let hook_msgs = stake_hook_msgs(HOOKS, deps.storage, sender.clone(), amount_to_stake)?;
     Ok(Response::new()
@@ -176,7 +180,7 @@ pub fn execute_unstake(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    amount: Uint128,
+    amount: Uint256,
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
     let balance = BALANCE.load(deps.storage)?;
@@ -185,39 +189,41 @@ pub fn execute_unstake(
     if staked_total.is_zero() {
         return Err(ContractError::NothingStaked {});
     }
-    if amount.saturating_add(balance) == Uint128::MAX {
+    if amount.saturating_add(balance.into()) == Uint256::MAX {
         return Err(ContractError::Cw20InvaraintViolation {});
     }
-    if amount > staked_total {
+    if amount > staked_total.into() {
         return Err(ContractError::ImpossibleUnstake {});
     }
-    let amount_to_claim = math::amount_to_claim(staked_total, balance, amount);
+    let amount_u128: Uint128 = amount.try_into().map_err(StdError::msg)?;
+    let amount_to_claim_u256 = math::amount_to_claim(staked_total.into(), balance.into(), amount);
+    let amount_to_claim: Uint128 = amount_to_claim_u256.try_into().map_err(StdError::msg)?;
     STAKED_BALANCES.update(
         deps.storage,
         &info.sender,
         env.block.height,
-        |bal| -> StdResult<Uint128> { Ok(bal.unwrap_or_default().checked_sub(amount)?) },
+        |bal| -> StdResult<Uint128> { Ok(bal.unwrap_or_default().checked_sub(amount_u128)?) },
     )?;
     STAKED_TOTAL.update(
         deps.storage,
         env.block.height,
         |total| -> StdResult<Uint128> {
             // Initialized during instantiate - OK to unwrap.
-            Ok(total.unwrap().checked_sub(amount)?)
+            Ok(total.unwrap().checked_sub(amount_u128)?)
         },
     )?;
     BALANCE.save(
         deps.storage,
         &balance
             .checked_sub(amount_to_claim)
-            .map_err(StdError::overflow)?,
+            .map_err(StdError::msg)?,
     )?;
     let hook_msgs = unstake_hook_msgs(HOOKS, deps.storage, info.sender.clone(), amount)?;
     match config.unstaking_duration {
         None => {
             let cw_send_msg = cw20::Cw20ExecuteMsg::Transfer {
                 recipient: info.sender.to_string(),
-                amount: amount_to_claim,
+                amount: amount_to_claim.into(),
             };
             let wasm_msg = cosmwasm_std::WasmMsg::Execute {
                 contract_addr: config.token_address.to_string(),
@@ -241,7 +247,7 @@ pub fn execute_unstake(
             CLAIMS.create_claim(
                 deps.storage,
                 &info.sender,
-                amount_to_claim,
+                amount_to_claim.try_into().unwrap(),
                 duration.after(&env.block),
             )?;
             Ok(Response::new()
@@ -266,7 +272,7 @@ pub fn execute_claim(
     let config = CONFIG.load(deps.storage)?;
     let cw_send_msg = cw20::Cw20ExecuteMsg::Transfer {
         recipient: info.sender.to_string(),
-        amount: release,
+        amount: release.into(),
     };
     let wasm_msg = cosmwasm_std::WasmMsg::Execute {
         contract_addr: config.token_address.to_string(),
@@ -287,7 +293,7 @@ pub fn execute_fund(
     amount: Uint128,
 ) -> Result<Response, ContractError> {
     BALANCE.update(deps.storage, |balance| -> StdResult<_> {
-        balance.checked_add(amount).map_err(StdError::overflow)
+        balance.checked_add(amount).map_err(StdError::msg)
     })?;
     Ok(Response::new()
         .add_attribute("action", "fund")
@@ -367,7 +373,10 @@ pub fn query_staked_balance_at_height(
     let balance = STAKED_BALANCES
         .may_load_at_height(deps.storage, &address, height)?
         .unwrap_or_default();
-    Ok(StakedBalanceAtHeightResponse { balance, height })
+    Ok(StakedBalanceAtHeightResponse {
+        balance: balance.into(),
+        height,
+    })
 }
 
 pub fn query_total_staked_at_height(
@@ -379,7 +388,10 @@ pub fn query_total_staked_at_height(
     let total = STAKED_TOTAL
         .may_load_at_height(deps.storage, height)?
         .unwrap_or_default();
-    Ok(TotalStakedAtHeightResponse { total, height })
+    Ok(TotalStakedAtHeightResponse {
+        total: total.into(),
+        height,
+    })
 }
 
 pub fn query_staked_value(
@@ -400,9 +412,9 @@ pub fn query_staked_value(
     } else {
         let value = staked
             .checked_mul(balance)
-            .map_err(StdError::overflow)?
+            .map_err(StdError::msg)?
             .checked_div(total)
-            .map_err(StdError::divide_by_zero)?;
+            .map_err(StdError::msg)?;
         Ok(StakedValueResponse { value })
     }
 }
@@ -456,34 +468,13 @@ pub fn query_list_stakers(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    use cw20_stake_v1 as v1;
-
-    let ContractVersion { version, .. } = get_contract_version(deps.storage)?;
-    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-    match msg {
-        MigrateMsg::FromV1 {} => {
-            if version == CONTRACT_VERSION {
-                // Migrating from a version to a new one implies that
-                // the new version must be different.
-                return Err(ContractError::AlreadyMigrated {});
-            }
-            let config = v1::state::CONFIG.load(deps.storage)?;
-            cw_ownable::initialize_owner(
-                deps.storage,
-                deps.api,
-                config.owner.map(|a| a.into_string()).as_deref(),
-            )?;
-            let config = Config {
-                token_address: config.token_address,
-                unstaking_duration: config.unstaking_duration.map(|duration| match duration {
-                    cw_utils_v1::Duration::Time(t) => Duration::Time(t),
-                    cw_utils_v1::Duration::Height(h) => Duration::Height(h),
-                }),
-            };
-            CONFIG.save(deps.storage, &config)?;
-
-            Ok(Response::default())
-        }
-    }
+pub fn migrate(
+    _deps: DepsMut,
+    _env: Env,
+    _msg: MigrateMsg,
+    _info: MigrateInfo,
+) -> Result<Response, ContractError> {
+    Err(ContractError::Std(cosmwasm_std::StdError::msg(
+        "cannot migrate from v1 -> v3. DAOs must first migrate to  =< v2.8.0-alpha.2",
+    )))
 }

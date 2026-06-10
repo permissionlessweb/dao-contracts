@@ -150,7 +150,7 @@ impl ModuleUpdate {
 mod tests {
     use super::*;
 
-    use cosmwasm_std::{coins, testing::mock_dependencies, to_json_binary, Addr, Uint128, WasmMsg};
+    use cosmwasm_std::{Addr, Uint128, Uint256, WasmMsg, coins, testing::{MockApi, mock_dependencies}, to_json_binary};
 
     #[test]
     fn test_module_instantiate_admin_none() {
@@ -163,14 +163,14 @@ mod tests {
             salt: None,
         };
         assert_eq!(
-            no_admin.into_wasm_msg(Addr::unchecked("ekez")),
+            no_admin.into_wasm_msg(MockApi::default().addr_make("ekez")),
             WasmMsg::Instantiate {
                 admin: None,
                 code_id: 42,
                 msg: to_json_binary("foo").unwrap(),
                 funds: vec![Coin {
                     denom: "uatom".to_string(),
-                    amount: Uint128::from(100u64),
+                    amount: Uint256::from(100u64),
                 }],
                 label: "bar".to_string()
             }
@@ -190,7 +190,7 @@ mod tests {
             salt: None,
         };
         assert_eq!(
-            no_admin.into_wasm_msg(Addr::unchecked("ekez")),
+            no_admin.into_wasm_msg(MockApi::default().addr_make("ekez")),
             WasmMsg::Instantiate {
                 admin: Some("core".to_string()),
                 code_id: 42,
@@ -212,9 +212,9 @@ mod tests {
             salt: None,
         };
         assert_eq!(
-            no_admin.into_wasm_msg(Addr::unchecked("ekez")),
+            no_admin.into_wasm_msg(MockApi::default().addr_make("ekez")),
             WasmMsg::Instantiate {
-                admin: Some("ekez".to_string()),
+                admin: Some(MockApi::default().addr_make("ekez").to_string()),
                 code_id: 42,
                 msg: to_json_binary("foo").unwrap(),
                 funds: vec![],
@@ -234,14 +234,14 @@ mod tests {
             salt: Some(to_json_binary("test_salt").unwrap()),
         };
         assert_eq!(
-            no_admin.into_wasm_msg(Addr::unchecked("ekez")),
+            no_admin.into_wasm_msg(MockApi::default().addr_make("ekez")),
             WasmMsg::Instantiate2 {
                 admin: None,
                 code_id: 42,
                 msg: to_json_binary("foo").unwrap(),
                 funds: vec![Coin {
                     denom: "uatom".to_string(),
-                    amount: Uint128::from(100u64),
+                    amount: Uint256::from(100u64),
                 }],
                 label: "bar".to_string(),
                 salt: to_json_binary("test_salt").unwrap()
@@ -262,7 +262,7 @@ mod tests {
             salt: Some(to_json_binary("test_salt").unwrap()),
         };
         assert_eq!(
-            no_admin.into_wasm_msg(Addr::unchecked("ekez")),
+            no_admin.into_wasm_msg(MockApi::default().addr_make("ekez")),
             WasmMsg::Instantiate2 {
                 admin: Some("core".to_string()),
                 code_id: 42,
@@ -285,9 +285,9 @@ mod tests {
             salt: Some(to_json_binary("test_salt").unwrap()),
         };
         assert_eq!(
-            no_admin.into_wasm_msg(Addr::unchecked("ekez")),
+            no_admin.into_wasm_msg(MockApi::default().addr_make("ekez")),
             WasmMsg::Instantiate2 {
-                admin: Some("ekez".to_string()),
+                admin: Some(MockApi::default().addr_make("ekez").to_string()),
                 code_id: 42,
                 msg: to_json_binary("foo").unwrap(),
                 funds: vec![],
@@ -322,7 +322,7 @@ mod tests {
                     msg: to_json_binary("foo").unwrap(),
                     funds: vec![Coin {
                         denom: "uatom".to_string(),
-                        amount: Uint128::from(100u64),
+                        amount: Uint256::from(100u64),
                     }],
                     label: "bar".to_string(),
                 },
@@ -338,8 +338,9 @@ mod tests {
     fn test_module_update_existing() {
         let mut deps = mock_dependencies();
         let item = Item::new("module");
+        let ekez = MockApi::default().addr_make("ekez");
         let update = ModuleUpdate::Existing {
-            address: "ekez".to_string(),
+            address: ekez.to_string(),
         };
 
         let submessages = update.update(deps.as_mut(), &item, 1, "unused").unwrap();
@@ -350,7 +351,7 @@ mod tests {
         // Item updated.
         assert_eq!(
             item.may_load(deps.as_mut().storage).unwrap(),
-            Some(Addr::unchecked("ekez"))
+            Some(ekez)
         );
     }
 }

@@ -3,6 +3,8 @@ name = "integration-tests"
 version = "0.1.0"
 edition = { workspace = true }
 
+
+
 # This crate depends on rand. These are not featured in
 # wasm builds of cosmwasm. Despite this crate only being used as a dev
 # dependency, because it is part of the workspace it will always be
@@ -17,7 +19,7 @@ cw721-base = { workspace = true }
 cw721-roles = { workspace = true }
 cw721 = { workspace = true }
 cw-utils = { workspace = true }
-cosmwasm-std = { workspace = true, features = ["ibc3"] }
+cosmwasm-std = { workspace = true }
 
 cw-vesting = { workspace = true }
 cw20-stake = { workspace = true }
@@ -37,6 +39,5 @@ serde_json = { workspace = true }
 once_cell = { workspace = true }
 env_logger = { workspace = true }
 test-context = { workspace = true }
-cosm-tome = { workspace = true }
 cosmos-sdk-proto = { workspace = true }
 rand = { workspace = true }

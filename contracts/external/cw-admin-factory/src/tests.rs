@@ -1,8 +1,7 @@
 use std::vec;
 
 use cosmwasm_std::{
-    testing::{mock_dependencies, mock_env, mock_info},
-    to_json_binary, Addr, Binary, Reply, SubMsg, SubMsgResponse, SubMsgResult, WasmMsg,
+    Addr, MigrateInfo, Reply, SubMsg, SubMsgResponse, SubMsgResult, WasmMsg, testing::{MockApi, message_info, mock_dependencies, mock_env}, to_json_binary
 };
 use cw_multi_test::{App, AppResponse, Executor};
 use dao_interface::state::{Admin, ModuleInstantiateInfo};
@@ -16,7 +15,6 @@ use crate::{
     },
     msg::{AdminResponse, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
 };
-use cw_admin_factory::ContractError;
 
 const ADMIN_ADDR: &str = "admin";
 
@@ -38,7 +36,7 @@ pub fn test_set_self_admin() {
     let factory_addr = app
         .instantiate_contract(
             code_id,
-            Addr::unchecked("CREATOR"),
+            MockApi::default().addr_make("CREATOR"),
             &instantiate,
             &[],
             "cw-admin-factory",
@@ -88,7 +86,7 @@ pub fn test_set_self_admin() {
 
     let res: AppResponse = app
         .execute_contract(
-            Addr::unchecked("CREATOR"),
+            MockApi::default().addr_make("CREATOR"),
             factory_addr,
             &ExecuteMsg::InstantiateContractWithSelfAdmin {
                 instantiate_msg: to_json_binary(&instantiate_core).unwrap(),
@@ -106,7 +104,7 @@ pub fn test_set_self_admin() {
 
     // Check that admin of core address is itself
     let contract_info = app.wrap().query_wasm_contract_info(&core_addr).unwrap();
-    assert_eq!(contract_info.admin, Some(core_addr))
+    assert_eq!(contract_info.admin, Some(Addr::unchecked(core_addr)))
 }
 
 #[test]
@@ -124,12 +122,12 @@ pub fn test_authorized_set_self_admin() {
     };
 
     let instantiate = InstantiateMsg {
-        admin: Some(ADMIN_ADDR.to_string()),
+        admin: Some(MockApi::default().addr_make(ADMIN_ADDR).to_string()),
     };
     let factory_addr = app
         .instantiate_contract(
             code_id,
-            Addr::unchecked(ADMIN_ADDR),
+            MockApi::default().addr_make(ADMIN_ADDR),
             &instantiate,
             &[],
             "cw-admin-factory",
@@ -142,7 +140,10 @@ pub fn test_authorized_set_self_admin() {
         .wrap()
         .query_wasm_smart(factory_addr.clone(), &QueryMsg::Admin {})
         .unwrap();
-    assert_eq!(current_admin.admin, Some(Addr::unchecked(ADMIN_ADDR)));
+    assert_eq!(
+        current_admin.admin,
+        Some(MockApi::default().addr_make(ADMIN_ADDR))
+    );
 
     // Instantiate core contract using factory.
     let cw_core_code_id = app.store_code(dao_dao_core_contract());
@@ -185,9 +186,9 @@ pub fn test_authorized_set_self_admin() {
     };
 
     // Fails when not the admin.
-    let err: ContractError = app
+    let err = app
         .execute_contract(
-            Addr::unchecked("not_admin"),
+            MockApi::default().addr_make("not_admin"),
             factory_addr.clone(),
             &ExecuteMsg::InstantiateContractWithSelfAdmin {
                 instantiate_msg: to_json_binary(&instantiate_core).unwrap(),
@@ -196,15 +197,13 @@ pub fn test_authorized_set_self_admin() {
             },
             &[],
         )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(err, ContractError::Unauthorized {});
+        .unwrap_err();
+    assert!(err.to_string().contains("Unauthorized"));
 
     // Succeeds as the admin.
     let res: AppResponse = app
         .execute_contract(
-            Addr::unchecked(ADMIN_ADDR),
+            MockApi::default().addr_make(ADMIN_ADDR),
             factory_addr,
             &ExecuteMsg::InstantiateContractWithSelfAdmin {
                 instantiate_msg: to_json_binary(&instantiate_core).unwrap(),
@@ -222,7 +221,7 @@ pub fn test_authorized_set_self_admin() {
 
     // Check that admin of core address is itself
     let contract_info = app.wrap().query_wasm_contract_info(&core_addr).unwrap();
-    assert_eq!(contract_info.admin, Some(core_addr))
+    assert_eq!(contract_info.admin, Some(Addr::unchecked(core_addr)))
 }
 
 #[test]
@@ -230,15 +229,20 @@ pub fn test_set_self_admin_mock() {
     let mut deps = mock_dependencies();
     // Instantiate factory contract
     let instantiate_msg = InstantiateMsg { admin: None };
-    let info = mock_info("creator", &[]);
+    let info = message_info(&MockApi::default().addr_make("creator"), &[]);
     let env = mock_env();
     instantiate(deps.as_mut(), env.clone(), info, instantiate_msg).unwrap();
-    let bytes = vec![10, 9, 99, 111, 110, 116, 114, 97, 99, 116, 50];
+    let mock_api = MockApi::default();
+    let contract_addr_str = mock_api.addr_make("contract2").to_string();
     let reply_msg: Reply = Reply {
         id: INSTANTIATE_CONTRACT_REPLY_ID,
+        payload: Default::default(),
+        gas_used: 0,
         result: SubMsgResult::Ok(SubMsgResponse {
-            events: vec![],
-            data: (Some(Binary(bytes))),
+            events: vec![cosmwasm_std::Event::new("instantiate")
+                .add_attribute("_contract_address", contract_addr_str.clone())],
+            data: None,
+            msg_responses: vec![],
         }),
     };
 
@@ -247,17 +251,30 @@ pub fn test_set_self_admin_mock() {
     assert_eq!(
         res.messages[0],
         SubMsg::new(WasmMsg::UpdateAdmin {
-            contract_addr: "contract2".to_string(),
-            admin: "contract2".to_string()
+            contract_addr: contract_addr_str.clone(),
+            admin: contract_addr_str
         })
     )
+}
+
+fn dummy_migrate_info() -> MigrateInfo {
+    MigrateInfo {
+        sender: Addr::unchecked(""),
+        old_migrate_version: None,
+    }
 }
 
 #[test]
 pub fn test_migrate_update_version() {
     let mut deps = mock_dependencies();
     cw2::set_contract_version(&mut deps.storage, "my-contract", "old-version").unwrap();
-    migrate(deps.as_mut(), mock_env(), MigrateMsg {}).unwrap();
+    migrate(
+        deps.as_mut(),
+        mock_env(),
+        MigrateMsg {},
+        dummy_migrate_info(),
+    )
+    .unwrap();
     let version = cw2::get_contract_version(&deps.storage).unwrap();
     assert_eq!(version.version, CONTRACT_VERSION);
     assert_eq!(version.contract, CONTRACT_NAME);

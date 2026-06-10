@@ -1,4 +1,5 @@
-use cosmwasm_std::{Addr, StdResult, Uint128};
+use cosmwasm_std::testing::MockApi;
+use cosmwasm_std::{Addr, StdResult, Uint256};
 use cw_controllers::HooksResponse;
 use cw_multi_test::App;
 use dao_interface::voting::{
@@ -19,7 +20,7 @@ pub fn query_claims(app: &App, module: &Addr, addr: &str) -> StdResult<NftClaims
     let claims = app.wrap().query_wasm_smart(
         module,
         &QueryMsg::NftClaims {
-            address: addr.to_string(),
+            address: MockApi::default().addr_make(addr).to_string(),
             start_after: None,
             limit: None,
         },
@@ -42,7 +43,7 @@ pub fn query_staked_nfts(
     let nfts = app.wrap().query_wasm_smart(
         module,
         &QueryMsg::StakedNfts {
-            address: addr.to_string(),
+            address: MockApi::default().addr_make(addr).to_string(),
             start_after,
             limit,
         },
@@ -59,7 +60,7 @@ pub fn query_voting_power(
     let power = app.wrap().query_wasm_smart(
         module,
         &QueryMsg::VotingPowerAtHeight {
-            address: addr.to_string(),
+            address: MockApi::default().addr_make(addr).to_string(),
             height,
         },
     )?;
@@ -87,17 +88,17 @@ pub fn query_total_and_voting_power(
     module: &Addr,
     addr: &str,
     height: Option<u64>,
-) -> StdResult<(Uint128, Uint128)> {
+) -> StdResult<(Uint256, Uint256)> {
     let total_power = query_total_power(app, module, height)?;
     let voting_power = query_voting_power(app, module, addr, height)?;
 
     Ok((total_power.power, voting_power.power))
 }
 
-pub fn query_nft_owner(app: &App, nft: &Addr, token_id: &str) -> StdResult<cw721::OwnerOfResponse> {
+pub fn query_nft_owner(app: &App, nft: &Addr, token_id: &str) -> StdResult<cw721::msg::OwnerOfResponse> {
     let owner = app.wrap().query_wasm_smart(
         nft,
-        &cw721::Cw721QueryMsg::OwnerOf {
+        &cw721_base::msg::QueryMsg::OwnerOf {
             token_id: token_id.to_string(),
             include_expired: None,
         },

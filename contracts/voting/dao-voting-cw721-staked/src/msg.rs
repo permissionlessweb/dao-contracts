@@ -1,9 +1,9 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Binary;
-use cw721::{Cw721ReceiveMsg, Expiration};
+use cw721::{receiver::Cw721ReceiveMsg, Expiration};
 use cw_utils::Duration;
 use dao_dao_macros::{active_query, voting_module_query};
-use dao_voting::threshold::{ActiveThreshold, ActiveThresholdResponse};
+use dao_voting::threshold::{ActiveThreshold};
 
 #[cw_serde]
 #[allow(clippy::large_enum_variant)]
@@ -47,6 +47,7 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
+#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
     /// Used to stake NFTs. To stake a NFT send a cw721 send message
     /// to this contract with the NFT you would like to stake. The
@@ -76,8 +77,8 @@ pub enum ExecuteMsg {
 
 #[cw_serde]
 pub enum ClaimType {
-    /// Claims all legacy claims.
-    Legacy,
+    // /// Claims all legacy claims.
+    // Legacy,
     /// Claims all non-legacy claims.
     All,
     /// Claims specific non-legacy NFTs.
@@ -88,6 +89,7 @@ pub enum ClaimType {
 #[voting_module_query]
 #[cw_serde]
 #[derive(QueryResponses)]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 pub enum QueryMsg {
     #[returns(crate::state::Config)]
     Config {},
@@ -106,7 +108,7 @@ pub enum QueryMsg {
         start_after: Option<String>,
         limit: Option<u32>,
     },
-    #[returns(ActiveThresholdResponse)]
+    #[returns(dao_voting::threshold::ActiveThresholdResponse)]
     ActiveThreshold {},
 }
 

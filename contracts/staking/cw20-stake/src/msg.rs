@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{Uint128, Uint256};
 use cw20::Cw20ReceiveMsg;
 
 use cw_utils::Duration;
@@ -21,9 +21,10 @@ pub struct InstantiateMsg {
 
 #[cw_ownable_execute]
 #[cw_serde]
+#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
     Receive(Cw20ReceiveMsg),
-    Unstake { amount: Uint128 },
+    Unstake { amount: Uint256 },
     Claim {},
     UpdateConfig { duration: Option<Duration> },
     AddHook { addr: String },
@@ -38,6 +39,7 @@ pub enum ReceiveMsg {
 
 #[cw_serde]
 #[derive(QueryResponses)]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 pub enum QueryMsg {
     #[returns(StakedBalanceAtHeightResponse)]
     StakedBalanceAtHeight {
@@ -75,13 +77,13 @@ pub enum MigrateMsg {
 
 #[cw_serde]
 pub struct StakedBalanceAtHeightResponse {
-    pub balance: Uint128,
+    pub balance: Uint256,
     pub height: u64,
 }
 
 #[cw_serde]
 pub struct TotalStakedAtHeightResponse {
-    pub total: Uint128,
+    pub total: Uint256,
     pub height: u64,
 }
 

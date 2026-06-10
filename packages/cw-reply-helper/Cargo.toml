@@ -1,0 +1,10 @@
+[package]
+name = "cw-reply-helper"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[dependencies]
+cosmwasm-std = { workspace = true }
+cw-utils = { workspace = true }

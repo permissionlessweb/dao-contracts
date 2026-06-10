@@ -1,8 +1,7 @@
-use cosmwasm_std::{coins, to_json_binary, Addr, Uint128};
+use cosmwasm_std::{coins, testing::MockApi, to_json_binary, Addr, Coin, Uint128, Uint256};
 use cw20::{Cw20Coin, Cw20ExecuteMsg};
 use cw_denom::UncheckedDenom;
 use cw_multi_test::{App, BankSudo, Executor, SudoMsg};
-use cw_ownable::OwnershipError;
 use cw_vesting::{
     msg::{InstantiateMsg as PayrollInstantiateMsg, QueryMsg as PayrollQueryMsg},
     vesting::{Schedule, Status, Vest},
@@ -15,7 +14,6 @@ use crate::{
     msg::{ExecuteMsg, InstantiateMsg, QueryMsg, ReceiveMsg},
     state::VestingContract,
 };
-use cw_payroll_factory::ContractError;
 
 const ALICE: &str = "alice";
 const BOB: &str = "bob";
@@ -30,13 +28,13 @@ pub fn test_instantiate_native_payroll_contract() {
 
     // Instantiate factory with only Alice allowed to instantiate payroll contracts
     let instantiate = InstantiateMsg {
-        owner: Some(ALICE.to_string()),
+        owner: Some(MockApi::default().addr_make(ALICE).to_string()),
         vesting_code_id: cw_vesting_code_id,
     };
     let factory_addr = app
         .instantiate_contract(
             code_id,
-            Addr::unchecked("CREATOR"),
+            MockApi::default().addr_make("CREATOR"),
             &instantiate,
             &[],
             "cw-admin-factory",
@@ -47,26 +45,26 @@ pub fn test_instantiate_native_payroll_contract() {
     // Mint alice and bob native tokens
     app.sudo(SudoMsg::Bank({
         BankSudo::Mint {
-            to_address: ALICE.to_string(),
+            to_address: MockApi::default().addr_make(ALICE).to_string(),
             amount: coins(INITIAL_BALANCE, NATIVE_DENOM),
         }
     }))
     .unwrap();
     app.sudo(SudoMsg::Bank({
         BankSudo::Mint {
-            to_address: BOB.to_string(),
+            to_address: MockApi::default().addr_make(BOB).to_string(),
             amount: coins(INITIAL_BALANCE, NATIVE_DENOM),
         }
     }))
     .unwrap();
 
-    let amount = Uint128::new(1000000);
+    let amount = Uint256::new(1000000);
     let unchecked_denom = UncheckedDenom::Native(NATIVE_DENOM.to_string());
 
     let instantiate_payroll_msg = ExecuteMsg::InstantiateNativePayrollContract {
         instantiate_msg: PayrollInstantiateMsg {
-            owner: Some(ALICE.to_string()),
-            recipient: BOB.to_string(),
+            owner: Some(MockApi::default().addr_make(ALICE).to_string()),
+            recipient: MockApi::default().addr_make(BOB).to_string(),
             title: "title".to_string(),
             description: Some("desc".to_string()),
             total: amount,
@@ -81,25 +79,23 @@ pub fn test_instantiate_native_payroll_contract() {
 
     let res = app
         .execute_contract(
-            Addr::unchecked(ALICE),
+            MockApi::default().addr_make(ALICE),
             factory_addr.clone(),
             &instantiate_payroll_msg,
-            &coins(amount.into(), NATIVE_DENOM),
+            &vec![Coin::new(amount, NATIVE_DENOM)],
         )
         .unwrap();
 
     // BOB can't instantiate as owner is configured
-    let err: ContractError = app
+    let err = app
         .execute_contract(
-            Addr::unchecked(BOB),
+            MockApi::default().addr_make(BOB),
             factory_addr.clone(),
             &instantiate_payroll_msg,
-            &coins(amount.into(), NATIVE_DENOM),
+            &vec![Coin::new(amount, NATIVE_DENOM)],
         )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(err, ContractError::Unauthorized {});
+        .unwrap_err();
+    assert!(err.to_string().contains("Unauthorized"));
 
     // Get the payroll address from the instantiate event
     let instantiate_event = &res.events[2];
@@ -111,7 +107,10 @@ pub fn test_instantiate_native_payroll_contract() {
         .wrap()
         .query_wasm_contract_info(cw_vesting_addr)
         .unwrap();
-    assert_eq!(contract_info.admin, Some(ALICE.to_string()));
+    assert_eq!(
+        contract_info.admin,
+        Some(MockApi::default().addr_make(ALICE))
+    );
 
     // Test query list of contracts
     let contracts: Vec<VestingContract> = app
@@ -132,7 +131,7 @@ pub fn test_instantiate_native_payroll_contract() {
         .query_wasm_smart(
             factory_addr.clone(),
             &QueryMsg::ListVestingContractsByInstantiator {
-                instantiator: ALICE.to_string(),
+                instantiator: MockApi::default().addr_make(ALICE).to_string(),
                 start_after: None,
                 limit: None,
             },
@@ -146,7 +145,7 @@ pub fn test_instantiate_native_payroll_contract() {
         .query_wasm_smart(
             factory_addr.clone(),
             &QueryMsg::ListVestingContractsByInstantiator {
-                instantiator: BOB.to_string(),
+                instantiator: MockApi::default().addr_make(BOB).to_string(),
                 start_after: None,
                 limit: None,
             },
@@ -160,7 +159,7 @@ pub fn test_instantiate_native_payroll_contract() {
         .query_wasm_smart(
             factory_addr.clone(),
             &QueryMsg::ListVestingContractsByRecipient {
-                recipient: BOB.to_string(),
+                recipient: MockApi::default().addr_make(BOB).to_string(),
                 start_after: None,
                 limit: None,
             },
@@ -174,7 +173,7 @@ pub fn test_instantiate_native_payroll_contract() {
         .query_wasm_smart(
             factory_addr,
             &QueryMsg::ListVestingContractsByRecipient {
-                recipient: ALICE.to_string(),
+                recipient: MockApi::default().addr_make(ALICE).to_string(),
                 start_after: None,
                 limit: None,
             },
@@ -194,14 +193,14 @@ pub fn test_instantiate_cw20_payroll_contract() {
     let cw20_addr = app
         .instantiate_contract(
             cw20_code_id,
-            Addr::unchecked(ALICE),
+            MockApi::default().addr_make(ALICE),
             &cw20_base::msg::InstantiateMsg {
                 name: "cw20 token".to_string(),
                 symbol: "cwtwenty".to_string(),
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
-                    address: ALICE.to_string(),
-                    amount: Uint128::new(INITIAL_BALANCE),
+                    address: MockApi::default().addr_make(ALICE).to_string(),
+                    amount: Uint256::new(INITIAL_BALANCE).into(),
                 }],
                 mint: None,
                 marketing: None,
@@ -213,13 +212,13 @@ pub fn test_instantiate_cw20_payroll_contract() {
         .unwrap();
 
     let instantiate = InstantiateMsg {
-        owner: Some(ALICE.to_string()),
+        owner: Some(MockApi::default().addr_make(ALICE).to_string()),
         vesting_code_id: cw_vesting_code_id,
     };
     let factory_addr = app
         .instantiate_contract(
             code_id,
-            Addr::unchecked("CREATOR"),
+            MockApi::default().addr_make("CREATOR"),
             &instantiate,
             &[],
             "cw-admin-factory",
@@ -230,18 +229,18 @@ pub fn test_instantiate_cw20_payroll_contract() {
     // Mint alice native tokens
     app.sudo(SudoMsg::Bank({
         BankSudo::Mint {
-            to_address: ALICE.to_string(),
+            to_address: MockApi::default().addr_make(ALICE).to_string(),
             amount: coins(INITIAL_BALANCE, NATIVE_DENOM),
         }
     }))
     .unwrap();
 
-    let amount = Uint128::new(1000000);
+    let amount = Uint256::new(1000000);
     let unchecked_denom = UncheckedDenom::Cw20(cw20_addr.to_string());
 
     let instantiate_payroll_msg = PayrollInstantiateMsg {
-        owner: Some(ALICE.to_string()),
-        recipient: BOB.to_string(),
+        owner: Some(MockApi::default().addr_make(ALICE).to_string()),
+        recipient: MockApi::default().addr_make(BOB).to_string(),
         title: "title".to_string(),
         description: Some("desc".to_string()),
         total: amount,
@@ -254,30 +253,30 @@ pub fn test_instantiate_cw20_payroll_contract() {
 
     // Attempting to call InstantiatePayrollContract directly with cw20 fails
     app.execute_contract(
-        Addr::unchecked(ALICE),
+        MockApi::default().addr_make(ALICE),
         factory_addr.clone(),
         &ExecuteMsg::InstantiateNativePayrollContract {
             instantiate_msg: instantiate_payroll_msg.clone(),
             label: "Payroll".to_string(),
         },
-        &coins(amount.into(), NATIVE_DENOM),
+        &vec![Coin::new(amount, NATIVE_DENOM)],
     )
     .unwrap_err();
 
     let res = app
         .execute_contract(
-            Addr::unchecked(ALICE),
+            MockApi::default().addr_make(ALICE),
             cw20_addr,
             &Cw20ExecuteMsg::Send {
                 contract: factory_addr.to_string(),
-                amount: instantiate_payroll_msg.total,
+                amount: instantiate_payroll_msg.total.into(),
                 msg: to_json_binary(&ReceiveMsg::InstantiatePayrollContract {
                     instantiate_msg: instantiate_payroll_msg,
                     label: "Payroll".to_string(),
                 })
                 .unwrap(),
             },
-            &coins(amount.into(), NATIVE_DENOM),
+            &vec![Coin::new(amount, NATIVE_DENOM)],
         )
         .unwrap();
 
@@ -291,7 +290,10 @@ pub fn test_instantiate_cw20_payroll_contract() {
         .wrap()
         .query_wasm_contract_info(cw_vesting_addr.clone())
         .unwrap();
-    assert_eq!(contract_info.admin, Some(ALICE.to_string()));
+    assert_eq!(
+        contract_info.admin,
+        Some(MockApi::default().addr_make(ALICE))
+    );
 
     // Test query by instantiator
     let contracts: Vec<VestingContract> = app
@@ -299,7 +301,7 @@ pub fn test_instantiate_cw20_payroll_contract() {
         .query_wasm_smart(
             factory_addr,
             &QueryMsg::ListVestingContractsByInstantiator {
-                instantiator: ALICE.to_string(),
+                instantiator: MockApi::default().addr_make(ALICE).to_string(),
                 start_after: None,
                 limit: None,
             },
@@ -321,20 +323,20 @@ fn test_instantiate_wrong_ownership_native() {
     let code_id = app.store_code(cw_payroll_factory_contract());
     let cw_vesting_code_id = app.store_code(cw_vesting_contract());
 
-    let amount = Uint128::new(1000000);
+    let amount = Uint256::new(1000000);
     let unchecked_denom = UncheckedDenom::Native(NATIVE_DENOM.to_string());
 
     app.sudo(SudoMsg::Bank({
         BankSudo::Mint {
-            to_address: "ekez".to_string(),
-            amount: coins(amount.u128() * 2, NATIVE_DENOM),
+            to_address: MockApi::default().addr_make("ekez").to_string(),
+            amount: vec![Coin::new(amount * Uint256::new(2u128) , NATIVE_DENOM)],
         }
     }))
     .unwrap();
     app.sudo(SudoMsg::Bank({
         BankSudo::Mint {
-            to_address: ALICE.to_string(),
-            amount: coins(amount.u128() * 2, NATIVE_DENOM),
+            to_address: MockApi::default().addr_make(ALICE).to_string(),
+            amount: vec![Coin::new(amount * Uint256::new(2u128), NATIVE_DENOM)],
         }
     }))
     .unwrap();
@@ -342,13 +344,13 @@ fn test_instantiate_wrong_ownership_native() {
     // Alice is the owner. Contracts are only allowed if their owner
     // is alice or none and the sender is alice.
     let instantiate = InstantiateMsg {
-        owner: Some(ALICE.to_string()),
+        owner: Some(MockApi::default().addr_make(ALICE).to_string()),
         vesting_code_id: cw_vesting_code_id,
     };
     let factory_addr = app
         .instantiate_contract(
             code_id,
-            Addr::unchecked("CREATOR"),
+            MockApi::default().addr_make("CREATOR"),
             &instantiate,
             &[],
             "cw-admin-factory",
@@ -356,14 +358,14 @@ fn test_instantiate_wrong_ownership_native() {
         )
         .unwrap();
 
-    let err: ContractError = app
+    let err = app
         .execute_contract(
-            Addr::unchecked("ekez"),
+            MockApi::default().addr_make("ekez"),
             factory_addr,
             &ExecuteMsg::InstantiateNativePayrollContract {
                 instantiate_msg: PayrollInstantiateMsg {
-                    owner: Some(ALICE.to_string()),
-                    recipient: BOB.to_string(),
+                    owner: Some(MockApi::default().addr_make(ALICE).to_string()),
+                    recipient: MockApi::default().addr_make(BOB).to_string(),
                     title: "title".to_string(),
                     description: Some("desc".to_string()),
                     total: amount,
@@ -375,14 +377,12 @@ fn test_instantiate_wrong_ownership_native() {
                 },
                 label: "vesting".to_string(),
             },
-            &coins(amount.u128(), NATIVE_DENOM),
+            &vec![Coin::new(amount, NATIVE_DENOM)],
         )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
+        .unwrap_err();
 
     // Can't instantiate if you are not the owner.
-    assert_eq!(err, ContractError::Unauthorized {});
+    assert!(err.to_string().contains("Unauthorized"));
 }
 
 #[test]
@@ -394,13 +394,13 @@ fn test_update_vesting_code_id() {
 
     // Instantiate factory with only Alice allowed to instantiate payroll contracts
     let instantiate = InstantiateMsg {
-        owner: Some(ALICE.to_string()),
+        owner: Some(MockApi::default().addr_make(ALICE).to_string()),
         vesting_code_id: cw_vesting_code_id,
     };
     let factory_addr = app
         .instantiate_contract(
             code_id,
-            Addr::unchecked("CREATOR"),
+            MockApi::default().addr_make("CREATOR"),
             &instantiate,
             &[],
             "cw-admin-factory",
@@ -410,7 +410,7 @@ fn test_update_vesting_code_id() {
 
     // Update the code ID to a new one.
     app.execute_contract(
-        Addr::unchecked(ALICE),
+        MockApi::default().addr_make(ALICE),
         factory_addr.clone(),
         &ExecuteMsg::UpdateCodeId {
             vesting_code_id: cw_vesting_code_two,
@@ -419,35 +419,36 @@ fn test_update_vesting_code_id() {
     )
     .unwrap();
 
-    let err: ContractError = app
+    let err = app
         .execute_contract(
-            Addr::unchecked(BOB),
+            MockApi::default().addr_make(BOB),
             factory_addr.clone(),
             &ExecuteMsg::UpdateCodeId {
                 vesting_code_id: cw_vesting_code_two,
             },
             &[],
         )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(err, ContractError::Ownable(OwnershipError::NotOwner));
+        .unwrap_err();
+    println!("{:#?}", err);
+    assert!(err
+        .to_string()
+        .contains("Caller is not the contract's current owner"));
 
     app.sudo(SudoMsg::Bank({
         BankSudo::Mint {
-            to_address: ALICE.to_string(),
+            to_address: MockApi::default().addr_make(ALICE).to_string(),
             amount: coins(INITIAL_BALANCE, NATIVE_DENOM),
         }
     }))
     .unwrap();
 
-    let amount = Uint128::new(1000000);
+    let amount = Uint256::new(1000000);
     let unchecked_denom = UncheckedDenom::Native(NATIVE_DENOM.to_string());
 
     let instantiate_payroll_msg = ExecuteMsg::InstantiateNativePayrollContract {
         instantiate_msg: PayrollInstantiateMsg {
-            owner: Some(ALICE.to_string()),
-            recipient: BOB.to_string(),
+            owner: Some(MockApi::default().addr_make(ALICE).to_string()),
+            recipient: MockApi::default().addr_make(BOB).to_string(),
             title: "title".to_string(),
             description: Some("desc".to_string()),
             total: amount,
@@ -462,10 +463,10 @@ fn test_update_vesting_code_id() {
 
     let res = app
         .execute_contract(
-            Addr::unchecked(ALICE),
+            MockApi::default().addr_make(ALICE),
             factory_addr,
             &instantiate_payroll_msg,
-            &coins(amount.into(), NATIVE_DENOM),
+            &vec![Coin::new(amount, NATIVE_DENOM)],
         )
         .unwrap();
 
@@ -494,14 +495,14 @@ pub fn test_inconsistent_cw20_amount() {
     let cw20_addr = app
         .instantiate_contract(
             cw20_code_id,
-            Addr::unchecked(ALICE),
+            MockApi::default().addr_make(ALICE),
             &cw20_base::msg::InstantiateMsg {
                 name: "cw20 token".to_string(),
                 symbol: "cwtwenty".to_string(),
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
-                    address: ALICE.to_string(),
-                    amount: Uint128::new(INITIAL_BALANCE),
+                    address: MockApi::default().addr_make(ALICE).to_string(),
+                    amount: Uint256::new(INITIAL_BALANCE).into(),
                 }],
                 mint: None,
                 marketing: None,
@@ -512,13 +513,13 @@ pub fn test_inconsistent_cw20_amount() {
         )
         .unwrap();
     let instantiate = InstantiateMsg {
-        owner: Some(ALICE.to_string()),
+        owner: Some(MockApi::default().addr_make(ALICE).to_string()),
         vesting_code_id: cw_vesting_code_id,
     };
     let factory_addr = app
         .instantiate_contract(
             code_id,
-            Addr::unchecked("CREATOR"),
+            MockApi::default().addr_make("CREATOR"),
             &instantiate,
             &[],
             "cw-admin-factory",
@@ -528,48 +529,41 @@ pub fn test_inconsistent_cw20_amount() {
     // Mint alice native tokens
     app.sudo(SudoMsg::Bank({
         BankSudo::Mint {
-            to_address: ALICE.to_string(),
+            to_address: MockApi::default().addr_make(ALICE).to_string(),
             amount: coins(INITIAL_BALANCE, NATIVE_DENOM),
         }
     }))
     .unwrap();
-    let amount = Uint128::new(1000000);
+    let amount = Uint256::new(1000000);
     let unchecked_denom = UncheckedDenom::Cw20(cw20_addr.to_string());
     let instantiate_payroll_msg = PayrollInstantiateMsg {
-        owner: Some(ALICE.to_string()),
-        recipient: BOB.to_string(),
+        owner: Some(MockApi::default().addr_make(ALICE).to_string()),
+        recipient: MockApi::default().addr_make(BOB).to_string(),
         title: "title".to_string(),
         description: Some("desc".to_string()),
-        total: amount - Uint128::new(1), // lesser amount than sent
+        total: amount - Uint256::new(1), // lesser amount than sent
         denom: unchecked_denom,
         schedule: Schedule::SaturatingLinear,
         vesting_duration_seconds: 200,
         unbonding_duration_seconds: 2592000, // 30 days
         start_time: None,
     };
-    let err: ContractError = app
+    let err = app
         .execute_contract(
-            Addr::unchecked(ALICE),
+            MockApi::default().addr_make(ALICE),
             cw20_addr,
             &Cw20ExecuteMsg::Send {
                 contract: factory_addr.to_string(),
-                amount,
+                amount: amount.into(),
                 msg: to_json_binary(&ReceiveMsg::InstantiatePayrollContract {
                     instantiate_msg: instantiate_payroll_msg,
                     label: "Payroll".to_string(),
                 })
                 .unwrap(),
             },
-            &coins(amount.into(), NATIVE_DENOM), // https://github.com/CosmWasm/cw-plus/issues/862
+            &vec![Coin::new(amount, NATIVE_DENOM)],
         )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(
-        err,
-        ContractError::WrongFundAmount {
-            sent: amount,
-            expected: amount - Uint128::one()
-        }
-    );
+        .unwrap_err();
+    println!("{:#?}", err);
+    assert!(err.to_string().contains("vests") && err.to_string().contains("tokens, funded with"));
 }

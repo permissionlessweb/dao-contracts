@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, BlockInfo, Deps, DepsMut, Env, StdResult, Uint128, Uint256};
+use cosmwasm_std::{Addr, BlockInfo, Deps, DepsMut, Env, StdResult, Uint256};
 use cw20::Expiration;
 
 use crate::{
@@ -126,13 +126,13 @@ pub fn get_active_total_earned_puvp(
                 let complete_distribution_periods =
                     new_reward_distribution_duration.ratio(&duration)?;
 
-                let new_rewards_distributed = Uint256::from(amount)
+                let new_rewards_distributed = amount
                     .checked_mul_floor(complete_distribution_periods)?
                     .checked_mul(scale_factor())?;
 
                 // the new rewards per unit voting power that have been
                 // distributed since the last update
-                let new_rewards_puvp = new_rewards_distributed.checked_div(total_power.into())?;
+                let new_rewards_puvp = new_rewards_distributed.checked_div(total_power)?;
                 Ok(curr.checked_add(new_rewards_puvp)?)
             }
         }
@@ -148,10 +148,10 @@ pub fn get_accrued_rewards_not_yet_accounted_for(
     total_earned_puvp: Uint256,
     distribution: &DistributionState,
     user_reward_state: &UserRewardState,
-) -> StdResult<Uint128> {
+) -> StdResult<Uint256> {
     // get the user's voting power at the current height
     let voting_power: Uint256 =
-        get_voting_power_at_block(deps, &env.block, &distribution.vp_contract, addr)?.into();
+        get_voting_power_at_block(deps, &env.block, &distribution.vp_contract, addr)?;
 
     // get previous reward per unit voting power accounted for
     let user_last_reward_puvp = user_reward_state
@@ -167,7 +167,7 @@ pub fn get_accrued_rewards_not_yet_accounted_for(
 
     // calculate the amount of rewards earned:
     // voting_power * reward_factor / scale_factor
-    let accrued_rewards_amount: Uint128 = voting_power
+    let accrued_rewards_amount: Uint256 = voting_power
         .checked_mul(reward_factor)?
         .checked_div(scale_factor())?
         .try_into()?;

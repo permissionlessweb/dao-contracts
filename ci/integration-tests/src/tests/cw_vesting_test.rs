@@ -8,7 +8,7 @@ use cw_vesting::{
     vesting::Schedule,
 };
 
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{Uint128, Uint256};
 use test_context::test_context;
 
 use crate::helpers::chain::Chain;
@@ -91,7 +91,7 @@ fn test_cw_vesting_staking(chain: &mut Chain) {
             "delegate_and_error",
             &ExecuteMsg::Delegate {
                 validator: "wowsorandom".to_string(),
-                amount: Uint128::new(100_000_000),
+                amount: Uint256::from(Uint128::new(100_000_000)),
             },
             &user_key,
             vec![],
@@ -105,7 +105,7 @@ fn test_cw_vesting_staking(chain: &mut Chain) {
             "delegate",
             &ExecuteMsg::Delegate {
                 validator: validator.clone(),
-                amount: Uint128::new(100_000_000),
+                amount: Uint256::from(Uint128::new(100_000_000)),
             },
             &user_key,
             vec![],
@@ -144,7 +144,7 @@ fn test_cw_vesting_staking(chain: &mut Chain) {
             "undelegate",
             &ExecuteMsg::Undelegate {
                 validator,
-                amount: Uint128::new(100_000_000),
+                amount: Uint256::from(Uint128::new(100_000_000)),
             },
             &user_key,
             vec![],

@@ -1,7 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    ensure, Addr, BlockInfo, Decimal, Deps, StdError, StdResult, Timestamp, Uint128, Uint256,
-    Uint64,
+    ensure, Addr, BlockInfo, Decimal256, Deps, StdError, StdResult, Timestamp, Uint256, Uint64,
 };
 use cw20::{Denom, Expiration};
 use cw_storage_plus::{Item, Map};
@@ -31,7 +30,7 @@ pub const COUNT: Item<u64> = Item::new("count");
 pub struct UserRewardState {
     /// map distribution ID to the user's pending rewards that have been
     /// accounted for but not yet claimed.
-    pub pending_rewards: HashMap<u64, Uint128>,
+    pub pending_rewards: HashMap<u64, Uint256>,
     /// map distribution ID to the user's earned rewards per unit voting power
     /// that have already been accounted for (added to pending and maybe
     /// claimed).
@@ -49,7 +48,7 @@ pub enum EmissionRate {
     /// rewards are distributed at a constant rate
     Linear {
         /// amount of tokens to distribute per amount of time
-        amount: Uint128,
+        amount: Uint256,
         /// duration of time to distribute amount
         duration: Duration,
         /// whether or not reward distribution is continuous: whether future
@@ -91,7 +90,7 @@ impl EmissionRate {
     /// takes two emission cycles to be distributed.
     pub fn get_funded_period_duration(
         &self,
-        funded_amount: Uint128,
+        funded_amount: Uint256,
     ) -> StdResult<Option<Duration>> {
         match self {
             // if rewards are paused, return no duration
@@ -102,20 +101,20 @@ impl EmissionRate {
             EmissionRate::Linear {
                 amount, duration, ..
             } => {
-                let amount_to_emission_rate_ratio = Decimal::from_ratio(funded_amount, *amount);
+                let amount_to_emission_rate_ratio = Decimal256::from_ratio(funded_amount, *amount);
 
                 let funded_duration = match duration {
                     Duration::Height(h) => {
-                        let duration_height = Uint128::from(*h)
+                        let duration_height = Uint256::from(*h)
                             .checked_mul_floor(amount_to_emission_rate_ratio)
-                            .map_err(|e| StdError::generic_err(e.to_string()))?;
+                            .map_err(|e| StdError::msg(e.to_string()))?;
                         let duration = Uint64::try_from(duration_height)?.u64();
                         Duration::Height(duration)
                     }
                     Duration::Time(t) => {
-                        let duration_time = Uint128::from(*t)
+                        let duration_time = Uint256::from(*t)
                             .checked_mul_floor(amount_to_emission_rate_ratio)
-                            .map_err(|e| StdError::generic_err(e.to_string()))?;
+                            .map_err(|e| StdError::msg(e.to_string()))?;
                         let duration = Uint64::try_from(duration_time)?.u64();
                         Duration::Time(duration)
                     }
@@ -187,7 +186,7 @@ pub struct DistributionState {
     pub open_funding: bool,
     /// total amount of rewards funded that will be distributed in the active
     /// epoch.
-    pub funded_amount: Uint128,
+    pub funded_amount: Uint256,
     /// destination address for reward clawbacks
     pub withdraw_destination: Addr,
     /// historical rewards earned per unit voting power from past epochs due to
@@ -230,16 +229,16 @@ impl DistributionState {
     }
 
     /// get rewards to be distributed until the given expiration
-    pub fn get_rewards_until(&self, expiration: Expiration) -> Result<Uint128, ContractError> {
+    pub fn get_rewards_until(&self, expiration: Expiration) -> Result<Uint256, ContractError> {
         match self.active_epoch.emission_rate {
-            EmissionRate::Paused {} => Ok(Uint128::zero()),
+            EmissionRate::Paused {} => Ok(Uint256::zero()),
             EmissionRate::Immediate {} => Ok(self.funded_amount),
             EmissionRate::Linear {
                 amount, duration, ..
             } => {
                 // if not yet started, return 0.
                 if let Expiration::Never {} = self.active_epoch.started_at {
-                    return Ok(Uint128::zero());
+                    return Ok(Uint256::zero());
                 }
 
                 let epoch_duration = expiration.duration_since(&self.active_epoch.started_at)?;
@@ -255,7 +254,7 @@ impl DistributionState {
 
     /// get the total rewards to be distributed based on the active epoch's
     /// emission rate and end time
-    pub fn get_total_rewards(&self) -> Result<Uint128, ContractError> {
+    pub fn get_total_rewards(&self) -> Result<Uint256, ContractError> {
         self.get_rewards_until(self.active_epoch.ends_at)
     }
 
@@ -264,7 +263,7 @@ impl DistributionState {
     pub fn get_undistributed_rewards(
         &self,
         current_block: &BlockInfo,
-    ) -> Result<Uint128, ContractError> {
+    ) -> Result<Uint256, ContractError> {
         // get last time rewards were distributed (current block or previous end
         // time)
         let last_time_rewards_distributed = self.get_latest_reward_distribution_time(current_block);
@@ -379,12 +378,12 @@ impl DistributionState {
         &mut self,
         deps: Deps,
         block: &BlockInfo,
-        funded_amount_delta: Uint128,
+        funded_amount_delta: Uint256,
     ) -> Result<(), ContractError> {
         // should never happen
         ensure!(
             self.active_epoch.emission_rate == EmissionRate::Immediate {},
-            ContractError::Std(StdError::generic_err(format!(
+            ContractError::Std(StdError::msg(format!(
                 "expected immediate emission, got {:?}",
                 self.active_epoch.emission_rate
             )))
@@ -400,10 +399,10 @@ impl DistributionState {
             Err(ContractError::NoVotingPowerNoRewards {})
         } else {
             // the new rewards per unit voting power based on the funded amount
-            let new_rewards_puvp = Uint256::from(funded_amount_delta)
-                // this can never overflow since funded_amount is a Uint128
+            let new_rewards_puvp = funded_amount_delta
+                // this can never overflow since funded_amount is a Uint256
                 .checked_mul(scale_factor())?
-                .checked_div(total_power.into())?;
+                .checked_div(total_power)?;
 
             self.active_epoch.total_earned_puvp = curr.checked_add(new_rewards_puvp)?;
 

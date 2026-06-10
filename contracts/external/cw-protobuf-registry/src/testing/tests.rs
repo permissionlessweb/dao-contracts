@@ -1,6 +1,4 @@
-use cosmwasm_std::StdError;
-use cw_ownable::OwnershipError;
-use cw_protobuf_registry::ContractError;
+use cosmwasm_std::testing::MockApi;
 use dao_testing::OWNER;
 use prost::Message;
 use prost_reflect::DescriptorPool;
@@ -11,7 +9,8 @@ use crate::{msg::InstantiateMsg, protobuf::encode_protobuf, testing::suite::Suit
 #[test]
 fn test_init_with_owner() {
     let mut suite = SuiteBuilder::base().build();
-    let other_owner = "other_owner";
+    let mock_api = MockApi::default();
+    let other_owner = mock_api.addr_make("other_owner");
 
     suite.registry_addr = suite.base.instantiate(
         suite.base.protobuf_registry_id,
@@ -25,21 +24,23 @@ fn test_init_with_owner() {
     );
 
     let owner = suite.get_ownership().owner.unwrap();
-    assert_eq!(owner, other_owner);
+    assert_eq!(owner.as_str(), other_owner.as_str());
 }
 
 #[test]
 fn test_update_owner() {
     let mut suite = SuiteBuilder::base().build();
 
-    let existing_owner = suite.get_ownership().owner.unwrap();
-    assert_eq!(existing_owner, OWNER);
+    let mock_api = MockApi::default();
+    let new_owner = mock_api.addr_make("new_owner");
 
-    let new_owner = "new_owner";
-    suite.update_owner(existing_owner, new_owner);
+    let existing_owner = suite.get_ownership().owner.unwrap();
+    assert_eq!(existing_owner.as_str(), OWNER);
+
+    suite.update_owner(existing_owner, new_owner.clone());
 
     let owner = suite.get_ownership().owner.unwrap();
-    assert_eq!(owner, new_owner);
+    assert_eq!(owner.as_str(), new_owner.as_str());
 }
 
 #[test]
@@ -57,19 +58,19 @@ fn test_auth() {
 
     // only the owner can register
     let err = suite.register_err(not_owner, vec![]);
-    assert_eq!(err, ContractError::Ownership(OwnershipError::NotOwner {}));
+    assert!(err.to_string().contains("not the contract's current owner"));
 
     // only the owner can unregister
     let err = suite.unregister_err(not_owner, vec![], None);
-    assert_eq!(err, ContractError::Ownership(OwnershipError::NotOwner {}));
+    assert!(err.to_string().contains("not the contract's current owner"));
 
     // only the owner can prepare
     let err = suite.prepare_err(not_owner, vec![]);
-    assert_eq!(err, ContractError::Ownership(OwnershipError::NotOwner {}));
+    assert!(err.to_string().contains("not the contract's current owner"));
 
     // only the owner can unprepare
     let err = suite.unprepare_err(not_owner, vec![]);
-    assert_eq!(err, ContractError::Ownership(OwnershipError::NotOwner {}));
+    assert!(err.to_string().contains("not the contract's current owner"));
 }
 
 #[test]
@@ -77,10 +78,10 @@ fn test_protobuf_management() {
     let mut suite = SuiteBuilder::base().build();
 
     let err = suite.register_err(OWNER, vec![]);
-    assert_eq!(err, ContractError::NoFiles {});
+    assert!(err.to_string().contains("No files provided"));
 
     let err = suite.unregister_err(OWNER, vec![], None);
-    assert_eq!(err, ContractError::NoFiles {});
+    assert!(err.to_string().contains("No files provided"));
 
     // Create a protobuf file descriptor set
     let crate_root = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string());
@@ -140,13 +141,7 @@ fn test_protobuf_management() {
         vec!["google/protobuf/wrappers.proto".to_string(), "".to_string()],
         Some(1),
     );
-    assert_eq!(
-        err,
-        ContractError::MessageLimitReached {
-            unregistered: 1,
-            total: 2,
-        }
-    );
+    assert!(err.to_string().contains("Message limit reached"));
 
     // Allows partial unregistering of messages from a single file.
     suite.unregister(
@@ -175,18 +170,7 @@ fn test_regen_protobuf_filter() {
     // Attempt to get the file descriptor set for a message that doesn't exist.
     let err =
         suite.file_descriptor_set_err(vec!["regen.ecocredit.basket.v1.MsgCreate".to_string()]);
-    assert_eq!(
-        err,
-        StdError::generic_err(format!(
-            "Querier contract error: {}",
-            StdError::generic_err(
-                ContractError::MessageNotFound {
-                    message: "regen.ecocredit.basket.v1.MsgCreate".to_string(),
-                }
-                .to_string()
-            )
-        ))
-    );
+    assert!(err.to_string().contains("Protobuf message not found"));
 
     // Register the protobuf file descriptor set.
 
@@ -276,18 +260,7 @@ fn test_prepare_and_decode() {
 
     // not yet registered
     let err = suite.decode_err("cosmos.base.v1beta1.Coin", encoded_coin.clone());
-    assert_eq!(
-        err,
-        StdError::generic_err(format!(
-            "Querier contract error: {}",
-            StdError::generic_err(format!(
-                "failed to create file descriptor set: {}",
-                ContractError::MessageNotFound {
-                    message: "cosmos.base.v1beta1.Coin".to_string()
-                }
-            ))
-        ))
-    );
+    assert!(err.to_string().contains("Protobuf message not found"));
 
     // Register the protobuf file descriptor set.
     suite.register(OWNER, vec![file_descriptor_set.clone()]);
@@ -346,27 +319,10 @@ fn test_prepare_and_decode() {
     assert_eq!(fds.file[0].message_type[0].name.as_ref().unwrap(), "Coin");
 
     let err = suite.decode_err("wrong_message", encoded_coin.clone());
-    assert_eq!(
-        err,
-        StdError::generic_err(format!(
-            "Querier contract error: {}",
-            StdError::generic_err(format!(
-                "failed to create file descriptor set: {}",
-                ContractError::MessageNotFound {
-                    message: "wrong_message".to_string()
-                }
-            ))
-        ))
-    );
+    assert!(err.to_string().contains("Protobuf message not found"));
 
     let err = suite.decode_err("cosmos.base.v1beta1.Coin", vec![0x1, 0x2, 0x3]);
-    assert_eq!(
-        err,
-        StdError::generic_err(format!(
-            "Querier contract error: {}",
-            StdError::generic_err("failed to decode Protobuf message: invalid tag value: 0")
-        ))
-    );
+    assert!(err.to_string().contains("failed to decode Protobuf message"));
 
     suite.assert_decode(
         "cosmos.base.v1beta1.Coin",

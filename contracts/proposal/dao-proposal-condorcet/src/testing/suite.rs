@@ -1,4 +1,4 @@
-use cosmwasm_std::{coins, to_json_binary, Addr, BankMsg, CosmosMsg, Decimal};
+use cosmwasm_std::{coins, testing::MockApi, to_json_binary, Addr, BankMsg, CosmosMsg, Decimal, StdResult};
 use cw_multi_test::{next_block, App, Executor};
 use cw_utils::Duration;
 use dao_interface::{
@@ -19,6 +19,14 @@ use crate::{
     proposal::{ProposalResponse, Status},
     tally::Winner,
 };
+
+pub fn addr(name: &str) -> Addr {
+    MockApi::default().addr_make(name)
+}
+
+pub fn addr_str(name: &str) -> String {
+    addr(name).to_string()
+}
 
 pub(crate) struct Suite {
     app: App,
@@ -43,7 +51,7 @@ impl Default for SuiteBuilder {
                 close_proposals_on_execution_failure: true,
             },
             with_proposal: None,
-            with_voters: vec![("sender".to_string(), 10)],
+            with_voters: vec![(addr_str("sender"), 10)],
         }
     }
 }
@@ -62,7 +70,10 @@ impl SuiteBuilder {
     }
 
     pub fn with_voters(mut self, voters: &[(&str, u64)]) -> Self {
-        self.with_voters = voters.iter().map(|(a, p)| (a.to_string(), *p)).collect();
+        self.with_voters = voters
+            .iter()
+            .map(|(a, p)| (addr_str(a), *p))
+            .collect();
         self
     }
 
@@ -245,7 +256,7 @@ impl Suite {
         &mut self,
         sender: S,
         choices: Vec<Vec<CosmosMsg>>,
-    ) -> anyhow::Result<u32> {
+    ) -> StdResult<u32> {
         let id = self.query_next_proposal_id();
         self.app.execute_contract(
             Addr::unchecked(sender),
@@ -263,7 +274,7 @@ impl Suite {
         sender: S,
         proposal_id: u32,
         vote: Vec<u32>,
-    ) -> anyhow::Result<()> {
+    ) -> StdResult<()> {
         self.app
             .execute_contract(
                 Addr::unchecked(sender),
@@ -274,7 +285,7 @@ impl Suite {
             .map(|_| ())
     }
 
-    pub fn execute<S: Into<String>>(&mut self, sender: S, proposal_id: u32) -> anyhow::Result<()> {
+    pub fn execute<S: Into<String>>(&mut self, sender: S, proposal_id: u32) -> StdResult<()> {
         self.app
             .execute_contract(
                 Addr::unchecked(sender),
@@ -285,7 +296,7 @@ impl Suite {
             .map(|_| ())
     }
 
-    pub fn close<S: Into<String>>(&mut self, sender: S, proposal_id: u32) -> anyhow::Result<()> {
+    pub fn close<S: Into<String>>(&mut self, sender: S, proposal_id: u32) -> StdResult<()> {
         self.app
             .execute_contract(
                 Addr::unchecked(sender),
@@ -299,7 +310,7 @@ impl Suite {
 
 pub fn unimportant_message() -> CosmosMsg {
     BankMsg::Send {
-        to_address: "someone".to_string(),
+        to_address: addr_str("someone"),
         amount: coins(10, "something"),
     }
     .into()

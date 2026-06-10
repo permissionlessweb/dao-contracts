@@ -16,15 +16,15 @@ pub type SnapshotVectorMapItemRef = (u64, Option<u64>);
 /// expired.
 pub struct SnapshotVectorMap<'a, K, V> {
     /// All items for a key, indexed by ID.
-    items: Map<'a, &'a (K, u64), V>,
+    items: Map<&'a (K, u64), V>,
     /// The next item ID to use per-key.
-    next_ids: Map<'a, K, u64>,
+    next_ids: Map<K, u64>,
     /// The IDs of the items that are active for a key at a given height, and
     /// optionally the height at which they expire.
-    active: SnapshotMap<'a, K, Vec<SnapshotVectorMapItemRef>>,
+    active: SnapshotMap<K, Vec<SnapshotVectorMapItemRef>>,
     /// The last height at which the active list was updated for each key, to
     /// enforce that updates (push/remove) are done in order.
-    last_active_update: Map<'a, K, u64>,
+    last_active_update: Map<K, u64>,
 }
 
 /// A loaded item from the vector, including its ID and expiration.
@@ -117,7 +117,7 @@ where
 
         // remove expired items
         active.retain(|(_, expiration)| {
-            expiration.map_or(true, |expiration| expiration > curr_height)
+            expiration.is_none_or(|expiration| expiration > curr_height)
         });
 
         // add new item and save list
@@ -150,7 +150,7 @@ where
 
         // remove item and any expired items
         active.retain(|(active_id, expiration)| {
-            active_id != &id && expiration.map_or(true, |expiration| expiration > curr_height)
+            active_id != &id && expiration.is_none_or(|expiration| expiration > curr_height)
         });
 
         // save the new list
@@ -190,7 +190,7 @@ where
 
         // remove existing item and any expired items
         active.retain(|(active_id, expiration)| {
-            active_id != &id && expiration.map_or(true, |expiration: u64| expiration > curr_height)
+            active_id != &id && expiration.is_none_or(|expiration: u64| expiration > curr_height)
         });
 
         // get next ID for the key, defaulting to 0
@@ -231,12 +231,12 @@ where
         let last_active_update = self
             .last_active_update
             .may_load(store, k.clone())?
-            .ok_or(StdError::generic_err("no active items for key"))?;
+            .ok_or(StdError::msg("no active items for key"))?;
 
         // ensure this update is performed at or after the last update, and
         // don't update the last active update since we're not making a new copy
         if curr_height < last_active_update {
-            return Err(StdError::generic_err(format!(
+            return Err(StdError::msg(format!(
                 "update must be performed at or after the last update ({last_active_update})",
             )));
         }
@@ -252,12 +252,12 @@ where
         active
             .iter_mut()
             .find(|(item_id, expiration)| {
-                *item_id == id && expiration.map_or(true, |exp| exp > curr_height)
+                *item_id == id && expiration.is_none_or(|exp| exp > curr_height)
             })
             .map(|(_, expiration)| {
                 *expiration = new_expiration;
             })
-            .ok_or(StdError::generic_err("item not found or expired"))?;
+            .ok_or(StdError::msg("item not found or expired"))?;
 
         // override the list at the last active update
         self.active
@@ -279,7 +279,7 @@ where
             .may_load(store, k.clone())?
             .unwrap_or_default();
         match curr_height.cmp(&last_active_update) {
-            Ordering::Less => Err(StdError::generic_err(format!(
+            Ordering::Less => Err(StdError::msg(format!(
                 "update must be performed at or after the last update ({last_active_update})",
             ))),
             Ordering::Equal => Ok(()),
@@ -314,7 +314,7 @@ where
         // load paged items, skipping expired ones
         let items = active_ids
             .iter()
-            .filter(|(_, expiration)| expiration.map_or(true, |exp| exp > height))
+            .filter(|(_, expiration)| expiration.is_none_or(|exp| exp > height))
             .skip(offset)
             .take(limit)
             .map(|(id, expiration)| -> StdResult<LoadedItem<V>> {
@@ -365,7 +365,7 @@ where
         // load paged items, skipping expired ones
         let items = active_ids
             .iter()
-            .filter(|(_, expiration)| expiration.map_or(true, |exp| exp > current_height))
+            .filter(|(_, expiration)| expiration.is_none_or(|exp| exp > current_height))
             .skip(offset)
             .take(limit)
             .map(|(id, expiration)| -> StdResult<LoadedItem<V>> {

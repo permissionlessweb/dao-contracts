@@ -13,19 +13,19 @@ pub struct VestingContract {
     pub recipient: String,
 }
 
-pub struct TokenIndexes<'a> {
-    pub instantiator: MultiIndex<'a, String, VestingContract, String>,
-    pub recipient: MultiIndex<'a, String, VestingContract, String>,
+pub struct TokenIndexes {
+    pub instantiator: MultiIndex<'static, String, VestingContract, String>,
+    pub recipient: MultiIndex<'static, String, VestingContract, String>,
 }
 
-impl IndexList<VestingContract> for TokenIndexes<'_> {
+impl IndexList<VestingContract> for TokenIndexes {
     fn get_indexes(&self) -> Box<dyn Iterator<Item = &dyn Index<VestingContract>> + '_> {
         let v: Vec<&dyn Index<VestingContract>> = vec![&self.instantiator, &self.recipient];
         Box::new(v.into_iter())
     }
 }
 
-pub fn vesting_contracts<'a>() -> IndexedMap<'a, &'a str, VestingContract, TokenIndexes<'a>> {
+pub fn vesting_contracts() -> IndexedMap<&'static str, VestingContract, TokenIndexes> {
     let indexes = TokenIndexes {
         instantiator: MultiIndex::new(
             |_pk: &[u8], d: &VestingContract| d.instantiator.clone(),

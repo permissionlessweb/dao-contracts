@@ -1,8 +1,15 @@
 use cosmwasm_std::{
     from_json,
-    testing::{mock_dependencies, mock_env, mock_info},
+    testing::{message_info, mock_dependencies, mock_env, MockApi},
     to_json_binary, Addr, Binary, ContractResult, Empty, Response, SubMsg, WasmMsg,
 };
+
+fn addr(name: &str) -> Addr {
+    MockApi::default().addr_make(name)
+}
+fn addr_str(name: &str) -> String {
+    addr(name).to_string()
+}
 use cw_hooks::HooksResponse;
 use dao_voting::{pre_propose::PreProposeSubmissionPolicy, status::Status};
 
@@ -17,13 +24,13 @@ type Contract = PreProposeContract<Empty, Empty, Empty, Empty, Empty>;
 #[test]
 fn test_completed_hook_status_invariant() {
     let mut deps = mock_dependencies();
-    let info = mock_info("pm", &[]);
+    let info = message_info(&addr("pm"), &[]);
 
     let module = Contract::default();
 
     module
         .proposal_module
-        .save(&mut deps.storage, &Addr::unchecked("pm"))
+        .save(&mut deps.storage, &addr("pm"))
         .unwrap();
 
     let res = module.execute(
@@ -47,12 +54,12 @@ fn test_completed_hook_status_invariant() {
 #[test]
 fn test_completed_hook_auth() {
     let mut deps = mock_dependencies();
-    let info = mock_info("evil", &[]);
+    let info = message_info(&addr("evil"), &[]);
     let module = Contract::default();
 
     module
         .proposal_module
-        .save(&mut deps.storage, &Addr::unchecked("pm"))
+        .save(&mut deps.storage, &addr("pm"))
         .unwrap();
 
     let res = module.execute(
@@ -73,13 +80,10 @@ fn test_proposal_submitted_hooks() {
     let mut deps = mock_dependencies();
     let module = Contract::default();
 
-    module
-        .dao
-        .save(&mut deps.storage, &Addr::unchecked("d"))
-        .unwrap();
+    module.dao.save(&mut deps.storage, &addr("d")).unwrap();
     module
         .proposal_module
-        .save(&mut deps.storage, &Addr::unchecked("pm"))
+        .save(&mut deps.storage, &addr("pm"))
         .unwrap();
     module
         .config
@@ -93,9 +97,9 @@ fn test_proposal_submitted_hooks() {
         .unwrap();
 
     // The DAO can add a hook.
-    let info = mock_info("d", &[]);
+    let info = message_info(&addr("d"), &[]);
     module
-        .execute_add_proposal_submitted_hook(deps.as_mut(), info, "one".to_string())
+        .execute_add_proposal_submitted_hook(deps.as_mut(), info, addr_str("one"))
         .unwrap();
     let hooks: HooksResponse = from_json(
         module
@@ -107,12 +111,12 @@ fn test_proposal_submitted_hooks() {
             .unwrap(),
     )
     .unwrap();
-    assert_eq!(hooks.hooks, vec!["one".to_string()]);
+    assert_eq!(hooks.hooks, vec![addr_str("one")]);
 
     // Non-DAO addresses can not add hooks.
-    let info = mock_info("n", &[]);
+    let info = message_info(&addr("n"), &[]);
     let err = module
-        .execute_add_proposal_submitted_hook(deps.as_mut(), info, "two".to_string())
+        .execute_add_proposal_submitted_hook(deps.as_mut(), info, addr_str("two"))
         .unwrap_err();
     assert_eq!(err, PreProposeError::NotDao {});
 
@@ -126,7 +130,7 @@ fn test_proposal_submitted_hooks() {
         .execute(
             deps.as_mut(),
             mock_env(),
-            mock_info("a", &[]),
+            message_info(&addr("a"), &[]),
             ExecuteMsg::Propose {
                 msg: Empty::default(),
             },
@@ -135,23 +139,23 @@ fn test_proposal_submitted_hooks() {
     assert_eq!(
         res.messages[1],
         SubMsg::new(WasmMsg::Execute {
-            contract_addr: "one".to_string(),
+            contract_addr: addr_str("one"),
             msg: to_json_binary(&Empty::default()).unwrap(),
             funds: vec![],
         })
     );
 
     // Non-DAO addresses can not remove hooks.
-    let info = mock_info("n", &[]);
+    let info = message_info(&addr("n"), &[]);
     let err = module
-        .execute_remove_proposal_submitted_hook(deps.as_mut(), info, "one".to_string())
+        .execute_remove_proposal_submitted_hook(deps.as_mut(), info, addr_str("one"))
         .unwrap_err();
     assert_eq!(err, PreProposeError::NotDao {});
 
     // The DAO can remove a hook.
-    let info = mock_info("d", &[]);
+    let info = message_info(&addr("d"), &[]);
     module
-        .execute_remove_proposal_submitted_hook(deps.as_mut(), info, "one".to_string())
+        .execute_remove_proposal_submitted_hook(deps.as_mut(), info, addr_str("one"))
         .unwrap();
     let hooks: HooksResponse = from_json(
         module
@@ -192,7 +196,7 @@ fn test_execute_ext_does_nothing() {
         .execute(
             deps.as_mut(),
             mock_env(),
-            mock_info("addr", &[]),
+            message_info(&addr("addr"), &[]),
             ExecuteMsg::Extension {
                 msg: Empty::default(),
             },

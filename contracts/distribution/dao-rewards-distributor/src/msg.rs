@@ -1,10 +1,9 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{Uint128, Uint256};
 use cw20::{Cw20ReceiveMsg, Denom, UncheckedDenom};
 use cw4::MemberChangedHookMsg;
 use cw_ownable::cw_ownable_execute;
 use dao_hooks::{nft_stake::NftStakeChangedHookMsg, stake::StakeChangedHookMsg};
-use dao_interface::voting::InfoResponse;
 
 // so that consumers don't need a cw_ownable or cw_controllers dependency
 // to consume this contract's queries.
@@ -22,6 +21,7 @@ pub struct InstantiateMsg {
 
 #[cw_ownable_execute]
 #[cw_serde]
+#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
     /// Called when a member is added or removed
     /// to a cw4-groups or cw721-roles contract.
@@ -110,9 +110,10 @@ pub enum ReceiveCw20Msg {
 
 #[cw_serde]
 #[derive(QueryResponses)]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 pub enum QueryMsg {
     /// Returns contract version info
-    #[returns(InfoResponse)]
+    #[returns(dao_interface::voting::InfoResponse)]
     Info {},
     /// Returns information about the ownership of this contract.
     #[returns(::cw_ownable::Ownership<::cosmwasm_std::Addr>)]
@@ -125,7 +126,7 @@ pub enum QueryMsg {
         limit: Option<u32>,
     },
     /// Returns the undistributed rewards for a distribution.
-    #[returns(Uint128)]
+    #[returns(Uint256)]
     UndistributedRewards { id: u64 },
     /// Returns the state of the given distribution.
     #[returns(DistributionState)]
@@ -155,7 +156,7 @@ pub struct DistributionPendingRewards {
     /// denomination of the pending rewards
     pub denom: Denom,
     /// amount of pending rewards in the denom being distributed
-    pub pending_rewards: Uint128,
+    pub pending_rewards: Uint256,
 }
 
 #[cw_serde]

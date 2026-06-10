@@ -1,10 +1,10 @@
-use cosmwasm_std::{coins, BankMsg, CosmosMsg, DepsMut, Env, MessageInfo, Response, Uint128};
+use cosmwasm_std::{BankMsg, CosmosMsg, DepsMut, Env, MessageInfo, Response, Uint128, Uint256, coins};
 
 use cw_tokenfactory_types::msg::{msg_burn, msg_change_admin, msg_mint};
 #[cfg(feature = "osmosis_tokenfactory")]
 use cw_tokenfactory_types::msg::{msg_force_transfer, msg_set_before_send_hook};
 #[cfg(any(feature = "osmosis_tokenfactory", feature = "cosmwasm_tokenfactory"))]
-use {cw_tokenfactory_types::msg::msg_set_denom_metadata, dao_interface::token::Metadata};
+use {cw_tokenfactory_types::msg::msg_set_denom_metadata,};
 
 use crate::error::ContractError;
 use crate::helpers::{check_before_send_hook_features_enabled, check_is_not_frozen};
@@ -34,11 +34,11 @@ pub fn mint(
     // Decrease minter allowance
     let allowance = MINTER_ALLOWANCES
         .may_load(deps.storage, &info.sender)?
-        .unwrap_or_else(Uint128::zero);
+        .unwrap_or_else(Uint256::zero);
 
     // If minter allowance goes negative, throw error
     let updated_allowance = allowance
-        .checked_sub(amount)
+        .checked_sub(amount.u128().into())
         .map_err(|_| ContractError::not_enough_mint_allowance(amount, allowance))?;
 
     // If minter allowance goes 0, remove from storage
@@ -95,11 +95,11 @@ pub fn burn(
     // Decrease burner allowance
     let allowance = BURNER_ALLOWANCES
         .may_load(deps.storage, &info.sender)?
-        .unwrap_or_else(Uint128::zero);
+        .unwrap_or_else(Uint256::zero);
 
     // If burner allowance goes negative, throw error
     let updated_allowance = allowance
-        .checked_sub(amount)
+        .checked_sub(amount.u128().into())
         .map_err(|_| ContractError::not_enough_burn_allowance(amount, allowance))?;
 
     // If burner allowance goes 0, remove from storage
@@ -182,7 +182,7 @@ pub fn set_denom_metadata(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    metadata: Metadata,
+    metadata: cosmwasm_std::DenomMetadata,
 ) -> Result<Response, ContractError> {
     // Only allow current contract owner to set denom metadata
     cw_ownable::assert_owner(deps.storage, &info.sender)?;
@@ -233,7 +233,7 @@ pub fn set_before_send_hook(
         // If the `cosmwasm_address` is not the same as the cw_tokenfactory_issuer contract
         // BeforeSendHook features are disabled.
         let mut advanced_features_enabled = true;
-        if cosmwasm_address != env.contract.address {
+        if cosmwasm_address != env.contract.address.to_string() {
             advanced_features_enabled = false;
         }
 
@@ -269,7 +269,7 @@ pub fn set_burner(
     deps: DepsMut,
     info: MessageInfo,
     address: String,
-    allowance: Uint128,
+    allowance: Uint256,
 ) -> Result<Response, ContractError> {
     // Only allow current contract owner to set burner allowance
     cw_ownable::assert_owner(deps.storage, &info.sender)?;
@@ -298,7 +298,7 @@ pub fn set_minter(
     deps: DepsMut,
     info: MessageInfo,
     address: String,
-    allowance: Uint128,
+    allowance: Uint256,
 ) -> Result<Response, ContractError> {
     // Only allow current contract owner to set minter allowance
     cw_ownable::assert_owner(deps.storage, &info.sender)?;

@@ -1,8 +1,9 @@
 use crate::state::BeforeSendHookInfo;
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Coin, Uint128};
+use cosmwasm_std::{Coin, Uint128, Uint256};
 
-pub use dao_interface::token::{DenomUnit, Metadata};
+#[cfg(feature = "thorchain_tokenfactory")]
+use dao_interface::token::Metadata;
 
 /// The message used to create a new instance of this smart contract.
 #[cw_serde]
@@ -20,9 +21,9 @@ pub enum InstantiateMsg {
     },
     #[cfg(feature = "thorchain_tokenfactory")]
     NewToken {
-        /// Component of fulldenom.
+        /// Component of fulld,
+        metadata: cosmwasm_std::DenomMetadata,
         subdenom: String,
-        metadata: Metadata,
     },
     /// `ExistingToken` will use already created token. So to set this up,
     /// Token Factory admin for the existing token needs trasfer admin over
@@ -49,7 +50,7 @@ pub enum ExecuteMsg {
     },
 
     /// Mint token to address. Mint allowance is required and wiil be deducted after successful mint.
-    Mint { to_address: String, amount: Uint128 },
+    Mint { to_address: String, amount: Uint256 },
 
     /// Deny adds the target address to the denylist, whis prevents them from sending/receiving the token attached
     /// to this contract tokenfactory's BeforeSendHook listener must be set to this contract in order for this
@@ -89,10 +90,10 @@ pub enum ExecuteMsg {
 
     /// Set denom metadata. see: https://docs.cosmos.network/main/modules/bank#denom-metadata.
     #[cfg(any(feature = "osmosis_tokenfactory", feature = "cosmwasm_tokenfactory"))]
-    SetDenomMetadata { metadata: Metadata },
+    SetDenomMetadata { metadata: cosmwasm_std::DenomMetadata },
 
     /// Grant/revoke mint allowance.
-    SetMinterAllowance { address: String, allowance: Uint128 },
+    SetMinterAllowance { address: String, allowance: Uint256 },
 
     /// Updates the admin of the Token Factory token.
     /// Normally this is the cw-tokenfactory-issuer contract itself.
@@ -118,6 +119,7 @@ pub struct MigrateMsg {}
 /// Queries supported by this smart contract.
 #[cw_serde]
 #[derive(QueryResponses)]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 pub enum QueryMsg {
     /// Returns if token transfer is disabled. Response: IsFrozenResponse
     #[returns(IsFrozenResponse)]
@@ -224,7 +226,7 @@ pub struct OwnerResponse {
 /// the amount of tokens the account is allowed to mint or burn
 #[cw_serde]
 pub struct AllowanceResponse {
-    pub allowance: Uint128,
+    pub allowance: Uint256,
 }
 
 /// Information about a particular account and its mint / burn allowances.
@@ -232,7 +234,7 @@ pub struct AllowanceResponse {
 #[cw_serde]
 pub struct AllowanceInfo {
     pub address: String,
-    pub allowance: Uint128,
+    pub allowance: Uint256,
 }
 
 /// Returns a list of all mint or burn allowances

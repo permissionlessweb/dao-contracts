@@ -5,6 +5,7 @@ use dao_interface::token::InitialBalance;
 #[cw_serde]
 pub struct InstantiateMsg {}
 
+#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
 #[cw_serde]
 pub enum ExecuteMsg {
     /// Issues a new fantoken.
@@ -37,6 +38,7 @@ pub struct NewFanToken {
 
 #[cw_serde]
 #[derive(QueryResponses)]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 pub enum QueryMsg {}
 
 #[cw_serde]

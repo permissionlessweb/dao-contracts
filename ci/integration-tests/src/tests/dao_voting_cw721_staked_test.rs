@@ -21,10 +21,13 @@ pub fn instantiate_cw721_base(chain: &mut Chain, key: &SigningKey, minter: &str)
         .instantiate(
             CW721_NAME,
             "instantiate_cw721_base",
-            &cw721_base::InstantiateMsg {
+            &cw721_base::msg::InstantiateMsg {
                 name: "bad kids".to_string(),
                 symbol: "bad kids".to_string(),
-                minter: minter.to_string(),
+                minter: Some(minter.to_string()),
+                collection_info_extension: None,
+                creator: Some(minter.to_string()),
+                withdraw_address: None,
             },
             key,
             None,
@@ -76,7 +79,7 @@ pub fn send_nft(
         .execute(
             CW721_NAME,
             "stake_nft",
-            &cw721::Cw721ExecuteMsg::SendNft {
+            &cw721_base::msg::ExecuteMsg::SendNft {
                 contract: receiver.to_string(),
                 token_id: token_id.to_string(),
                 msg,
@@ -93,11 +96,11 @@ pub fn mint_nft(chain: &mut Chain, sender: &SigningKey, receiver: &str, token_id
         .execute(
             CW721_NAME,
             "mint_nft",
-            &cw721_base::ExecuteMsg::Mint::<Empty, Empty> {
+            &cw721_base::msg::ExecuteMsg::Mint {
                 token_id: token_id.to_string(),
                 owner: receiver.to_string(),
                 token_uri: None,
-                extension: Empty::default(),
+                extension: Some(Empty::default()),
             },
             sender,
             vec![],
@@ -147,7 +150,7 @@ pub fn query_voting_power(chain: &Chain, addr: &str, height: Option<u64>) -> Uin
         )
         .unwrap();
     let data: dao_interface::voting::VotingPowerAtHeightResponse = res.data().unwrap();
-    data.power
+    data.power.try_into().unwrap()
 }
 
 pub fn mint_and_stake_nft(

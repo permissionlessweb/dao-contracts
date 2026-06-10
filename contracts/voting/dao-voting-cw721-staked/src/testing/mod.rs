@@ -15,6 +15,7 @@ mod integration_tests;
 #[cfg(feature = "test-tube")]
 mod test_tube_env;
 
+use cosmwasm_std::testing::MockApi;
 use cosmwasm_std::Addr;
 use cw_multi_test::{App, Executor};
 use cw_utils::Duration;
@@ -41,7 +42,7 @@ pub(crate) fn setup_test(unstaking_duration: Option<Duration>) -> CommonTest {
     let module = app
         .instantiate_contract(
             module_id,
-            Addr::unchecked(CREATOR_ADDR),
+            MockApi::default().addr_make(CREATOR_ADDR),
             &InstantiateMsg {
                 nft_contract: NftContract::Existing {
                     address: nft.to_string(),

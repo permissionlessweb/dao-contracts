@@ -51,6 +51,7 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
+#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
     /// Creates a proposal in the governance module.
     Propose(MultipleChoiceProposeMsg),
@@ -156,6 +157,7 @@ pub enum ExecuteMsg {
 #[proposal_module_query]
 #[cw_serde]
 #[derive(QueryResponses)]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 pub enum QueryMsg {
     /// Gets the governance module's config.
     #[returns(crate::state::Config)]

@@ -2,8 +2,8 @@ use cosmwasm_schema::cw_serde;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Order,
-    Response, StdError, StdResult, SubMsg, Uint128, WasmMsg,
+    to_json_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, MigrateInfo,
+    Order, Response, StdError, StdResult, SubMsg, Uint128, WasmMsg,
 };
 use cw2::set_contract_version;
 use cw_denom::CheckedDenom;
@@ -415,7 +415,12 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(mut deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, PreProposeError> {
+pub fn migrate(
+    mut deps: DepsMut,
+    _env: Env,
+    msg: MigrateMsg,
+    _info: MigrateInfo,
+) -> Result<Response, PreProposeError> {
     let res: Result<Response, PreProposeError> =
         PrePropose::default().migrate(deps.branch(), msg.clone());
     match msg {
@@ -567,7 +572,7 @@ pub fn migrate(mut deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response
                                 CheckedDenomV241::Native(denom) => CheckedDenom::Native(denom),
                                 CheckedDenomV241::Cw20(addr) => CheckedDenom::Cw20(addr),
                             },
-                            amount: deposit.amount,
+                            amount: deposit.amount.into(),
                             refund_policy: match deposit.refund_policy {
                                 DepositRefundPolicyV241::Always => DepositRefundPolicy::Always,
                                 DepositRefundPolicyV241::OnlyPassed => {
@@ -598,7 +603,7 @@ pub fn migrate(mut deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response
                             // should not be possible since these are completed
                             // proposals only
                             ProposalStatusV241::Pending {} => {
-                                return Err(PreProposeError::Std(StdError::generic_err(
+                                return Err(PreProposeError::Std(StdError::msg(
                                     "unexpected proposal status",
                                 )))
                             }
@@ -625,7 +630,7 @@ pub fn migrate(mut deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response
                                 CheckedDenomV241::Native(denom) => CheckedDenom::Native(denom),
                                 CheckedDenomV241::Cw20(addr) => CheckedDenom::Cw20(addr),
                             },
-                            amount: deposit.amount,
+                            amount: deposit.amount.into(),
                             refund_policy: match deposit.refund_policy {
                                 DepositRefundPolicyV241::Always => DepositRefundPolicy::Always,
                                 DepositRefundPolicyV241::OnlyPassed => {
@@ -638,11 +643,7 @@ pub fn migrate(mut deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response
                 )?;
             }
         }
-        _ => {
-            return Err(PreProposeError::Std(StdError::generic_err(
-                "not implemented",
-            )))
-        }
+        _ => return Err(PreProposeError::Std(StdError::msg("not implemented"))),
     }
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     res

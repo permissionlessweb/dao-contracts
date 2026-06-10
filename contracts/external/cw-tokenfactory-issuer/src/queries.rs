@@ -1,4 +1,4 @@
-use cosmwasm_std::{Addr, Deps, Order, StdResult, Uint128};
+use cosmwasm_std::{Addr, Deps, Order, StdResult, Uint256};
 use cw_storage_plus::{Bound, Map};
 
 use crate::msg::{
@@ -35,16 +35,20 @@ pub fn query_owner(deps: Deps) -> StdResult<cw_ownable::Ownership<::cosmwasm_std
 pub fn query_mint_allowance(deps: Deps, address: String) -> StdResult<AllowanceResponse> {
     let allowance = MINTER_ALLOWANCES
         .may_load(deps.storage, &deps.api.addr_validate(&address)?)?
-        .unwrap_or_else(Uint128::zero);
-    Ok(AllowanceResponse { allowance })
+        .unwrap_or_else(Uint256::zero);
+    Ok(AllowanceResponse {
+        allowance,
+    })
 }
 
 /// Returns the allowance of the specified address. Response: AllowanceResponse
 pub fn query_burn_allowance(deps: Deps, address: String) -> StdResult<AllowanceResponse> {
     let allowance = BURNER_ALLOWANCES
         .may_load(deps.storage, &deps.api.addr_validate(&address)?)?
-        .unwrap_or_else(Uint128::zero);
-    Ok(AllowanceResponse { allowance })
+        .unwrap_or_else(Uint256::zero);
+    Ok(AllowanceResponse {
+        allowance,
+    })
 }
 
 /// Helper function used in allowance list queries.
@@ -52,7 +56,7 @@ pub fn query_allowances(
     deps: Deps,
     start_after: Option<String>,
     limit: Option<u32>,
-    allowances: Map<&Addr, Uint128>,
+    allowances: Map<&Addr, Uint256>,
 ) -> StdResult<Vec<AllowanceInfo>> {
     // based on this query written by larry https://github.com/st4k3h0us3/steak-contracts/blob/854c15c8d1a62303b931a785494a6ecd4b6eaf2a/contracts/hub/src/queries.rs#L90
     let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT) as usize;

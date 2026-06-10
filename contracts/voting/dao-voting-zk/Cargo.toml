@@ -1,0 +1,33 @@
+[package]
+name = "dao-voting-zk"
+authors = ["Terp Network contributors"]
+description = "A DAO DAO ZK voting module that snapshots voter Merkle trees for PollRegistry-based zero-knowledge voting."
+edition = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+version = { workspace = true }
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# use library feature to disable all instantiate/execute/query exports
+library = []
+interface = ["cw-orch"]
+[dependencies]
+cw-orch = { workspace = true, optional = true }
+cosmwasm-std = { workspace = true }
+cosmwasm-schema = { workspace = true }
+cw-storage-plus = { workspace = true }
+cw2 = { workspace = true }
+cw-utils = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+dao-dao-macros = { workspace = true }
+dao-interface = { workspace = true }
+dao-voting = { workspace = true }
+
+[dev-dependencies]
+#dao-voting-zk = { workspace = true }
+cw-multi-test = { workspace = true }
+dao-testing = { workspace = true }

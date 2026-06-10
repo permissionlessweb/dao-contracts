@@ -1,6 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
-use cosmwasm_std::{to_json_binary, Addr, Uint128};
+use cosmwasm_std::{to_json_binary, Addr, Uint128, Uint256};
 use cw20::Cw20Coin;
 use cw_utils::Duration;
 
@@ -45,23 +45,23 @@ impl<'a> DaoTestingSuiteCw20<'a> {
             initial_balances: vec![
                 Cw20Coin {
                     address: ADDR0.to_string(),
-                    amount: Uint128::new(100),
+                    amount: Uint256::from(100u128),
                 },
                 Cw20Coin {
                     address: ADDR1.to_string(),
-                    amount: Uint128::new(200),
+                    amount: Uint256::from(200u128),
                 },
                 Cw20Coin {
                     address: ADDR2.to_string(),
-                    amount: Uint128::new(300),
+                    amount: Uint256::from(300u128),
                 },
                 Cw20Coin {
                     address: ADDR3.to_string(),
-                    amount: Uint128::new(300),
+                    amount: Uint256::from(300u128),
                 },
                 Cw20Coin {
                     address: ADDR4.to_string(),
-                    amount: Uint128::new(100),
+                    amount: Uint256::from(100u128),
                 },
             ],
             initial_dao_balance: Uint128::new(10000),
@@ -101,7 +101,7 @@ impl<'a> DaoTestingSuiteCw20<'a> {
         &mut self,
         dao: &Cw20TestDao,
         staker: impl Into<String>,
-        amount: impl Into<Uint128>,
+        amount: impl Into<Uint256>,
     ) {
         self.execute_smart_ok(
             staker,
@@ -120,7 +120,7 @@ impl<'a> DaoTestingSuiteCw20<'a> {
         &mut self,
         dao: &Cw20TestDao,
         staker: impl Into<String>,
-        amount: impl Into<Uint128>,
+        amount: impl Into<Uint256>,
     ) {
         self.execute_smart_ok(
             staker,
@@ -168,7 +168,7 @@ impl DaoTestingSuite<Cw20DaoExtra> for DaoTestingSuiteCw20<'_> {
                     staking_code_id: self.cw20_stake_id,
                     staking_salt: None,
                     unstaking_duration: self.unstaking_duration,
-                    initial_dao_balance: Some(self.initial_dao_balance),
+                    initial_dao_balance: Some(self.initial_dao_balance.into()),
                 },
                 active_threshold: self.active_threshold.clone(),
             })
@@ -215,7 +215,7 @@ impl DaoTestingSuite<Cw20DaoExtra> for DaoTestingSuiteCw20<'_> {
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::Uint128;
+    use cosmwasm_std::{Uint128, Uint256};
 
     use super::*;
 
@@ -276,7 +276,7 @@ mod tests {
             suite
                 .initial_balances
                 .iter()
-                .fold(Uint128::zero(), |acc, m| acc + m.amount)
+                .fold(Uint256::zero(), |acc, m| acc + m.amount)
         );
     }
 }

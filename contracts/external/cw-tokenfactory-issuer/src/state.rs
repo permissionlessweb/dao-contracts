@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Uint128};
+use cosmwasm_std::{Addr, Uint256};
 use cw_storage_plus::{Item, Map};
 
 /// Holds the Token Factory denom managed by this contract
@@ -27,7 +27,7 @@ pub const BEFORE_SEND_HOOK_INFO: Item<BeforeSendHookInfo> = Item::new("hook_feat
 pub const IS_FROZEN: Item<bool> = Item::new("is_frozen");
 
 /// Allowances for burning
-pub const BURNER_ALLOWANCES: Map<&Addr, Uint128> = Map::new("burner_allowances");
+pub const BURNER_ALLOWANCES: Map<&Addr, Uint256> = Map::new("burner_allowances");
 
 /// Allowances for minting
-pub const MINTER_ALLOWANCES: Map<&Addr, Uint128> = Map::new("minter_allowances");
+pub const MINTER_ALLOWANCES: Map<&Addr, Uint256> = Map::new("minter_allowances");

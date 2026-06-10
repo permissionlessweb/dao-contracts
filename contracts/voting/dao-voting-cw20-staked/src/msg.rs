@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Binary, Uint128};
+use cosmwasm_std::Binary;
 use cw20::Cw20Coin;
 use cw20_base::msg::InstantiateMarketingInfo;
 use cw_utils::Duration;
@@ -56,7 +56,7 @@ pub enum TokenInfo {
         /// this salt.
         staking_salt: Option<Binary>,
         unstaking_duration: Option<Duration>,
-        initial_dao_balance: Option<Uint128>,
+        initial_dao_balance: Option<cosmwasm_std::Uint256>,
     },
 }
 
@@ -69,6 +69,7 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
+#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
     /// Sets the active threshold to a new value. Only the
     /// instantiator this contract (a DAO most likely) may call this
@@ -83,6 +84,7 @@ pub enum ExecuteMsg {
 #[active_query]
 #[cw_serde]
 #[derive(QueryResponses)]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 pub enum QueryMsg {
     /// Gets the address of the cw20-stake contract this voting module
     /// is wrapping.

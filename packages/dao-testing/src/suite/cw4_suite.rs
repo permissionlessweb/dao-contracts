@@ -113,7 +113,7 @@ impl DaoTestingSuite<Cw4DaoExtra> for DaoTestingSuiteCw4<'_> {
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::Uint128;
+    use cosmwasm_std::Uint256;
 
     use super::*;
 
@@ -165,7 +165,7 @@ mod tests {
             suite
                 .members
                 .iter()
-                .fold(Uint128::zero(), |acc, m| acc + Uint128::from(m.weight))
+                .fold(Uint256::zero(), |acc, m| acc + Uint256::from(m.weight as u128))
         );
     }
 }

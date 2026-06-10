@@ -1,13 +1,16 @@
-use cosmwasm_std::{StdError, Uint128};
+use cosmwasm_std::Uint256;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ContractError {
     #[error("{0}")]
-    Std(#[from] StdError),
+    Std(#[from] cosmwasm_std::StdError),
 
     #[error(transparent)]
     Ownership(#[from] cw_ownable::OwnershipError),
+
+    #[error(transparent)]
+    ConversionOverflowError(#[from] cosmwasm_std::ConversionOverflowError),
 
     #[error("BeforeSendHook not set. Features requiring it are disabled.")]
     BeforeSendHookFeaturesDisabled {},
@@ -37,8 +40,8 @@ pub enum ContractError {
     #[error("Not enough {action} allowance: attempted to {action} {amount}, but remaining allowance is {allowance}")]
     NotEnoughAllowance {
         action: String,
-        amount: Uint128,
-        allowance: Uint128,
+        amount: Uint256,
+        allowance: Uint256,
     },
 
     #[error("Unauthorized")]
@@ -53,8 +56,8 @@ pub enum ContractError {
 
 impl ContractError {
     pub fn not_enough_mint_allowance(
-        amount: impl Into<Uint128>,
-        allowance: impl Into<Uint128>,
+        amount: impl Into<Uint256>,
+        allowance: impl Into<Uint256>,
     ) -> ContractError {
         ContractError::NotEnoughAllowance {
             action: "mint".to_string(),
@@ -64,8 +67,8 @@ impl ContractError {
     }
 
     pub fn not_enough_burn_allowance(
-        amount: impl Into<Uint128>,
-        allowance: impl Into<Uint128>,
+        amount: impl Into<Uint256>,
+        allowance: impl Into<Uint256>,
     ) -> ContractError {
         ContractError::NotEnoughAllowance {
             action: "burn".to_string(),

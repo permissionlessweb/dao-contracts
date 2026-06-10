@@ -29,7 +29,7 @@ impl ProtobufDecoder for WasmQuerierProtobufDecoder<'_> {
                     value,
                 },
             )
-            .map(|r| r.value)
             .map_err(|e| e.to_string())
+            .and_then(|r| serde_json::from_str(&r.value).map_err(|e| e.to_string()))
     }
 }

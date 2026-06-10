@@ -43,7 +43,7 @@ pub fn make_proposal(
                     amount,
                     refund_policy: _,
                 }) => match denom {
-                    CheckedDenom::Native(denom) => coins(amount.u128(), denom),
+                    CheckedDenom::Native(denom) => coins(Uint128::try_from(amount).unwrap().u128(), denom),
                     CheckedDenom::Cw20(addr) => {
                         // Give an allowance, no funds.
                         app.execute_contract(
@@ -129,7 +129,7 @@ pub(crate) fn mint_cw20s(
         cw20_contract.clone(),
         &cw20::Cw20ExecuteMsg::Mint {
             recipient: receiver.to_string(),
-            amount: Uint128::new(amount),
+            amount: Uint128::new(amount).into(),
         },
         &[],
     )

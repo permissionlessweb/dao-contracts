@@ -1,4 +1,5 @@
-use cosmwasm_std::{coins, Addr, Decimal, Uint128};
+use super::addr_str;
+use cosmwasm_std::{coins, Addr, Decimal, Uint128, Uint256};
 use cw20::Cw20Coin;
 use cw_denom::CheckedDenom;
 use cw_multi_test::{App, BankSudo, Executor};
@@ -102,19 +103,20 @@ where
         .iter()
         .map(|TestMultipleChoiceVote { voter, weight, .. }| Cw20Coin {
             address: voter.to_string(),
-            amount: *weight,
+            amount: (*weight).into(),
         })
         .collect::<Vec<Cw20Coin>>();
     let initial_balances_supply = votes.iter().fold(Uint128::zero(), |p, n| p + n.weight);
     let to_fill = total_supply.map(|total_supply| total_supply - initial_balances_supply);
     if let Some(fill) = to_fill {
         initial_balances.push(Cw20Coin {
-            address: "filler".to_string(),
-            amount: fill,
+            address: addr_str("filler"),
+            amount: fill.into(),
         })
     }
 
     let pre_propose_info = get_pre_propose_info(&mut app, deposit_info, false);
+    println!("{:#?}", pre_propose_info);
 
     let proposer = match votes.first() {
         Some(vote) => vote.voter.clone(),
@@ -183,10 +185,10 @@ where
         // Mint the needed tokens to create the deposit.
         app.sudo(cw_multi_test::SudoMsg::Bank(BankSudo::Mint {
             to_address: proposer.clone(),
-            amount: coins(amount.u128(), denom),
+            amount: coins(Uint128::try_from(amount).unwrap().u128(), denom),
         }))
         .unwrap();
-        coins(amount.u128(), denom)
+        coins(Uint128::try_from(amount).unwrap().u128(), denom)
     } else {
         vec![]
     };
@@ -256,28 +258,28 @@ where
                         },
                     )
                     .unwrap();
-                let expected_power = match deposit_config.deposit_info {
+                let expected_power: Uint256 = match deposit_config.deposit_info {
                     Some(CheckedDepositInfo {
                         amount,
                         denom: CheckedDenom::Cw20(_),
                         ..
                     }) => {
                         if proposer == voter {
-                            weight - amount
+                            Uint256::from(weight.u128()) - amount
                         } else {
-                            weight
+                            Uint256::from(weight.u128())
                         }
                     }
                     // Native token deposits shouldn't impact
                     // expected voting power.
-                    _ => weight,
+                    _ => Uint256::from(weight.u128()),
                 };
                 let expected = VoteResponse {
                     vote: Some(VoteInfo {
                         voter: Addr::unchecked(&voter),
                         vote: position,
-                        power: expected_power,
-                        individual_power: expected_power,
+                        power: expected_power.into(),
+                        individual_power: expected_power.into(),
                         rationale: None,
                     }),
                 };
@@ -336,7 +338,7 @@ where
     // Vote for one option, passes
     do_test_votes(
         vec![TestMultipleChoiceVote {
-            voter: "bluenote".to_string(),
+            voter: addr_str("bluenote"),
             position: MultipleChoiceVote { option_id: 0 },
             weight: Uint128::new(10),
             should_execute: ShouldExecute::Yes,
@@ -352,7 +354,7 @@ where
     // Vote for none of the above, gets rejected
     do_test_votes(
         vec![TestMultipleChoiceVote {
-            voter: "bluenote".to_string(),
+            voter: addr_str("bluenote"),
             position: MultipleChoiceVote { option_id: 2 },
             weight: Uint128::new(10),
             should_execute: ShouldExecute::Yes,
@@ -373,7 +375,7 @@ where
     // Vote for out of bounds option
     do_test_votes(
         vec![TestMultipleChoiceVote {
-            voter: "bluenote".to_string(),
+            voter: addr_str("bluenote"),
             position: MultipleChoiceVote { option_id: 10 },
             weight: Uint128::new(10),
             should_execute: ShouldExecute::No,
@@ -393,7 +395,7 @@ where
 {
     do_votes(
         vec![TestMultipleChoiceVote {
-            voter: "bluenote".to_string(),
+            voter: addr_str("bluenote"),
             position: MultipleChoiceVote { option_id: 0 },
             weight: Uint128::new(u128::MAX),
             should_execute: ShouldExecute::Yes,
@@ -409,13 +411,13 @@ where
     do_votes(
         vec![
             TestMultipleChoiceVote {
-                voter: "bluenote".to_string(),
+                voter: addr_str("bluenote"),
                 position: MultipleChoiceVote { option_id: 0 },
                 weight: Uint128::new(1),
                 should_execute: ShouldExecute::Yes,
             },
             TestMultipleChoiceVote {
-                voter: "bob".to_string(),
+                voter: addr_str("bob"),
                 position: MultipleChoiceVote { option_id: 1 },
                 weight: Uint128::new(u128::MAX - 1),
                 should_execute: ShouldExecute::Yes,
@@ -437,13 +439,13 @@ where
     do_votes(
         vec![
             TestMultipleChoiceVote {
-                voter: "bluenote".to_string(),
+                voter: addr_str("bluenote"),
                 position: MultipleChoiceVote { option_id: 0 },
                 weight: Uint128::new(1),
                 should_execute: ShouldExecute::Yes,
             },
             TestMultipleChoiceVote {
-                voter: "bob".to_string(),
+                voter: addr_str("bob"),
                 position: MultipleChoiceVote { option_id: 1 },
                 weight: Uint128::new(1),
                 should_execute: ShouldExecute::Yes,
@@ -464,7 +466,7 @@ where
 {
     do_votes(
         vec![TestMultipleChoiceVote {
-            voter: "bluenote".to_string(),
+            voter: addr_str("bluenote"),
             position: MultipleChoiceVote { option_id: 2 }, // the last index is none of the above
             weight: Uint128::new(u64::MAX.into()),
             should_execute: ShouldExecute::Yes,
@@ -480,7 +482,7 @@ where
     for i in 0..101 {
         do_votes(
             vec![TestMultipleChoiceVote {
-                voter: "bluenote".to_string(),
+                voter: addr_str("bluenote"),
                 position: MultipleChoiceVote { option_id: 2 },
                 weight: Uint128::new(u64::MAX.into()),
                 should_execute: ShouldExecute::Yes,
@@ -505,7 +507,7 @@ where
     // are 1 or more yes votes.
     do_votes(
         vec![TestMultipleChoiceVote {
-            voter: "bluenote".to_string(),
+            voter: addr_str("bluenote"),
             position: MultipleChoiceVote { option_id: 0 },
             weight: Uint128::new(1),
             should_execute: ShouldExecute::Yes,
@@ -520,7 +522,7 @@ where
 
     do_votes(
         vec![TestMultipleChoiceVote {
-            voter: "bluenote".to_string(),
+            voter: addr_str("bluenote"),
             position: MultipleChoiceVote { option_id: 0 },
             weight: Uint128::new(10),
             should_execute: ShouldExecute::Yes,
@@ -537,7 +539,7 @@ where
     // Proposal should be rejected if < 1% have voted and proposal expires
     do_votes(
         vec![TestMultipleChoiceVote {
-            voter: "bluenote".to_string(),
+            voter: addr_str("bluenote"),
             position: MultipleChoiceVote { option_id: 1 },
             weight: Uint128::new(9999999),
             should_execute: ShouldExecute::Yes,
@@ -553,7 +555,7 @@ where
     // Proposal should be rejected if quorum is met but "none of the above" is the winning option.
     do_votes(
         vec![TestMultipleChoiceVote {
-            voter: "bluenote".to_string(),
+            voter: addr_str("bluenote"),
             position: MultipleChoiceVote { option_id: 2 },
             weight: Uint128::new(1),
             should_execute: ShouldExecute::Yes,
@@ -574,13 +576,13 @@ where
     do_votes(
         vec![
             TestMultipleChoiceVote {
-                voter: "bluenote".to_string(),
+                voter: addr_str("bluenote"),
                 position: MultipleChoiceVote { option_id: 1 },
                 weight: Uint128::new(2),
                 should_execute: ShouldExecute::Yes,
             },
             TestMultipleChoiceVote {
-                voter: "bluenote".to_string(),
+                voter: addr_str("bluenote"),
                 position: MultipleChoiceVote { option_id: 1 },
                 weight: Uint128::new(2),
                 should_execute: ShouldExecute::No,
@@ -610,13 +612,13 @@ where
     do_votes(
         vec![
             TestMultipleChoiceVote {
-                voter: "bluenote".to_string(),
+                voter: addr_str("bluenote"),
                 position: MultipleChoiceVote { option_id: 0 },
                 weight: Uint128::new(10),
                 should_execute: ShouldExecute::Yes,
             },
             TestMultipleChoiceVote {
-                voter: "blue".to_string(),
+                voter: addr_str("blue"),
                 position: MultipleChoiceVote { option_id: 0 },
                 weight: Uint128::new(10),
                 should_execute: ShouldExecute::Yes,
@@ -634,13 +636,13 @@ where
     do_votes(
         vec![
             TestMultipleChoiceVote {
-                voter: "bluenote".to_string(),
+                voter: addr_str("bluenote"),
                 position: MultipleChoiceVote { option_id: 0 },
                 weight: Uint128::new(10),
                 should_execute: ShouldExecute::Yes,
             },
             TestMultipleChoiceVote {
-                voter: "blue".to_string(),
+                voter: addr_str("blue"),
                 position: MultipleChoiceVote { option_id: 0 },
                 weight: Uint128::new(10),
                 should_execute: ShouldExecute::Yes,
@@ -661,7 +663,7 @@ where
 {
     do_votes(
         vec![TestMultipleChoiceVote {
-            voter: "bluenote".to_string(),
+            voter: addr_str("bluenote"),
             position: MultipleChoiceVote { option_id: 0 },
             weight: Uint128::new(60),
             should_execute: ShouldExecute::Yes,
@@ -677,7 +679,7 @@ where
     // None of the above wins
     do_votes(
         vec![TestMultipleChoiceVote {
-            voter: "bluenote".to_string(),
+            voter: addr_str("bluenote"),
             position: MultipleChoiceVote { option_id: 2 },
             weight: Uint128::new(60),
             should_execute: ShouldExecute::Yes,
@@ -720,7 +722,7 @@ where
             .into_iter()
             .enumerate()
             .map(|(idx, weight)| TestMultipleChoiceVote {
-                voter: format!("zero_{idx}"),
+                voter: addr_str(&format!("zero_{idx}")),
                 position: MultipleChoiceVote { option_id: 0 },
                 weight: Uint128::new(weight as u128),
                 should_execute: ShouldExecute::Meh,
@@ -729,7 +731,7 @@ where
             .into_iter()
             .enumerate()
             .map(|(idx, weight)| TestMultipleChoiceVote {
-                voter: format!("one_{idx}"),
+                voter: addr_str(&format!("one_{idx}")),
                 position: MultipleChoiceVote { option_id: 1 },
                 weight: Uint128::new(weight as u128),
                 should_execute: ShouldExecute::Meh,
@@ -739,7 +741,7 @@ where
             .into_iter()
             .enumerate()
             .map(|(idx, weight)| TestMultipleChoiceVote {
-                voter: format!("none_{idx}"),
+                voter: addr_str(&format!("none_{idx}")),
                 position: MultipleChoiceVote { option_id: 2 },
                 weight: Uint128::new(weight as u128),
                 should_execute: ShouldExecute::Meh,

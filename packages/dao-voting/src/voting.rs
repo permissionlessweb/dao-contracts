@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Decimal, Deps, StdResult, Uint128, Uint256};
+use cosmwasm_std::{Addr, Decimal, Deps, StdResult, Uint256};
 use cw_utils::Duration;
 use dao_interface::voting;
 
@@ -14,9 +14,9 @@ const PRECISION_FACTOR: u128 = 10u128.pow(9);
 
 #[cw_serde]
 pub struct Votes {
-    pub yes: Uint128,
-    pub no: Uint128,
-    pub abstain: Uint128,
+    pub yes: Uint256,
+    pub no: Uint256,
+    pub abstain: Uint256,
 }
 
 #[cw_serde]
@@ -56,12 +56,12 @@ pub enum VoteCmp {
 ///
 /// ```rust
 /// use dao_voting::voting::{compare_vote_count, VoteCmp};
-/// use cosmwasm_std::{Uint128, Decimal};
+/// use cosmwasm_std::{Uint256, Decimal};
 /// fn test() {
 ///     assert!(compare_vote_count(
-///         Uint128::new(7),
+///         Uint256::new(7),
 ///         VoteCmp::Greater,
-///         Uint128::new(13),
+///         Uint256::new(13),
 ///         Decimal::from_ratio(7u64, 13u64)
 ///     ));
 /// }
@@ -81,17 +81,21 @@ pub enum VoteCmp {
 /// rejected and passed.
 ///
 pub fn compare_vote_count(
-    votes: Uint128,
+    votes: Uint256,
     cmp: VoteCmp,
-    total_power: Uint128,
+    total_power: Uint256,
     passing_percentage: Decimal,
 ) -> bool {
     let votes = votes.full_mul(PRECISION_FACTOR);
     let total_power = total_power.full_mul(PRECISION_FACTOR);
-    let threshold = total_power.multiply_ratio(
-        passing_percentage.atomics(),
-        Uint256::from(10u64).pow(passing_percentage.decimal_places()),
-    );
+    let num = Uint256::from(passing_percentage.atomics().u128());
+    let den = Uint256::from(10u64).pow(passing_percentage.decimal_places());
+
+    let threshold = total_power
+        .checked_mul(num.into())
+        .expect("fatal")
+        .checked_div(den.into())
+        .expect("fatal");
     match cmp {
         VoteCmp::Greater => votes > threshold,
         VoteCmp::Geq => votes >= threshold,
@@ -99,8 +103,8 @@ pub fn compare_vote_count(
 }
 
 pub fn does_vote_count_pass(
-    vote_weights: Uint128,
-    options: Uint128,
+    vote_weights: Uint256,
+    options: Uint256,
     percent: PercentageThreshold,
 ) -> bool {
     // Don't pass proposals if all the votes are abstain.
@@ -116,8 +120,8 @@ pub fn does_vote_count_pass(
 }
 
 pub fn does_vote_count_fail(
-    no_votes: Uint128,
-    options: Uint128,
+    no_votes: Uint256,
+    options: Uint256,
     percent: PercentageThreshold,
 ) -> bool {
     // All abstain votes should result in a rejected proposal.
@@ -142,25 +146,25 @@ impl Votes {
     /// Constructs an zero'd out votes struct.
     pub fn zero() -> Self {
         Self {
-            yes: Uint128::zero(),
-            no: Uint128::zero(),
-            abstain: Uint128::zero(),
+            yes: Uint256::zero(),
+            no: Uint256::zero(),
+            abstain: Uint256::zero(),
         }
     }
 
     /// Constructs a vote with a specified number of yes votes. Used
     /// for testing.
     #[cfg(test)]
-    pub fn with_yes(yes: Uint128) -> Self {
+    pub fn with_yes(yes: Uint256) -> Self {
         Self {
             yes,
-            no: Uint128::zero(),
-            abstain: Uint128::zero(),
+            no: Uint256::zero(),
+            abstain: Uint256::zero(),
         }
     }
 
     /// Adds a vote to the votes.
-    pub fn add_vote(&mut self, vote: Vote, power: Uint128) {
+    pub fn add_vote(&mut self, vote: Vote, power: Uint256) {
         match vote {
             Vote::Yes => self.yes += power,
             Vote::No => self.no += power,
@@ -171,7 +175,7 @@ impl Votes {
     /// Removes a vote from the votes. The vote being removed must
     /// have been previously added or this method will cause an
     /// overflow.
-    pub fn remove_vote(&mut self, vote: Vote, power: Uint128) {
+    pub fn remove_vote(&mut self, vote: Vote, power: Uint256) {
         match vote {
             Vote::Yes => self.yes -= power,
             Vote::No => self.no -= power,
@@ -182,16 +186,16 @@ impl Votes {
     /// Computes the total number of votes cast.
     ///
     /// NOTE: The total number of votes avaliable from a voting module
-    /// is a `Uint128`. As it is not possible to vote twice we know
+    /// is a `Uint256`. As it is not possible to vote twice we know
     /// that the sum of votes must be <= 2^128 and can safely return a
-    /// `Uint128` from this function. A missbehaving voting power
+    /// `Uint256` from this function. A missbehaving voting power
     /// module may break this invariant.
-    pub fn total(&self) -> Uint128 {
+    pub fn total(&self) -> Uint256 {
         self.yes + self.no + self.abstain
     }
 
     /// Returns the number of votes for a given vote option.
-    pub fn get(&self, vote: Vote) -> Uint128 {
+    pub fn get(&self, vote: Vote) -> Uint256 {
         match vote {
             Vote::Yes => self.yes,
             Vote::No => self.no,
@@ -216,7 +220,7 @@ pub fn get_voting_power(
     address: Addr,
     dao: &Addr,
     height: Option<u64>,
-) -> StdResult<Uint128> {
+) -> StdResult<Uint256> {
     let response: voting::VotingPowerAtHeightResponse = deps.querier.query_wasm_smart(
         dao,
         &voting::Query::VotingPowerAtHeight {
@@ -229,9 +233,9 @@ pub fn get_voting_power(
 
 pub struct VotingPowerWithDelegation {
     /// Individual voting power.
-    pub individual: Uint128,
+    pub individual: Uint256,
     /// Total voting power (individual + unvoted delegated voting power).
-    pub total: Uint128,
+    pub total: Uint256,
 }
 
 /// Query the voting power for a member, including any voting power delegated to
@@ -281,7 +285,8 @@ pub fn get_voting_power_with_delegation(
 }
 
 /// A height of None will query for the current block height.
-pub fn get_total_power(deps: Deps, dao: &Addr, height: Option<u64>) -> StdResult<Uint128> {
+/// sinc v3 cosmwasm: dedicate 256 precision for voting powers
+pub fn get_total_power(deps: Deps, dao: &Addr, height: Option<u64>) -> StdResult<Uint256> {
     let response: voting::TotalPowerAtHeightResponse = deps
         .querier
         .query_wasm_smart(dao, &voting::Query::TotalPowerAtHeight { height })?;
@@ -318,69 +323,69 @@ mod test {
 
     #[test]
     fn count_votes() {
-        let mut votes = Votes::with_yes(Uint128::new(5));
-        votes.add_vote(Vote::No, Uint128::new(10));
-        votes.add_vote(Vote::Yes, Uint128::new(30));
-        votes.add_vote(Vote::Abstain, Uint128::new(40));
+        let mut votes = Votes::with_yes(Uint256::new(5));
+        votes.add_vote(Vote::No, Uint256::new(10));
+        votes.add_vote(Vote::Yes, Uint256::new(30));
+        votes.add_vote(Vote::Abstain, Uint256::new(40));
 
-        assert_eq!(votes.total(), Uint128::new(5 + 10 + 30 + 40));
-        assert_eq!(votes.yes, Uint128::new(35));
-        assert_eq!(votes.no, Uint128::new(10));
-        assert_eq!(votes.abstain, Uint128::new(40));
+        assert_eq!(votes.total(), Uint256::new(5 + 10 + 30 + 40));
+        assert_eq!(votes.yes, Uint256::new(35));
+        assert_eq!(votes.no, Uint256::new(10));
+        assert_eq!(votes.abstain, Uint256::new(40));
     }
 
     #[test]
     fn vote_comparisons() {
         assert!(!compare_vote_count(
-            Uint128::new(7),
+            Uint256::new(7),
             VoteCmp::Geq,
-            Uint128::new(15),
+            Uint256::new(15),
             Decimal::percent(50)
         ));
         assert!(!compare_vote_count(
-            Uint128::new(7),
+            Uint256::new(7),
             VoteCmp::Greater,
-            Uint128::new(15),
+            Uint256::new(15),
             Decimal::percent(50)
         ));
 
         assert!(compare_vote_count(
-            Uint128::new(7),
+            Uint256::new(7),
             VoteCmp::Geq,
-            Uint128::new(14),
+            Uint256::new(14),
             Decimal::percent(50)
         ));
         assert!(!compare_vote_count(
-            Uint128::new(7),
+            Uint256::new(7),
             VoteCmp::Greater,
-            Uint128::new(14),
+            Uint256::new(14),
             Decimal::percent(50)
         ));
 
         assert!(compare_vote_count(
-            Uint128::new(7),
+            Uint256::new(7),
             VoteCmp::Geq,
-            Uint128::new(13),
+            Uint256::new(13),
             Decimal::from_ratio(7u64, 13u64)
         ));
 
         assert!(!compare_vote_count(
-            Uint128::new(6),
+            Uint256::new(6),
             VoteCmp::Greater,
-            Uint128::new(13),
+            Uint256::new(13),
             Decimal::one() - Decimal::from_ratio(7u64, 13u64)
         ));
         assert!(compare_vote_count(
-            Uint128::new(7),
+            Uint256::new(7),
             VoteCmp::Greater,
-            Uint128::new(13),
+            Uint256::new(13),
             Decimal::from_ratio(7u64, 13u64)
         ));
 
         assert!(!compare_vote_count(
-            Uint128::new(4),
+            Uint256::new(4),
             VoteCmp::Geq,
-            Uint128::new(9),
+            Uint256::new(9),
             Decimal::percent(50)
         ))
     }
@@ -388,94 +393,94 @@ mod test {
     #[test]
     fn more_votes_tests() {
         assert!(compare_vote_count(
-            Uint128::new(1),
+            Uint256::new(1),
             VoteCmp::Geq,
-            Uint128::new(3),
+            Uint256::new(3),
             Decimal::permille(333)
         ));
 
         assert!(!compare_vote_count(
-            Uint128::new(1),
+            Uint256::new(1),
             VoteCmp::Geq,
-            Uint128::new(3),
+            Uint256::new(3),
             Decimal::permille(334)
         ));
         assert!(compare_vote_count(
-            Uint128::new(2),
+            Uint256::new(2),
             VoteCmp::Geq,
-            Uint128::new(3),
+            Uint256::new(3),
             Decimal::permille(334)
         ));
 
         assert!(compare_vote_count(
-            Uint128::new(11),
+            Uint256::new(11),
             VoteCmp::Geq,
-            Uint128::new(30),
+            Uint256::new(30),
             Decimal::permille(333)
         ));
 
         assert!(compare_vote_count(
-            Uint128::new(15),
+            Uint256::new(15),
             VoteCmp::Geq,
-            Uint128::new(30),
+            Uint256::new(30),
             Decimal::permille(500)
         ));
         assert!(!compare_vote_count(
-            Uint128::new(15),
+            Uint256::new(15),
             VoteCmp::Greater,
-            Uint128::new(30),
+            Uint256::new(30),
             Decimal::permille(500)
         ));
 
         assert!(compare_vote_count(
-            Uint128::new(0),
+            Uint256::new(0),
             VoteCmp::Geq,
-            Uint128::new(0),
+            Uint256::new(0),
             Decimal::permille(500)
         ));
         assert!(!compare_vote_count(
-            Uint128::new(0),
+            Uint256::new(0),
             VoteCmp::Greater,
-            Uint128::new(0),
+            Uint256::new(0),
             Decimal::permille(500)
         ));
 
         assert!(!compare_vote_count(
-            Uint128::new(0),
+            Uint256::new(0),
             VoteCmp::Geq,
-            Uint128::new(1),
+            Uint256::new(1),
             Decimal::permille(1)
         ));
         assert!(!compare_vote_count(
-            Uint128::new(0),
+            Uint256::new(0),
             VoteCmp::Greater,
-            Uint128::new(1),
+            Uint256::new(1),
             Decimal::permille(1)
         ));
 
         assert!(compare_vote_count(
-            Uint128::new(1),
+            Uint256::new(1),
             VoteCmp::Geq,
-            Uint128::new(1),
+            Uint256::new(1),
             Decimal::permille(1)
         ));
         assert!(compare_vote_count(
-            Uint128::new(1),
+            Uint256::new(1),
             VoteCmp::Greater,
-            Uint128::new(1),
+            Uint256::new(1),
             Decimal::permille(1)
         ));
 
         assert!(!compare_vote_count(
-            Uint128::new(0),
+            Uint256::new(0),
             VoteCmp::Geq,
-            Uint128::new(1),
+            Uint256::new(1),
             Decimal::permille(999)
         ));
         assert!(!compare_vote_count(
-            Uint128::new(0),
+            Uint256::new(0),
             VoteCmp::Greater,
-            Uint128::new(1),
+            Uint256::new(1),
             Decimal::permille(999)
         ));
     }
@@ -485,15 +490,15 @@ mod test {
         let threshold = Decimal::percent(50);
         for count in 1..50_000 {
             assert!(compare_vote_count(
-                Uint128::new(count),
+                Uint256::new(count),
                 VoteCmp::Geq,
-                Uint128::new(count * 2),
+                Uint256::new(count * 2),
                 threshold
             ));
             assert!(!compare_vote_count(
-                Uint128::new(count),
+                Uint256::new(count),
                 VoteCmp::Greater,
-                Uint128::new(count * 2),
+                Uint256::new(count * 2),
                 threshold
             ))
         }
@@ -501,27 +506,27 @@ mod test {
         // Zero votes out of zero total power meet any threshold. When
         // Geq is used. Always fail otherwise.
         assert!(compare_vote_count(
-            Uint128::zero(),
+            Uint256::zero(),
             VoteCmp::Geq,
-            Uint128::new(1),
+            Uint256::new(1),
             Decimal::percent(0)
         ));
         assert!(compare_vote_count(
-            Uint128::zero(),
+            Uint256::zero(),
             VoteCmp::Geq,
-            Uint128::new(0),
+            Uint256::new(0),
             Decimal::percent(0)
         ));
         assert!(!compare_vote_count(
-            Uint128::zero(),
+            Uint256::zero(),
             VoteCmp::Greater,
-            Uint128::new(1),
+            Uint256::new(1),
             Decimal::percent(0)
         ));
         assert!(!compare_vote_count(
-            Uint128::zero(),
+            Uint256::zero(),
             VoteCmp::Greater,
-            Uint128::new(0),
+            Uint256::new(0),
             Decimal::percent(0)
         ))
     }

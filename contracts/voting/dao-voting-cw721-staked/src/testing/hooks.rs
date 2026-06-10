@@ -1,7 +1,4 @@
-use cosmwasm_std::{
-    testing::{mock_dependencies, mock_env, mock_info},
-    Addr,
-};
+use cosmwasm_std::testing::{mock_dependencies, mock_env, message_info, MockApi};
 use dao_hooks::nft_stake::{stake_nft_hook_msgs, unstake_nft_hook_msgs};
 
 use crate::{
@@ -16,7 +13,7 @@ fn test_hooks() {
     let messages = stake_nft_hook_msgs(
         HOOKS,
         &deps.storage,
-        Addr::unchecked("ekez"),
+        MockApi::default().addr_make("ekez"),
         "ekez-token".to_string(),
     )
     .unwrap();
@@ -25,14 +22,14 @@ fn test_hooks() {
     let messages = unstake_nft_hook_msgs(
         HOOKS,
         &deps.storage,
-        Addr::unchecked("ekez"),
+        MockApi::default().addr_make("ekez"),
         vec!["ekez-token".to_string()],
     )
     .unwrap();
     assert_eq!(messages.len(), 0);
 
     // Save a DAO address for the execute messages we're testing.
-    DAO.save(deps.as_mut().storage, &Addr::unchecked("ekez"))
+    DAO.save(deps.as_mut().storage, &MockApi::default().addr_make("ekez"))
         .unwrap();
 
     // Save a config for the execute messages we're testing.
@@ -40,21 +37,21 @@ fn test_hooks() {
         .save(
             deps.as_mut().storage,
             &Config {
-                nft_address: Addr::unchecked("ekez-token"),
+                nft_address: MockApi::default().addr_make("ekez-token"),
                 unstaking_duration: None,
             },
         )
         .unwrap();
 
     let env = mock_env();
-    let info = mock_info("ekez", &[]);
+    let info = message_info(&MockApi::default().addr_make("ekez"), &[]);
 
     execute(
         deps.as_mut(),
         env,
         info,
         crate::msg::ExecuteMsg::AddHook {
-            addr: "ekez".to_string(),
+            addr: MockApi::default().addr_make("ekez").to_string(),
         },
     )
     .unwrap();
@@ -62,7 +59,7 @@ fn test_hooks() {
     let messages = stake_nft_hook_msgs(
         HOOKS,
         &deps.storage,
-        Addr::unchecked("ekez"),
+        MockApi::default().addr_make("ekez"),
         "ekez-token".to_string(),
     )
     .unwrap();
@@ -71,21 +68,21 @@ fn test_hooks() {
     let messages = unstake_nft_hook_msgs(
         HOOKS,
         &deps.storage,
-        Addr::unchecked("ekez"),
+        MockApi::default().addr_make("ekez"),
         vec!["ekez-token".to_string()],
     )
     .unwrap();
     assert_eq!(messages.len(), 1);
 
     let env = mock_env();
-    let info = mock_info("ekez", &[]);
+    let info = message_info(&MockApi::default().addr_make("ekez"), &[]);
 
     execute(
         deps.as_mut(),
         env,
         info,
         crate::msg::ExecuteMsg::RemoveHook {
-            addr: "ekez".to_string(),
+            addr: MockApi::default().addr_make("ekez").to_string(),
         },
     )
     .unwrap();
@@ -93,7 +90,7 @@ fn test_hooks() {
     let messages = stake_nft_hook_msgs(
         HOOKS,
         &deps.storage,
-        Addr::unchecked("ekez"),
+        MockApi::default().addr_make("ekez"),
         "ekez-token".to_string(),
     )
     .unwrap();
@@ -102,7 +99,7 @@ fn test_hooks() {
     let messages = unstake_nft_hook_msgs(
         HOOKS,
         &deps.storage,
-        Addr::unchecked("ekez"),
+        MockApi::default().addr_make("ekez"),
         vec!["ekez-token".to_string()],
     )
     .unwrap();

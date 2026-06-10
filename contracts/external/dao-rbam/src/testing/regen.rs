@@ -155,10 +155,7 @@ fn test_regen_protobuf_filter() {
         filter.clone(),
         Some(true),
     );
-    assert!(matches!(
-        err,
-        ContractError::ProtobufRegistryPrepareFailed { .. }
-    ));
+    assert!(err.to_string().contains("Protobuf registry prepare failed"));
     assert!(err.to_string().contains(
         &cw_protobuf_registry::ContractError::MessageNotFound {
             message: "regen.ecocredit.basket.v1.MsgCreate".to_string(),

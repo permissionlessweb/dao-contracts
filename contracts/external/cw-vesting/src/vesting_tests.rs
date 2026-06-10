@@ -1,4 +1,4 @@
-use cosmwasm_std::{testing::mock_dependencies, Addr, Timestamp, Uint128};
+use cosmwasm_std::{Timestamp, Uint128, Uint256, testing::{MockApi, mock_dependencies}};
 use cw_denom::CheckedDenom;
 use wynd_utils::CurveError;
 
@@ -11,12 +11,12 @@ use crate::{
 impl Default for VestInit {
     fn default() -> Self {
         VestInit {
-            total: Uint128::new(100_000_000),
+            total: Uint256::new(100_000_000),
             schedule: Schedule::SaturatingLinear,
             start_time: Timestamp::from_seconds(0),
             duration_seconds: 100,
             denom: CheckedDenom::Native("native".to_string()),
-            recipient: Addr::unchecked("recv"),
+            recipient: MockApi::default().addr_make("recv"),
             title: "title".to_string(),
             description: Some("desc".to_string()),
         }
@@ -52,8 +52,8 @@ fn test_distribute_nothing_to_claim() {
     assert_eq!(
         err,
         ContractError::InvalidWithdrawal {
-            request: Uint128::zero(),
-            claimable: Uint128::zero()
+            request: Uint256::zero(),
+            claimable: Uint256::zero()
         }
     );
 }
@@ -71,14 +71,14 @@ fn test_distribute_half_way() {
         .distribute(
             storage,
             Timestamp::from_seconds(50),
-            Some(Uint128::new(50_000_001)),
+            Some(Uint256::new(50_000_001)),
         )
         .unwrap_err();
     assert_eq!(
         err,
         ContractError::InvalidWithdrawal {
-            request: Uint128::new(50_000_001),
-            claimable: Uint128::new(50_000_000)
+            request: Uint256::new(50_000_001),
+            claimable: Uint256::new(50_000_000)
         }
     );
 }
@@ -94,7 +94,7 @@ fn test_distribute() {
 
     // partially claiming increases claimed
     let msg = payment
-        .distribute(storage, Timestamp::from_seconds(50), Some(Uint128::new(3)))
+        .distribute(storage, Timestamp::from_seconds(50), Some(Uint256::new(3)))
         .unwrap();
 
     assert_eq!(
@@ -103,16 +103,16 @@ fn test_distribute() {
             .get_vest(storage)
             .unwrap()
             .denom
-            .get_transfer_to_message(&Addr::unchecked("recv"), Uint128::new(3))
+            .get_transfer_to_message(&MockApi::default().addr_make("recv"), Uint256::new(3))
             .unwrap()
     );
-    assert_eq!(payment.get_vest(storage).unwrap().claimed, Uint128::new(3));
+    assert_eq!(payment.get_vest(storage).unwrap().claimed, Uint256::new(3));
 
     payment
         .distribute(
             storage,
             Timestamp::from_seconds(50),
-            Some(Uint128::new(50_000_000 - 3)),
+            Some(Uint256::new(50_000_000 - 3)),
         )
         .unwrap();
 }
@@ -121,7 +121,7 @@ fn test_distribute() {
 fn test_vesting_validation() {
     // Can not create vesting payment which vests zero tokens.
     let init = VestInit {
-        total: Uint128::zero(),
+        total: Uint256::zero(),
         ..Default::default()
     };
     assert_eq!(Vest::new(init), Err(ContractError::ZeroVest {}));
@@ -154,8 +154,8 @@ fn test_vesting_validation() {
     assert_eq!(
         Vest::new(init),
         Err(ContractError::VestRange {
-            min: Uint128::zero(),
-            max: Uint128::new(2)
+            min: Uint256::zero(),
+            max: Uint256::new(2)
         })
     );
 }
@@ -177,12 +177,12 @@ fn test_complex_close() {
     let mut time = Timestamp::default();
 
     let init = VestInit {
-        total: Uint128::new(100),
+        total: Uint256::new(100),
         schedule: Schedule::SaturatingLinear,
         start_time: time,
         duration_seconds: 100,
         denom: CheckedDenom::Native("ujuno".to_string()),
-        recipient: Addr::unchecked("recv"),
+        recipient: MockApi::default().addr_make("recv"),
         title: "t".to_string(),
         description: Some("d".to_string()),
     };
@@ -194,62 +194,62 @@ fn test_complex_close() {
     time = time.plus_seconds(50);
 
     payment
-        .distribute(storage, time, Some(Uint128::new(10)))
+        .distribute(storage, time, Some(Uint256::new(10)))
         .unwrap();
 
     payment
-        .on_delegate(storage, time, "v1".to_string(), Uint128::new(75))
+        .on_delegate(storage, time, "v1".to_string(), Uint256::new(75))
         .unwrap();
 
     let vest = payment.get_vest(storage).unwrap();
-    assert_eq!(vest.claimed, Uint128::new(10));
+    assert_eq!(vest.claimed, Uint256::new(10));
     assert_eq!(vest.vested(time), Uint128::new(50));
 
     payment
-        .cancel(storage, time, &Addr::unchecked("owner"))
+        .cancel(storage, time, &MockApi::default().addr_make("owner"))
         .unwrap();
 
     let vest = payment.get_vest(storage).unwrap();
     assert_eq!(
         vest.status,
         Status::Canceled {
-            owner_withdrawable: Uint128::new(50)
+            owner_withdrawable: Uint256::new(50)
         }
     );
-    assert_eq!(vest.vested(time) - vest.claimed, Uint128::new(25));
+    assert_eq!(Uint256::new(vest.vested(time).u128()) - vest.claimed, Uint256::new(25));
 
     payment
-        .on_undelegate(storage, time, "v1".to_string(), Uint128::new(50), 25)
+        .on_undelegate(storage, time, "v1".to_string(), Uint256::new(50), 25)
         .unwrap();
     time = time.plus_seconds(25);
 
     payment.distribute(storage, time, None).unwrap();
     payment
-        .withdraw_canceled_payment(storage, time, None, &Addr::unchecked("owner"))
+        .withdraw_canceled_payment(storage, time, None, &MockApi::default().addr_make("owner"))
         .unwrap();
 
     let vest = payment.get_vest(storage).unwrap();
-    assert_eq!(vest.claimed, Uint128::new(50));
-    assert_eq!(vest.total(), Uint128::new(50));
+    assert_eq!(vest.claimed, Uint256::new(50));
+    assert_eq!(vest.total(), Uint256::new(50));
     assert_eq!(
         vest.status,
         Status::Canceled {
-            owner_withdrawable: Uint128::new(25)
+            owner_withdrawable: Uint256::new(25)
         }
     );
 
     payment
-        .on_undelegate(storage, time, "v1".to_string(), Uint128::new(25), 25)
+        .on_undelegate(storage, time, "v1".to_string(), Uint256::new(25), 25)
         .unwrap();
     time = time.plus_seconds(25);
     payment
-        .withdraw_canceled_payment(storage, time, None, &Addr::unchecked("owner"))
+        .withdraw_canceled_payment(storage, time, None, &MockApi::default().addr_make("owner"))
         .unwrap();
     let vest = payment.get_vest(storage).unwrap();
     assert_eq!(
         vest.status,
         Status::Canceled {
-            owner_withdrawable: Uint128::zero()
+            owner_withdrawable: Uint256::zero()
         }
     );
 }
@@ -265,7 +265,7 @@ fn test_piecewise_linear() {
             (3, Uint128::new(4)),
             (5, Uint128::new(8)),
         ]),
-        total: Uint128::new(8),
+        total: Uint256::new(8),
         ..Default::default()
     };
     payment.initialize(storage, vest).unwrap();
@@ -278,43 +278,43 @@ fn test_piecewise_linear() {
         payment
             .distributable(storage, &vesting, Timestamp::from_seconds(0))
             .unwrap(),
-        Uint128::zero()
+        Uint256::zero()
     );
     assert_eq!(
         payment
             .distributable(storage, &vesting, Timestamp::from_seconds(1))
             .unwrap(),
-        Uint128::zero()
+        Uint256::zero()
     );
     assert_eq!(
         payment
             .distributable(storage, &vesting, Timestamp::from_seconds(2))
             .unwrap(),
-        Uint128::new(2)
+        Uint256::new(2)
     );
     assert_eq!(
         payment
             .distributable(storage, &vesting, Timestamp::from_seconds(3))
             .unwrap(),
-        Uint128::new(4)
+        Uint256::new(4)
     );
     assert_eq!(
         payment
             .distributable(storage, &vesting, Timestamp::from_seconds(4))
             .unwrap(),
-        Uint128::new(6)
+        Uint256::new(6)
     );
     assert_eq!(
         payment
             .distributable(storage, &vesting, Timestamp::from_seconds(5))
             .unwrap(),
-        Uint128::new(8)
+        Uint256::new(8)
     );
     assert_eq!(
         payment
             .distributable(storage, &vesting, Timestamp::from_seconds(6))
             .unwrap(),
-        Uint128::new(8)
+        Uint256::new(8)
     );
 }
 
@@ -327,12 +327,12 @@ fn test_redelegate_should_increase_cardinality() {
     let time = Timestamp::default();
 
     let init = VestInit {
-        total: Uint128::new(100),
+        total: Uint256::new(100),
         schedule: Schedule::SaturatingLinear,
         start_time: time,
         duration_seconds: 100,
         denom: CheckedDenom::Native("ujuno".to_string()),
-        recipient: Addr::unchecked("recv"),
+        recipient: MockApi::default().addr_make("recv"),
         title: "t".to_string(),
         description: Some("d".to_string()),
     };
@@ -343,7 +343,7 @@ fn test_redelegate_should_increase_cardinality() {
 
     let src = String::from("validator1");
     let dst = String::from("validator2");
-    let amount = Uint128::new(10);
+    let amount = Uint256::new(10);
     let ubs: u64 = 25;
 
     // delegate twice amount to validator 1

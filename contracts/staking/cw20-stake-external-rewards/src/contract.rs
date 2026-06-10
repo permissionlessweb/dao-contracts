@@ -14,10 +14,9 @@ use crate::ContractError::{
 use cosmwasm_std::entry_point;
 
 use cosmwasm_std::{
-    from_json, to_json_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Empty, Env,
-    MessageInfo, Response, StdError, StdResult, Uint128, Uint256, WasmMsg,
+    Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, MigrateInfo, Response, StdError, StdResult, Uint128, Uint256, WasmMsg, from_json, to_json_binary
 };
-use cw2::{get_contract_version, set_contract_version, ContractVersion};
+use cw2::set_contract_version;
 use cw20::{Cw20ReceiveMsg, Denom};
 use dao_hooks::stake::StakeChangedHookMsg;
 
@@ -83,39 +82,10 @@ pub fn instantiate(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
-    use cw20_stake_external_rewards_v1 as v1;
-
-    let ContractVersion { version, .. } = get_contract_version(deps.storage)?;
-    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-
-    match msg {
-        MigrateMsg::FromV1 {} => {
-            if version == CONTRACT_VERSION {
-                // You can not possibly be migrating from v1 to v2 and
-                // also not changing your contract version.
-                return Err(ContractError::AlreadyMigrated {});
-            }
-            // From v1 -> v2 we moved `owner` out of config and into
-            // the `cw_ownable` package.
-            let config = v1::state::CONFIG.load(deps.storage)?;
-            cw_ownable::initialize_owner(
-                deps.storage,
-                deps.api,
-                config.owner.map(|a| a.into_string()).as_deref(),
-            )?;
-            let config = Config {
-                staking_contract: config.staking_contract,
-                reward_token: match config.reward_token {
-                    cw20_013::Denom::Native(n) => Denom::Native(n),
-                    cw20_013::Denom::Cw20(a) => Denom::Cw20(a),
-                },
-            };
-            CONFIG.save(deps.storage, &config)?;
-
-            Ok(Response::default())
-        }
-    }
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg, _info: MigrateInfo) -> Result<Response, ContractError> {
+    Err(ContractError::Std(cosmwasm_std::StdError::msg(
+        "cannot migrate from v1 -> v3. DAOs must first migrate to  =< v2.8.0-alpha.2",
+    )))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -150,7 +120,7 @@ pub fn execute_receive(
         return Err(InvalidCw20 {});
     };
     match msg {
-        ReceiveMsg::Fund {} => execute_fund(deps, env, sender, wrapper.amount),
+        ReceiveMsg::Fund {} => execute_fund(deps, env, sender, wrapper.amount.try_into().unwrap()),
     }
 }
 
@@ -163,7 +133,7 @@ pub fn execute_fund_native(
 
     match config.reward_token {
         Denom::Native(denom) => {
-            let amount = cw_utils::must_pay(&info, &denom).map_err(|_| InvalidFunds {})?;
+            let amount: Uint128 = cw_utils::must_pay(&info, &denom).map_err(|_| InvalidFunds {})?.try_into().unwrap();
             execute_fund(deps, env, info.sender, amount)
         }
         Cw20(_) => Err(InvalidFunds {}),
@@ -187,7 +157,7 @@ pub fn execute_fund(
         period_finish: env.block.height + reward_config.reward_duration,
         reward_rate: amount
             .checked_div(Uint128::from(reward_config.reward_duration))
-            .map_err(StdError::divide_by_zero)?,
+            .map_err(|e| StdError::msg(e.to_string()))?,
         // As we're not changing the value and changing the value
         // validates that the duration is non-zero we don't need to
         // check here.
@@ -276,13 +246,13 @@ pub fn get_transfer_msg(recipient: Addr, amount: Uint128, denom: Denom) -> StdRe
     match denom {
         Denom::Native(denom) => Ok(BankMsg::Send {
             to_address: recipient.into_string(),
-            amount: vec![Coin { denom, amount }],
+            amount: vec![Coin { denom, amount: amount.into() }],
         }
         .into()),
         Denom::Cw20(addr) => {
             let cw20_msg = to_json_binary(&cw20::Cw20ExecuteMsg::Transfer {
                 recipient: recipient.into_string(),
-                amount,
+                amount: amount.into(),
             })?;
             Ok(WasmMsg::Execute {
                 contract_addr: addr.into_string(),
@@ -322,7 +292,7 @@ pub fn get_reward_per_token(deps: Deps, env: &Env, staking_contract: &Addr) -> S
     let last_time_reward_applicable = get_last_time_reward_applicable(deps, env)?;
     let last_update_block = LAST_UPDATE_BLOCK.load(deps.storage).unwrap_or_default();
     let prev_reward_per_token = REWARD_PER_TOKEN.load(deps.storage).unwrap_or_default();
-    let additional_reward_per_token = if total_staked == Uint128::zero() {
+    let additional_reward_per_token = if total_staked == Uint256::zero() {
         Uint256::zero()
     } else {
         // It is impossible for this to overflow as total rewards can never exceed max value of
@@ -333,7 +303,7 @@ pub fn get_reward_per_token(deps: Deps, env: &Env, staking_contract: &Addr) -> S
                 last_time_reward_applicable - last_update_block,
             ))
             .checked_mul(scale_factor())?;
-        let denominator = Uint256::from(total_staked);
+        let denominator = total_staked;
         numerator.checked_div(denominator)?
     };
 
@@ -348,7 +318,7 @@ pub fn get_rewards_earned(
     staking_contract: &Addr,
 ) -> StdResult<Uint128> {
     let _config = CONFIG.load(deps.storage)?;
-    let staked_balance = Uint256::from(get_staked_balance(deps, staking_contract, addr)?);
+    let staked_balance = get_staked_balance(deps, staking_contract, addr)?;
     let user_reward_per_token = USER_REWARD_PER_TOKEN
         .load(deps.storage, addr.clone())
         .unwrap_or_default();
@@ -364,14 +334,14 @@ fn get_last_time_reward_applicable(deps: Deps, env: &Env) -> StdResult<u64> {
     Ok(min(env.block.height, reward_config.period_finish))
 }
 
-fn get_total_staked(deps: Deps, contract_addr: &Addr) -> StdResult<Uint128> {
+fn get_total_staked(deps: Deps, contract_addr: &Addr) -> StdResult<Uint256> {
     let msg = cw20_stake::msg::QueryMsg::TotalStakedAtHeight { height: None };
     let resp: cw20_stake::msg::TotalStakedAtHeightResponse =
         deps.querier.query_wasm_smart(contract_addr, &msg)?;
     Ok(resp.total)
 }
 
-fn get_staked_balance(deps: Deps, contract_addr: &Addr, addr: &Addr) -> StdResult<Uint128> {
+fn get_staked_balance(deps: Deps, contract_addr: &Addr, addr: &Addr) -> StdResult<Uint256> {
     let msg = cw20_stake::msg::QueryMsg::StakedBalanceAtHeight {
         address: addr.into(),
         height: None,

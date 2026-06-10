@@ -1,6 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    to_json_binary, Addr, BankMsg, Coin, CosmosMsg, Deps, StdError, Uint128, WasmMsg,
+    to_json_binary, Addr, BankMsg, Coin, CosmosMsg, Deps, StdError, Uint256, WasmMsg,
 };
 use cw_storage_plus::Item;
 
@@ -13,11 +13,11 @@ use crate::{
 pub enum CheckedTokenInfo {
     Native {
         denom: String,
-        amount: Uint128,
+        amount: Uint256,
     },
     Cw20 {
         contract_addr: Addr,
-        amount: Uint128,
+        amount: Uint256,
     },
 }
 
@@ -79,7 +79,10 @@ impl CheckedTokenInfo {
         Ok(match self {
             Self::Native { denom, amount } => BankMsg::Send {
                 to_address: recipient.to_string(),
-                amount: vec![Coin { denom, amount }],
+                amount: vec![Coin {
+                    denom,
+                    amount,
+                }],
             }
             .into(),
             Self::Cw20 {
@@ -100,12 +103,14 @@ impl CheckedTokenInfo {
 
 #[cfg(test)]
 mod tests {
+    use cosmwasm_std::Uint256;
+
     use super::*;
 
     #[test]
     fn test_into_spend_message_native() {
         let info = CheckedTokenInfo::Native {
-            amount: Uint128::new(100),
+            amount: Uint256::new(100),
             denom: "uekez".to_string(),
         };
         let message = info.into_send_message(&Addr::unchecked("ekez")).unwrap();
@@ -115,7 +120,7 @@ mod tests {
             CosmosMsg::Bank(BankMsg::Send {
                 to_address: "ekez".to_string(),
                 amount: vec![Coin {
-                    amount: Uint128::new(100),
+                    amount: Uint256::new(100),
                     denom: "uekez".to_string()
                 }]
             })
@@ -125,7 +130,7 @@ mod tests {
     #[test]
     fn test_into_spend_message_cw20() {
         let info = CheckedTokenInfo::Cw20 {
-            amount: Uint128::new(100),
+            amount: Uint256::new(100),
             contract_addr: Addr::unchecked("ekez_token"),
         };
         let message = info.into_send_message(&Addr::unchecked("ekez")).unwrap();
@@ -137,7 +142,7 @@ mod tests {
                 contract_addr: "ekez_token".to_string(),
                 msg: to_json_binary(&cw20::Cw20ExecuteMsg::Transfer {
                     recipient: "ekez".to_string(),
-                    amount: Uint128::new(100)
+                    amount: Uint256::new(100)
                 })
                 .unwrap()
             })

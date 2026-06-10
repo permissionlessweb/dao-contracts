@@ -5,4 +5,3 @@ This is an implementation of cw-plus'
 package for NFTs. It manages claims for our NFT staking contracts:
 
 - [dao-voting-cw721-staked](../../contracts/voting/dao-voting-cw721-staked)
-- [dao-voting-onft-staked](../../contracts/voting/dao-voting-onft-staked)

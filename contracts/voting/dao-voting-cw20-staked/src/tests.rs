@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    testing::{mock_dependencies, mock_env},
-    to_json_binary, Addr, CosmosMsg, Decimal, Uint128, WasmMsg,
+    testing::{mock_dependencies, mock_env, MockApi},
+    to_json_binary, Addr, CosmosMsg, Decimal, MigrateInfo, Uint128, Uint256, WasmMsg,
 };
 use cw2::ContractVersion;
 use cw20::{BalanceResponse, Cw20Coin, MinterResponse, TokenInfoResponse};
@@ -22,7 +22,7 @@ const CREATOR_ADDR: &str = "creator";
 fn instantiate_voting(app: &mut App, voting_id: u64, msg: InstantiateMsg) -> Addr {
     app.instantiate_contract(
         voting_id,
-        Addr::unchecked(DAO_ADDR),
+        MockApi::default().addr_make(DAO_ADDR),
         &msg,
         &[],
         "voting module",
@@ -34,10 +34,10 @@ fn instantiate_voting(app: &mut App, voting_id: u64, msg: InstantiateMsg) -> Add
 fn stake_tokens(app: &mut App, staking_addr: Addr, cw20_addr: Addr, sender: &str, amount: u128) {
     let msg = cw20::Cw20ExecuteMsg::Send {
         contract: staking_addr.to_string(),
-        amount: Uint128::new(amount),
+        amount: Uint128::new(amount).into(),
         msg: to_json_binary(&cw20_stake::msg::ReceiveMsg::Stake {}).unwrap(),
     };
-    app.execute_contract(Addr::unchecked(sender), cw20_addr, &msg, &[])
+    app.execute_contract(MockApi::default().addr_make(sender), cw20_addr, &msg, &[])
         .unwrap();
 }
 
@@ -59,13 +59,13 @@ fn test_instantiate_zero_supply() {
                 symbol: "DAO".to_string(),
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
-                    address: CREATOR_ADDR.to_string(),
-                    amount: Uint128::zero(),
+                    address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
+                    amount: Uint128::zero().into(),
                 }],
                 marketing: None,
                 unstaking_duration: None,
                 staking_code_id: staking_contract_id,
-                initial_dao_balance: Some(Uint128::zero()),
+                initial_dao_balance: Some(Uint256::zero()),
                 salt: None,
                 staking_salt: None,
             },
@@ -95,7 +95,7 @@ fn test_instantiate_no_balances() {
                 marketing: None,
                 unstaking_duration: None,
                 staking_code_id: staking_contract_id,
-                initial_dao_balance: Some(Uint128::zero()),
+                initial_dao_balance: Some(Uint128::zero().into()),
                 salt: None,
                 staking_salt: None,
             },
@@ -122,18 +122,18 @@ fn test_instantiate_zero_active_threshold_count() {
                 symbol: "DAO".to_string(),
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
-                    address: CREATOR_ADDR.to_string(),
-                    amount: Uint128::one(),
+                    address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
+                    amount: Uint128::one().into(),
                 }],
                 marketing: None,
                 unstaking_duration: None,
                 staking_code_id: staking_contract_id,
-                initial_dao_balance: Some(Uint128::zero()),
+                initial_dao_balance: Some(Uint256::zero()),
                 salt: None,
                 staking_salt: None,
             },
             active_threshold: Some(ActiveThreshold::AbsoluteCount {
-                count: Uint128::new(0),
+                count: Uint128::new(0).into(),
             }),
         },
     );
@@ -157,13 +157,13 @@ fn test_contract_info() {
                 symbol: "DAO".to_string(),
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
-                    address: CREATOR_ADDR.to_string(),
-                    amount: Uint128::from(2u64),
+                    address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
+                    amount: Uint128::from(2u64).into(),
                 }],
                 marketing: None,
                 unstaking_duration: None,
                 staking_code_id: staking_contract_id,
-                initial_dao_balance: Some(Uint128::zero()),
+                initial_dao_balance: Some(Uint256::zero()),
                 salt: None,
                 staking_salt: None,
             },
@@ -189,7 +189,7 @@ fn test_contract_info() {
         .wrap()
         .query_wasm_smart(voting_addr, &QueryMsg::Dao {})
         .unwrap();
-    assert_eq!(dao, Addr::unchecked(DAO_ADDR));
+    assert_eq!(dao, MockApi::default().addr_make(DAO_ADDR));
 }
 
 #[test]
@@ -210,13 +210,13 @@ fn test_new_cw20() {
                 symbol: "DAO".to_string(),
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
-                    address: CREATOR_ADDR.to_string(),
-                    amount: Uint128::from(2u64),
+                    address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
+                    amount: Uint128::from(2u64).into(),
                 }],
                 marketing: None,
                 unstaking_duration: None,
                 staking_code_id: staking_contract_id,
-                initial_dao_balance: Some(Uint128::from(10u64)),
+                initial_dao_balance: Some(Uint256::from(10u64)),
                 salt: None,
                 staking_salt: None,
             },
@@ -243,7 +243,7 @@ fn test_new_cw20() {
             name: "DAO DAO".to_string(),
             symbol: "DAO".to_string(),
             decimals: 6,
-            total_supply: Uint128::from(12u64)
+            total_supply: Uint128::from(12u64).into()
         }
     );
 
@@ -254,7 +254,7 @@ fn test_new_cw20() {
     assert_eq!(
         minter_info,
         Some(MinterResponse {
-            minter: DAO_ADDR.to_string(),
+            minter: MockApi::default().addr_make(DAO_ADDR).to_string(),
             cap: None,
         })
     );
@@ -265,14 +265,14 @@ fn test_new_cw20() {
         .query_wasm_smart(
             token_addr.clone(),
             &cw20::Cw20QueryMsg::Balance {
-                address: DAO_ADDR.to_string(),
+                address: MockApi::default().addr_make(DAO_ADDR).to_string(),
             },
         )
         .unwrap();
     assert_eq!(
         token_info,
         BalanceResponse {
-            balance: Uint128::from(10u64)
+            balance: Uint128::from(10u64).into()
         }
     );
 
@@ -282,7 +282,7 @@ fn test_new_cw20() {
         .query_wasm_smart(
             voting_addr.clone(),
             &QueryMsg::VotingPowerAtHeight {
-                address: CREATOR_ADDR.to_string(),
+                address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
                 height: None,
             },
         )
@@ -291,7 +291,7 @@ fn test_new_cw20() {
     assert_eq!(
         creator_voting_power,
         VotingPowerAtHeightResponse {
-            power: Uint128::zero(),
+            power: Uint256::zero(),
             height: app.block_info().height,
         }
     );
@@ -302,7 +302,7 @@ fn test_new_cw20() {
         .query_wasm_smart(
             voting_addr.clone(),
             &QueryMsg::VotingPowerAtHeight {
-                address: DAO_ADDR.to_string(),
+                address: MockApi::default().addr_make(DAO_ADDR).to_string(),
                 height: None,
             },
         )
@@ -311,7 +311,7 @@ fn test_new_cw20() {
     assert_eq!(
         dao_voting_power,
         VotingPowerAtHeightResponse {
-            power: Uint128::zero(),
+            power: Uint256::zero(),
             height: app.block_info().height,
         }
     );
@@ -326,7 +326,7 @@ fn test_new_cw20() {
         .query_wasm_smart(
             voting_addr.clone(),
             &QueryMsg::VotingPowerAtHeight {
-                address: CREATOR_ADDR.to_string(),
+                address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
                 height: None,
             },
         )
@@ -335,7 +335,7 @@ fn test_new_cw20() {
     assert_eq!(
         creator_voting_power,
         VotingPowerAtHeightResponse {
-            power: Uint128::new(1u128),
+            power: Uint256::from(1u128),
             height: app.block_info().height,
         }
     );
@@ -349,7 +349,7 @@ fn test_new_cw20() {
     assert_eq!(
         total_voting_power,
         VotingPowerAtHeightResponse {
-            power: Uint128::new(1u128),
+            power: Uint256::from(1u128),
             height: app.block_info().height,
         }
     )
@@ -365,14 +365,14 @@ fn test_existing_cw20_new_staking() {
     let token_addr = app
         .instantiate_contract(
             cw20_id,
-            Addr::unchecked(CREATOR_ADDR),
+            MockApi::default().addr_make(CREATOR_ADDR),
             &cw20_base::msg::InstantiateMsg {
                 name: "DAO DAO".to_string(),
                 symbol: "DAO".to_string(),
                 decimals: 3,
                 initial_balances: vec![Cw20Coin {
-                    address: CREATOR_ADDR.to_string(),
-                    amount: Uint128::from(2u64),
+                    address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
+                    amount: Uint128::from(2u64).into(),
                 }],
                 mint: None,
                 marketing: None,
@@ -418,7 +418,7 @@ fn test_existing_cw20_new_staking() {
             name: "DAO DAO".to_string(),
             symbol: "DAO".to_string(),
             decimals: 3,
-            total_supply: Uint128::from(2u64)
+            total_supply: Uint128::from(2u64).into()
         }
     );
 
@@ -434,7 +434,7 @@ fn test_existing_cw20_new_staking() {
         .query_wasm_smart(
             voting_addr.clone(),
             &QueryMsg::VotingPowerAtHeight {
-                address: CREATOR_ADDR.to_string(),
+                address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
                 height: None,
             },
         )
@@ -443,7 +443,7 @@ fn test_existing_cw20_new_staking() {
     assert_eq!(
         creator_voting_power,
         VotingPowerAtHeightResponse {
-            power: Uint128::zero(),
+            power: Uint256::zero(),
             height: app.block_info().height,
         }
     );
@@ -454,7 +454,7 @@ fn test_existing_cw20_new_staking() {
         .query_wasm_smart(
             voting_addr.clone(),
             &QueryMsg::VotingPowerAtHeight {
-                address: DAO_ADDR.to_string(),
+                address: MockApi::default().addr_make(DAO_ADDR).to_string(),
                 height: None,
             },
         )
@@ -463,7 +463,7 @@ fn test_existing_cw20_new_staking() {
     assert_eq!(
         dao_voting_power,
         VotingPowerAtHeightResponse {
-            power: Uint128::zero(),
+            power: Uint256::zero(),
             height: app.block_info().height,
         }
     );
@@ -478,7 +478,7 @@ fn test_existing_cw20_new_staking() {
         .query_wasm_smart(
             voting_addr.clone(),
             &QueryMsg::VotingPowerAtHeight {
-                address: CREATOR_ADDR.to_string(),
+                address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
                 height: None,
             },
         )
@@ -487,7 +487,7 @@ fn test_existing_cw20_new_staking() {
     assert_eq!(
         creator_voting_power,
         VotingPowerAtHeightResponse {
-            power: Uint128::new(1u128),
+            power: Uint256::from(1u128),
             height: app.block_info().height,
         }
     );
@@ -501,7 +501,7 @@ fn test_existing_cw20_new_staking() {
     assert_eq!(
         total_voting_power,
         VotingPowerAtHeightResponse {
-            power: Uint128::new(1u128),
+            power: Uint256::from(1u128),
             height: app.block_info().height,
         }
     )
@@ -517,14 +517,14 @@ fn test_existing_cw20_existing_staking() {
     let token_addr = app
         .instantiate_contract(
             cw20_id,
-            Addr::unchecked(CREATOR_ADDR),
+            MockApi::default().addr_make(CREATOR_ADDR),
             &cw20_base::msg::InstantiateMsg {
                 name: "DAO DAO".to_string(),
                 symbol: "DAO".to_string(),
                 decimals: 3,
                 initial_balances: vec![Cw20Coin {
-                    address: CREATOR_ADDR.to_string(),
-                    amount: Uint128::from(2u64),
+                    address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
+                    amount: Uint128::from(2u64).into(),
                 }],
                 mint: None,
                 marketing: None,
@@ -571,7 +571,7 @@ fn test_existing_cw20_existing_staking() {
             name: "DAO DAO".to_string(),
             symbol: "DAO".to_string(),
             decimals: 3,
-            total_supply: Uint128::from(2u64)
+            total_supply: Uint128::from(2u64).into()
         }
     );
 
@@ -595,7 +595,7 @@ fn test_existing_cw20_existing_staking() {
         .query_wasm_smart(
             voting_addr.clone(),
             &QueryMsg::VotingPowerAtHeight {
-                address: CREATOR_ADDR.to_string(),
+                address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
                 height: None,
             },
         )
@@ -604,7 +604,7 @@ fn test_existing_cw20_existing_staking() {
     assert_eq!(
         creator_voting_power,
         VotingPowerAtHeightResponse {
-            power: Uint128::zero(),
+            power: Uint256::zero(),
             height: app.block_info().height,
         }
     );
@@ -615,7 +615,7 @@ fn test_existing_cw20_existing_staking() {
         .query_wasm_smart(
             voting_addr.clone(),
             &QueryMsg::VotingPowerAtHeight {
-                address: DAO_ADDR.to_string(),
+                address: MockApi::default().addr_make(DAO_ADDR).to_string(),
                 height: None,
             },
         )
@@ -624,7 +624,7 @@ fn test_existing_cw20_existing_staking() {
     assert_eq!(
         dao_voting_power,
         VotingPowerAtHeightResponse {
-            power: Uint128::zero(),
+            power: Uint256::zero(),
             height: app.block_info().height,
         }
     );
@@ -639,7 +639,7 @@ fn test_existing_cw20_existing_staking() {
         .query_wasm_smart(
             voting_addr.clone(),
             &QueryMsg::VotingPowerAtHeight {
-                address: CREATOR_ADDR.to_string(),
+                address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
                 height: None,
             },
         )
@@ -648,7 +648,7 @@ fn test_existing_cw20_existing_staking() {
     assert_eq!(
         creator_voting_power,
         VotingPowerAtHeightResponse {
-            power: Uint128::new(1u128),
+            power: Uint256::from(1u128),
             height: app.block_info().height,
         }
     );
@@ -662,7 +662,7 @@ fn test_existing_cw20_existing_staking() {
     assert_eq!(
         total_voting_power,
         VotingPowerAtHeightResponse {
-            power: Uint128::new(1u128),
+            power: Uint256::from(1u128),
             height: app.block_info().height,
         }
     );
@@ -671,14 +671,14 @@ fn test_existing_cw20_existing_staking() {
     let different_token = app
         .instantiate_contract(
             cw20_id,
-            Addr::unchecked(CREATOR_ADDR),
+            MockApi::default().addr_make(CREATOR_ADDR),
             &cw20_base::msg::InstantiateMsg {
                 name: "DAO DAO MISMATCH".to_string(),
                 symbol: "DAOM".to_string(),
                 decimals: 3,
                 initial_balances: vec![Cw20Coin {
-                    address: CREATOR_ADDR.to_string(),
-                    amount: Uint128::from(2u64),
+                    address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
+                    amount: Uint128::from(2u64).into(),
                 }],
                 mint: None,
                 marketing: None,
@@ -692,7 +692,7 @@ fn test_existing_cw20_existing_staking() {
     // Expect error as the token address does not match the staking address token address
     app.instantiate_contract(
         voting_id,
-        Addr::unchecked(DAO_ADDR),
+        MockApi::default().addr_make(DAO_ADDR),
         &InstantiateMsg {
             token_info: crate::msg::TokenInfo::Existing {
                 address: different_token.to_string(),
@@ -719,14 +719,14 @@ fn test_different_heights() {
     let token_addr = app
         .instantiate_contract(
             cw20_id,
-            Addr::unchecked(CREATOR_ADDR),
+            MockApi::default().addr_make(CREATOR_ADDR),
             &cw20_base::msg::InstantiateMsg {
                 name: "DAO DAO".to_string(),
                 symbol: "DAO".to_string(),
                 decimals: 3,
                 initial_balances: vec![Cw20Coin {
-                    address: CREATOR_ADDR.to_string(),
-                    amount: Uint128::from(2u64),
+                    address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
+                    amount: Uint128::from(2u64).into(),
                 }],
                 mint: None,
                 marketing: None,
@@ -768,7 +768,7 @@ fn test_different_heights() {
         .query_wasm_smart(
             voting_addr.clone(),
             &QueryMsg::VotingPowerAtHeight {
-                address: CREATOR_ADDR.to_string(),
+                address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
                 height: None,
             },
         )
@@ -777,7 +777,7 @@ fn test_different_heights() {
     assert_eq!(
         creator_voting_power,
         VotingPowerAtHeightResponse {
-            power: Uint128::zero(),
+            power: Uint256::zero(),
             height: app.block_info().height,
         }
     );
@@ -798,7 +798,7 @@ fn test_different_heights() {
         .query_wasm_smart(
             voting_addr.clone(),
             &QueryMsg::VotingPowerAtHeight {
-                address: CREATOR_ADDR.to_string(),
+                address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
                 height: None,
             },
         )
@@ -807,7 +807,7 @@ fn test_different_heights() {
     assert_eq!(
         creator_voting_power,
         VotingPowerAtHeightResponse {
-            power: Uint128::new(1u128),
+            power: Uint256::from(1u128),
             height: app.block_info().height,
         }
     );
@@ -824,7 +824,7 @@ fn test_different_heights() {
     assert_eq!(
         total_voting_power,
         VotingPowerAtHeightResponse {
-            power: Uint128::new(1u128),
+            power: Uint256::from(1u128),
             height: app.block_info().height,
         }
     );
@@ -839,7 +839,7 @@ fn test_different_heights() {
         .query_wasm_smart(
             voting_addr.clone(),
             &QueryMsg::VotingPowerAtHeight {
-                address: CREATOR_ADDR.to_string(),
+                address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
                 height: None,
             },
         )
@@ -848,7 +848,7 @@ fn test_different_heights() {
     assert_eq!(
         creator_voting_power,
         VotingPowerAtHeightResponse {
-            power: Uint128::new(2u128),
+            power: Uint256::from(2u128),
             height: app.block_info().height,
         }
     );
@@ -865,7 +865,7 @@ fn test_different_heights() {
     assert_eq!(
         total_voting_power,
         VotingPowerAtHeightResponse {
-            power: Uint128::new(2u128),
+            power: Uint256::from(2u128),
             height: app.block_info().height,
         }
     );
@@ -876,7 +876,7 @@ fn test_different_heights() {
         .query_wasm_smart(
             voting_addr.clone(),
             &QueryMsg::VotingPowerAtHeight {
-                address: CREATOR_ADDR.to_string(),
+                address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
                 height: Some(app.block_info().height - 1),
             },
         )
@@ -885,7 +885,7 @@ fn test_different_heights() {
     assert_eq!(
         creator_voting_power,
         VotingPowerAtHeightResponse {
-            power: Uint128::new(1u128),
+            power: Uint256::from(1u128),
             height: app.block_info().height - 1,
         }
     );
@@ -904,7 +904,7 @@ fn test_different_heights() {
     assert_eq!(
         total_voting_power,
         VotingPowerAtHeightResponse {
-            power: Uint128::new(1u128),
+            power: Uint256::from(1u128),
             height: app.block_info().height - 1,
         }
     );
@@ -928,18 +928,18 @@ fn test_active_threshold_absolute_count() {
                 symbol: "DAO".to_string(),
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
-                    address: CREATOR_ADDR.to_string(),
-                    amount: Uint128::from(200u64),
+                    address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
+                    amount: Uint128::from(200u64).into(),
                 }],
                 marketing: None,
                 unstaking_duration: None,
                 staking_code_id: staking_contract_id,
-                initial_dao_balance: Some(Uint128::from(100u64)),
+                initial_dao_balance: Some(Uint256::from(100u64)),
                 salt: None,
                 staking_salt: None,
             },
             active_threshold: Some(ActiveThreshold::AbsoluteCount {
-                count: Uint128::new(100),
+                count: Uint128::new(100).into(),
             }),
         },
     );
@@ -990,18 +990,18 @@ fn test_active_threshold_percent() {
                 symbol: "DAO".to_string(),
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
-                    address: CREATOR_ADDR.to_string(),
-                    amount: Uint128::from(200u64),
+                    address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
+                    amount: Uint128::from(200u64).into(),
                 }],
                 marketing: None,
                 unstaking_duration: None,
                 staking_code_id: staking_contract_id,
-                initial_dao_balance: Some(Uint128::from(100u64)),
+                initial_dao_balance: Some(Uint256::from(100u64)),
                 salt: None,
                 staking_salt: None,
             },
             active_threshold: Some(ActiveThreshold::Percentage {
-                percent: Decimal::percent(20),
+                percent: Decimal::percent(20).into(),
             }),
         },
     );
@@ -1052,8 +1052,8 @@ fn test_active_threshold_percent_rounds_up() {
                 symbol: "DAO".to_string(),
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
-                    address: CREATOR_ADDR.to_string(),
-                    amount: Uint128::from(5u64),
+                    address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
+                    amount: Uint128::from(5u64).into(),
                 }],
                 marketing: None,
                 unstaking_duration: None,
@@ -1063,7 +1063,7 @@ fn test_active_threshold_percent_rounds_up() {
                 staking_salt: None,
             },
             active_threshold: Some(ActiveThreshold::Percentage {
-                percent: Decimal::percent(50),
+                percent: Decimal::percent(50).into(),
             }),
         },
     );
@@ -1129,13 +1129,13 @@ fn test_active_threshold_none() {
                 symbol: "DAO".to_string(),
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
-                    address: CREATOR_ADDR.to_string(),
-                    amount: Uint128::from(200u64),
+                    address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
+                    amount: Uint128::from(200u64).into(),
                 }],
                 marketing: None,
                 unstaking_duration: None,
                 staking_code_id: staking_contract_id,
-                initial_dao_balance: Some(Uint128::from(100u64)),
+                initial_dao_balance: Some(Uint256::from(100u64)),
                 salt: None,
                 staking_salt: None,
             },
@@ -1169,13 +1169,13 @@ fn test_update_active_threshold() {
                 symbol: "DAO".to_string(),
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
-                    address: CREATOR_ADDR.to_string(),
-                    amount: Uint128::from(200u64),
+                    address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
+                    amount: Uint128::from(200u64).into(),
                 }],
                 marketing: None,
                 unstaking_duration: None,
                 staking_code_id: staking_contract_id,
-                initial_dao_balance: Some(Uint128::from(100u64)),
+                initial_dao_balance: Some(Uint256::from(100u64)),
                 salt: None,
                 staking_salt: None,
             },
@@ -1191,13 +1191,13 @@ fn test_update_active_threshold() {
 
     let msg = ExecuteMsg::UpdateActiveThreshold {
         new_threshold: Some(ActiveThreshold::AbsoluteCount {
-            count: Uint128::new(100),
+            count: Uint128::new(100).into(),
         }),
     };
 
     // Expect failure as sender is not the DAO
     app.execute_contract(
-        Addr::unchecked(CREATOR_ADDR),
+        MockApi::default().addr_make(CREATOR_ADDR),
         voting_addr.clone(),
         &msg,
         &[],
@@ -1205,8 +1205,13 @@ fn test_update_active_threshold() {
     .unwrap_err();
 
     // Expect success as sender is the DAO
-    app.execute_contract(Addr::unchecked(DAO_ADDR), voting_addr.clone(), &msg, &[])
-        .unwrap();
+    app.execute_contract(
+        MockApi::default().addr_make(DAO_ADDR),
+        voting_addr.clone(),
+        &msg,
+        &[],
+    )
+    .unwrap();
 
     let resp: ActiveThresholdResponse = app
         .wrap()
@@ -1215,7 +1220,7 @@ fn test_update_active_threshold() {
     assert_eq!(
         resp.active_threshold,
         Some(ActiveThreshold::AbsoluteCount {
-            count: Uint128::new(100)
+            count: Uint128::new(100).into()
         })
     );
 }
@@ -1239,18 +1244,18 @@ fn test_active_threshold_percentage_gt_100() {
                 symbol: "DAO".to_string(),
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
-                    address: CREATOR_ADDR.to_string(),
-                    amount: Uint128::from(200u64),
+                    address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
+                    amount: Uint128::from(200u64).into(),
                 }],
                 marketing: None,
                 unstaking_duration: None,
                 staking_code_id: staking_contract_id,
-                initial_dao_balance: Some(Uint128::from(100u64)),
+                initial_dao_balance: Some(Uint256::from(100u64)),
                 salt: None,
                 staking_salt: None,
             },
             active_threshold: Some(ActiveThreshold::Percentage {
-                percent: Decimal::percent(120),
+                percent: Decimal::percent(120).into(),
             }),
         },
     );
@@ -1275,18 +1280,18 @@ fn test_active_threshold_percentage_lte_0() {
                 symbol: "DAO".to_string(),
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
-                    address: CREATOR_ADDR.to_string(),
-                    amount: Uint128::from(200u64),
+                    address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
+                    amount: Uint128::from(200u64).into(),
                 }],
                 marketing: None,
                 unstaking_duration: None,
                 staking_code_id: staking_contract_id,
-                initial_dao_balance: Some(Uint128::from(100u64)),
+                initial_dao_balance: Some(Uint256::from(100u64)),
                 salt: None,
                 staking_salt: None,
             },
             active_threshold: Some(ActiveThreshold::Percentage {
-                percent: Decimal::percent(0),
+                percent: Decimal::percent(0).into(),
             }),
         },
     );
@@ -1311,18 +1316,18 @@ fn test_active_threshold_absolute_count_invalid() {
                 symbol: "DAO".to_string(),
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
-                    address: CREATOR_ADDR.to_string(),
-                    amount: Uint128::from(200u64),
+                    address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
+                    amount: Uint128::from(200u64).into(),
                 }],
                 marketing: None,
                 unstaking_duration: None,
                 staking_code_id: staking_contract_id,
-                initial_dao_balance: Some(Uint128::from(100u64)),
+                initial_dao_balance: Some(Uint256::from(100u64)),
                 salt: None,
                 staking_salt: None,
             },
             active_threshold: Some(ActiveThreshold::AbsoluteCount {
-                count: Uint128::new(10000),
+                count: Uint128::new(10000).into(),
             }),
         },
     );
@@ -1338,7 +1343,7 @@ fn test_migrate() {
     let voting_addr = app
         .instantiate_contract(
             voting_id,
-            Addr::unchecked(DAO_ADDR),
+            MockApi::default().addr_make(DAO_ADDR),
             &InstantiateMsg {
                 token_info: crate::msg::TokenInfo::New {
                     code_id: cw20_id,
@@ -1347,13 +1352,13 @@ fn test_migrate() {
                     symbol: "DAO".to_string(),
                     decimals: 6,
                     initial_balances: vec![Cw20Coin {
-                        address: CREATOR_ADDR.to_string(),
-                        amount: Uint128::from(2u64),
+                        address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
+                        amount: Uint128::from(2u64).into(),
                     }],
                     marketing: None,
                     unstaking_duration: None,
                     staking_code_id: staking_contract_id,
-                    initial_dao_balance: Some(Uint128::zero()),
+                    initial_dao_balance: Some(Uint256::zero()),
                     salt: None,
                     staking_salt: None,
                 },
@@ -1361,7 +1366,7 @@ fn test_migrate() {
             },
             &[],
             "voting module",
-            Some(DAO_ADDR.to_string()),
+            Some(MockApi::default().addr_make(DAO_ADDR).to_string()),
         )
         .unwrap();
 
@@ -1397,7 +1402,16 @@ fn test_migrate() {
 pub fn test_migrate_update_version() {
     let mut deps = mock_dependencies();
     cw2::set_contract_version(&mut deps.storage, "my-contract", "1.0.0").unwrap();
-    migrate(deps.as_mut(), mock_env(), MigrateMsg {}).unwrap();
+    migrate(
+        deps.as_mut(),
+        mock_env(),
+        MigrateMsg {},
+        MigrateInfo {
+            sender: Addr::unchecked("sender"),
+            old_migrate_version: None,
+        },
+    )
+    .unwrap();
     let version = cw2::get_contract_version(&deps.storage).unwrap();
     assert_eq!(version.version, CONTRACT_VERSION);
     assert_eq!(version.contract, CONTRACT_NAME);

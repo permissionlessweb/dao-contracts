@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    coins, to_json_binary, Addr, BankMsg, BlockInfo, CosmosMsg, Decimal, Deps, DepsMut, StdError,
-    StdResult, Uint128, Uint256, WasmMsg,
+    to_json_binary, Addr, BankMsg, BlockInfo, Coin, CosmosMsg, Decimal, Deps, DepsMut, StdError,
+    StdResult, Uint256, WasmMsg,
 };
 use cw20::{Denom, Expiration};
 use cw_utils::Duration;
@@ -14,7 +14,7 @@ pub fn get_total_voting_power_at_block(
     deps: Deps,
     block: &BlockInfo,
     contract_addr: &Addr,
-) -> StdResult<Uint128> {
+) -> StdResult<Uint256> {
     let msg = VotingQueryMsg::TotalPowerAtHeight {
         height: Some(block.height),
     };
@@ -27,7 +27,7 @@ pub fn get_voting_power_at_block(
     block: &BlockInfo,
     contract_addr: &Addr,
     addr: &Addr,
-) -> StdResult<Uint128> {
+) -> StdResult<Uint256> {
     let msg = VotingQueryMsg::VotingPowerAtHeight {
         address: addr.into(),
         height: Some(block.height),
@@ -37,11 +37,11 @@ pub fn get_voting_power_at_block(
 }
 
 /// Returns the appropriate CosmosMsg for transferring the reward token.
-pub fn get_transfer_msg(recipient: Addr, amount: Uint128, denom: Denom) -> StdResult<CosmosMsg> {
+pub fn get_transfer_msg(recipient: Addr, amount: Uint256, denom: Denom) -> StdResult<CosmosMsg> {
     match denom {
         Denom::Native(denom) => Ok(BankMsg::Send {
             to_address: recipient.into_string(),
-            amount: coins(amount.u128(), denom),
+            amount: vec![Coin::new(amount, denom)],
         }
         .into()),
         Denom::Cw20(addr) => {
@@ -99,13 +99,11 @@ impl ExpirationExt for Expiration {
                     Ok(Duration::Time(0))
                 }
             }
-            (Expiration::Never {}, _) | (_, Expiration::Never {}) => {
-                Err(StdError::generic_err(format!(
+            (Expiration::Never {}, _) | (_, Expiration::Never {}) => Err(StdError::msg(format!(
                 "can't compute diff between expirations with never: got end {:?} and start {:?}",
                 self, start
-            )))
-            }
-            _ => Err(StdError::generic_err(format!(
+            ))),
+            _ => Err(StdError::msg(format!(
                 "incompatible expirations: got end {:?} and start {:?}",
                 self, start
             ))),
@@ -138,7 +136,7 @@ impl DurationExt for Duration {
             (Duration::Time(numerator), Duration::Time(denominator)) => {
                 Ok(Decimal::checked_from_ratio(*numerator, *denominator)?)
             }
-            _ => Err(ContractError::Std(StdError::generic_err(format!(
+            _ => Err(ContractError::Std(StdError::msg(format!(
                 "incompatible durations: got numerator {:?} and denominator {:?}",
                 self, denominator
             )))),

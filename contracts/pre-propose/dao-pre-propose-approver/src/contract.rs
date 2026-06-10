@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Response, StdResult,
-    WasmMsg,
+    to_json_binary, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, MigrateInfo,
+    Response, StdResult, WasmMsg,
 };
 use cw2::set_contract_version;
 
@@ -241,7 +241,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::CanPropose { address } => {
             let approval_contract = PRE_PROPOSE_APPROVAL_CONTRACT.load(deps.storage)?;
-            let can_propose = address == approval_contract;
+            let can_propose = address == approval_contract.to_string();
             to_json_binary(&can_propose)
         }
         QueryMsg::QueryExtension { msg } => match msg {
@@ -260,7 +260,12 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(mut deps: DepsMut, _env: Env, msg: MigrateMsg) -> Result<Response, PreProposeError> {
+pub fn migrate(
+    mut deps: DepsMut,
+    _env: Env,
+    msg: MigrateMsg,
+    _info: MigrateInfo,
+) -> Result<Response, PreProposeError> {
     let res = PrePropose::default().migrate(deps.branch(), msg);
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     res

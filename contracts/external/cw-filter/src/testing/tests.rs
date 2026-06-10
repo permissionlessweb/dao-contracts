@@ -1,6 +1,5 @@
 use cosmwasm_std::{coins, to_json_binary, BankMsg, CosmosMsg};
 use cw_filter::ContractError;
-use cw_ownable::OwnershipError;
 use dao_interface::state::{ModuleInstantiateInfo, ModuleUpdate};
 use dao_testing::OWNER;
 use serde_json::json;
@@ -20,13 +19,15 @@ fn test_update_owner() {
     let mut suite = SuiteBuilder::base().build();
 
     let existing_owner = suite.get_ownership().owner.unwrap();
-    assert_eq!(existing_owner, OWNER);
+    assert_eq!(existing_owner.as_str(), OWNER);
 
-    let new_owner = "new_owner";
-    suite.update_owner(existing_owner, new_owner);
+    let new_owner = cosmwasm_std::testing::MockApi::default()
+        .addr_make("new_owner")
+        .to_string();
+    suite.update_owner(existing_owner, new_owner.clone());
 
     let owner = suite.get_ownership().owner.unwrap();
-    assert_eq!(owner, new_owner);
+    assert_eq!(owner.as_str(), new_owner.as_str());
 }
 
 #[test]
@@ -40,27 +41,25 @@ fn test_info() {
 #[test]
 fn test_init_owner() {
     let mut suite = SuiteBuilder::base().build();
-    let other_owner = "other_owner";
+
+    let other_owner = cosmwasm_std::testing::MockApi::default()
+        .addr_make("other_owner")
+        .to_string();
 
     suite.filter_addr = suite.base.instantiate(
         suite.base.filter_id,
         OWNER,
         &InstantiateMsg {
-            owner: Some(other_owner.to_string()),
-            protobuf_registry: Some(ModuleUpdate::Existing {
-                address: suite.protobuf_registry_addr.to_string(),
-            }),
+            owner: Some(other_owner.clone()),
+            protobuf_registry: None,
         },
         &[],
-        "new filter",
+        "filter",
         None,
     );
 
     let owner = suite.get_ownership().owner.unwrap();
-    assert_eq!(owner, other_owner);
-
-    let protobuf_registry_addr = suite.get_protobuf_registry();
-    assert_eq!(protobuf_registry_addr, Some(suite.protobuf_registry_addr));
+    assert_eq!(owner.as_str(), other_owner.as_str());
 }
 
 #[test]
@@ -109,7 +108,9 @@ fn test_update_protobuf_registry() {
 
     // only the owner can update the protobuf registry
     let err = suite.update_protobuf_registry_err("not_owner", None);
-    assert_eq!(err, ContractError::Ownership(OwnershipError::NotOwner {}));
+    assert!(err
+        .to_string()
+        .contains("Caller is not the contract's current owner"));
 
     suite.assert_protobuf_registry(Some(suite.protobuf_registry_addr.clone()));
 

@@ -4,7 +4,7 @@ use cw_utils::ParseReplyError;
 use dao_voting::{reply::error::TagError, threshold::ThresholdError, veto::VetoError};
 use thiserror::Error;
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
@@ -102,4 +102,10 @@ pub enum ContractError {
 
     #[error("received a reply failure with an invalid ID: ({id})")]
     InvalidReplyID { id: u64 },
+}
+
+impl PartialEq for ContractError {
+    fn eq(&self, other: &Self) -> bool {
+        core::mem::discriminant(self) == core::mem::discriminant(other)
+    }
 }

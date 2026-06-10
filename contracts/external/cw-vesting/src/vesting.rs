@@ -3,7 +3,9 @@ use std::cmp::min;
 use cosmwasm_schema::cw_serde;
 #[cfg(feature = "staking")]
 use cosmwasm_std::DistributionMsg;
-use cosmwasm_std::{Addr, Binary, CosmosMsg, StdResult, Storage, Timestamp, Uint128, Uint64};
+use cosmwasm_std::{
+    Addr, Binary, CosmosMsg, StdResult, Storage, Timestamp, Uint128, Uint256, Uint64,
+};
 use cw_denom::CheckedDenom;
 use cw_storage_plus::Item;
 use wynd_utils::{Curve, PiecewiseLinear, SaturatingLinear};
@@ -12,9 +14,9 @@ use cw_stake_tracker::{StakeTracker, StakeTrackerQuery};
 
 use crate::error::ContractError;
 
-pub struct Payment<'a> {
-    vesting: Item<'a, Vest>,
-    staking: StakeTracker<'a>,
+pub struct Payment {
+    vesting: Item<Vest>,
+    staking: StakeTracker,
 }
 
 #[cw_serde]
@@ -28,11 +30,11 @@ pub struct Vest {
     pub denom: CheckedDenom,
 
     /// The number of tokens that have been claimed by the vest receiver.
-    pub claimed: Uint128,
+    pub claimed: Uint256,
     /// The number of tokens that have been slashed while staked by
     /// the vest receiver. Slashed tokens count against the number of
     /// tokens the receiver is entitled to.
-    pub slashed: Uint128,
+    pub slashed: Uint256,
 
     pub title: String,
     pub description: Option<String>,
@@ -46,7 +48,7 @@ pub enum Status {
         /// owner_withdrawable(t). This is monotonically decreasing and
         /// will be zero once the owner has completed withdrawing
         /// their funds.
-        owner_withdrawable: Uint128,
+        owner_withdrawable: Uint256,
     },
 }
 
@@ -70,7 +72,7 @@ pub enum Schedule {
 }
 
 pub struct VestInit {
-    pub total: Uint128,
+    pub total: Uint256,
     pub schedule: Schedule,
     pub start_time: Timestamp,
     pub duration_seconds: u64,
@@ -80,12 +82,12 @@ pub struct VestInit {
     pub description: Option<String>,
 }
 
-impl<'a> Payment<'a> {
+impl Payment {
     pub const fn new(
-        vesting_prefix: &'a str,
-        staked_prefix: &'a str,
-        validator_prefix: &'a str,
-        cardinality_prefix: &'a str,
+        vesting_prefix: &'static str,
+        staked_prefix: &'static str,
+        validator_prefix: &'static str,
+        cardinality_prefix: &'static str,
     ) -> Self {
         Self {
             vesting: Item::new(vesting_prefix),
@@ -110,9 +112,9 @@ impl<'a> Payment<'a> {
     }
 
     /// calculates the number of liquid tokens avaliable.
-    fn liquid(&self, vesting: &Vest, staked: Uint128) -> Uint128 {
+    fn liquid(&self, vesting: &Vest, staked: Uint256) -> Uint256 {
         match vesting.status {
-            Status::Unfunded => Uint128::zero(),
+            Status::Unfunded => Uint256::zero(),
             Status::Funded => vesting.total() - vesting.claimed - staked - vesting.slashed,
             Status::Canceled { owner_withdrawable } => {
                 // On cancelation, all liquid funds are settled and
@@ -159,11 +161,12 @@ impl<'a> Payment<'a> {
         storage: &dyn Storage,
         vesting: &Vest,
         t: Timestamp,
-    ) -> StdResult<Uint128> {
+    ) -> StdResult<Uint256> {
         let staked = self.staking.total_staked(storage, t)?;
 
         let liquid = self.liquid(vesting, staked);
-        let claimable = (vesting.vested(t) - vesting.claimed).saturating_sub(vesting.slashed);
+        let claimable = (Uint256::new(vesting.vested(t).u128()) - vesting.claimed)
+            .saturating_sub(vesting.slashed);
         Ok(min(liquid, claimable))
     }
 
@@ -175,7 +178,7 @@ impl<'a> Payment<'a> {
         &self,
         storage: &mut dyn Storage,
         t: Timestamp,
-        request: Option<Uint128>,
+        request: Option<Uint256>,
     ) -> Result<CosmosMsg, ContractError> {
         let vesting = self.vesting.load(storage)?;
 
@@ -225,7 +228,8 @@ impl<'a> Payment<'a> {
             // Use liquid tokens to settle vestee as much as possible
             // and return any remaining liquid funds to the owner.
             let liquid = self.liquid(&vesting, staked);
-            let claimable = (vesting.vested(t) - vesting.claimed).saturating_sub(vesting.slashed);
+            let claimable = (Uint256::new(vesting.vested(t).u128()) - vesting.claimed)
+                .saturating_sub(vesting.slashed);
             let to_vestee = min(claimable, liquid);
             let to_owner = liquid - to_vestee;
 
@@ -235,8 +239,9 @@ impl<'a> Payment<'a> {
             // the owners entitlement to the staked tokens is all
             // staked tokens that are not needed to settle the
             // vestee.
-            let owner_outstanding =
-                staked - (vesting.vested(t) - vesting.claimed).saturating_sub(vesting.slashed);
+            let owner_outstanding = staked
+                - (Uint256::new(vesting.vested(t).u128()) - vesting.claimed)
+                    .saturating_sub(vesting.slashed);
 
             vesting.cancel(t, owner_outstanding);
             self.vesting.save(storage, &vesting)?;
@@ -254,7 +259,11 @@ impl<'a> Payment<'a> {
             ];
 
             if !to_owner.is_zero() {
-                msgs.push(vesting.denom.get_transfer_to_message(owner, to_owner)?);
+                msgs.push(
+                    vesting
+                        .denom
+                        .get_transfer_to_message(owner, to_owner)?,
+                );
             }
             if !to_vestee.is_zero() {
                 msgs.push(
@@ -272,7 +281,7 @@ impl<'a> Payment<'a> {
         &self,
         storage: &mut dyn Storage,
         t: Timestamp,
-        request: Option<Uint128>,
+        request: Option<Uint256>,
         owner: &Addr,
     ) -> Result<CosmosMsg, ContractError> {
         let vesting = self.vesting.load(storage)?;
@@ -290,7 +299,9 @@ impl<'a> Payment<'a> {
                 };
                 self.vesting.save(storage, &vesting)?;
 
-                Ok(vesting.denom.get_transfer_to_message(owner, request)?)
+                Ok(vesting
+                    .denom
+                    .get_transfer_to_message(owner, request)?)
             }
         } else {
             Err(ContractError::NotCancelled)
@@ -302,7 +313,7 @@ impl<'a> Payment<'a> {
         storage: &mut dyn Storage,
         t: Timestamp,
         validator: String,
-        amount: Uint128,
+        amount: Uint256,
         unbonding_duration_seconds: u64,
     ) -> Result<(), ContractError> {
         self.staking
@@ -316,7 +327,7 @@ impl<'a> Payment<'a> {
         t: Timestamp,
         src: String,
         dst: String,
-        amount: Uint128,
+        amount: Uint256,
     ) -> StdResult<()> {
         self.staking.on_redelegate(storage, t, src, dst, amount)?;
         Ok(())
@@ -327,7 +338,7 @@ impl<'a> Payment<'a> {
         storage: &mut dyn Storage,
         t: Timestamp,
         validator: String,
-        amount: Uint128,
+        amount: Uint256,
     ) -> Result<(), ContractError> {
         self.staking.on_delegate(storage, t, validator, amount)?;
         Ok(())
@@ -353,7 +364,7 @@ impl<'a> Payment<'a> {
         storage: &mut dyn Storage,
         validator: String,
         t: Timestamp,
-        amount: Uint128,
+        amount: Uint256,
         during_unbonding: bool,
     ) -> Result<(), ContractError> {
         if amount.is_zero() {
@@ -370,7 +381,7 @@ impl<'a> Payment<'a> {
                     // over into the receivers claimable amount.
                     if amount > owner_withdrawable {
                         vest.status = Status::Canceled {
-                            owner_withdrawable: Uint128::zero(),
+                            owner_withdrawable: Uint256::zero(),
                         };
                         vest.slashed += amount - owner_withdrawable;
                     } else {
@@ -413,11 +424,11 @@ impl Vest {
             Err(ContractError::Instavest)
         } else {
             Ok(Self {
-                claimed: Uint128::zero(),
-                slashed: Uint128::zero(),
+                claimed: Uint256::zero(),
+                slashed: Uint256::zero(),
                 vested: init
                     .schedule
-                    .into_curve(init.total, init.duration_seconds)?,
+                    .into_curve(Uint128::try_from(init.total).map_err(|e| ContractError::Std(e.into()))?, init.duration_seconds)?,
                 start_time: init.start_time,
                 denom: init.denom,
                 recipient: init.recipient,
@@ -430,8 +441,8 @@ impl Vest {
 
     /// Gets the total number of tokens that will vest as part of this
     /// payment.
-    pub fn total(&self) -> Uint128 {
-        Uint128::new(self.vested.range().1)
+    pub fn total(&self) -> Uint256 {
+        Uint256::new(self.vested.range().1)
     }
 
     /// Gets the number of tokens that have vested at `time`.
@@ -441,7 +452,7 @@ impl Vest {
     }
 
     /// Cancels the current vest. No additional tokens will vest after `t`.
-    pub fn cancel(&mut self, t: Timestamp, owner_withdrawable: Uint128) {
+    pub fn cancel(&mut self, t: Timestamp, owner_withdrawable: Uint256) {
         debug_assert!(!matches!(self.status, Status::Canceled { .. }));
 
         self.status = Status::Canceled { owner_withdrawable };
@@ -492,8 +503,8 @@ impl Schedule {
         let range = c.range();
         if range != (0, total.u128()) {
             return Err(ContractError::VestRange {
-                min: Uint128::new(range.0),
-                max: Uint128::new(range.1),
+                min: Uint256::new(range.0),
+                max: Uint256::new(range.1),
             });
         }
         Ok(c)

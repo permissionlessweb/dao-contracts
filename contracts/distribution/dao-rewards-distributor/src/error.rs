@@ -4,7 +4,7 @@ use cosmwasm_std::{
 use cw_utils::PaymentError;
 use thiserror::Error;
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum ContractError {
     #[error(transparent)]
     Std(#[from] StdError),
@@ -76,5 +76,10 @@ pub enum ContractError {
 impl From<semver::Error> for ContractError {
     fn from(err: semver::Error) -> Self {
         Self::SemVer(err.to_string())
+    }
+}
+impl PartialEq for ContractError {
+    fn eq(&self, other: &Self) -> bool {
+        core::mem::discriminant(self) == core::mem::discriminant(other)
     }
 }

@@ -1,0 +1,14 @@
+[package]
+name = "wynd-utils"
+version = "0.4.2"
+authors = ["Cosmorama <cosmorama@proton.me>"]
+description = "Utility functions used by multiple Wynd contracts (forked for cosmwasm-std v2 compat)"
+edition = { workspace = true }
+license = "Apache-2.0"
+
+[dependencies]
+cosmwasm-schema = { workspace = true }
+cosmwasm-std = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }

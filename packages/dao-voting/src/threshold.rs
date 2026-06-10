@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Decimal, Uint128};
+use cosmwasm_std::{Decimal, Decimal256, Uint256};
 
 use thiserror::Error;
 
@@ -12,10 +12,10 @@ use thiserror::Error;
 pub enum ActiveThreshold {
     /// The absolute number of tokens that must be staked for the
     /// module to be active.
-    AbsoluteCount { count: Uint128 },
+    AbsoluteCount { count: Uint256 },
     /// The percentage of tokens that must be staked for the module to
     /// be active. Computed as `staked / total_supply`.
-    Percentage { percent: Decimal },
+    Percentage { percent: Decimal256 },
 }
 
 #[cw_serde]
@@ -36,8 +36,8 @@ pub enum ActiveThresholdError {
 }
 
 pub fn assert_valid_absolute_count_threshold(
-    count: Uint128,
-    supply: Uint128,
+    count: Uint256,
+    supply: Uint256,
 ) -> Result<(), ActiveThresholdError> {
     if count.is_zero() {
         return Err(ActiveThresholdError::ZeroActiveCount {});
@@ -48,8 +48,8 @@ pub fn assert_valid_absolute_count_threshold(
     Ok(())
 }
 
-pub fn assert_valid_percentage_threshold(percent: Decimal) -> Result<(), ActiveThresholdError> {
-    if percent.is_zero() || percent > Decimal::one() {
+pub fn assert_valid_percentage_threshold(percent: Decimal256) -> Result<(), ActiveThresholdError> {
+    if percent.is_zero() || percent > Decimal256::one() {
         return Err(ActiveThresholdError::InvalidActivePercentage {});
     }
     Ok(())
@@ -117,7 +117,7 @@ pub enum Threshold {
 
     /// An absolute number of votes needed for something to cross the
     /// threshold. Useful for multisig style voting.
-    AbsoluteCount { threshold: Uint128 },
+    AbsoluteCount { threshold: Uint256 },
 }
 
 /// Asserts that the 0.0 < percent <= 1.0
@@ -188,7 +188,7 @@ mod tests {
     #[test]
     fn test_threshold_validation() {
         let t = Threshold::AbsoluteCount {
-            threshold: Uint128::zero(),
+            threshold: Uint256::zero(),
         };
         assert_eq!(t.validate().unwrap_err(), ThresholdError::ZeroThreshold {});
 

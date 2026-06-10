@@ -1,4 +1,5 @@
-use cosmwasm_std::{from_json, testing::mock_dependencies, Timestamp, Uint128};
+use cosmwasm_std::Uint256;
+use cosmwasm_std::{from_json, testing::mock_dependencies, Timestamp};
 
 use crate::{StakeTracker, StakeTrackerQuery};
 
@@ -12,56 +13,56 @@ fn test_stake_tracking() {
 
     // cardinality, total, and validator_staked start at 0.
     assert_eq!(st.validator_cardinality(storage, time).unwrap(), 0);
-    assert_eq!(st.total_staked(storage, time).unwrap(), Uint128::zero());
+    assert_eq!(st.total_staked(storage, time).unwrap(), Uint256::zero());
     assert_eq!(
         st.validator_staked(storage, time, "v1".to_string())
             .unwrap(),
-        Uint128::zero()
+        Uint256::zero()
     );
 
     // delegating increases validator cardinality, validator_staked, and total.
-    st.on_delegate(storage, time, "v1".to_string(), Uint128::new(10))
+    st.on_delegate(storage, time, "v1".to_string(), Uint256::new(10))
         .unwrap();
 
     assert_eq!(st.validator_cardinality(storage, time).unwrap(), 1);
-    assert_eq!(st.total_staked(storage, time).unwrap(), Uint128::new(10));
+    assert_eq!(st.total_staked(storage, time).unwrap(), Uint256::new(10));
     assert_eq!(
         st.validator_staked(storage, time, "v1".to_string())
             .unwrap(),
-        Uint128::new(10)
+        Uint256::new(10)
     );
     // delegating to one validator does not change the status of other validators.
     assert_eq!(
         st.validator_staked(storage, time, "v2".to_string())
             .unwrap(),
-        Uint128::zero()
+        Uint256::zero()
     );
 
     // delegate to another validator, and undelegate from the first
     // one. the undelegation should not change cardinality or staked
     // values until the unbonding duration has passed.
-    st.on_delegate(storage, time, "v2".to_string(), Uint128::new(10))
+    st.on_delegate(storage, time, "v2".to_string(), Uint256::new(10))
         .unwrap();
     st.on_undelegate(
         storage,
         time,
         "v1".to_string(),
-        Uint128::new(10),
+        Uint256::new(10),
         unbonding_duration_seconds,
     )
     .unwrap();
 
     assert_eq!(st.validator_cardinality(storage, time).unwrap(), 2);
-    assert_eq!(st.total_staked(storage, time).unwrap(), Uint128::new(20));
+    assert_eq!(st.total_staked(storage, time).unwrap(), Uint256::new(20));
     assert_eq!(
         st.validator_staked(storage, time, "v1".to_string())
             .unwrap(),
-        Uint128::new(10)
+        Uint256::new(10)
     );
     assert_eq!(
         st.validator_staked(storage, time, "v2".to_string())
             .unwrap(),
-        Uint128::new(10)
+        Uint256::new(10)
     );
 
     // after unbonding duration passes, undelegation changes should be
@@ -69,16 +70,16 @@ fn test_stake_tracking() {
     time = time.plus_seconds(unbonding_duration_seconds);
 
     assert_eq!(st.validator_cardinality(storage, time).unwrap(), 1);
-    assert_eq!(st.total_staked(storage, time).unwrap(), Uint128::new(10));
+    assert_eq!(st.total_staked(storage, time).unwrap(), Uint256::new(10));
     assert_eq!(
         st.validator_staked(storage, time, "v1".to_string())
             .unwrap(),
-        Uint128::zero()
+        Uint256::zero()
     );
     assert_eq!(
         st.validator_staked(storage, time, "v2".to_string())
             .unwrap(),
-        Uint128::new(10)
+        Uint256::new(10)
     );
 }
 
@@ -93,7 +94,7 @@ fn test_undelegation_before_delegation_panics() {
         storage,
         Timestamp::default(),
         "v2".to_string(),
-        Uint128::new(10),
+        Uint256::new(10),
     )
     .unwrap();
 
@@ -103,7 +104,7 @@ fn test_undelegation_before_delegation_panics() {
         storage,
         Timestamp::default(),
         "v1".to_string(),
-        Uint128::new(10),
+        Uint256::new(10),
         10,
     )
     .unwrap();
@@ -118,7 +119,7 @@ fn test_bonded_slash() {
         storage,
         Timestamp::from_seconds(10),
         "v1".to_string(),
-        Uint128::new(10),
+        Uint256::new(10),
     )
     .unwrap();
 
@@ -127,7 +128,7 @@ fn test_bonded_slash() {
         storage,
         Timestamp::from_seconds(10),
         "v1".to_string(),
-        Uint128::new(5),
+        Uint256::new(5),
         5,
     )
     .unwrap();
@@ -137,7 +138,7 @@ fn test_bonded_slash() {
         storage,
         Timestamp::from_seconds(12),
         "v1".to_string(),
-        Uint128::new(5),
+        Uint256::new(5),
     )
     .unwrap();
 
@@ -162,21 +163,21 @@ fn test_bonded_slash() {
     let staked = st
         .validator_staked(storage, Timestamp::from_seconds(10), "v1".to_string())
         .unwrap();
-    assert_eq!(staked, Uint128::new(10));
+    assert_eq!(staked, Uint256::new(10));
 
     // at time t=12 all of the bonded tokens have been slashed, but
     // the unbonding ones are still unbonding.
     let staked = st
         .validator_staked(storage, Timestamp::from_seconds(12), "v1".to_string())
         .unwrap();
-    assert_eq!(staked, Uint128::new(5));
+    assert_eq!(staked, Uint256::new(5));
 
     // at time t=15 all of the unbonding has completed and there are
     // no staked tokens.
     let staked = st
         .validator_staked(storage, Timestamp::from_seconds(15), "v1".to_string())
         .unwrap();
-    assert_eq!(staked, Uint128::zero());
+    assert_eq!(staked, Uint256::zero());
 }
 
 /// t=0 -> bond 10 tokens
@@ -197,7 +198,7 @@ fn test_bonded_slash_updates_cardinality_history() {
         storage,
         Timestamp::from_seconds(0),
         "v1".to_string(),
-        Uint128::new(10),
+        Uint256::new(10),
     )
     .unwrap();
     // t=1 slash of five tokens occurs.
@@ -205,7 +206,7 @@ fn test_bonded_slash_updates_cardinality_history() {
         storage,
         Timestamp::from_seconds(2),
         "v1".to_string(),
-        Uint128::new(5),
+        Uint256::new(5),
         5,
     )
     .unwrap();
@@ -214,7 +215,7 @@ fn test_bonded_slash_updates_cardinality_history() {
         storage,
         Timestamp::from_seconds(8),
         "v1".to_string(),
-        Uint128::new(5),
+        Uint256::new(5),
     )
     .unwrap();
 
@@ -231,7 +232,7 @@ fn test_bonded_slash_updates_cardinality_history() {
         storage,
         Timestamp::from_seconds(1),
         "v1".to_string(),
-        Uint128::new(5),
+        Uint256::new(5),
     )
     .unwrap();
 
@@ -274,7 +275,7 @@ fn test_unbonding_slash() {
     let storage = &mut mock_dependencies().storage;
     let st = StakeTracker::new("s", "v", "c");
 
-    let delegation = Uint128::new(10);
+    let delegation = Uint256::new(10);
     let unbonding_duration = 5;
 
     // @t=0, staked to two validators
@@ -339,7 +340,7 @@ fn test_unbonding_slash() {
     let v1_after_unbond = st
         .validator_staked(storage, Timestamp::from_seconds(6), "v1".to_string())
         .unwrap();
-    assert_eq!(v1_after_unbond, Uint128::zero());
+    assert_eq!(v1_after_unbond, Uint256::zero());
     assert_eq!(cardinality_after_v1_unbond, 1);
 
     // @t=2, slash of all unbonding tokens for validator 1
@@ -360,13 +361,13 @@ fn test_unbonding_slash() {
     let v1 = st
         .validator_staked(storage, Timestamp::from_seconds(2), "v1".to_string())
         .unwrap();
-    assert_eq!(v1, Uint128::zero());
+    assert_eq!(v1, Uint256::zero());
 
     // post-slash value remains zero.
     let v1 = st
         .validator_staked(storage, Timestamp::from_seconds(8), "v1".to_string())
         .unwrap();
-    assert_eq!(v1, Uint128::zero());
+    assert_eq!(v1, Uint256::zero());
 
     // @t=6, two more seconds of unbonding left for v2.
     let v2 = st
@@ -382,11 +383,11 @@ fn test_unbonding_slash() {
     let v2 = st
         .validator_staked(storage, Timestamp::from_seconds(8), "v2".to_string())
         .unwrap();
-    assert_eq!(v2, Uint128::zero());
+    assert_eq!(v2, Uint256::zero());
     let v1 = st
         .validator_staked(storage, Timestamp::from_seconds(8), "v1".to_string())
         .unwrap();
-    assert_eq!(v1, Uint128::zero());
+    assert_eq!(v1, Uint256::zero());
     let cardinality = st
         .validator_cardinality(storage, Timestamp::from_seconds(8))
         .unwrap();
@@ -401,7 +402,7 @@ fn test_redelegation_changes_cardinality() {
     let storage = &mut mock_dependencies().storage;
     let st = StakeTracker::new("s", "v", "c");
     let t = Timestamp::default();
-    let amount = Uint128::new(10);
+    let amount = Uint256::new(10);
 
     st.on_delegate(storage, t, "v1".to_string(), amount + amount)
         .unwrap();
@@ -427,11 +428,11 @@ fn test_queries() {
         storage,
         Timestamp::from_seconds(10),
         "v1".to_string(),
-        Uint128::new(42),
+        Uint256::new(42),
     )
     .unwrap();
 
-    let cardinality: Uint128 = from_json(
+    let cardinality: Uint256 = from_json(
         st.query(
             storage,
             StakeTrackerQuery::Cardinality {
@@ -441,9 +442,9 @@ fn test_queries() {
         .unwrap(),
     )
     .unwrap();
-    assert_eq!(cardinality, Uint128::one());
+    assert_eq!(cardinality, Uint256::one());
 
-    let total_staked: Uint128 = from_json(
+    let total_staked: Uint256 = from_json(
         st.query(
             storage,
             StakeTrackerQuery::TotalStaked {
@@ -453,9 +454,9 @@ fn test_queries() {
         .unwrap(),
     )
     .unwrap();
-    assert_eq!(total_staked, Uint128::new(42));
+    assert_eq!(total_staked, Uint256::new(42));
 
-    let val_staked: Uint128 = from_json(
+    let val_staked: Uint256 = from_json(
         st.query(
             storage,
             StakeTrackerQuery::ValidatorStaked {
@@ -466,9 +467,9 @@ fn test_queries() {
         .unwrap(),
     )
     .unwrap();
-    assert_eq!(val_staked, Uint128::new(42));
+    assert_eq!(val_staked, Uint256::new(42));
 
-    let val_staked_before_staking: Uint128 = from_json(
+    let val_staked_before_staking: Uint256 = from_json(
         st.query(
             storage,
             StakeTrackerQuery::ValidatorStaked {
@@ -479,5 +480,5 @@ fn test_queries() {
         .unwrap(),
     )
     .unwrap();
-    assert_eq!(val_staked_before_staking, Uint128::new(0));
+    assert_eq!(val_staked_before_staking, Uint256::new(0));
 }

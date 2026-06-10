@@ -56,6 +56,7 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
+#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
     /// Callable by the Admin, if one is configured.
     /// Executes messages in order.
@@ -75,7 +76,7 @@ pub enum ExecuteMsg {
     /// Executed when the contract receives a cw721 token. Depending
     /// on the contract's configuration the contract will
     /// automatically add the token to its treasury.
-    ReceiveNft(cw721::Cw721ReceiveMsg),
+    ReceiveNft(cw721::receiver::Cw721ReceiveMsg),
     /// Removes an item from the governance contract's item map.
     RemoveItem { key: String },
     /// Adds an item to the governance contract's item map. If the
@@ -138,6 +139,7 @@ pub enum ExecuteMsg {
 
 #[cw_serde]
 #[derive(QueryResponses)]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 pub enum QueryMsg {
     /// Get's the DAO's admin. Returns `Addr`.
     #[returns(cosmwasm_std::Addr)]

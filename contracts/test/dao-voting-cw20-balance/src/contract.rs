@@ -2,10 +2,9 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdResult, SubMsg,
-    Uint128,
+    Uint256,
 };
 use cw2::set_contract_version;
-use cw_utils::parse_reply_instantiate_data;
 use dao_interface::state::{Admin, ModuleInstantiateInfo};
 
 use crate::error::ContractError;
@@ -49,7 +48,7 @@ pub fn instantiate(
         } => {
             let initial_supply = initial_balances
                 .iter()
-                .fold(Uint128::zero(), |p, n| p + n.amount);
+                .fold(Uint256::zero(), |p, n| n.amount + p);
             if initial_supply.is_zero() {
                 return Err(ContractError::InitialBalancesError {});
             }
@@ -151,22 +150,34 @@ pub fn query_info(deps: Deps) -> StdResult<Binary> {
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
-    match msg.id {
-        INSTANTIATE_TOKEN_REPLY_ID => {
-            let res = parse_reply_instantiate_data(msg);
-            match res {
-                Ok(res) => {
-                    let token = TOKEN.may_load(deps.storage)?;
-                    if token.is_some() {
-                        return Err(ContractError::DuplicateToken {});
-                    }
-                    let token = deps.api.addr_validate(&res.contract_address)?;
-                    TOKEN.save(deps.storage, &token)?;
-                    Ok(Response::default().add_attribute("token_address", token))
+    match msg.result {
+        cosmwasm_std::SubMsgResult::Ok(res) => match msg.id {
+            INSTANTIATE_TOKEN_REPLY_ID => {
+                let contract_addr = deps.api.addr_validate(
+                    &res.events
+                        .iter()
+                        .find(|e| e.ty == "instantiate")
+                        .and_then(|ev| {
+                            ev.attributes.iter().find(|a| {
+                                a.key == "_contract_address" || a.key == "contract_address"
+                            })
+                        })
+                        .ok_or_else(|| ContractError::ReplyParseError {
+                            err: "contract_address not found in reply".to_string(),
+                        })?
+                        .value,
+                )?;
+
+                let token = TOKEN.may_load(deps.storage)?;
+                if token.is_some() {
+                    return Err(ContractError::DuplicateToken {});
                 }
-                Err(_) => Err(ContractError::TokenInstantiateError {}),
+                let token = contract_addr;
+                TOKEN.save(deps.storage, &token)?;
+                Ok(Response::default().add_attribute("token_address", token))
             }
-        }
-        _ => Err(ContractError::UnknownReplyId { id: msg.id }),
+            _ => Err(ContractError::UnknownReplyId { id: msg.id }),
+        },
+        cosmwasm_std::SubMsgResult::Err(_) => Err(ContractError::TokenInstantiateError {}),
     }
 }

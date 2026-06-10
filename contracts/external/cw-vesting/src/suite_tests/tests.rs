@@ -1,4 +1,4 @@
-use cosmwasm_std::{Timestamp, Uint128, Uint64};
+use cosmwasm_std::{Timestamp, Uint128, Uint256, Uint64};
 use cw_multi_test::App;
 use cw_ownable::OwnershipError;
 
@@ -56,8 +56,8 @@ fn test_distribute_more_than_claimable() {
     is_error!(
         res,
         ContractError::InvalidWithdrawal {
-            request: suite.total,
-            claimable: Uint128::new(100_000_000 / 7),
+            request: Uint256::from(suite.total),
+            claimable: Uint256::new(100_000_000 / 7),
         }
         .to_string()
         .as_str()
@@ -85,8 +85,8 @@ fn test_distribute_nothing_claimable() {
     is_error!(
         res,
         ContractError::InvalidWithdrawal {
-            request: Uint128::zero(),
-            claimable: Uint128::zero(),
+            request: Uint256::zero(),
+            claimable: Uint256::zero(),
         }
         .to_string()
         .as_str()
@@ -219,7 +219,7 @@ fn test_cancel_completed_vest() {
     assert_eq!(
         suite.query_vest().status,
         Status::Canceled {
-            owner_withdrawable: Uint128::zero()
+            owner_withdrawable: Uint256::zero()
         }
     )
 }
@@ -254,7 +254,7 @@ fn test_redelegation() {
 
     assert_eq!(
         expected_staking_rewards,
-        expected_balance - Uint128::new(25_000_001) // rounding 🤷
+        expected_balance - Uint128::new(25_000_001) // rounding
     );
 
     let mut suite = SuiteBuilder::default().build();
@@ -320,7 +320,7 @@ fn test_simple_slash() {
     suite.delegate(Uint128::new(50_000_000)).unwrap();
 
     let vest = suite.query_vest();
-    assert_eq!(vest.slashed, Uint128::zero());
+    assert_eq!(vest.slashed, Uint256::zero());
 
     let pre_slash_distributable = suite.query_distributable();
 
@@ -341,7 +341,7 @@ fn test_simple_slash() {
         .unwrap();
 
     let vest = suite.query_vest();
-    assert_eq!(vest.slashed, Uint128::new(10_000_000));
+    assert_eq!(vest.slashed, Uint256::new(10_000_000));
     let distributable = suite.query_distributable();
     assert_eq!(
         distributable,
@@ -398,7 +398,7 @@ fn test_slash_while_cancelled_counts_against_owner() {
     let Status::Canceled { owner_withdrawable } = vest.status else {
         panic!("should be canceled")
     };
-    assert_eq!(pre_slash - Uint128::new(10_000_000), owner_withdrawable);
+    assert_eq!(pre_slash - Uint256::new(10_000_000), owner_withdrawable);
 }
 
 /// Simple slash while tokens are unbonding and no cancelation.
@@ -424,7 +424,7 @@ fn test_slash_during_unbonding() {
         .unwrap();
 
     let vest = suite.query_vest();
-    assert_eq!(vest.slashed, Uint128::new(10_000_000));
+    assert_eq!(vest.slashed, Uint256::new(10_000_000));
     let distributable = suite.query_distributable();
     assert_eq!(
         distributable,
@@ -542,8 +542,8 @@ fn test_almost_instavest_in_the_future() {
     is_error!(
         res,
         ContractError::InvalidWithdrawal {
-            request: Uint128::zero(),
-            claimable: Uint128::zero()
+            request: Uint256::zero(),
+            claimable: Uint256::zero()
         }
         .to_string()
         .as_str()

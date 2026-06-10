@@ -523,7 +523,7 @@ where
                             PreProposeSubmissionPolicyError::Unauthorized {},
                         ) => to_json_binary(&false),
                         PreProposeError::Std(err) => Err(err),
-                        _ => Err(StdError::generic_err(format!("unexpected error: {err:?}"))),
+                        _ => Err(StdError::msg(format!("unexpected error: {err:?}"))),
                     },
                 }
             }
@@ -633,7 +633,7 @@ where
                             CheckedDenomV241::Cw20(address) => CheckedDenom::Cw20(address),
                             CheckedDenomV241::Native(denom) => CheckedDenom::Native(denom),
                         },
-                        amount: old.amount,
+                        amount: old.amount.into(),
                         refund_policy: match old.refund_policy {
                             DepositRefundPolicyV241::Always => DepositRefundPolicy::Always,
                             DepositRefundPolicyV241::Never => DepositRefundPolicy::Never,
@@ -656,7 +656,7 @@ where
                     .add_attribute("from", version)
                     .add_attribute("to", CONTRACT_VERSION))
             }
-            MigrateMsg::Extension { .. } => Err(PreProposeError::Std(StdError::generic_err(
+            MigrateMsg::Extension { .. } => Err(PreProposeError::Std(StdError::msg(
                 "not implemented",
             ))),
         }

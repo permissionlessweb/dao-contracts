@@ -8,7 +8,7 @@ use cw_jsonfilter::{CwJsonFilter, FilterResult};
 
 use cw2::set_contract_version;
 use cw_ownable::initialize_owner;
-use cw_utils::{nonpayable, parse_reply_instantiate_data};
+use cw_utils::nonpayable;
 use dao_interface::proposal::InfoResponse;
 use dao_interface::state::ModuleUpdate;
 
@@ -118,7 +118,12 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Ownership {} => to_json_binary(&cw_ownable::get_ownership(deps.storage)?),
         QueryMsg::Info {} => to_json_binary(&query_info(deps)?),
         QueryMsg::ProtobufRegistry {} => to_json_binary(&query_protobuf_registry(deps)?),
-        QueryMsg::Filter { filter, msg } => to_json_binary(&query_filter(deps, filter, msg)?),
+        QueryMsg::Filter { filter, msg } => {
+            let filter: serde_json::Value = serde_json::from_str(&filter).map_err(|e| {
+                cosmwasm_std::StdError::msg(format!("invalid filter JSON: {e}"))
+            })?;
+            to_json_binary(&query_filter(deps, filter, msg)?)
+        }
     }
 }
 
@@ -140,7 +145,7 @@ fn query_filter(
     let protobuf_registry = PROTOBUF_REGISTRY.may_load(deps.storage)?;
 
     let msg_value = serde_json::to_value(msg).map_err(|e| {
-        StdError::generic_err(ContractError::JsonSerialization { err: e.to_string() }.to_string())
+        StdError::msg(ContractError::JsonSerialization { err: e.to_string() }.to_string())
     })?;
 
     let decoder = protobuf_registry.map(|addr| WasmQuerierProtobufDecoder::new(deps.querier, addr));
@@ -176,16 +181,30 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
-    match msg.id {
-        INSTANTIATE_PROTOBUF_REGISTRY_REPLY_ID => {
-            let res = parse_reply_instantiate_data(msg)?;
-            let addr = deps.api.addr_validate(&res.contract_address)?;
+    match msg.result {
+        cosmwasm_std::SubMsgResult::Ok(res) => match msg.id {
+            INSTANTIATE_PROTOBUF_REGISTRY_REPLY_ID => {
+                let addr = deps.api.addr_validate(
+                    &res.events
+                        .iter()
+                        .find(|e| e.ty == "instantiate")
+                        .and_then(|ev| {
+                            ev.attributes.iter().find(|a| {
+                                a.key == "_contract_address" || a.key == "contract_address"
+                            })
+                        })
+                        .ok_or_else(|| ContractError::ReplyParseError {
+                            err: "contract_address not found in reply".to_string(),
+                        })?
+                        .value,
+                )?;
 
-            PROTOBUF_REGISTRY.save(deps.storage, &addr)?;
+                PROTOBUF_REGISTRY.save(deps.storage, &addr)?;
 
-            Ok(Response::default().add_attribute("protobuf_registry", addr))
-        }
-
-        _ => Err(ContractError::UnknownReplyID { id: msg.id }),
+                Ok(Response::default().add_attribute("protobuf_registry", addr))
+            }
+            _ => Err(ContractError::UnknownReplyID { id: msg.id }),
+        },
+        cosmwasm_std::SubMsgResult::Err(_) => todo!(),
     }
 }

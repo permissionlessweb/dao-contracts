@@ -187,12 +187,12 @@ pub(crate) fn query_balance_cw20<T: Into<String>, U: Into<String>>(
         address: address.into(),
     };
     let result: cw20::BalanceResponse = app.wrap().query_wasm_smart(contract_addr, &msg).unwrap();
-    result.balance
+    Uint128::try_from(result.balance).unwrap()
 }
 
 pub(crate) fn query_balance_native(app: &App, who: &str, denom: &str) -> Uint128 {
     let res = app.wrap().query_balance(who, denom).unwrap();
-    res.amount
+    Uint128::try_from(res.amount).unwrap()
 }
 
 pub(crate) fn query_proposal(app: &App, proposal_single: &Addr, id: u64) -> ProposalResponse {
@@ -207,6 +207,7 @@ pub(crate) fn query_next_proposal_id(app: &App, proposal_single: &Addr) -> u64 {
         .unwrap()
 }
 
+#[cfg(feature = "v1")]
 pub(crate) fn query_proposal_count(app: &App, proposal_single: &Addr) -> u64 {
     app.wrap()
         .query_wasm_smart(proposal_single, &QueryMsg::ProposalCount {})

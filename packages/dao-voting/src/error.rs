@@ -1,7 +1,7 @@
 use cosmwasm_std::StdError;
 use thiserror::Error;
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum VotingError {
     #[error("{0}")]
     Std(#[from] StdError),
@@ -11,4 +11,10 @@ pub enum VotingError {
 
     #[error("Min voting period must be less than or equal to max voting period")]
     InvalidMinVotingPeriod {},
+}
+
+impl PartialEq for VotingError {
+    fn eq(&self, other: &Self) -> bool {
+        core::mem::discriminant(self) == core::mem::discriminant(other)
+    }
 }

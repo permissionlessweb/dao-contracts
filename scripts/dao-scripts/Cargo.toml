@@ -1,0 +1,14 @@
+[package]
+name = "dao-scripts"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[dependencies]
+dao-cw-orch = { workspace = true }
+dao-testing = { workspace = true }
+cw-orch = { workspace = true, features = ["daemon"] }
+dotenv = "0.15.0"
+env_logger.workspace = true
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "aws_lc_rs"] }

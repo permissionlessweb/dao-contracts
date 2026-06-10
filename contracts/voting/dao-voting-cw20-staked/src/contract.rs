@@ -1,16 +1,14 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Addr, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Reply, Response,
-    StdResult, SubMsg, Uint128, Uint256,
+    to_json_binary, Addr, Binary, Decimal256, Deps, DepsMut, Env, MessageInfo, MigrateInfo, Reply,
+    Response, StdResult, SubMsg, Uint256,
 };
 use cw2::{get_contract_version, set_contract_version, ContractVersion};
 use cw20::{Cw20Coin, TokenInfoResponse};
-use cw_utils::parse_reply_instantiate_data;
 use dao_interface::state::{Admin, ModuleInstantiateInfo};
 use dao_interface::voting::IsActiveResponse;
 use dao_voting::threshold::{ActiveThreshold, ActiveThresholdResponse};
-use std::convert::TryInto;
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, StakingInfo, TokenInfo};
@@ -41,7 +39,7 @@ pub fn instantiate(
 
     if let Some(active_threshold) = msg.active_threshold.as_ref() {
         if let ActiveThreshold::Percentage { percent } = active_threshold {
-            if *percent > Decimal::percent(100) || *percent <= Decimal::percent(0) {
+            if *percent > Decimal256::percent(100) || *percent <= Decimal256::percent(0) {
                 return Err(ContractError::InvalidActivePercentage {});
             }
         }
@@ -126,7 +124,7 @@ pub fn instantiate(
         } => {
             let initial_supply = initial_balances
                 .iter()
-                .fold(Uint128::zero(), |p, n| p + n.amount);
+                .fold(Uint256::zero(), |p, n| n.amount + p);
             // Cannot instantiate with no initial token owners because
             // it would immediately lock the DAO.
             if initial_supply.is_zero() {
@@ -135,7 +133,7 @@ pub fn instantiate(
 
             // Add DAO initial balance to initial_balances vector if defined.
             if let Some(initial_dao_balance) = initial_dao_balance {
-                if initial_dao_balance > Uint128::zero() {
+                if initial_dao_balance > Uint256::zero() {
                     initial_balances.push(Cw20Coin {
                         address: info.sender.to_string(),
                         amount: initial_dao_balance,
@@ -182,7 +180,7 @@ pub fn instantiate(
 pub fn assert_valid_absolute_count_threshold(
     deps: Deps,
     token_addr: &Addr,
-    count: Uint128,
+    count: Uint256,
 ) -> Result<(), ContractError> {
     if count.is_zero() {
         return Err(ContractError::ZeroActiveCount {});
@@ -224,7 +222,7 @@ pub fn execute_update_active_threshold(
     if let Some(active_threshold) = new_active_threshold {
         match active_threshold {
             ActiveThreshold::Percentage { percent } => {
-                if percent > Decimal::percent(100) || percent.is_zero() {
+                if percent > Decimal256::percent(100) || percent.is_zero() {
                     return Err(ContractError::InvalidActivePercentage {});
                 }
             }
@@ -356,7 +354,7 @@ pub fn query_is_active(deps: Deps) -> StdResult<Binary> {
                     .query_wasm_smart(token_contract, &cw20_base::msg::QueryMsg::TokenInfo {})?;
                 let total_power = total_potential_power
                     .total_supply
-                    .full_mul(PRECISION_FACTOR);
+                    .checked_mul(Uint256::from(PRECISION_FACTOR))?;
                 // under the hood decimals are `atomics / 10^decimal_places`.
                 // cosmwasm doesn't give us a Decimal * Uint256
                 // implementation so we take the decimal apart and
@@ -367,9 +365,8 @@ pub fn query_is_active(deps: Deps) -> StdResult<Binary> {
                 );
                 let rounded = (applied + Uint256::from(PRECISION_FACTOR) - Uint256::from(1u128))
                     / Uint256::from(PRECISION_FACTOR);
-                let count: Uint128 = rounded.try_into().unwrap();
                 to_json_binary(&IsActiveResponse {
-                    active: actual_power.total >= count,
+                    active: actual_power.total >= rounded,
                 })
             }
         }
@@ -385,7 +382,12 @@ pub fn query_active_threshold(deps: Deps) -> StdResult<Binary> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(
+    deps: DepsMut,
+    _env: Env,
+    _msg: MigrateMsg,
+    _info: MigrateInfo,
+) -> Result<Response, ContractError> {
     let storage_version: ContractVersion = get_contract_version(deps.storage)?;
 
     // Only migrate if newer
@@ -399,18 +401,31 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractError> {
-    match msg.id {
-        INSTANTIATE_TOKEN_REPLY_ID => {
-            let res = parse_reply_instantiate_data(msg);
-            match res {
-                Ok(res) => {
+    match msg.result {
+        cosmwasm_std::SubMsgResult::Ok(res) => {
+            match msg.id {
+                INSTANTIATE_TOKEN_REPLY_ID => {
                     let token = TOKEN.may_load(deps.storage)?;
                     if token.is_some() {
                         // There is no known way this error could ever
                         // be triggered, we're just paranoid.
                         return Err(ContractError::DuplicateToken {});
                     }
-                    let token = deps.api.addr_validate(&res.contract_address)?;
+                    let token = deps.api.addr_validate(
+                        &res.events
+                            .iter()
+                            .find(|e| e.ty == "instantiate")
+                            .and_then(|ev| {
+                                ev.attributes.iter().find(|a| {
+                                    a.key == "_contract_address" || a.key == "contract_address"
+                                })
+                            })
+                            .ok_or_else(|| ContractError::ReplyParseError {
+                                err: "contract_address not found in reply".to_string(),
+                            })?
+                            .value,
+                    )?;
+
                     TOKEN.save(deps.storage, &token)?;
 
                     let active_threshold = ACTIVE_THRESHOLD.may_load(deps.storage)?;
@@ -443,14 +458,21 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
                         .add_attribute("token_address", token)
                         .add_submessage(msg))
                 }
-                Err(_) => Err(ContractError::TokenInstantiateError {}),
-            }
-        }
-        INSTANTIATE_STAKING_REPLY_ID => {
-            let res = parse_reply_instantiate_data(msg);
-            match res {
-                Ok(res) => {
-                    let staking_contract_addr = deps.api.addr_validate(&res.contract_address)?;
+                INSTANTIATE_STAKING_REPLY_ID => {
+                    let staking_contract_addr = deps.api.addr_validate(
+                        &res.events
+                            .iter()
+                            .find(|e| e.ty == "instantiate")
+                            .and_then(|ev| {
+                                ev.attributes.iter().find(|a| {
+                                    a.key == "_contract_address" || a.key == "contract_address"
+                                })
+                            })
+                            .ok_or_else(|| ContractError::ReplyParseError {
+                                err: "contract_address not found in reply".to_string(),
+                            })?
+                            .value,
+                    )?;
 
                     let staking = STAKING_CONTRACT.may_load(deps.storage)?;
                     if staking.is_some() {
@@ -461,9 +483,9 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
 
                     Ok(Response::new().add_attribute("staking_contract", staking_contract_addr))
                 }
-                Err(_) => Err(ContractError::StakingInstantiateError {}),
+                _ => Err(ContractError::UnknownReplyId { id: msg.id }),
             }
         }
-        _ => Err(ContractError::UnknownReplyId { id: msg.id }),
+        cosmwasm_std::SubMsgResult::Err(_) => Err(ContractError::UnknownReplyId { id: msg.id }),
     }
 }

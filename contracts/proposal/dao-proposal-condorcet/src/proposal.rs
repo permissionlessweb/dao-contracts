@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{to_json_binary, Addr, BlockInfo, StdResult, SubMsg, Uint128, WasmMsg};
+use cosmwasm_std::{to_json_binary, Addr, BlockInfo, StdResult, SubMsg, Uint128, Uint256, WasmMsg};
 use cw_utils::Expiration;
 use dao_voting::{
     reply::mask_proposal_execution_proposal_id, threshold::PercentageThreshold,
@@ -22,7 +22,7 @@ pub struct Proposal {
     pub min_voting_period: Option<Expiration>,
 
     pub close_on_execution_failure: bool,
-    pub total_power: Uint128,
+    pub total_power: Uint256,
 
     pub id: u32,
     pub choices: Vec<Choice>,
@@ -69,11 +69,12 @@ fn status(block: &BlockInfo, proposal: &Proposal, tally: &Tally) -> Status {
 
             let winner = tally.winner;
             let expired = tally.expiration.is_expired(block);
-            let quorum = does_vote_count_pass(
-                proposal.total_power - tally.power_outstanding,
-                proposal.total_power,
-                proposal.quorum,
-            );
+            let votes_cast: Uint128 = (proposal.total_power - tally.power_outstanding)
+                .try_into()
+                .unwrap();
+            let total_power_u128: Uint128 = proposal.total_power.try_into().unwrap();
+            let quorum =
+                does_vote_count_pass(votes_cast.into(), total_power_u128.into(), proposal.quorum);
 
             if expired && !quorum {
                 Status::Rejected
@@ -114,7 +115,7 @@ impl Proposal {
         proposer: Addr,
         id: u32,
         choices: Vec<Choice>,
-        total_power: Uint128,
+        total_power: Uint256,
     ) -> Self {
         Self {
             last_status: Status::Open,

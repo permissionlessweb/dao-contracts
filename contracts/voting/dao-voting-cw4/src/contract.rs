@@ -1,12 +1,10 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdResult, SubMsg,
-    Uint128,
+    Binary, Deps, DepsMut, Env, MessageInfo, MigrateInfo, Reply, Response, StdResult, SubMsg, Uint128, to_json_binary
 };
 use cw2::{get_contract_version, set_contract_version, ContractVersion};
 use cw4::{MemberListResponse, MemberResponse, TotalWeightResponse};
-use cw_utils::parse_reply_instantiate_data;
 use dao_interface::state::{Admin, ModuleInstantiateInfo};
 
 use crate::error::ContractError;
@@ -174,7 +172,7 @@ pub fn query_info(deps: Deps) -> StdResult<Binary> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg, _info: MigrateInfo) -> Result<Response, ContractError> {
     let storage_version: ContractVersion = get_contract_version(deps.storage)?;
 
     // Only migrate if newer
@@ -189,21 +187,26 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
     match msg.id {
-        INSTANTIATE_GROUP_REPLY_ID => {
-            let res = parse_reply_instantiate_data(msg);
-            match res {
-                Ok(res) => {
-                    let group_contract = GROUP_CONTRACT.may_load(deps.storage)?;
-                    if group_contract.is_some() {
-                        return Err(ContractError::DuplicateGroupContract {});
-                    }
-                    let group_contract = deps.api.addr_validate(&res.contract_address)?;
-                    GROUP_CONTRACT.save(deps.storage, &group_contract)?;
-                    Ok(Response::default().add_attribute("group_contract", group_contract))
+        INSTANTIATE_GROUP_REPLY_ID => match msg.result {
+            cosmwasm_std::SubMsgResult::Ok(res) => {
+                let group_contract = GROUP_CONTRACT.may_load(deps.storage)?;
+                if group_contract.is_some() {
+                    return Err(ContractError::DuplicateGroupContract {});
                 }
-                Err(_) => Err(ContractError::GroupContractInstantiateError {}),
+                let group_contract =
+                    deps.api
+                        .addr_validate(&cw_reply_helper::parse_event_from_reply_submsg(
+                            res.events,
+                            "instantiate",
+                            "contract_address",
+                        )?)?;
+                GROUP_CONTRACT.save(deps.storage, &group_contract)?;
+                Ok(Response::default().add_attribute("group_contract", group_contract))
             }
-        }
+            cosmwasm_std::SubMsgResult::Err(_) => {
+                Err(ContractError::GroupContractInstantiateError {})
+            }
+        },
         _ => Err(ContractError::UnknownReplyId { id: msg.id }),
     }
 }

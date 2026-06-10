@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Binary, Uint128};
+use cosmwasm_std::{Binary, Uint128, Uint256};
 use cw_utils::Duration;
 use dao_dao_macros::{active_query, native_token_query, voting_module_query};
 use dao_interface::token::NewTokenInfo;
@@ -37,6 +37,7 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
+#[cfg_attr(feature = "interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
     /// Stakes tokens with the contract to get voting power in the DAO
     Stake {},
@@ -63,6 +64,7 @@ pub enum ExecuteMsg {
 #[voting_module_query]
 #[cw_serde]
 #[derive(QueryResponses)]
+#[cfg_attr(feature = "interface", derive(cw_orch::QueryFns))]
 pub enum QueryMsg {
     #[returns(crate::state::Config)]
     GetConfig {},
@@ -92,7 +94,7 @@ pub struct ListStakersResponse {
 #[cw_serde]
 pub struct StakerBalanceResponse {
     pub address: String,
-    pub balance: Uint128,
+    pub balance: Uint256,
 }
 
 #[cw_serde]

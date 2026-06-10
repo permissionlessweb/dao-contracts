@@ -11,18 +11,19 @@ version = { workspace = true }
 crate-type = ["cdylib", "rlib"]
 
 [features]
-# for more explicit tests, cargo test --features=backtraces
-backtraces = ["cosmwasm-std/backtraces"]
 # use library feature to disable all instantiate/execute/query exports
 library = []
+interface = ["cw-orch"]
 
 [dependencies]
+cw-orch = { workspace = true, optional = true }
 cosmwasm-std = { workspace = true, features = ["cosmwasm_1_2"] }
 cosmwasm-schema = { workspace = true }
 cw-storage-plus = { workspace = true }
 dao-interface = { workspace = true }
 thiserror = { workspace = true }
 cw-utils = { workspace = true }
+cw-reply-helper = { workspace = true }
 cw-ownable = { workspace = true }
 schemars = { workspace = true }
 serde = { workspace = true }
@@ -30,6 +31,7 @@ serde_json = { workspace = true }
 cw2 = { workspace = true }
 cw-filter = { workspace = true, features = ["library"] }
 cw-protobuf-registry = { workspace = true, features = ["library"] }
+
 
 [dev-dependencies]
 chrono = { workspace = true }

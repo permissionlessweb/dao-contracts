@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{CosmosMsg, Empty, Uint128};
+use cosmwasm_std::{CosmosMsg, Empty, Uint256};
 
 use crate::{
     multiple_choice::{MultipleChoiceAutoVote, MultipleChoiceOptions},
@@ -74,11 +74,11 @@ pub struct MultipleChoiceProposeMsg {
 pub struct Ballot<Vote> {
     /// The amount of voting power behind the vote, including any delegated VP.
     /// This is the amount tallied in the proposal for this ballot.
-    pub power: Uint128,
+    pub power: Uint256,
     /// The amount of individual voting power behind the vote, excluding any
     /// delegated VP. This is the amount counted in individual votes and used to
     /// determine if the proposal finished early.
-    pub individual_power: Uint128,
+    pub individual_power: Uint256,
     /// The position.
     pub vote: Vote,
 

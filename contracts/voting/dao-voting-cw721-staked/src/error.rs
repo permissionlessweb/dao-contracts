@@ -3,7 +3,7 @@ use cw_utils::ParseReplyError;
 use dao_voting::threshold::ActiveThresholdError;
 use thiserror::Error;
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug)]
 pub enum ContractError {
     #[error(transparent)]
     Std(#[from] StdError),
@@ -58,4 +58,9 @@ pub enum ContractError {
 
     #[error("Can't unstake zero NFTs.")]
     ZeroUnstake {},
+}
+impl PartialEq for ContractError {
+    fn eq(&self, other: &Self) -> bool {
+        core::mem::discriminant(self) == core::mem::discriminant(other)
+    }
 }

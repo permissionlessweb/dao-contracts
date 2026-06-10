@@ -1,5 +1,5 @@
-use cosmwasm_std::testing::{mock_dependencies, mock_env};
-use cosmwasm_std::{coin, coins, to_json_binary, Addr, Timestamp};
+use cosmwasm_std::testing::{mock_dependencies, mock_env, MockApi};
+use cosmwasm_std::{coin, coins, to_json_binary, Addr, MigrateInfo, Timestamp};
 use cosmwasm_std::{Uint128, Uint256};
 use cw2::ContractVersion;
 use cw20::{Cw20Coin, Expiration, UncheckedDenom};
@@ -49,7 +49,7 @@ fn test_fund_cw20_404() {
 
     let mint_cw20 = Cw20Coin {
         address: OWNER.to_string(),
-        amount: Uint128::new(100),
+        amount: Uint256::new(100),
     };
 
     let address = suite.mint_cw20(mint_cw20.clone(), "newcoin").to_string();
@@ -228,7 +228,7 @@ fn test_native_dao_rewards_update_reward_rate() {
 
     // ADDR1 wakes up to the increased staking rate and stakes 50 tokens
     // this brings new split to: [ADDR0: 50%, ADDR1: 25%, ADDR2: 25%]
-    suite.stake_native_tokens(ADDR1, 50);
+    suite.stake_native_tokens(ADDR1, 50u128.into());
 
     suite.skip_blocks(10_000); // allocates 4_000_000 tokens
 
@@ -407,7 +407,7 @@ fn test_native_dao_rewards_reward_rate_switch_unit() {
 
     // ADDR1 wakes up to the increased staking rate and stakes 50 tokens
     // this brings new split to: [ADDR0: 50%, ADDR1: 25%, ADDR2: 25%]
-    suite.stake_native_tokens(ADDR1, 50);
+    suite.stake_native_tokens(ADDR1, 50u128.into());
 
     suite.skip_seconds(10_000); // allocates 4_000_000 tokens
 
@@ -895,7 +895,7 @@ fn test_immediate_emission() {
 
     // a new user stakes tokens
     suite.mint_native(coin(200, GOV_DENOM), ADDR3);
-    suite.stake_native_tokens(ADDR3, 200);
+    suite.stake_native_tokens(ADDR3, 200u128.into());
 
     // skip 2 blocks so stake takes effect
     suite.skip_blocks(2);
@@ -1136,15 +1136,15 @@ fn test_continuous_backfill_latest_voting_power() {
     suite.skip_blocks(100_000);
 
     // change voting powers (1 = 200, 2 = 50, 3 = 50)
-    suite.stake_native_tokens(ADDR0, 100);
+    suite.stake_native_tokens(ADDR0, 100u128.into());
 
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
 
     // change voting powers again (1 = 50, 2 = 100, 3 = 100)
     suite.unstake_native_tokens(ADDR0, 150);
-    suite.stake_native_tokens(ADDR1, 50);
-    suite.stake_native_tokens(ADDR2, 50);
+    suite.stake_native_tokens(ADDR1, 50u128.into());
+    suite.stake_native_tokens(ADDR2, 50u128.into());
 
     // skip 1/10th of the time
     suite.skip_blocks(100_000);
@@ -1288,7 +1288,7 @@ fn test_cw4_dao_rewards() {
 
     // for 100k blocks there were no members so some rewards are remaining in the contract.
     let contract_token_balance = suite.get_balance_native(contract.clone(), GOV_DENOM);
-    assert!(contract_token_balance > 0);
+    assert!(contract_token_balance > 0u128.into());
 }
 
 #[test]
@@ -1340,7 +1340,7 @@ fn test_fund_cw20_wrong_denom() {
 
     let mint_cw20 = Cw20Coin {
         address: OWNER.to_string(),
-        amount: Uint128::new(100),
+        amount: Uint256::new(100),
     };
 
     let address = suite.mint_cw20(mint_cw20.clone(), "newcoin").to_string();
@@ -1362,7 +1362,7 @@ fn test_fund_cw20_with_invalid_cw20_receive_msg() {
 
     let unregistered_cw20_coin = Cw20Coin {
         address: ADDR0.to_string(),
-        amount: Uint128::new(1_000_000),
+        amount: Uint256::new(1_000_000),
     };
 
     let new_cw20_mint = suite.mint_cw20(unregistered_cw20_coin.clone(), "newcoin");
@@ -1392,7 +1392,7 @@ fn test_fund_invalid_cw20_denom() {
 
     let unregistered_cw20_coin = Cw20Coin {
         address: ADDR0.to_string(),
-        amount: Uint128::new(1_000_000),
+        amount: Uint256::new(1_000_000),
     };
 
     suite.fund_cw20(1, unregistered_cw20_coin);
@@ -1411,7 +1411,9 @@ fn test_withdraw_finished_rewards_period() {
 
 #[test]
 fn test_withdraw_alternative_destination_address() {
-    let subdao_addr = "some_subdao_maybe".to_string();
+    let subdao_addr = MockApi::default()
+        .addr_make("some_subdao_maybe")
+        .to_string();
     let mut suite = SuiteBuilder::base(super::suite::DaoType::Native)
         .with_withdraw_destination(Some(subdao_addr.to_string()))
         .build();
@@ -1491,17 +1493,17 @@ fn test_withdraw_block_based() {
         post_withdraw_owner_balance
     );
 
-    assert_eq!(pre_withdraw_distributor_balance, 92_500_000);
-    assert_eq!(post_withdraw_distributor_balance, 12_500_000);
-    assert_eq!(post_withdraw_owner_balance, 80_000_000);
+    assert_eq!(pre_withdraw_distributor_balance, Uint256::new(92_500_000));
+    assert_eq!(post_withdraw_distributor_balance, Uint256::new(12_500_000));
+    assert_eq!(post_withdraw_owner_balance, Uint256::new(80_000_000));
 
     suite.skip_blocks(100_000);
 
     // ensure cannot withdraw again
-    assert_eq!(
-        suite.withdraw_error(1),
-        ContractError::RewardsAlreadyDistributed {}
-    );
+    assert!(suite
+        .withdraw_error(1)
+        .to_string()
+        .contains(&ContractError::RewardsAlreadyDistributed {}.to_string()));
 
     // we assert that pending rewards did not change
     suite.assert_pending_rewards(ADDR0, 1, 6_666_666);
@@ -1572,17 +1574,23 @@ fn test_withdraw_time_based() {
         post_withdraw_owner_balance
     );
 
-    assert_eq!(pre_withdraw_distributor_balance, 92_500_000);
-    assert_eq!(post_withdraw_distributor_balance, 12_500_000);
-    assert_eq!(post_withdraw_owner_balance, 80_000_000);
+    assert_eq!(
+        pre_withdraw_distributor_balance,
+        Uint256::new(92_500_000u128)
+    );
+    assert_eq!(
+        post_withdraw_distributor_balance,
+        Uint256::new(12_500_000u128)
+    );
+    assert_eq!(post_withdraw_owner_balance, Uint256::new(80_000_000u128));
 
     suite.skip_seconds(100_000);
 
     // ensure cannot withdraw again
-    assert_eq!(
-        suite.withdraw_error(1),
-        ContractError::RewardsAlreadyDistributed {}
-    );
+    assert!(suite
+        .withdraw_error(1)
+        .to_string()
+        .contains(&ContractError::RewardsAlreadyDistributed {}.to_string()));
 
     // we assert that pending rewards did not change
     suite.assert_pending_rewards(ADDR0, 1, 6_666_666);
@@ -1652,18 +1660,24 @@ fn test_withdraw_and_restart_with_continuous() {
         post_withdraw_owner_balance
     );
 
-    assert_eq!(pre_withdraw_distributor_balance, 90_000_000);
-    assert_eq!(post_withdraw_distributor_balance, 10_000_000);
-    assert_eq!(post_withdraw_owner_balance, 80_000_000);
+    assert_eq!(
+        pre_withdraw_distributor_balance,
+        Uint256::new(90_000_000u128)
+    );
+    assert_eq!(
+        post_withdraw_distributor_balance,
+        Uint256::new(10_000_000u128)
+    );
+    assert_eq!(post_withdraw_owner_balance, Uint256::new(80_000_000u128));
 
     // skip 1/10th of the time
     suite.skip_seconds(100_000);
 
     // ensure cannot withdraw again
-    assert_eq!(
-        suite.withdraw_error(1),
-        ContractError::RewardsAlreadyDistributed {}
-    );
+    assert!(suite
+        .withdraw_error(1)
+        .to_string()
+        .contains(&ContractError::RewardsAlreadyDistributed {}.to_string()));
 
     // we assert that pending rewards did not change
     suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
@@ -1730,18 +1744,24 @@ fn test_withdraw_and_restart_not_continuous() {
         post_withdraw_owner_balance
     );
 
-    assert_eq!(pre_withdraw_distributor_balance, 90_000_000);
-    assert_eq!(post_withdraw_distributor_balance, 10_000_000);
-    assert_eq!(post_withdraw_owner_balance, 80_000_000);
+    assert_eq!(
+        pre_withdraw_distributor_balance,
+        Uint256::new(90_000_000u128)
+    );
+    assert_eq!(
+        post_withdraw_distributor_balance,
+        Uint256::new(10_000_000u128)
+    );
+    assert_eq!(post_withdraw_owner_balance, Uint256::new(80_000_000u128));
 
     // skip 1/10th of the time
     suite.skip_seconds(100_000);
 
     // ensure cannot withdraw again
-    assert_eq!(
-        suite.withdraw_error(1),
-        ContractError::RewardsAlreadyDistributed {}
-    );
+    assert!(suite
+        .withdraw_error(1)
+        .to_string()
+        .contains(&ContractError::RewardsAlreadyDistributed {}.to_string()));
 
     // we assert that pending rewards did not change
     suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
@@ -1988,7 +2008,7 @@ fn test_fund_cw20_time_based_post_expiration_not_continuous() {
     // should be the same.
     let funding_denom = Cw20Coin {
         address: suite.reward_denom.to_string(),
-        amount: Uint128::new(100_000_000),
+        amount: Uint256::new(100_000_000),
     };
 
     suite.fund_cw20(1, funding_denom.clone());
@@ -2055,7 +2075,7 @@ fn test_fund_cw20_time_based_pre_expiration() {
     // should be the same.
     let funding_denom = Cw20Coin {
         address: suite.reward_denom.to_string(),
-        amount: Uint128::new(100_000_000),
+        amount: Uint256::new(100_000_000),
     };
     suite.fund_cw20(1, funding_denom.clone());
 
@@ -2139,7 +2159,7 @@ fn test_native_dao_rewards_entry_edge_case() {
     // this means that per 100_000 blocks, ADDR0 should receive 6_666_666, while
     // ADDR1 and ADDR2 should receive 1_666_666 each.
     suite.mint_native(coin(100, GOV_DENOM), ADDR0);
-    suite.stake_native_tokens(ADDR0, 100);
+    suite.stake_native_tokens(ADDR0, 100u128.into());
 
     // rewards here should not be affected by the new stake,
     suite.assert_pending_rewards(ADDR0, 1, 5_000_000);
@@ -2219,7 +2239,7 @@ fn test_fund_native_on_create() {
         distribution.active_epoch,
         Epoch {
             emission_rate: EmissionRate::Linear {
-                amount: Uint128::new(1000),
+                amount: Uint256::new(1000),
                 duration: Duration::Height(100),
                 continuous: true,
             },
@@ -2247,7 +2267,7 @@ fn test_fund_native_with_other_denom() {
     let execute_create_msg = ExecuteMsg::Create(CreateMsg {
         denom: cw20::UncheckedDenom::Native(GOV_DENOM.to_string()),
         emission_rate: EmissionRate::Linear {
-            amount: Uint128::new(1000),
+            amount: Uint256::new(1000),
             duration: Duration::Height(100),
             continuous: true,
         },
@@ -2281,7 +2301,7 @@ fn test_fund_native_multiple_denoms() {
     let execute_create_msg = ExecuteMsg::Create(CreateMsg {
         denom: cw20::UncheckedDenom::Native(GOV_DENOM.to_string()),
         emission_rate: EmissionRate::Linear {
-            amount: Uint128::new(1000),
+            amount: Uint256::new(1000),
             duration: Duration::Height(100),
             continuous: true,
         },
@@ -2315,7 +2335,7 @@ fn test_fund_native_on_create_cw20() {
         .mint_cw20(
             Cw20Coin {
                 address: OWNER.to_string(),
-                amount: Uint128::new(100),
+                amount: Uint256::new(100),
             },
             "newcoin",
         )
@@ -2324,7 +2344,7 @@ fn test_fund_native_on_create_cw20() {
     let execute_create_msg = ExecuteMsg::Create(CreateMsg {
         denom: cw20::UncheckedDenom::Cw20(cw20_denom),
         emission_rate: EmissionRate::Linear {
-            amount: Uint128::new(1000),
+            amount: Uint256::new(1000),
             duration: Duration::Height(100),
             continuous: true,
         },
@@ -2372,8 +2392,8 @@ fn test_update_continuous() {
 fn test_update_owner() {
     let mut suite = SuiteBuilder::base(super::suite::DaoType::Native).build();
 
-    let new_owner = "new_owner";
-    suite.update_owner(new_owner);
+    let new_owner = MockApi::default().addr_make("new_owner").to_string();
+    suite.update_owner(&new_owner);
 
     let owner = suite.get_owner().to_string();
     assert_eq!(owner, new_owner);
@@ -2395,22 +2415,27 @@ fn test_update_vp_contract() {
 fn test_update_hook_caller() {
     let mut suite = SuiteBuilder::base(super::suite::DaoType::Native).build();
 
-    let new_hook_caller = "new_hook_caller";
-    suite.update_hook_caller(1, new_hook_caller);
+    let new_hook_caller = MockApi::default().addr_make("new_hook_caller").to_string();
+    suite.update_hook_caller(1, &new_hook_caller);
 
     let distribution = suite.get_distribution(1);
-    assert_eq!(distribution.hook_caller, new_hook_caller);
+    assert_eq!(distribution.hook_caller.to_string(), new_hook_caller);
 }
 
 #[test]
 fn test_update_withdraw_destination() {
     let mut suite = SuiteBuilder::base(super::suite::DaoType::Native).build();
 
-    let new_withdraw_destination = "new_withdraw_destination";
-    suite.update_withdraw_destination(1, new_withdraw_destination);
+    let new_withdraw_destination = MockApi::default()
+        .addr_make("new_withdraw_destination")
+        .to_string();
+    suite.update_withdraw_destination(1, &new_withdraw_destination);
 
     let distribution = suite.get_distribution(1);
-    assert_eq!(distribution.withdraw_destination, new_withdraw_destination);
+    assert_eq!(
+        distribution.withdraw_destination.to_string(),
+        new_withdraw_destination
+    );
 }
 
 #[test]
@@ -2640,7 +2665,7 @@ fn test_large_stake_before_claim() {
     // ADDR0 stake big amount of tokens
     suite.skip_blocks(33_000);
     suite.mint_native(coin(10_000, &suite.reward_denom), ADDR0);
-    suite.stake_native_tokens(ADDR0, 10_000);
+    suite.stake_native_tokens(ADDR0, 10_000u128.into());
 
     // ADD1 claims rewards in the next block
     suite.skip_blocks(1);
@@ -2680,7 +2705,7 @@ fn test_stake_during_interval() {
     // change voting power before the next distribution interval. ADDR0 now
     // has 80% voting power, an increase from 50%.
     suite.mint_native(coin(300, GOV_DENOM), ADDR0);
-    suite.stake_native_tokens(ADDR0, 300);
+    suite.stake_native_tokens(ADDR0, 300u128.into());
 
     // after the rest of the initial duration, they should earn rewards at the
     // increased rate (50 more tokens, and they own 80% of them). 25 + 40 = 65
@@ -2723,7 +2748,7 @@ fn test_stake_on_edges_of_interval() {
     // change voting power right at the end of the distribution interval.
     // ADDR0 now has 80% voting power, an increase from 50%.
     suite.mint_native(coin(300, GOV_DENOM), ADDR0);
-    suite.stake_native_tokens(ADDR0, 300);
+    suite.stake_native_tokens(ADDR0, 300u128.into());
 
     // after another interval, they should earn rewards at the increased rate
     // (50 more tokens, and they own 80% of them). 50 + 40 = 90
@@ -2773,7 +2798,7 @@ fn test_fund_latest_cw20() {
     // double duration by 1_000_000 blocks
     suite.fund_latest_cw20(Cw20Coin {
         address: suite.reward_denom.clone(),
-        amount: Uint128::new(100_000_000),
+        amount: Uint256::new(100_000_000),
     });
 
     // skip all of the time
@@ -2815,7 +2840,7 @@ fn test_fund_latest_cw20_wrong_denom() {
 
     let mint_cw20 = Cw20Coin {
         address: OWNER.to_string(),
-        amount: Uint128::new(100),
+        amount: Uint256::new(100).into(),
     };
 
     let address = suite.mint_cw20(mint_cw20.clone(), "newcoin").to_string();
@@ -2857,24 +2882,26 @@ fn test_closed_funding() {
     suite.fund_native(2, coin(200, ALT_DENOM));
     assert_eq!(
         suite.get_balance_native(suite.distribution_contract.clone(), ALT_DENOM),
-        100_000_000 + 200
+        Uint256::new(100_000_000 + 200)
     );
 
     // test fund from non-owner
     suite.mint_native(coin(100, ALT_DENOM), ADDR0);
-    let err: ContractError = suite
-        .base
-        .app
-        .execute_contract(
-            Addr::unchecked(ADDR0),
-            suite.distribution_contract.clone(),
-            &ExecuteMsg::Fund(FundMsg { id: 2 }),
-            &[coin(100, ALT_DENOM)],
-        )
-        .unwrap_err()
-        .downcast()
-        .unwrap();
-    assert_eq!(err, ContractError::Ownable(OwnershipError::NotOwner));
+    let err: ContractError = dao_rewards_distributor::ContractError::Std(
+        suite
+            .base
+            .app
+            .execute_contract(
+                Addr::unchecked(ADDR0),
+                suite.distribution_contract.clone(),
+                &ExecuteMsg::Fund(FundMsg { id: 2 }),
+                &[coin(100, ALT_DENOM)],
+            )
+            .unwrap_err(),
+    );
+    assert!(err
+        .to_string()
+        .contains(&ContractError::Ownable(OwnershipError::NotOwner).to_string()));
 
     // update open funding
     suite.update_open_funding(2, true);
@@ -2892,7 +2919,7 @@ fn test_closed_funding() {
         .unwrap();
     assert_eq!(
         suite.get_balance_native(suite.distribution_contract.clone(), ALT_DENOM),
-        100_000_000 + 200 + 100
+        Uint256::new((100_000_000 + 200 + 100) as u128)
     );
 }
 
@@ -2909,7 +2936,7 @@ fn test_queries_before_funded() {
     let execute_create_msg = ExecuteMsg::Create(CreateMsg {
         denom: cw20::UncheckedDenom::Native(ALT_DENOM.to_string()),
         emission_rate: EmissionRate::Linear {
-            amount: Uint128::one(),
+            amount: Uint128::one().into(),
             duration: Duration::Height(1),
             continuous: false,
         },
@@ -2940,14 +2967,26 @@ fn test_queries_before_funded() {
     suite.assert_undistributed_rewards(2, 0);
 }
 
+fn dummy_migrate_info() -> MigrateInfo {
+    MigrateInfo {
+        sender: Addr::unchecked(""),
+        old_migrate_version: None,
+    }
+}
+
 #[test]
 fn test_migrate_validation() {
     let mut deps = mock_dependencies();
 
     // wrong contract name errors
     cw2::set_contract_version(&mut deps.storage, "test", "0.0.1").unwrap();
-    let err: crate::ContractError =
-        crate::contract::migrate(deps.as_mut(), mock_env(), MigrateMsg {}).unwrap_err();
+    let err: crate::ContractError = crate::contract::migrate(
+        deps.as_mut(),
+        mock_env(),
+        MigrateMsg {},
+        dummy_migrate_info(),
+    )
+    .unwrap_err();
     assert_eq!(
         err,
         crate::ContractError::MigrationErrorIncorrectContract {
@@ -2958,8 +2997,13 @@ fn test_migrate_validation() {
 
     // same-version migration errors
     cw2::set_contract_version(&mut deps.storage, CONTRACT_NAME, CONTRACT_VERSION).unwrap();
-    let err: crate::ContractError =
-        crate::contract::migrate(deps.as_mut(), mock_env(), MigrateMsg {}).unwrap_err();
+    let err: crate::ContractError = crate::contract::migrate(
+        deps.as_mut(),
+        mock_env(),
+        MigrateMsg {},
+        dummy_migrate_info(),
+    )
+    .unwrap_err();
     assert_eq!(
         err,
         crate::ContractError::MigrationErrorInvalidVersionNotNewer {
@@ -2970,8 +3014,13 @@ fn test_migrate_validation() {
 
     // future version errors
     cw2::set_contract_version(&mut deps.storage, CONTRACT_NAME, "9.9.9").unwrap();
-    let err: crate::ContractError =
-        crate::contract::migrate(deps.as_mut(), mock_env(), MigrateMsg {}).unwrap_err();
+    let err: crate::ContractError = crate::contract::migrate(
+        deps.as_mut(),
+        mock_env(),
+        MigrateMsg {},
+        dummy_migrate_info(),
+    )
+    .unwrap_err();
     assert_eq!(
         err,
         crate::ContractError::MigrationErrorInvalidVersionNotNewer {
@@ -2982,7 +3031,13 @@ fn test_migrate_validation() {
 
     // migration succeeds from v2.4.0
     cw2::set_contract_version(&mut deps.storage, CONTRACT_NAME, "2.4.0").unwrap();
-    crate::contract::migrate(deps.as_mut(), mock_env(), MigrateMsg {}).unwrap();
+    crate::contract::migrate(
+        deps.as_mut(),
+        mock_env(),
+        MigrateMsg {},
+        dummy_migrate_info(),
+    )
+    .unwrap();
 }
 
 #[test]
@@ -2997,7 +3052,9 @@ fn test_unsafe_force_withdraw() {
         100u128,
         UncheckedDenom::Native(suite.reward_denom.clone()),
     );
-    assert_eq!(err, ContractError::Ownable(OwnershipError::NotOwner));
+    assert!(err
+        .to_string()
+        .contains(&ContractError::Ownable(OwnershipError::NotOwner).to_string()));
 
     let after_balance =
         suite.get_balance_native(suite.distribution_contract.clone(), &suite.reward_denom);
@@ -3005,12 +3062,12 @@ fn test_unsafe_force_withdraw() {
 
     // owner has no balance
     let owner_balance = suite.get_balance_native(OWNER, &suite.reward_denom);
-    assert_eq!(owner_balance, 0);
+    assert_eq!(owner_balance, Uint256::zero());
 
     // owner can force withdraw
     suite.unsafe_force_withdraw(100u128, UncheckedDenom::Native(suite.reward_denom.clone()));
 
     // owner has balance
     let owner_balance = suite.get_balance_native(OWNER, &suite.reward_denom);
-    assert_eq!(owner_balance, 100);
+    assert_eq!(owner_balance, Uint256::new(100u128));
 }
