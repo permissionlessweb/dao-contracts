@@ -3,7 +3,7 @@ use cosmwasm_std::Binary;
 use cw721::{receiver::Cw721ReceiveMsg, Expiration};
 use cw_utils::Duration;
 use dao_dao_macros::{active_query, voting_module_query};
-use dao_voting::threshold::{ActiveThreshold, ActiveThresholdResponse};
+use dao_voting::threshold::{ActiveThreshold};
 
 #[cw_serde]
 #[allow(clippy::large_enum_variant)]
@@ -108,7 +108,7 @@ pub enum QueryMsg {
         start_after: Option<String>,
         limit: Option<u32>,
     },
-    #[returns(ActiveThresholdResponse)]
+    #[returns(dao_voting::threshold::ActiveThresholdResponse)]
     ActiveThreshold {},
 }
 

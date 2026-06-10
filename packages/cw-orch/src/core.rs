@@ -3,6 +3,9 @@ use cw_orch::{interface, prelude::*};
 use dao_dao_core::contract::{execute, instantiate, migrate, query, reply};
 use dao_interface::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 
+#[derive(Clone, Debug, Default)]
+pub struct DaoDaoCoreDeployData;
+
 #[interface(InstantiateMsg, ExecuteMsg, QueryMsg, MigrateMsg)]
 pub struct DaoDaoCore;
 

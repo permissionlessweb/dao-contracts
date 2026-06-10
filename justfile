@@ -1,8 +1,9 @@
 orc_config := env_var_or_default('CONFIG', '`pwd`/ci/configs/cosm-orc/ci.yaml')
 test_addrs := env_var_or_default('TEST_ADDRS', `jq -r '.[].address' ci/configs/test_accounts.json | tr '\n' ' '`)
 gas_limit := env_var_or_default('GAS_LIMIT', '10000000')
-docker_image := env_var_or_default('DOCKER_IMAGE', 'dao-optimizer:0.17.0')
+docker_image := env_var_or_default('DOCKER_IMAGE', 'terpnetwork/optimizer-arm64:0.17.0')
 arch := `if [ "$(uname -m)" = "arm64" ] || [ "$(uname -m)" = "aarch64" ]; then echo "linux/arm64"; else echo "linux/amd64"; fi`
+
 
 build:
 	cargo build
@@ -58,23 +59,11 @@ download-deps:
 optimizer-build:
 	docker build -t {{docker_image}} ci/optimizer/
 
-workspace-optimize: optimizer-build
+workspace-optimize:
 	docker run --rm \
-		-v "{{justfile_directory()}}/..":/workspace \
-		--mount type=volume,source=dao_contracts_cache,target=/target \
+		-v $(pwd)/..:/workspace \
+		--env PROJECT_DIR=$$(basename $$(pwd)) \
+		--mount type=volume,source=terp_optimizer_cache,target=/target \
 		--mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
 		--platform {{arch}} \
 		{{docker_image}}
-
-# Quick rebuild without rebuilding the Docker image
-workspace-optimize-quick:
-	docker run --rm \
-		-v "{{justfile_directory()}}/..":/workspace \
-		--mount type=volume,source=dao_contracts_cache,target=/target \
-		--mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-		--platform {{arch}} \
-		{{docker_image}}
-
-# Clear build caches (useful after toolchain changes or if builds fail)
-optimizer-clean:
-	docker volume rm dao_contracts_cache registry_cache 2>/dev/null || true

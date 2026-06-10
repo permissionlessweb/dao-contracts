@@ -3,9 +3,7 @@ use dao_cw_orch::*;
 
 /// Composite deploy data for external modules.
 #[derive(Clone, Debug, Default)]
-pub struct DaoExternalDeployData {
-    pub admin: Option<Addr>,
-}
+pub struct DaoExternalDeployData;
 
 impl DaoExternalDeployData {
     /// Run preflight validation on all present module deploy data.

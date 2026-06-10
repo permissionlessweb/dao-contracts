@@ -24,13 +24,6 @@ impl<Chain: CwEnv> DaoGaugeSuite<Chain> {
         self.adapter.upload()?;
         Ok(())
     }
-
-    pub fn get_contracts_mut(&mut self) -> Vec<Box<&mut dyn ContractInstance<Chain>>> {
-        vec![
-            Box::new(&mut self.orchestrator),
-            Box::new(&mut self.adapter),
-        ]
-    }
 }
 
 impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for DaoGaugeSuite<Chain> {
@@ -44,7 +37,10 @@ impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for DaoGaugeSuite<Chain> {
     }
 
     fn get_contracts_mut(&mut self) -> Vec<Box<&mut dyn ContractInstance<Chain>>> {
-        self.get_contracts_mut()
+        vec![
+            Box::new(&mut self.orchestrator),
+            Box::new(&mut self.adapter),
+        ]
     }
 
     fn load_from(chain: Chain) -> Result<Self, Self::Error> {

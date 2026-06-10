@@ -12,7 +12,7 @@ members = [
     "contracts/staking/*",
     "contracts/test/*",
     "contracts/voting/*",
-    "packages/*",
+    "packages/*", "scripts/dao-scripts",
 ]
 resolver = "2"
 
@@ -126,36 +126,13 @@ dao-voting-cw4 = { path = "./contracts/voting/dao-voting-cw4", version = "2.8.0-
 dao-voting-cw721-roles = { path = "./contracts/voting/dao-voting-cw721-roles", version = "2.8.0-alpha.2" }
 dao-voting-cw721-staked = { path = "./contracts/voting/dao-voting-cw721-staked", version = "2.8.0-alpha.2" }
 dao-voting-token-staked = { path = "./contracts/voting/dao-voting-token-staked", version = "2.8.0-alpha.2" }
-dao-voting-zk = { path = "./contracts/voting/dao-voting-zk", version = "2.8.0-alpha.2" }
+# dao-voting-zk = { path = "./contracts/voting/dao-voting-zk", version = "2.8.0-alpha.2" }
 gauge-adapter = { path = "./contracts/gauges/gauge-adapter", version = "2.8.0-alpha.2" }
 gauge-orchestrator = { path = "./contracts/gauges/gauge", version = "2.8.0-alpha.2" }
 nft-controllers = { path = "./packages/nft-controllers", version = "2.8.0-alpha.2" }
 wynd-utils = { path = "./packages/wynd-utils", version = "0.4.2" }
 
-# v1 dependencies. used for state migrations.
-# NOTE: These are commented out because they pull in cosmwasm-std v1.5 which conflicts
-# with cosmwasm-std v3.0.3-dev at link time (duplicate symbols). Re-enable individually
-# behind feature flags if/when migration tests are needed.
-# cw-core-v1 = { package = "cw-core", version = "0.1.0" }
-# cw-proposal-single-v1 = { package = "cw-proposal-single", version = "0.1.0" }
-# cw-utils-v1 = { package = "cw-utils", version = "0.13" }
-# cw20-stake-external-rewards-v1 = { package = "stake-cw20-external-rewards", version = "0.2.6" }
-# cw20-stake-reward-distributor-v1 = { package = "stake-cw20-reward-distributor", version = "0.1.0" }
-# cw20-stake-v1 = { package = "cw20-stake", version = "0.2.6" }
-# cw20-staked-balance-voting-v1 = { package = "cw20-staked-balance-voting", version = "0.1.0" }
-# stake-cw20-v03 = { package = "stake-cw20", version = "0.2.6" }
-# cw4-voting-v1 = { package = "cw4-voting", version = "0.1.0", git = "https://github.com/DA0-DA0/dao-contracts.git", tag = "v1.0.0" }
-# cw-core-interface-v1 = { package = "cw-core-interface", version = "0.1.0", git = "https://github.com/DA0-DA0/dao-contracts.git", tag = "v1.0.0" }
-# voting-v1 = { package = "dao-voting", version = "0.1.0" }
-# cw20-v1 = { version = "0.13", package = "cw20" }
-# cw4-v1 = { version = "0.13", package = "cw4" }
-
-# v2.5.0 dependencies.
-# cw721-controllers-v250 = { package = "cw721-controllers", version = "=2.5.0" }
-
 [patch.crates-io]
-# cw-minus# cw-plus# cw-plus-plus# cw-nfts# cosmos-rust# osmosis# local
-
 osmosis-std-derive = { path = "../osmosis-rust/packages/osmosis-std-derive" }
 cw-utils = { path = "../cw-minus/packages/cw-utils" }
 cw2 = { path = "../cw-minus/packages/cw2" }
@@ -174,6 +151,17 @@ osmosis-test-tube = { path = "../osmosis-test-tube/packages/osmosis-test-tube" }
 cw-orch = { path = "../cw-orchestrator/cw-orch" }
 
 
+
+[patch.'https://github.com/permissionlessweb/cw-plus']
+
+[patch.'https://github.com/permissionlessweb/cosmwasm']
+cosmwasm-std = { path = "../cosmwasm/packages/std"}
+cosmwasm-schema = { path = "../cosmwasm/packages/schema" }
+
+[patch.'https://github.com/permissionlessweb/cw-minus']
+cw-controllers = { path = "../cw-minus/packages/controllers" }
+cw-utils = { path = "../cw-minus/packages/cw-utils" }
+cw2 = { path = "../cw-minus/packages/cw2" }
 
 [profile.release]
 codegen-units = 1

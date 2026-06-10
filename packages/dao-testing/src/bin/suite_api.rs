@@ -17,7 +17,7 @@ fn main() {
         .map(std::path::PathBuf::from)
         .unwrap_or_else(|| ws.join("SUITE_API.md"));
 
-    let md = dao_testing::suite::generate_api_markdown(ws);
-    std::fs::write(&out, &md).expect("failed to write");
-    eprintln!("{} bytes → {}", md.len(), out.display());
+    // // let md = dao_testing::suite::generate_api_markdown(ws);
+    // std::fs::write(&out, &md).expect("failed to write");
+    // eprintln!("{} bytes → {}", md.len(), out.display());
 }

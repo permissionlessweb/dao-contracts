@@ -1,6 +1,6 @@
 use cosmwasm_std::{to_json_binary, Addr};
 use cw_orch::prelude::*;
-use dao_cw_orch::DaoDaoCore;
+use dao_cw_orch::{DaoDaoCore, DaoDaoCoreDeployData};
 use dao_interface::state::{Admin, ModuleInstantiateInfo};
 
 use crate::external::{DaoExternalDeployData, DaoExternalSuite};
@@ -24,6 +24,7 @@ pub use dao_calendar::contract::msg::ExecuteExtFns as _;
 pub struct DaoDaoDeployData {
     /// Singular DAO instance to bootstrap.
     pub dao: DaoConfig,
+    pub core: DaoDaoCoreDeployData,
     /// Suite-level deploy data (affects code uploads, not per-DAO).
     pub proposal: DaoProposalDeployData,
     pub voting: DaoVotingDeployData,
@@ -34,7 +35,7 @@ pub struct DaoDaoDeployData {
 }
 
 /// Voting module configuration for a single DAO instance.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum VotingModuleConfig {
     /// CW4 group-based voting.
     Cw4 {
@@ -644,8 +645,6 @@ define_suite! {
         description: "On-chain event calendar with groups, gauges, scheduling",
         schema: "schema/dao-calendar.json",
     },
-
-    // ── Gauges ───────────────────────────────────────────────────
     GAUGE_ORCHESTRATOR, "gauge_orchestrator" => {
         path: gauges.orchestrator,
         name: "Gauge Orchestrator",
@@ -906,66 +905,54 @@ impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for DaoDaoSuite<Chain> {
     }
 
     fn deploy_on(chain: Chain, data: Self::DeployData) -> Result<Self, Self::Error> {
-        // 1. Deploy all sub-suites (uploads all code)
+        let dao_cfg = data.dao.clone();
         let dao_core = DaoDaoCore::new("dao_dao_core", chain.clone());
         dao_core.upload()?;
-        // mutable to ovverride default voting module information
-        let dao_cfg = data.dao.clone();
-
-        let proposal = DaoProposalSuite::deploy_on(chain.clone(), data.proposal)?;
-        let voting = DaoVotingSuite::deploy_on(chain.clone(), data.voting)?;
-        let staking = DaoStakingSuite::deploy_on(chain.clone(), data.staking)?;
-        let distribution = DaoDistributionSuite::deploy_on(chain.clone(), data.distribution)?;
-        let external = DaoExternalSuite::deploy_on(chain.clone(), data.external)?;
-        let gauges = DaoGaugeSuite::deploy_on(chain, data.gauges)?;
-
         let mut suite = Self {
             dao_core,
-            proposal,
-            voting,
-            staking,
-            distribution,
-            external,
-            gauges,
+            proposal: DaoProposalSuite::deploy_on(chain.clone(), data.proposal)?,
+            voting: DaoVotingSuite::deploy_on(chain.clone(), data.voting)?,
+            staking: DaoStakingSuite::deploy_on(chain.clone(), data.staking)?,
+            distribution: DaoDistributionSuite::deploy_on(chain.clone(), data.distribution)?,
+            external: DaoExternalSuite::deploy_on(chain.clone(), data.external)?,
+            gauges: DaoGaugeSuite::deploy_on(chain, data.gauges)?,
             registry: DaoStateRegistry::new(),
         };
 
-        // 2. Instantiate DAO
-        let voting_info = dao_cfg.voting.to_module_info(&suite)?;
+        // onlt instantiate if voting module differs from default
+        match dao_cfg.voting == Default::default() {
+            false => {
+                let proposal_infos: Vec<ModuleInstantiateInfo> = dao_cfg
+                    .proposal_modules
+                    .iter()
+                    .map(|pm| pm.to_module_info(&suite))
+                    .collect::<Result<_, _>>()?;
 
-        let proposal_infos: Vec<ModuleInstantiateInfo> = dao_cfg
-            .proposal_modules
-            .iter()
-            .map(|pm| pm.to_module_info(&suite))
-            .collect::<Result<_, _>>()?;
+                let init_msg = dao_interface::msg::InstantiateMsg {
+                    admin: dao_cfg.admin.clone(),
+                    name: dao_cfg.name,
+                    description: dao_cfg.description,
+                    image_url: None,
+                    automatically_add_cw20s: true,
+                    automatically_add_cw721s: true,
+                    voting_module_instantiate_info: dao_cfg.voting.to_module_info(&suite)?,
+                    proposal_modules_instantiate_info: proposal_infos,
+                    initial_items: None,
+                    initial_actions: None,
+                    dao_uri: None,
+                };
 
-        let init_msg = dao_interface::msg::InstantiateMsg {
-            admin: dao_cfg.admin.clone(),
-            name: dao_cfg.name,
-            description: dao_cfg.description,
-            image_url: None,
-            automatically_add_cw20s: true,
-            automatically_add_cw721s: true,
-            voting_module_instantiate_info: voting_info,
-            proposal_modules_instantiate_info: proposal_infos,
-            initial_items: None,
-            initial_actions: None,
-            dao_uri: None,
-        };
-
-        suite.dao_core.instantiate(
-            &init_msg,
-            dao_cfg
-                .admin
-                .as_deref()
-                .map(Addr::unchecked)
-                .as_ref(),
-            &[],
-        )?;
-        let core_addr = suite.dao_core.address()?;
-        suite.save_dao(&dao_cfg.key, core_addr);
-
-        Ok(suite)
+                suite.dao_core.instantiate(
+                    &init_msg,
+                    dao_cfg.admin.as_deref().map(Addr::unchecked).as_ref(),
+                    &[],
+                )?;
+                let core_addr = suite.dao_core.address()?;
+                suite.save_dao(&dao_cfg.key, core_addr);
+                Ok(suite)
+            }
+            true => Ok(suite),
+        }
     }
 }
 
@@ -1049,166 +1036,6 @@ fn truncate(s: &str, max: usize) -> String {
     }
 }
 
-/// Generate a full markdown API reference from the suite manifest + schema files.
-///
-/// `workspace_root`: path to the repo root containing `contracts/` and `schema/`.
-pub fn generate_api_markdown(workspace_root: &std::path::Path) -> String {
-    let manifest = contract_manifest();
-    let mut md = String::new();
-
-    // Header
-    md.push_str("# DAO DAO Suite — API Reference\n\n");
-    md.push_str("> Auto-generated from contract schemas and `DaoDaoSuite` registry.\n");
-    md.push_str(
-        "> Regenerate: `cargo test -p dao-testing generate_suite_api_docs -- --ignored`\n\n",
-    );
-
-    // Collect unique categories in declaration order
-    let categories: Vec<&str> = {
-        let mut cats = Vec::new();
-        for doc in &manifest {
-            if !cats.contains(&doc.category) {
-                cats.push(doc.category);
-            }
-        }
-        cats
-    };
-
-    // TOC
-    md.push_str("## Table of Contents\n\n");
-    for cat in &categories {
-        md.push_str(&format!(
-            "- [{}](#{})\n",
-            cat,
-            cat.to_lowercase().replace(' ', "-")
-        ));
-    }
-    md.push('\n');
-
-    // Summary table
-    md.push_str("## Contract Summary\n\n");
-    md.push_str("| Key | Name | Category | Description |\n");
-    md.push_str("|-----|------|----------|-------------|\n");
-    for doc in &manifest {
-        md.push_str(&format!(
-            "| `{}` | {} | {} | {} |\n",
-            doc.key, doc.name, doc.category, doc.description
-        ));
-    }
-    md.push('\n');
-
-    // Per-category detailed sections
-    for cat in &categories {
-        md.push_str(&format!("---\n\n## {}\n\n", cat));
-
-        for doc in manifest.iter().filter(|d| d.category == *cat) {
-            md.push_str(&format!("### {} (`{}`)\n\n", doc.name, doc.key));
-            md.push_str(&format!("> {}\n\n", doc.description));
-
-            if doc.schema_path.is_empty() {
-                md.push_str("*No schema available.*\n\n");
-                continue;
-            }
-
-            let schema: Option<serde_json::Value> =
-                std::fs::read_to_string(workspace_root.join(doc.schema_path))
-                    .ok()
-                    .and_then(|s| serde_json::from_str(&s).ok());
-
-            let schema = match schema {
-                Some(s) => s,
-                None => {
-                    md.push_str(&format!("*Schema not found: `{}`*\n\n", doc.schema_path));
-                    continue;
-                }
-            };
-
-            if let Some(ver) = schema.get("contract_version").and_then(|v| v.as_str()) {
-                md.push_str(&format!("**Version**: `{}`\n\n", ver));
-            }
-
-            // InstantiateMsg
-            if let Some(inst) = schema.get("instantiate") {
-                let fields = extract_instantiate_fields(inst);
-                if !fields.is_empty() {
-                    md.push_str("#### InstantiateMsg\n\n");
-                    md.push_str("| Field | Required | Description |\n");
-                    md.push_str("|-------|----------|-------------|\n");
-                    for (name, desc, req) in &fields {
-                        md.push_str(&format!(
-                            "| `{}` | {} | {} |\n",
-                            name,
-                            if *req { "yes" } else { "no" },
-                            truncate(desc, 120)
-                        ));
-                    }
-                    md.push('\n');
-                }
-            }
-
-            // ExecuteMsg
-            if let Some(exec) = schema.get("execute") {
-                let variants = extract_variants(exec);
-                if !variants.is_empty() {
-                    md.push_str("#### ExecuteMsg\n\n");
-                    md.push_str("| Variant | Description |\n");
-                    md.push_str("|---------|-------------|\n");
-                    for (name, desc) in &variants {
-                        md.push_str(&format!(
-                            "| `{}` | {} |\n",
-                            to_pascal(name),
-                            truncate(desc, 140)
-                        ));
-                    }
-                    md.push('\n');
-                }
-            }
-
-            // QueryMsg
-            if let Some(query) = schema.get("query") {
-                let variants = extract_variants(query);
-                if !variants.is_empty() {
-                    md.push_str("#### QueryMsg\n\n");
-                    md.push_str("| Variant | Description |\n");
-                    md.push_str("|---------|-------------|\n");
-                    for (name, desc) in &variants {
-                        md.push_str(&format!(
-                            "| `{}` | {} |\n",
-                            to_pascal(name),
-                            truncate(desc, 140)
-                        ));
-                    }
-                    md.push('\n');
-                }
-            }
-
-            // MigrateMsg
-            if let Some(mig) = schema.get("migrate") {
-                if !mig.is_null() {
-                    let variants = extract_variants(mig);
-                    if !variants.is_empty() {
-                        md.push_str("#### MigrateMsg\n\n");
-                        md.push_str("| Variant | Description |\n");
-                        md.push_str("|---------|-------------|\n");
-                        for (name, desc) in &variants {
-                            md.push_str(&format!("| `{}` | {} |\n", to_pascal(name), desc));
-                        }
-                        md.push('\n');
-                    }
-                }
-            }
-        }
-    }
-
-    md.push_str("---\n\n");
-    md.push_str(&format!(
-        "*{} contracts across {} categories.*\n",
-        manifest.len(),
-        categories.len()
-    ));
-    md
-}
-
 // ═══════════════════════════════════════════════════════════════════════
 // Tests
 // ═══════════════════════════════════════════════════════════════════════
@@ -1226,19 +1053,19 @@ mod tests {
         }
     }
 
-    #[test]
-    #[ignore] // run explicitly: cargo test -p dao-testing generate_suite_api_docs -- --ignored
-    fn generate_suite_api_docs() {
-        let ws = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .parent()
-            .unwrap()
-            .parent()
-            .unwrap();
-        let md = generate_api_markdown(ws);
-        let out = ws.join("SUITE_API.md");
-        std::fs::write(&out, &md).expect("failed to write SUITE_API.md");
-        assert!(md.contains("# DAO DAO Suite"));
-        assert!(md.contains("dao_core"));
-        eprintln!("wrote {} bytes → {}", md.len(), out.display());
-    }
+    // #[test]
+    // #[ignore] // run explicitly: cargo test -p dao-testing generate_suite_api_docs -- --ignored
+    // fn generate_suite_api_docs() {
+    //     let ws = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+    //         .parent()
+    //         .unwrap()
+    //         .parent()
+    //         .unwrap();
+    //     let md = generate_api_markdown(ws);
+    //     let out = ws.join("SUITE_API.md");
+    //     std::fs::write(&out, &md).expect("failed to write SUITE_API.md");
+    //     assert!(md.contains("# DAO DAO Suite"));
+    //     assert!(md.contains("dao_core"));
+    //     eprintln!("wrote {} bytes → {}", md.len(), out.display());
+    // }
 }
