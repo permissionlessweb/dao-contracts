@@ -40,6 +40,7 @@ dao-proposal-multiple.workspace = true
 dao-proposal-single.workspace = true
 dao-proposal-sudo.workspace = true
 dao-test-custom-factory.workspace = true
+dao-vote-delegation.workspace = true
 dao-voting-cw20-balance.workspace = true
 dao-voting-cw20-staked.workspace = true
 dao-voting-cw4.workspace = true

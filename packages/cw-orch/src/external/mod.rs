@@ -7,7 +7,10 @@ mod payroll_factory;
 mod token_swap;
 mod tokenfactory_issuer;
 
-pub use admin_factory::DaoExternalAdminFactory;
+pub use admin_factory::{
+    DaoExternalAdminFactory, ExecuteMsg as AdminFactoryExecuteMsg,
+    InstantiateMsg as AdminFactoryInitMsg, QueryMsg as AdminFactoryQueryMsg,
+};
 pub use btsg_ft_factory::DaoExternalFantokenFactory;
 pub use cw721_roles::DaoExternalCw721Roles;
 pub use cw_vesting::DaoExternalCwVesting;

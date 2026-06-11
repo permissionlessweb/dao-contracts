@@ -1,7 +1,7 @@
 use cw_orch::{interface, prelude::*};
 
 use cw_admin_factory::contract::{execute, instantiate, query, reply};
-use cw_admin_factory::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+pub use cw_admin_factory::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 
 #[interface(InstantiateMsg, ExecuteMsg, QueryMsg, Empty)]
 pub struct DaoExternalAdminFactory;
