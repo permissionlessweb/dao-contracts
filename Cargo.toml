@@ -12,7 +12,7 @@ members = [
     "contracts/staking/*",
     "contracts/test/*",
     "contracts/voting/*",
-    "packages/*", "scripts/dao-scripts",
+    "packages/*", "scripts",
 ]
 resolver = "2"
 
@@ -53,9 +53,9 @@ osmosis-std = { path = "../osmosis-rust/packages/osmosis-std" }
 osmosis-std-derive = { path = "../osmosis-rust/packages/osmosis-std-derive" }
 osmosis-test-tube = { path = "../osmosis-test-tube/packages/osmosis-test-tube" }
 proc-macro2 = "1.0"
-prost = { version = "=0.14.3" }
+prost = { version = "=0.14.4" }
 prost-reflect = { version = "=0.16.3", features = ["serde"] }
-prost-types = { version = "=0.14.3", default-features = false }
+prost-types = { version = "=0.14.4", default-features = false }
 quote = "1.0"
 rand = "0.8"
 regex = "1.12.3"
@@ -153,15 +153,39 @@ cw-orch = { path = "../cw-orchestrator/cw-orch" }
 
 
 [patch.'https://github.com/permissionlessweb/cw-plus']
+cw1 = { path = "../cw-plus/packages/cw1" }
+cw20 = { path = "../cw-plus/packages/cw20" }
+cw20-base = { path = "../cw-plus/contracts/cw20-base" }
+cw20-ics20 = { path = "../cw-plus/contracts/cw20-ics20" }
+cw3 = { path = "../cw-plus/packages/cw3" }
+cw4 = { path = "../cw-plus/packages/cw4" }
+cw4-group = { path = "../cw-plus/contracts/cw4-group" }
 
+# Unify all git branch tips (freeze/mvp/main) of CosmWasm onto monorepo paths.
 [patch.'https://github.com/permissionlessweb/cosmwasm']
-cosmwasm-std = { path = "../cosmwasm/packages/std"}
+cosmwasm-core = { path = "../cosmwasm/packages/core" }
+cosmwasm-crypto = { path = "../cosmwasm/packages/crypto" }
+cosmwasm-derive = { path = "../cosmwasm/packages/derive" }
 cosmwasm-schema = { path = "../cosmwasm/packages/schema" }
+cosmwasm-schema-derive = { path = "../cosmwasm/packages/schema-derive" }
+cosmwasm-std = { path = "../cosmwasm/packages/std" }
+cw-schema = { path = "../cosmwasm/packages/cw-schema" }
+cw-schema-derive = { path = "../cosmwasm/packages/cw-schema-derive" }
 
 [patch.'https://github.com/permissionlessweb/cw-minus']
 cw-controllers = { path = "../cw-minus/packages/controllers" }
 cw-utils = { path = "../cw-minus/packages/cw-utils" }
 cw2 = { path = "../cw-minus/packages/cw2" }
+
+[patch.'https://github.com/permissionlessweb/cw-storage-plus']
+cw-storage-plus = { path = "../cw-storage-plus" }
+
+[patch.'https://github.com/permissionlessweb/cw-plus-plus']
+cw-ownable = { path = "../cw-plus-plus/packages/ownable" }
+cw-address-like = { path = "../cw-plus-plus/packages/address-like" }
+
+[patch.'https://github.com/permissionlessweb/cw-multi-test-fork']
+abstract-cw-multi-test = { path = "../cw-multi-test-fork" }
 
 [profile.release]
 codegen-units = 1

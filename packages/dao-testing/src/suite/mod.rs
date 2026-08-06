@@ -24,7 +24,7 @@ pub const GOV_DENOM: &str = "ugovtoken";
 pub use cw_multi_test::Executor;
 
 // Old cw-multi-test suite (preserved)
-pub use crate::deploy_data::DaoDeployData;
+pub use deploy_data::DaoDeployData;
 pub use base::*;
 pub use cw20_suite::*;
 pub use cw4_suite::*;

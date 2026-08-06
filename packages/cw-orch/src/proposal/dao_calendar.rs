@@ -3,16 +3,23 @@ use cw_orch::{interface, prelude::*};
 use dao_calendar::contract::{execute, instantiate, migrate, query};
 use dao_calendar::contract::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 
-/// cw-orch interface for the dao-calendar contract.
+/// cw-orch interface for the **dao-calendar** proposal module (CW721 + NIP-52).
 ///
-/// Supports full scripting for DAO event lifecycle:
-///   - CreateEvent / UpdateEvent / CancelEvent
-///   - RegisterEventGauges / TriggerEventStart / TriggerEventEnd
-///   - Group management (RegisterGroup / UpdateGroup / RemoveGroup)
-///   - Hook management
+/// With `dao-calendar/features = ["interface"]`, `ExecuteExtFns` / `QueryExtFns`
+/// are available for remote-control scripts:
 ///
-/// Generic over metadata extension; defaults to `Empty` for base usage.
-/// For custom metadata, define your own msg type aliases and interface impl.
+/// | Plane | Methods |
+/// |-------|---------|
+/// | **Display** | `config`, `dao`, `list_calendars`, `calendar`, `calendar_events`, `calendar_event`, `event_count` |
+/// | **Lifecycle** | `create_calendar`, `create_event`, `update_event`, `cancel_event` |
+/// | **Admin (DAO)** | `update_pre_propose_info`, `add_calendar_hook`, … |
+///
+/// Mesh (`mesh.v1`) and governance votes live on **dao-dao-core** /
+/// **dao-proposal-single** — see `dao-scripts` calendar remote CLI.
+///
+/// Token ID layout:
+/// - calendars: `cal/{n}`
+/// - events: `evt/{cal_d}/{n}` or standalone `evt/_/{n}`
 #[interface(InstantiateMsg, ExecuteMsg, QueryMsg, MigrateMsg, id = "dao-calendar")]
 pub struct DaoCalendar;
 
