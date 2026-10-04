@@ -1,10 +1,10 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    coin, testing::MockApi, to_json_binary, Addr, Coin, Timestamp, Uint128, Uint256,
+    coin, testing::MockApi, to_json_binary, Addr, Coin, StdError, Timestamp, Uint128, Uint256,
 };
 use cw20::{Cw20Coin, Expiration, UncheckedDenom};
 use cw4::{Member, MemberListResponse};
-use cw_multi_test::{BankSudo, Executor, SudoMsg};
+use cw_multi_test::{AppResponse, BankSudo, Executor, SudoMsg};
 use cw_ownable::Action;
 use cw_utils::Duration;
 use dao_interface::{token::InitialBalance, voting::InfoResponse};
@@ -396,6 +396,28 @@ impl Suite {
         undistributed_rewards
     }
 
+    pub fn get_pending_rewards(&mut self, address: &str, id: u64) -> Uint256 {
+        let res: PendingRewardsResponse = self
+            .base
+            .app
+            .wrap()
+            .query_wasm_smart(
+                self.distribution_contract.clone(),
+                &QueryMsg::PendingRewards {
+                    address: address.to_string(),
+                    start_after: None,
+                    limit: None,
+                },
+            )
+            .unwrap();
+
+        res.pending_rewards
+            .iter()
+            .find(|p| p.id == id)
+            .map(|p| p.pending_rewards)
+            .unwrap_or_default()
+    }
+
     pub fn get_owner(&mut self) -> Addr {
         let ownable_response: cw_ownable::Ownership<Addr> = self
             .base
@@ -452,30 +474,11 @@ impl Suite {
     }
 
     pub fn assert_pending_rewards(&mut self, address: &str, id: u64, expected: u128) {
-        let res: PendingRewardsResponse = self
-            .base
-            .app
-            .wrap()
-            .query_wasm_smart(
-                self.distribution_contract.clone(),
-                &QueryMsg::PendingRewards {
-                    address: address.to_string(),
-                    start_after: None,
-                    limit: None,
-                },
-            )
-            .unwrap();
-
-        let pending = res
-            .pending_rewards
-            .iter()
-            .find(|p| p.id == id)
-            .unwrap()
-            .pending_rewards;
+        let pending = self.get_pending_rewards(address, id);
 
         assert_eq!(
             pending,
-            &Uint256::new(expected),
+            Uint256::new(expected),
             "expected {} pending rewards, got {}",
             expected,
             pending
@@ -486,7 +489,7 @@ impl Suite {
         let undistributed_rewards = self.get_undistributed_rewards(id);
         assert_eq!(
             undistributed_rewards,
-            &Uint256::new(expected),
+            Uint256::new(expected),
             "expected {} undistributed rewards, got {}",
             expected,
             undistributed_rewards
@@ -534,6 +537,21 @@ impl Suite {
 
     pub fn register_hook(&mut self, addr: Addr) {
         let msg = cw4_group::msg::ExecuteMsg::AddHook {
+            addr: self.distribution_contract.to_string(),
+        };
+        self.base
+            .app
+            .execute_contract(self.core_addr.clone(), addr, &msg, &[])
+            .unwrap();
+    }
+
+    /// disconnects the distributor from the given voting power/staking
+    /// contract's hooks, as the DAO/owner would (producer-side). used to
+    /// simulate a missed voting power change hook: while disconnected, stake
+    /// or unstake changes on `addr` will not notify the distributor, so it
+    /// won't have a chance to checkpoint the affected user's reward state.
+    pub fn unregister_hook(&mut self, addr: Addr) {
+        let msg = cw4_group::msg::ExecuteMsg::RemoveHook {
             addr: self.distribution_contract.to_string(),
         };
         self.base
@@ -697,8 +715,21 @@ impl Suite {
             .unwrap();
     }
 
+    pub fn claim_rewards_error(&mut self, address: &str, id: u64) -> StdError {
+        let msg = ExecuteMsg::Claim { id };
+        self.base
+            .app
+            .execute_contract(
+                Addr::unchecked(address),
+                self.distribution_contract.clone(),
+                &msg,
+                &[],
+            )
+            .unwrap_err()
+    }
+
     #[allow(dead_code)]
-    pub fn stake_cw20_tokens(&mut self, amount: u128, sender: &str) {
+    pub fn stake_cw20_tokens(&mut self, amount: u128, sender: &str) -> AppResponse {
         let msg = cw20::Cw20ExecuteMsg::Send {
             contract: self.staking_addr.to_string(),
             amount: Uint256::new(amount),
@@ -707,10 +738,10 @@ impl Suite {
         self.base
             .app
             .execute_contract(Addr::unchecked(sender), self.cw20_addr.clone(), &msg, &[])
-            .unwrap();
+            .unwrap()
     }
 
-    pub fn unstake_cw20_tokens(&mut self, amount: u128, sender: &str) {
+    pub fn unstake_cw20_tokens(&mut self, amount: u128, sender: &str) -> AppResponse {
         let msg = cw20_stake::msg::ExecuteMsg::Unstake {
             amount: Uint256::new(amount),
         };
@@ -722,7 +753,7 @@ impl Suite {
                 &msg,
                 &[],
             )
-            .unwrap();
+            .unwrap()
     }
 
     pub fn stake_nft(&mut self, sender: &str, token_id: u64) {

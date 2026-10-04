@@ -4,13 +4,14 @@ use cosmwasm_std::{Uint128, Uint256};
 use cw2::ContractVersion;
 use cw20::{Cw20Coin, Expiration, UncheckedDenom};
 use cw4::Member;
-use cw_multi_test::Executor;
+use cw_multi_test::{AppResponse, Executor};
 use cw_ownable::OwnershipError;
 use cw_utils::Duration;
 use dao_interface::voting::InfoResponse;
 use dao_testing::{DaoTestingSuite, ADDR0, ADDR1, ADDR2, ADDR3, GOV_DENOM, OWNER};
 
 use crate::contract::{CONTRACT_NAME, CONTRACT_VERSION};
+use crate::helpers::scale_factor;
 use crate::msg::ExecuteMsg;
 use crate::msg::{CreateMsg, FundMsg, InstantiateMsg, MigrateMsg};
 use crate::state::{EmissionRate, Epoch};
@@ -19,6 +20,104 @@ use dao_rewards_distributor::ContractError;
 use super::suite::{RewardsConfig, SuiteBuilder};
 
 const ALT_DENOM: &str = "ualtgovtoken";
+
+fn has_attr(response: &AppResponse, key: &str, value: &str) -> bool {
+    response.events.iter().any(|event| {
+        event
+            .attributes
+            .iter()
+            .any(|attribute| attribute.key == key && attribute.value == value)
+    })
+}
+
+#[test]
+fn stale_rewards_distributor_cannot_block_cw20_stake_or_unstake() {
+    let mut suite = SuiteBuilder::base(super::suite::DaoType::CW20).build();
+    let old_staking_addr = suite.staking_addr.clone();
+
+    let new_dao = suite.base.cw4().dao();
+    let new_group_addr = new_dao.x.group_addr.clone();
+    suite
+        .base
+        .app
+        .execute_contract(
+            new_dao.core_addr,
+            new_group_addr.clone(),
+            &cw4_group::msg::ExecuteMsg::AddHook {
+                addr: suite.distribution_contract.to_string(),
+            },
+            &[],
+        )
+        .unwrap();
+    suite.update_hook_caller(1, new_group_addr.as_str());
+
+    let counter_code_id = suite
+        .base
+        .app
+        .store_code(dao_testing::contracts::dao_proposal_hook_counter_contract());
+    let counter = suite
+        .base
+        .app
+        .instantiate_contract(
+            counter_code_id,
+            Addr::unchecked(OWNER),
+            &dao_proposal_hook_counter::msg::InstantiateMsg {
+                should_error: false,
+            },
+            &[],
+            "successful stake hook",
+            None,
+        )
+        .unwrap();
+    suite
+        .base
+        .app
+        .execute_contract(
+            suite.core_addr.clone(),
+            old_staking_addr.clone(),
+            &cw20_stake::msg::ExecuteMsg::AddHook {
+                addr: counter.to_string(),
+            },
+            &[],
+        )
+        .unwrap();
+
+    let distributor = suite.distribution_contract.to_string();
+
+    let unstake_response = suite.unstake_cw20_tokens(10, ADDR0);
+    assert!(has_attr(&unstake_response, "action", "stake_hook_failed"));
+    assert!(has_attr(&unstake_response, "hook", "unstake"));
+    // the failure names the stale distributor, not the healthy counter.
+    assert!(has_attr(&unstake_response, "addr", &distributor));
+    assert!(!has_attr(&unstake_response, "addr", counter.as_str()));
+
+    let stake_response = suite.stake_cw20_tokens(5, ADDR0);
+    assert!(has_attr(&stake_response, "action", "stake_hook_failed"));
+    assert!(has_attr(&stake_response, "hook", "stake"));
+    assert!(has_attr(&stake_response, "addr", &distributor));
+
+    let successful_calls: Uint128 = suite
+        .base
+        .app
+        .wrap()
+        .query_wasm_smart(
+            counter.clone(),
+            &dao_proposal_hook_counter::msg::QueryMsg::StakeCounter {},
+        )
+        .unwrap();
+    assert_eq!(successful_calls, Uint128::new(2));
+
+    let hooks: cw20_stake::msg::GetHooksResponse = suite
+        .base
+        .app
+        .wrap()
+        .query_wasm_smart(old_staking_addr, &cw20_stake::msg::QueryMsg::GetHooks {})
+        .unwrap();
+    assert_eq!(
+        hooks.hooks,
+        vec![suite.distribution_contract.to_string(), counter.to_string()]
+    );
+}
 
 // By default, the tests are set up to distribute rewards over 1_000_000 units of time.
 // Over that time, 100_000_000 token rewards will be distributed.
@@ -706,6 +805,84 @@ fn test_native_dao_rewards_time_based() {
 
     suite.stake_native_tokens(ADDR0, addr1_balance);
     suite.stake_native_tokens(ADDR1, addr2_balance);
+}
+
+#[test]
+fn test_small_linear_emission_survives_incremental_accumulator_updates() {
+    let mut suite = SuiteBuilder::base(super::suite::DaoType::CW4)
+        .with_rewards_config(RewardsConfig {
+            amount: 100,
+            denom: UncheckedDenom::Native(GOV_DENOM.to_string()),
+            duration: Duration::Height(200),
+            destination: None,
+            continuous: true,
+        })
+        .with_cw4_members(vec![
+            Member {
+                addr: ADDR0.to_string(),
+                weight: 1,
+            },
+            Member {
+                addr: ADDR1.to_string(),
+                weight: 1,
+            },
+        ])
+        .build();
+
+    // Advance the accumulator once per block through ordinary membership
+    // changes while keeping total voting power constant. Each update emits
+    // half a token, so flooring before applying accumulator precision loses
+    // the entire emission.
+    for height in 0..200 {
+        suite.skip_blocks(1);
+        if height % 2 == 0 {
+            suite.update_members(
+                vec![Member {
+                    addr: ADDR2.to_string(),
+                    weight: 1,
+                }],
+                vec![ADDR1.to_string()],
+            );
+        } else {
+            suite.update_members(
+                vec![Member {
+                    addr: ADDR1.to_string(),
+                    weight: 1,
+                }],
+                vec![ADDR2.to_string()],
+            );
+        }
+
+        if height == 0 {
+            let distribution = suite.get_distribution(1);
+            assert_eq!(
+                distribution.active_epoch.last_updated_total_earned_puvp,
+                Expiration::AtHeight(1)
+            );
+            assert_eq!(
+                distribution.active_epoch.total_earned_puvp,
+                scale_factor().checked_div(Uint256::from(4u8)).unwrap()
+            );
+        }
+    }
+
+    let distribution = suite.get_distribution(1);
+    assert_eq!(
+        distribution.active_epoch.last_updated_total_earned_puvp,
+        Expiration::AtHeight(200)
+    );
+    assert_eq!(
+        distribution.active_epoch.total_earned_puvp,
+        scale_factor().checked_mul(Uint256::from(50u8)).unwrap()
+    );
+
+    // ADDR0 retained half the voting power throughout the full 100-token
+    // period. Its accrued share must remain claimable after all incremental
+    // updates consumed that period, even though the much larger funded
+    // distribution remains active.
+    suite.assert_pending_rewards(ADDR0, 1, 50);
+    suite.claim_rewards(ADDR0, 1);
+    suite.assert_native_balance(ADDR0, GOV_DENOM, 50);
 }
 
 // all of the `+1` corrections highlight rounding
@@ -3070,4 +3247,452 @@ fn test_unsafe_force_withdraw() {
     // owner has balance
     let owner_balance = suite.get_balance_native(OWNER, &suite.reward_denom);
     assert_eq!(owner_balance, Uint256::new(100u128));
+}
+
+#[test]
+fn test_large_linear_emission_amount_does_not_overflow_puvp() {
+    use cosmwasm_std::{
+        from_json, testing::MockQuerier, ContractResult, QuerierResult, SystemResult, WasmQuery,
+    };
+    use dao_interface::voting::{Query as VotingQueryMsg, TotalPowerAtHeightResponse};
+
+    use crate::rewards::get_active_total_earned_puvp;
+    use crate::state::DistributionState;
+
+    const TOTAL_POWER: u128 = 1_000_000;
+
+    let mut deps = mock_dependencies();
+    let mut querier = MockQuerier::default();
+    querier.update_wasm(|query| -> QuerierResult {
+        match query {
+            WasmQuery::Smart { msg, .. } => match from_json(msg).unwrap() {
+                VotingQueryMsg::TotalPowerAtHeight { height } => {
+                    SystemResult::Ok(ContractResult::Ok(
+                        to_json_binary(&TotalPowerAtHeightResponse {
+                            power: Uint256::new(TOTAL_POWER),
+                            height: height.unwrap_or_default(),
+                        })
+                        .unwrap(),
+                    ))
+                }
+                _ => panic!("unexpected query"),
+            },
+            _ => panic!("unexpected query"),
+        }
+    });
+    deps.querier = querier;
+
+    // a valid emission amount whose product with the precision scale factor
+    // (1e39) exceeds Uint256::MAX (~1.16e77). scaling must not overflow before
+    // the elapsed fraction of the period and total voting power are applied.
+    let amount = Uint256::from(200_000_000_000_000_000_000_000_000_000_000_000_000u128);
+    assert!(amount.checked_mul(scale_factor()).is_err());
+
+    let distribution = DistributionState {
+        id: 1,
+        denom: cw20::Denom::Native(GOV_DENOM.to_string()),
+        active_epoch: Epoch {
+            emission_rate: EmissionRate::Linear {
+                amount,
+                duration: Duration::Height(200),
+                continuous: true,
+            },
+            started_at: Expiration::AtHeight(0),
+            ends_at: Expiration::AtHeight(1_000),
+            total_earned_puvp: Uint256::zero(),
+            last_updated_total_earned_puvp: Expiration::AtHeight(0),
+        },
+        vp_contract: Addr::unchecked("vp_contract"),
+        hook_caller: Addr::unchecked("hook_caller"),
+        open_funding: false,
+        funded_amount: amount,
+        withdraw_destination: Addr::unchecked(OWNER),
+        historical_earned_puvp: Uint256::zero(),
+        vp_contract_since_height: None,
+        claimable_funds: None,
+    };
+
+    let mut env = mock_env();
+    env.block.height = 1;
+
+    // one block of a 200-block period: amount * 1e39 / 200 / total power.
+    let expected = amount
+        .checked_div(Uint256::from(200u128 * TOTAL_POWER))
+        .unwrap()
+        .checked_mul(scale_factor())
+        .unwrap();
+    assert_eq!(
+        get_active_total_earned_puvp(deps.as_ref(), &env.block, &distribution).unwrap(),
+        expected
+    );
+
+    // a rewards per unit voting power value that cannot be represented at all
+    // (here, the maximum amount per block over a million blocks) is reported
+    // as an error rather than wrapping or panicking.
+    let mut unrepresentable = distribution.clone();
+    unrepresentable.active_epoch.emission_rate = EmissionRate::Linear {
+        amount: Uint256::from(u128::MAX),
+        duration: Duration::Height(1),
+        continuous: true,
+    };
+    unrepresentable.active_epoch.ends_at = Expiration::AtHeight(u64::MAX);
+    env.block.height = 1_000_000;
+    assert!(matches!(
+        get_active_total_earned_puvp(deps.as_ref(), &env.block, &unrepresentable).unwrap_err(),
+        crate::ContractError::CheckedMultiplyRatio(_)
+    ));
+}
+
+// ---------------------------------------------------------------------------
+// missed voting power change hook tests
+//
+// these tests simulate a voting power change hook being missed (e.g. because
+// a hook receiver is allowed to fail without reverting the underlying stake
+// change, as introduced in a separate change to the voting/staking
+// contracts) by temporarily removing the distributor from the staking
+// contract's hooks -- as the DAO/owner would, producer-side -- changing
+// voting power while disconnected, and then re-adding the hook. this is
+// functionally equivalent to a hook receiver call silently failing, since
+// either way the distributor never learns about the voting power change when
+// it happens.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_missed_stake_hook_conservative_accrual() {
+    // the default suite stakes ADDR0=100, ADDR1=50, ADDR2=50 (200 total) and
+    // emits 1_000udenom per 10 blocks (100udenom/block).
+    let mut suite = SuiteBuilder::base(super::suite::DaoType::Native).build();
+
+    // give the stake a few blocks of normal history before disconnecting, so
+    // there's no ambiguity between the distribution's creation height and the
+    // height at which ADDR1's stake changes.
+    suite.skip_blocks(5);
+
+    // disconnect the distributor from the staking contract's hooks.
+    suite.unregister_hook(suite.staking_addr.clone());
+
+    // ADDR1 stakes a large additional amount while disconnected: 50 -> 1_000.
+    // the distributor never learns about this change.
+    suite.mint_native(coin(950, suite.reward_denom.clone()), ADDR1);
+    suite.stake_native_tokens(ADDR1, Uint256::new(950));
+
+    // time passes while still disconnected, then the hook is reconnected.
+    suite.skip_blocks(75);
+    suite.register_hook(suite.staking_addr.clone());
+
+    // 80 blocks have now passed since the distribution was created, and
+    // ADDR1 has never been checkpointed for it, so its accrual covers the
+    // full 80 blocks. total emitted over that window is 100 * 80 = 8_000,
+    // and since the distributor never observed ADDR1's stake change, the
+    // total voting power used to compute the reward factor is the *current*
+    // total (100 + 1_000 + 50 = 1_150). the conservative accrual then uses
+    // min(current voting power = 1_000, voting power right after creation =
+    // 50) = 50 for ADDR1, giving:
+    //   floor(50 * 8_000 / 1_150) = 347
+    // had ADDR1 naively been credited its new voting power (1_000) for the
+    // whole window instead, it would have received
+    //   floor(1_000 * 8_000 / 1_150) = 6_956
+    // more than 3x what a healthy, always-1_000-voting-power staker would
+    // ever be entitled to out of that same window, and a clear over-credit.
+    // the conservative accrual keeps ADDR1 well under that.
+    suite.assert_pending_rewards(ADDR1, 1, 347);
+
+    // claiming for all three users must never pay out more in total than was
+    // actually emitted over the window, regardless of the missed hook.
+    let before0 = suite.get_balance_native(ADDR0, &suite.reward_denom);
+    let before1 = suite.get_balance_native(ADDR1, &suite.reward_denom);
+    let before2 = suite.get_balance_native(ADDR2, &suite.reward_denom);
+
+    suite.claim_rewards(ADDR0, 1);
+    suite.claim_rewards(ADDR1, 1);
+    suite.claim_rewards(ADDR2, 1);
+
+    let claimed0 = suite.get_balance_native(ADDR0, &suite.reward_denom) - before0;
+    let claimed1 = suite.get_balance_native(ADDR1, &suite.reward_denom) - before1;
+    let claimed2 = suite.get_balance_native(ADDR2, &suite.reward_denom) - before2;
+
+    assert_eq!(claimed1, Uint256::new(347));
+    let total_claimed = claimed0 + claimed1 + claimed2;
+    assert!(
+        total_claimed <= Uint256::new(8_000),
+        "total claimed {total_claimed} exceeded the 8_000 actually emitted over the window"
+    );
+}
+
+#[test]
+fn test_missed_unstake_hook_not_overcredited() {
+    // mirror of the missed-stake test above, but for a user who *unstakes* a
+    // large amount while the distributor is disconnected. voting power
+    // decreases were already handled safely before the conservative accrual
+    // change, since `get_voting_power_at_block` always reflects the voting
+    // power at the start of the current block (i.e. already the lower,
+    // post-unstake value); this test confirms the conservative accrual
+    // continues to use that lower value and does not over-credit the user.
+    let mut suite = SuiteBuilder::base(super::suite::DaoType::Native).build();
+
+    suite.skip_blocks(5);
+    suite.unregister_hook(suite.staking_addr.clone());
+
+    // ADDR1 unstakes most of its voting power while disconnected: 50 -> 10.
+    suite.unstake_native_tokens(ADDR1, 40);
+
+    suite.skip_blocks(75);
+    suite.register_hook(suite.staking_addr.clone());
+
+    // 80 blocks elapsed since creation and ADDR1 was never checkpointed
+    // before, so the conservative accrual uses
+    // min(current voting power = 10, voting power right after creation = 50)
+    // = 10. total voting power at the trigger is 100 + 10 + 50 = 160, and
+    // total emitted over 80 blocks is 100 * 80 = 8_000, giving:
+    //   floor(10 * 8_000 / 160) = 500
+    suite.assert_pending_rewards(ADDR1, 1, 500);
+
+    // the three users' capped voting powers (100, 10, 50) happen to sum
+    // exactly to the 160 total voting power used above, so in this
+    // particular scenario the full window's emissions are distributed with
+    // neither loss nor over-credit: 5_000 + 500 + 2_500 = 8_000, exactly
+    // matching what was emitted.
+    let before0 = suite.get_balance_native(ADDR0, &suite.reward_denom);
+    let before1 = suite.get_balance_native(ADDR1, &suite.reward_denom);
+    let before2 = suite.get_balance_native(ADDR2, &suite.reward_denom);
+
+    suite.claim_rewards(ADDR0, 1);
+    suite.claim_rewards(ADDR1, 1);
+    suite.claim_rewards(ADDR2, 1);
+
+    let claimed0 = suite.get_balance_native(ADDR0, &suite.reward_denom) - before0;
+    let claimed1 = suite.get_balance_native(ADDR1, &suite.reward_denom) - before1;
+    let claimed2 = suite.get_balance_native(ADDR2, &suite.reward_denom) - before2;
+
+    assert_eq!(claimed0, Uint256::new(5_000));
+    assert_eq!(claimed1, Uint256::new(500));
+    assert_eq!(claimed2, Uint256::new(2_500));
+    assert!(claimed0 + claimed1 + claimed2 <= Uint256::new(8_000));
+}
+
+#[test]
+fn test_healthy_flows_unaffected_by_conservative_accrual() {
+    // a control test showing that when hooks fire normally (nothing
+    // disconnected), a user who changes their stake still gets exactly the
+    // same result as before the conservative accrual change: because the
+    // hook immediately checkpoints them, their voting power right after
+    // their last checkpoint always matches their current voting power, so
+    // the conservative minimum never kicks in.
+    let mut suite = SuiteBuilder::base(super::suite::DaoType::Native).build();
+
+    suite.skip_blocks(40);
+    suite.assert_pending_rewards(ADDR1, 1, 1_000);
+
+    // ADDR1 stakes more with the hook connected: checkpoints immediately.
+    suite.mint_native(coin(950, suite.reward_denom.clone()), ADDR1);
+    suite.stake_native_tokens(ADDR1, Uint256::new(950));
+    // the stake doesn't take effect until the next block, and it was
+    // immediately checkpointed at 0 new rewards accrued for the change
+    // itself, so pending rewards are unaffected by the stake.
+    suite.assert_pending_rewards(ADDR1, 1, 1_000);
+
+    suite.skip_blocks(40);
+    // ADDR1 now has 1_000 voting power out of a total of 1_150 (100 + 1_000
+    // + 50), and it's been properly checkpointed the whole time, so this
+    // matches naively using the current voting power for the last 40 blocks:
+    // floor(1_000 * 100 * 40 / 1_150) = 3_478, plus the 1_000 already
+    // pending.
+    suite.assert_pending_rewards(ADDR1, 1, 1_000 + 3_478);
+}
+
+#[test]
+fn test_solvency_cap_prevents_cross_distribution_drain() {
+    // engineers a genuine over-credit via a "double missed change" (unstake
+    // then restake back to the same voting power while disconnected): the
+    // conservative accrual from part A only compares the two *endpoints* of
+    // a user's voting power around a missed-hook window, so a user who
+    // temporarily dips down and returns to their original voting power is
+    // not caught by it, even though they didn't really hold that voting
+    // power the whole time. this can result in more being credited across
+    // users than was ever emitted by a distribution. the per-distribution
+    // `claimable_funds` cap exists precisely to stop this from draining
+    // another distribution of the same denom, which is what this test shows.
+    let mut suite = SuiteBuilder::base(super::suite::DaoType::Native).build();
+
+    // distribution 1 (the "victim") is the default, generously funded
+    // (100_000_000udenom) distribution created by the suite builder.
+
+    // distribution 2 (the "attacked" one) is a fresh, modestly funded
+    // distribution using the same voting power/hook setup.
+    suite.mint_native(coin(10_000, suite.reward_denom.clone()), OWNER);
+    suite.create(
+        RewardsConfig {
+            amount: 10,
+            denom: UncheckedDenom::Native(suite.reward_denom.clone()),
+            duration: Duration::Height(1),
+            destination: None,
+            continuous: true,
+        },
+        suite.staking_addr.to_string().as_str(),
+        Some(Uint256::new(10_000)),
+    );
+    assert_eq!(
+        suite.get_distribution(2).claimable_funds,
+        Some(Uint256::new(10_000))
+    );
+
+    suite.unregister_hook(suite.staking_addr.clone());
+
+    // give distribution 2 some clean history before ADDR1's voting power
+    // moves, so ADDR1's voting power right after distribution 2's creation
+    // is unambiguously its original value (50).
+    suite.skip_blocks(10);
+
+    // ADDR1 unstakes all of its voting power while disconnected: 50 -> 0.
+    suite.unstake_native_tokens(ADDR1, 50);
+    suite.skip_blocks(20);
+
+    // ADDR0 claims distribution 2 at height +30. ADDR0's voting power (100)
+    // never changed, so it's credited its full fair share of the 30-block
+    // window given the (real, current) total voting power of 150
+    // (100 + 0 + 50): floor(100 * 10 * 30 / 150) = 200.
+    suite.claim_rewards(ADDR0, 2);
+    suite.assert_native_balance(ADDR0, &suite.reward_denom, 200);
+
+    // ADDR1 restakes back to its original voting power while still
+    // disconnected: 0 -> 50. its voting power endpoints (50 before, 50 after
+    // the whole disconnected window) match, so the conservative accrual's
+    // minimum does not detect anything wrong for ADDR1.
+    suite.stake_native_tokens(ADDR1, Uint256::new(50));
+    suite.register_hook(suite.staking_addr.clone());
+    suite.skip_blocks(5);
+
+    // ADDR2 claims distribution 2 at height +35, its voting power (50) also
+    // never changed. this locks in a second, fresh reward factor increment
+    // covering blocks +30 to +35 at the (now restored) total voting power of
+    // 200: floor(50 * 10 * 5 / 200) = 12, on top of ADDR2's own full share of
+    // the earlier window: floor(50 * 10 * 30 / 150) = 100. total: 112.
+    suite.claim_rewards(ADDR2, 2);
+    suite.assert_native_balance(ADDR2, &suite.reward_denom, 112);
+
+    // the owner withdraws distribution 2's remaining (unemitted) funds,
+    // which doesn't touch the already-computed reward factor, only ends the
+    // epoch and claws back what's left: 10_000 - (10 * 35) = 9_650. this
+    // leaves claimable_funds at 10_000 - 200 - 112 - 9_650 = 38.
+    suite.withdraw(2);
+    assert_eq!(
+        suite.get_distribution(2).claimable_funds,
+        Some(Uint256::new(38))
+    );
+
+    // ADDR1, having never been individually checkpointed for distribution 2,
+    // now computes its accrual over the *entire* window using its
+    // conservatively-capped (but still 50, since endpoints match) voting
+    // power against the full reward factor already established by ADDR0 and
+    // ADDR2's claims: floor(50 * (2e39 + 0.25e39-worth-of-puvp) / scale) =
+    // 112 -- the same amount ADDR2 (with the same voting power) received.
+    // but distribution 2 only has 38 left, so this must fail rather than pay
+    // out of distribution 1's funds.
+    let before_balance = suite.get_balance_native(ADDR1, &suite.reward_denom);
+    let err = suite.claim_rewards_error(ADDR1, 2);
+    let expected = ContractError::InsufficientDistributionFunds {
+        id: 2,
+        claimable_funds: Uint256::new(38),
+        claim_amount: Uint256::new(112),
+    };
+    assert!(
+        err.to_string().contains(&expected.to_string()),
+        "unexpected claim error: {err}"
+    );
+    // the failed claim did not pay out anything, and distribution 2's
+    // claimable funds are unchanged.
+    assert_eq!(
+        suite.get_balance_native(ADDR1, &suite.reward_denom),
+        before_balance
+    );
+    assert_eq!(
+        suite.get_distribution(2).claimable_funds,
+        Some(Uint256::new(38))
+    );
+
+    // distribution 1 (the "victim") is completely unaffected: its funds were
+    // never touched by the failed claim on distribution 2, since each
+    // distribution's claimable funds are tracked independently. ADDR0 can
+    // still claim its full, healthy share of distribution 1's rewards
+    // (which has continued to accrue this entire time, using distribution
+    // 1's own, much larger, funded amount).
+    let contract_balance_before =
+        suite.get_balance_native(suite.distribution_contract.clone(), &suite.reward_denom);
+    suite.claim_rewards(ADDR0, 1);
+    let contract_balance_after =
+        suite.get_balance_native(suite.distribution_contract.clone(), &suite.reward_denom);
+    assert!(
+        contract_balance_after < contract_balance_before,
+        "expected ADDR0's claim from distribution 1 to succeed and reduce the contract's balance"
+    );
+}
+
+#[test]
+fn test_claimable_funds_tracks_fund_and_withdraw() {
+    // funding increases claimable_funds, and withdrawing (clawing back)
+    // decreases it, on newly-created distributions.
+    let mut suite = SuiteBuilder::base(super::suite::DaoType::Native).build();
+
+    // the default distribution was funded 100_000_000 on creation.
+    assert_eq!(
+        suite.get_distribution(1).claimable_funds,
+        Some(Uint256::new(100_000_000))
+    );
+
+    suite.fund_native(1, coin(500, suite.reward_denom.clone()));
+    assert_eq!(
+        suite.get_distribution(1).claimable_funds,
+        Some(Uint256::new(100_000_500))
+    );
+
+    // nothing has been distributed yet (still at creation height), so
+    // withdrawing claws back everything that's been funded.
+    suite.withdraw(1);
+    assert_eq!(
+        suite.get_distribution(1).claimable_funds,
+        Some(Uint256::zero())
+    );
+}
+
+#[test]
+fn test_update_vp_contract_keeps_rewards_accrued_before_the_switch() {
+    let mut suite = SuiteBuilder::base(super::suite::DaoType::Native).build();
+
+    // ADDR0 accrues rewards without being checkpointed.
+    suite.skip_blocks(100_000);
+    let pending_before = suite.get_pending_rewards(ADDR0, 1);
+    assert!(!pending_before.is_zero());
+
+    // switch to a newly instantiated voting power contract with the same
+    // voting power split, but no voting power history before now. the
+    // conservative accrual must not compare against the new contract's
+    // (empty) voting power from before the switch, or ADDR0 would lose
+    // everything accrued so far.
+    let new_vp_contract = suite
+        .base
+        .cw4()
+        .with_members(vec![
+            Member {
+                addr: ADDR0.to_string(),
+                weight: 100,
+            },
+            Member {
+                addr: ADDR1.to_string(),
+                weight: 50,
+            },
+            Member {
+                addr: ADDR2.to_string(),
+                weight: 50,
+            },
+        ])
+        .dao()
+        .voting_module_addr;
+    suite.update_vp_contract(1, new_vp_contract.as_str());
+    suite.skip_blocks(1);
+
+    let pending_after = suite.get_pending_rewards(ADDR0, 1);
+    assert!(
+        pending_after >= pending_before,
+        "pending rewards dropped from {pending_before} to {pending_after} after switching vp_contract"
+    );
 }

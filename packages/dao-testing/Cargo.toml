@@ -14,7 +14,8 @@ version = { workspace = true }
 [features]
 # use test tube feature to enable test-tube integration tests, for example
 # cargo test --features "test-tube"
-test-tube = []
+# Requires Go + C toolchain for libosmosistesttube; keep off for default cargo check.
+test-tube = ["dep:osmosis-test-tube"]
 interface = []
 # when writing tests you may wish to enable test-tube as a default feature
 # default = ["test-tube"]
@@ -27,7 +28,7 @@ interface = []
 # targeting wasm.
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 cosmwasm-schema = { workspace = true }
-cosmwasm-std = { workspace = true }
+cosmwasm-std = { workspace = true, features = ["staking"] }
 cw-multi-test = { workspace = true }
 cw-utils = { workspace = true }
 cw2 = { workspace = true }
@@ -36,7 +37,7 @@ cw20-base = { workspace = true }
 cw4 = { workspace = true }
 cw4-group = { workspace = true }
 osmosis-std = { workspace = true }
-osmosis-test-tube = { workspace = true }
+osmosis-test-tube = { workspace = true, optional = true }
 rand = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -62,6 +63,7 @@ dao-dao-core = { workspace = true }
 dao-interface = { workspace = true }
 dao-cw-orch = { workspace = true }
 cw-orch = { workspace = true, features = ["daemon"] }
+cw-orch-polytone = { workspace = true, default-features = false }
 dao-pre-propose-approver = { workspace = true }
 dao-pre-propose-multiple = { workspace = true }
 dao-pre-propose-single = { workspace = true }

@@ -73,6 +73,7 @@ thiserror = { version = "1.0" }
 # optional owner.
 
 cw-orch = { path = "../cw-orchestrator/cw-orch" }
+cw-orch-polytone = { package = "abstract-cw-orch-polytone", path = "../polytone/packages/cw-orch-polytone" }
 
 btsg-ft-factory = { path = "./contracts/external/btsg-ft-factory", version = "2.8.0-alpha.2" }
 cw-admin-factory = { path = "./contracts/external/cw-admin-factory", version = "2.8.0-alpha.2" }

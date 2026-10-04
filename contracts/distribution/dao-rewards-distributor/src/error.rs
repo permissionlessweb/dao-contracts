@@ -1,5 +1,6 @@
 use cosmwasm_std::{
-    CheckedFromRatioError, CheckedMultiplyFractionError, DivideByZeroError, OverflowError, StdError,
+    CheckedFromRatioError, CheckedMultiplyFractionError, CheckedMultiplyRatioError,
+    DivideByZeroError, OverflowError, StdError, Uint256,
 };
 use cw_utils::PaymentError;
 use thiserror::Error;
@@ -26,6 +27,9 @@ pub enum ContractError {
 
     #[error(transparent)]
     CheckedMultiplyFraction(#[from] CheckedMultiplyFractionError),
+
+    #[error(transparent)]
+    CheckedMultiplyRatio(#[from] CheckedMultiplyRatioError),
 
     #[error(transparent)]
     Payment(#[from] PaymentError),
@@ -71,6 +75,13 @@ pub enum ContractError {
 
     #[error("Expected to migrate from contract {expected}. Got {actual}.")]
     MigrationErrorIncorrectContract { expected: String, actual: String },
+
+    #[error("Insufficient funds in distribution {id} to claim {claim_amount}: only {claimable_funds} claimable")]
+    InsufficientDistributionFunds {
+        id: u64,
+        claimable_funds: Uint256,
+        claim_amount: Uint256,
+    },
 }
 
 impl From<semver::Error> for ContractError {

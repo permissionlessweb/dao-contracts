@@ -1,6 +1,6 @@
 {
   "contract_name": "cw20-stake",
-  "contract_version": "2.8.0-alpha.2",
+  "contract_version": "2.8.0-alpha.3",
   "idl_version": "1.0.0",
   "instantiate": {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -568,6 +568,20 @@
         ],
         "properties": {
           "from_v1": {
+            "type": "object",
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "description": "Migrates a v2 or later contract to this version. Only the stored contract version changes.",
+        "type": "object",
+        "required": [
+          "from_compatible"
+        ],
+        "properties": {
+          "from_compatible": {
             "type": "object",
             "additionalProperties": false
           }

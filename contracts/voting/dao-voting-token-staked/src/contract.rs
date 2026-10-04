@@ -14,7 +14,7 @@ use cw_tokenfactory_issuer::msg::{
 };
 
 use cw_utils::{maybe_addr, must_pay, Duration};
-use dao_hooks::stake::{stake_hook_msgs, unstake_hook_msgs};
+use dao_hooks::stake::{handle_stake_hook_reply, stake_hook_msgs, unstake_hook_msgs};
 use dao_interface::{
     state::{Admin, ModuleInstantiateCallback, ModuleInstantiateInfo},
     token::{InitialBalance, NewTokenInfo, TokenFactoryCallback},
@@ -655,6 +655,12 @@ pub fn migrate(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractError> {
+    // hook failures must never block staking or unstaking, and must not remove
+    // the hook. record the failure and let the transaction succeed.
+    if let Some(res) = handle_stake_hook_reply(HOOKS, deps.as_ref(), &msg)? {
+        return Ok(res);
+    }
+
     match msg.result {
         cosmwasm_std::SubMsgResult::Ok(res) => match msg.id {
             INSTANTIATE_TOKEN_FACTORY_ISSUER_REPLY_ID => {
@@ -896,6 +902,11 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
             }
             _ => Err(ContractError::UnknownReplyId { id: msg.id }),
         },
-        cosmwasm_std::SubMsgResult::Err(e) => Err(ContractError::InstantiateError { e }),
+        cosmwasm_std::SubMsgResult::Err(e) => match msg.id {
+            INSTANTIATE_TOKEN_FACTORY_ISSUER_REPLY_ID => {
+                Err(ContractError::InstantiateError { e })
+            }
+            _ => Err(ContractError::UnknownReplyId { id: msg.id }),
+        },
     }
 }
