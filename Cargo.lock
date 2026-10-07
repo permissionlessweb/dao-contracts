@@ -1299,7 +1299,7 @@ dependencies = [
 
 [[package]]
 name = "btsg-ft-factory"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "anyhow",
@@ -2068,7 +2068,7 @@ dependencies = [
 
 [[package]]
 name = "cw-admin-factory"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "bech32 0.11.1",
@@ -2105,7 +2105,7 @@ dependencies = [
 
 [[package]]
 name = "cw-denom"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "cosmwasm-schema",
@@ -2118,7 +2118,7 @@ dependencies = [
 
 [[package]]
 name = "cw-filter"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "cosmwasm-schema",
@@ -2144,7 +2144,7 @@ dependencies = [
 
 [[package]]
 name = "cw-fund-distributor"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "cosmwasm-schema",
@@ -2166,7 +2166,7 @@ dependencies = [
 
 [[package]]
 name = "cw-hooks"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -2176,7 +2176,7 @@ dependencies = [
 
 [[package]]
 name = "cw-jsonfilter"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "base64 0.22.1",
  "cw-protobuf-registry",
@@ -2461,7 +2461,7 @@ dependencies = [
 
 [[package]]
 name = "cw-paginate-storage"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "cosmwasm-std",
@@ -2471,7 +2471,7 @@ dependencies = [
 
 [[package]]
 name = "cw-payroll-factory"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "cosmwasm-schema",
@@ -2494,7 +2494,7 @@ dependencies = [
 
 [[package]]
 name = "cw-protobuf-registry"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "base64 0.22.1",
@@ -2519,7 +2519,7 @@ dependencies = [
 
 [[package]]
 name = "cw-reply-helper"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "cosmwasm-std",
  "cw-utils",
@@ -2552,7 +2552,7 @@ dependencies = [
 
 [[package]]
 name = "cw-snapshot-vector-map"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "cosmwasm-std",
  "cw-storage-plus",
@@ -2561,7 +2561,7 @@ dependencies = [
 
 [[package]]
 name = "cw-stake-tracker"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -2579,7 +2579,7 @@ dependencies = [
 
 [[package]]
 name = "cw-token-swap"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "cosmwasm-schema",
@@ -2597,7 +2597,7 @@ dependencies = [
 
 [[package]]
 name = "cw-tokenfactory-issuer"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "cosmwasm-schema",
@@ -2619,7 +2619,7 @@ dependencies = [
 
 [[package]]
 name = "cw-tokenfactory-types"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -2646,7 +2646,7 @@ dependencies = [
 
 [[package]]
 name = "cw-vesting"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "anyhow",
@@ -2671,7 +2671,7 @@ dependencies = [
 
 [[package]]
 name = "cw-wormhole"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -2762,7 +2762,7 @@ dependencies = [
 
 [[package]]
 name = "cw20-stake"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "anyhow",
@@ -2787,7 +2787,7 @@ dependencies = [
 
 [[package]]
 name = "cw20-stake-external-rewards"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "anyhow",
@@ -2810,7 +2810,7 @@ dependencies = [
 
 [[package]]
 name = "cw20-stake-reward-distributor"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "cosmwasm-schema",
@@ -2900,7 +2900,7 @@ dependencies = [
 
 [[package]]
 name = "cw721-roles"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "cosmwasm-schema",
@@ -2923,7 +2923,7 @@ dependencies = [
 
 [[package]]
 name = "dao-calendar"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "cosmwasm-schema",
@@ -2954,7 +2954,7 @@ version = "0.1.0"
 
 [[package]]
 name = "dao-cw-orch"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "btsg-ft-factory",
  "cosmwasm-std",
@@ -2998,7 +2998,7 @@ dependencies = [
 
 [[package]]
 name = "dao-cw721-extensions"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -3009,7 +3009,7 @@ dependencies = [
 
 [[package]]
 name = "dao-dao-core"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "anyhow",
@@ -3036,7 +3036,7 @@ dependencies = [
 
 [[package]]
 name = "dao-dao-macros"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -3050,7 +3050,7 @@ dependencies = [
 
 [[package]]
 name = "dao-hooks"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -3062,7 +3062,7 @@ dependencies = [
 
 [[package]]
 name = "dao-interface"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -3076,7 +3076,7 @@ dependencies = [
 
 [[package]]
 name = "dao-pre-propose-approval-multiple"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "cosmwasm-schema",
@@ -3105,7 +3105,7 @@ dependencies = [
 
 [[package]]
 name = "dao-pre-propose-approval-single"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "cosmwasm-schema",
@@ -3134,7 +3134,7 @@ dependencies = [
 
 [[package]]
 name = "dao-pre-propose-approver"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "cosmwasm-schema",
@@ -3163,7 +3163,7 @@ dependencies = [
 
 [[package]]
 name = "dao-pre-propose-base"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "cosmwasm-schema",
@@ -3183,7 +3183,7 @@ dependencies = [
 
 [[package]]
 name = "dao-pre-propose-multiple"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "cosmwasm-schema",
@@ -3209,7 +3209,7 @@ dependencies = [
 
 [[package]]
 name = "dao-pre-propose-single"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "cosmwasm-schema",
@@ -3236,7 +3236,7 @@ dependencies = [
 
 [[package]]
 name = "dao-proposal-condorcet"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "anyhow",
@@ -3259,7 +3259,7 @@ dependencies = [
 
 [[package]]
 name = "dao-proposal-hook-counter"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "cosmwasm-schema",
@@ -3283,7 +3283,7 @@ dependencies = [
 
 [[package]]
 name = "dao-proposal-multiple"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "anyhow",
@@ -3321,7 +3321,7 @@ dependencies = [
 
 [[package]]
 name = "dao-proposal-single"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "anyhow",
@@ -3359,7 +3359,7 @@ dependencies = [
 
 [[package]]
 name = "dao-proposal-sudo"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "cosmwasm-schema",
@@ -3374,7 +3374,7 @@ dependencies = [
 
 [[package]]
 name = "dao-rbam"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "chrono",
@@ -3406,7 +3406,7 @@ dependencies = [
 
 [[package]]
 name = "dao-rewards-distributor"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "anyhow",
@@ -3440,7 +3440,7 @@ dependencies = [
 
 [[package]]
 name = "dao-test-custom-factory"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "cosmwasm-schema",
@@ -3462,7 +3462,7 @@ dependencies = [
 
 [[package]]
 name = "dao-testing"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "abstract-cw-orch-polytone",
@@ -3527,7 +3527,7 @@ dependencies = [
 
 [[package]]
 name = "dao-vote-delegation"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "anyhow",
@@ -3564,7 +3564,7 @@ dependencies = [
 
 [[package]]
 name = "dao-voting"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -3580,7 +3580,7 @@ dependencies = [
 
 [[package]]
 name = "dao-voting-cw20-balance"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "cosmwasm-schema",
@@ -3599,7 +3599,7 @@ dependencies = [
 
 [[package]]
 name = "dao-voting-cw20-staked"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "cosmwasm-schema",
@@ -3620,7 +3620,7 @@ dependencies = [
 
 [[package]]
 name = "dao-voting-cw4"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "cosmwasm-schema",
@@ -3641,7 +3641,7 @@ dependencies = [
 
 [[package]]
 name = "dao-voting-cw721-roles"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "anyhow",
@@ -3666,7 +3666,7 @@ dependencies = [
 
 [[package]]
 name = "dao-voting-cw721-staked"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "anyhow",
@@ -3698,7 +3698,7 @@ dependencies = [
 
 [[package]]
 name = "dao-voting-token-staked"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "anyhow",
@@ -3729,7 +3729,7 @@ dependencies = [
 
 [[package]]
 name = "dao-voting-zk"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "cosmwasm-schema",
@@ -4858,7 +4858,7 @@ dependencies = [
 
 [[package]]
 name = "gauge-adapter"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "anybuf",
@@ -4878,7 +4878,7 @@ dependencies = [
 
 [[package]]
 name = "gauge-orchestrator"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "abstract-cw-multi-test",
  "anyhow",
@@ -6725,7 +6725,7 @@ dependencies = [
 
 [[package]]
 name = "nft-controllers"
-version = "2.8.0-alpha.2"
+version = "2.8.0-alpha.3"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -11183,7 +11183,6 @@ dependencies = [
 [[package]]
 name = "zakura-halo2-gadgets"
 version = "1.3.0-alpha.1"
-source = "git+https://github.com/permissionlessweb/common?rev=5364d3d989640e5356351ee8c0d062ca18d4bfaa#5364d3d989640e5356351ee8c0d062ca18d4bfaa"
 dependencies = [
  "arrayvec",
  "ff 0.14.0",
@@ -11198,7 +11197,6 @@ dependencies = [
 [[package]]
 name = "zakura-halo2-poseidon"
 version = "1.3.0-alpha.1"
-source = "git+https://github.com/permissionlessweb/common?rev=5364d3d989640e5356351ee8c0d062ca18d4bfaa#5364d3d989640e5356351ee8c0d062ca18d4bfaa"
 dependencies = [
  "bitvec",
  "ff 0.14.0",
@@ -11209,7 +11207,6 @@ dependencies = [
 [[package]]
 name = "zakura-halo2-proofs"
 version = "1.3.0-alpha.1"
-source = "git+https://github.com/permissionlessweb/common?rev=5364d3d989640e5356351ee8c0d062ca18d4bfaa#5364d3d989640e5356351ee8c0d062ca18d4bfaa"
 dependencies = [
  "blake2b_simd",
  "corez",
@@ -11225,7 +11222,6 @@ dependencies = [
 [[package]]
 name = "zakura-pasta-curves"
 version = "1.3.0-alpha.1"
-source = "git+https://github.com/permissionlessweb/common?rev=5364d3d989640e5356351ee8c0d062ca18d4bfaa#5364d3d989640e5356351ee8c0d062ca18d4bfaa"
 dependencies = [
  "blake2b_simd",
  "cc",
@@ -11240,7 +11236,6 @@ dependencies = [
 [[package]]
 name = "zakura-sinsemilla"
 version = "1.3.0-alpha.1"
-source = "git+https://github.com/permissionlessweb/common?rev=5364d3d989640e5356351ee8c0d062ca18d4bfaa#5364d3d989640e5356351ee8c0d062ca18d4bfaa"
 dependencies = [
  "group 0.14.0",
  "once_cell",

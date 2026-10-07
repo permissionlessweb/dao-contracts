@@ -1,0 +1,9 @@
+[package]
+name = "dao-contracts-scripts"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Placeholder workspace member so cargo can load dao-contracts (scripts dir holds shell helpers)."
+
+[lib]
+path = "lib.rs"

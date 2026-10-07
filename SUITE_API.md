@@ -56,7 +56,7 @@
 
 > Core DAO contract — modules, admin, pause, sub-DAOs
 
-**Version**: `2.8.0-alpha.2`
+**Version**: `2.8.0-alpha.3`
 
 #### InstantiateMsg
 
@@ -136,7 +136,7 @@
 
 > Single-choice (yes/no/abstain) proposal module
 
-**Version**: `2.8.0-alpha.2`
+**Version**: `2.8.0-alpha.3`
 
 #### InstantiateMsg
 
@@ -200,7 +200,7 @@
 
 > Multiple-choice proposal module with ranked options
 
-**Version**: `2.8.0-alpha.2`
+**Version**: `2.8.0-alpha.3`
 
 #### InstantiateMsg
 
@@ -264,7 +264,7 @@
 
 > Condorcet-method ranked-choice proposal module
 
-**Version**: `2.8.0-alpha.2`
+**Version**: `2.8.0-alpha.3`
 
 #### InstantiateMsg
 
@@ -309,7 +309,7 @@
 
 > Gatekeeper for single-choice proposals — deposits, whitelists
 
-**Version**: `2.8.0-alpha.2`
+**Version**: `2.8.0-alpha.3`
 
 #### InstantiateMsg
 
@@ -356,7 +356,7 @@
 
 > Gatekeeper for multiple-choice proposals
 
-**Version**: `2.8.0-alpha.2`
+**Version**: `2.8.0-alpha.3`
 
 #### InstantiateMsg
 
@@ -403,7 +403,7 @@
 
 > Approval-gated pre-propose — proposals need approver sign-off
 
-**Version**: `2.8.0-alpha.2`
+**Version**: `2.8.0-alpha.3`
 
 #### InstantiateMsg
 
@@ -450,7 +450,7 @@
 
 > Approver contract for approval-gated pre-propose flow
 
-**Version**: `2.8.0-alpha.2`
+**Version**: `2.8.0-alpha.3`
 
 #### InstantiateMsg
 
@@ -499,7 +499,7 @@
 
 > Voting power from CW4 group membership weights
 
-**Version**: `2.8.0-alpha.2`
+**Version**: `2.8.0-alpha.3`
 
 #### InstantiateMsg
 
@@ -521,7 +521,7 @@
 
 > Voting power from staked CW20 tokens
 
-**Version**: `2.8.0-alpha.2`
+**Version**: `2.8.0-alpha.3`
 
 #### InstantiateMsg
 
@@ -553,7 +553,7 @@
 
 > Voting power from CW721 NFTs with role-based weights
 
-**Version**: `2.8.0-alpha.2`
+**Version**: `2.8.0-alpha.3`
 
 #### InstantiateMsg
 
@@ -575,7 +575,7 @@
 
 > Voting power from staked CW721 NFTs (1 NFT = 1 vote)
 
-**Version**: `2.8.0-alpha.2`
+**Version**: `2.8.0-alpha.3`
 
 #### InstantiateMsg
 
@@ -616,7 +616,7 @@
 
 > Voting power from staked native/tokenfactory tokens
 
-**Version**: `2.8.0-alpha.2`
+**Version**: `2.8.0-alpha.3`
 
 #### InstantiateMsg
 
@@ -663,7 +663,7 @@
 
 > CW20 token staking with configurable unbonding
 
-**Version**: `2.8.0-alpha.2`
+**Version**: `2.8.0-alpha.3`
 
 #### InstantiateMsg
 
@@ -709,7 +709,7 @@
 
 > External reward distribution for CW20 stakers
 
-**Version**: `2.8.0-alpha.2`
+**Version**: `2.8.0-alpha.3`
 
 #### InstantiateMsg
 
@@ -749,7 +749,7 @@
 
 > Scheduled reward distribution for CW20 stakers
 
-**Version**: `2.8.0-alpha.2`
+**Version**: `2.8.0-alpha.3`
 
 #### InstantiateMsg
 
@@ -790,7 +790,7 @@
 
 > Pro-rata native/CW20 fund distribution to voters
 
-**Version**: `2.8.0-alpha.2`
+**Version**: `2.8.0-alpha.3`
 
 #### InstantiateMsg
 
@@ -822,7 +822,7 @@
 
 > Continuous reward streaming to stakers/voters
 
-**Version**: `2.8.0-alpha.2`
+**Version**: `2.8.0-alpha.3`
 
 #### InstantiateMsg
 
@@ -866,7 +866,7 @@
 
 > Factory for self-admin contract instantiation
 
-**Version**: `2.8.0-alpha.2`
+**Version**: `2.8.0-alpha.3`
 
 #### InstantiateMsg
 
@@ -891,7 +891,7 @@
 
 > BitSong fantoken creation and management
 
-**Version**: `2.8.0-alpha.2`
+**Version**: `2.8.0-alpha.3`
 
 #### ExecuteMsg
 
@@ -903,7 +903,7 @@
 
 > Factory for vesting/payroll payment streams
 
-**Version**: `2.8.0-alpha.2`
+**Version**: `2.8.0-alpha.3`
 
 #### InstantiateMsg
 
@@ -938,7 +938,7 @@
 
 > Escrow-based two-party token swap
 
-**Version**: `2.8.0-alpha.2`
+**Version**: `2.8.0-alpha.3`
 
 #### InstantiateMsg
 
@@ -965,7 +965,7 @@
 
 > Tokenfactory denom management — mint, burn, freeze
 
-**Version**: `2.8.0-alpha.2`
+**Version**: `2.8.0-alpha.3`
 
 #### ExecuteMsg
 
@@ -1007,7 +1007,7 @@ The informa... |
 
 > Token vesting with configurable curves and clawback
 
-**Version**: `2.8.0-alpha.2`
+**Version**: `2.8.0-alpha.3`
 
 #### InstantiateMsg
 
@@ -1058,7 +1058,7 @@ Note that if the contract is canceled at time c, this value will change to ... |
 
 > CW721 NFT collection with weighted roles for governance
 
-**Version**: `2.8.0-alpha.2`
+**Version**: `2.8.0-alpha.3`
 
 #### InstantiateMsg
 
