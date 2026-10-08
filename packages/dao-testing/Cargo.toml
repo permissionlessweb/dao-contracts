@@ -42,7 +42,7 @@ rand = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 toml = "0.8"
-cw1-whitelist = {path = "../../../cw-plus/contracts/cw1-whitelist"}
+cw1-whitelist = { git = "https://github.com/permissionlessweb/cw-plus", branch = "zk-mvp" }
 
 btsg-ft-factory = { workspace = true }
 cw-admin-factory = { workspace = true }

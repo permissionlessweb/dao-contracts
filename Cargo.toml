@@ -30,28 +30,28 @@ base64 = "0.22.1"
 bech32 = "0.11.1"
 chrono = "0.4"
 cosm-orc = { version = "4.0" }
-cosmos-sdk-proto = { path = "../cosmos-rust/cosmos-sdk-proto" }
-cosmwasm-schema = { path = "../cosmwasm/packages/schema" }
-cosmwasm-std = { path = "../cosmwasm/packages/std", features = ["cosmwasm_1_2", "cosmwasm_2_2", "stargate"] }
-cw-controllers = { path = "../cw-minus/packages/controllers" }
-cw-multi-test = { package = "abstract-cw-multi-test", path = "../cw-multi-test-fork" }
-cw-ownable = { path = "../cw-plus-plus/packages/ownable" }
-cw-storage-plus = { path = "../cw-storage-plus" }
-cw-utils = { path = "../cw-minus/packages/cw-utils" }
-cw721-nips = { path = "../terp-rs/crates/nips" }
-cw2 = { path = "../cw-minus/packages/cw2" }
-cw20 = { path = "../cw-plus/packages/cw20" }
-cw20-base = { path = "../cw-plus/contracts/cw20-base" }
-cw3 = { path = "../cw-plus/packages/cw3" }
-cw4 = { path = "../cw-plus/packages/cw4" }
-cw4-group = { path = "../cw-plus/contracts/cw4-group" }
-cw721 = { path = "../cw-nfts/packages/cw721" }
-cw721-base = { path = "../cw-nfts/contracts/cw721-base" }
+cosmos-sdk-proto = { git = "https://github.com/permissionlessweb/cosmos-rust", branch = "zk-mvp" }
+cosmwasm-schema = { git = "https://github.com/permissionlessweb/cosmwasm", branch = "zk-mvp" }
+cosmwasm-std = { git = "https://github.com/permissionlessweb/cosmwasm", branch = "zk-mvp", features = ["cosmwasm_1_2", "cosmwasm_2_2", "stargate"] }
+cw-controllers = { git = "https://github.com/permissionlessweb/cw-minus", branch = "zk-mvp" }
+cw-multi-test = { package = "abstract-cw-multi-test", git = "https://github.com/permissionlessweb/cw-multi-test-fork", branch = "zk-mvp" }
+cw-ownable = { git = "https://github.com/permissionlessweb/cw-plus-plus", branch = "zk-mvp" }
+cw-storage-plus = { git = "https://github.com/permissionlessweb/cw-storage-plus", branch = "zk-mvp" }
+cw-utils = { git = "https://github.com/permissionlessweb/cw-minus", branch = "zk-mvp" }
+cw721-nips = { git = "https://github.com/permissionlessweb/terp-rs", rev = "11a2b8a3c1243999d20ecbc40052b179d2f814d8" }
+cw2 = { git = "https://github.com/permissionlessweb/cw-minus", branch = "zk-mvp" }
+cw20 = { git = "https://github.com/permissionlessweb/cw-plus", branch = "zk-mvp" }
+cw20-base = { git = "https://github.com/permissionlessweb/cw-plus", branch = "zk-mvp" }
+cw3 = { git = "https://github.com/permissionlessweb/cw-plus", branch = "zk-mvp" }
+cw4 = { git = "https://github.com/permissionlessweb/cw-plus", branch = "zk-mvp" }
+cw4-group = { git = "https://github.com/permissionlessweb/cw-plus", branch = "zk-mvp" }
+cw721 = { git = "https://github.com/permissionlessweb/cw-nfts", branch = "zk-mvp" }
+cw721-base = { git = "https://github.com/permissionlessweb/cw-nfts", branch = "zk-mvp" }
 env_logger = "0.11.10"
 once_cell = "1.18"
-osmosis-std = { path = "../osmosis-rust/packages/osmosis-std" }
-osmosis-std-derive = { path = "../osmosis-rust/packages/osmosis-std-derive" }
-osmosis-test-tube = { path = "../osmosis-test-tube/packages/osmosis-test-tube" }
+osmosis-std = { git = "https://github.com/permissionlessweb/osmosis-rust", branch = "zk-mvp" }
+osmosis-std-derive = { git = "https://github.com/permissionlessweb/osmosis-rust", branch = "zk-mvp" }
+osmosis-test-tube = { git = "https://github.com/permissionlessweb/osmosis-test-tube", branch = "zk-mvp" }
 proc-macro2 = "1.0"
 prost = { version = "=0.14.4" }
 prost-reflect = { version = "=0.16.3", features = ["serde"] }
@@ -72,8 +72,8 @@ thiserror = { version = "1.0" }
 # One commit ahead of version 0.3.0. Allows initialization with an
 # optional owner.
 
-cw-orch = { path = "../cw-orchestrator/cw-orch" }
-cw-orch-polytone = { package = "abstract-cw-orch-polytone", path = "../polytone/packages/cw-orch-polytone" }
+cw-orch = { git = "https://github.com/permissionlessweb/cw-orchestrator", branch = "zk-mvp" }
+cw-orch-polytone = { package = "abstract-cw-orch-polytone", git = "https://github.com/permissionlessweb/polytone", branch = "zk-mvp" }
 
 btsg-ft-factory = { path = "./contracts/external/btsg-ft-factory", version = "2.8.0-alpha.3" }
 cw-admin-factory = { path = "./contracts/external/cw-admin-factory", version = "2.8.0-alpha.3" }
@@ -134,59 +134,55 @@ nft-controllers = { path = "./packages/nft-controllers", version = "2.8.0-alpha.
 wynd-utils = { path = "./packages/wynd-utils", version = "0.4.2" }
 
 [patch.crates-io]
-osmosis-std-derive = { path = "../osmosis-rust/packages/osmosis-std-derive" }
-cw-utils = { path = "../cw-minus/packages/cw-utils" }
-cw2 = { path = "../cw-minus/packages/cw2" }
-cw-controllers = { path = "../cw-minus/packages/controllers" }
-cw20 = { path = "../cw-plus/packages/cw20" }
-cw20-base = { path = "../cw-plus/contracts/cw20-base" }
-cw3 = { path = "../cw-plus/packages/cw3" }
-cw4 = { path = "../cw-plus/packages/cw4" }
-cw4-group = { path = "../cw-plus/contracts/cw4-group" }
-cw-ownable = { path = "../cw-plus-plus/packages/ownable" }
-cw721 = { path = "../cw-nfts/packages/cw721" }
-cw721-base = { path = "../cw-nfts/contracts/cw721-base" }
-cosmos-sdk-proto = { path = "../cosmos-rust/cosmos-sdk-proto" }
-osmosis-std = { path = "../osmosis-rust/packages/osmosis-std" }
-osmosis-test-tube = { path = "../osmosis-test-tube/packages/osmosis-test-tube" }
-cw-orch = { path = "../cw-orchestrator/cw-orch" }
+osmosis-std-derive = { git = "https://github.com/permissionlessweb/osmosis-rust", branch = "zk-mvp" }
+cw-utils = { git = "https://github.com/permissionlessweb/cw-minus", branch = "zk-mvp" }
+cw2 = { git = "https://github.com/permissionlessweb/cw-minus", branch = "zk-mvp" }
+cw-controllers = { git = "https://github.com/permissionlessweb/cw-minus", branch = "zk-mvp" }
+cw20 = { git = "https://github.com/permissionlessweb/cw-plus", branch = "zk-mvp" }
+cw20-base = { git = "https://github.com/permissionlessweb/cw-plus", branch = "zk-mvp" }
+cw4 = { git = "https://github.com/permissionlessweb/cw-plus", branch = "zk-mvp" }
+cw4-group = { git = "https://github.com/permissionlessweb/cw-plus", branch = "zk-mvp" }
+cw-ownable = { git = "https://github.com/permissionlessweb/cw-plus-plus", branch = "zk-mvp" }
+cw721 = { git = "https://github.com/permissionlessweb/cw-nfts", branch = "zk-mvp" }
+cw721-base = { git = "https://github.com/permissionlessweb/cw-nfts", branch = "zk-mvp" }
+cosmos-sdk-proto = { git = "https://github.com/permissionlessweb/cosmos-rust", branch = "zk-mvp" }
+osmosis-std = { git = "https://github.com/permissionlessweb/osmosis-rust", branch = "zk-mvp" }
+osmosis-test-tube = { git = "https://github.com/permissionlessweb/osmosis-test-tube", branch = "zk-mvp" }
+cw-orch = { git = "https://github.com/permissionlessweb/cw-orchestrator", branch = "zk-mvp" }
 
-
-
-[patch.'https://github.com/permissionlessweb/cw-plus']
-cw1 = { path = "../cw-plus/packages/cw1" }
-cw20 = { path = "../cw-plus/packages/cw20" }
-cw20-base = { path = "../cw-plus/contracts/cw20-base" }
-cw20-ics20 = { path = "../cw-plus/contracts/cw20-ics20" }
-cw3 = { path = "../cw-plus/packages/cw3" }
-cw4 = { path = "../cw-plus/packages/cw4" }
-cw4-group = { path = "../cw-plus/contracts/cw4-group" }
-
-# Unify all git branch tips (freeze/mvp/main) of CosmWasm onto monorepo paths.
-[patch.'https://github.com/permissionlessweb/cosmwasm']
-cosmwasm-core = { path = "../cosmwasm/packages/core" }
-cosmwasm-crypto = { path = "../cosmwasm/packages/crypto" }
-cosmwasm-derive = { path = "../cosmwasm/packages/derive" }
-cosmwasm-schema = { path = "../cosmwasm/packages/schema" }
-cosmwasm-schema-derive = { path = "../cosmwasm/packages/schema-derive" }
-cosmwasm-std = { path = "../cosmwasm/packages/std" }
-cw-schema = { path = "../cosmwasm/packages/cw-schema" }
-cw-schema-derive = { path = "../cosmwasm/packages/cw-schema-derive" }
-
-[patch.'https://github.com/permissionlessweb/cw-minus']
-cw-controllers = { path = "../cw-minus/packages/controllers" }
-cw-utils = { path = "../cw-minus/packages/cw-utils" }
-cw2 = { path = "../cw-minus/packages/cw2" }
-
-[patch.'https://github.com/permissionlessweb/cw-storage-plus']
-cw-storage-plus = { path = "../cw-storage-plus" }
-
-[patch.'https://github.com/permissionlessweb/cw-plus-plus']
-cw-ownable = { path = "../cw-plus-plus/packages/ownable" }
-cw-address-like = { path = "../cw-plus-plus/packages/address-like" }
+# Sibling crates published on zk-mvp still path-depend on the monorepo checkout.
+# Retarget those paths at the same branch. Cargo.lock records the commits.
+# permissionlessweb/cosmwasm zk-mvp is 416d8c60, the v6.3.0 / v6.4.0 release.
+[patch.'https://github.com/permissionlessweb/cw-orchestrator']
+cosmwasm-std = { git = "https://github.com/permissionlessweb/cosmwasm", branch = "zk-mvp" }
+zk-cosmwasm = { git = "https://github.com/permissionlessweb/cosmwasm", branch = "zk-mvp" }
+cw-storage-plus = { git = "https://github.com/permissionlessweb/cw-storage-plus", branch = "zk-mvp" }
+cw-utils = { git = "https://github.com/permissionlessweb/cw-minus", branch = "zk-mvp" }
+cw-multi-test = { package = "abstract-cw-multi-test", git = "https://github.com/permissionlessweb/cw-multi-test-fork", branch = "zk-mvp" }
+cosmos-sdk-proto = { git = "https://github.com/permissionlessweb/cosmos-rust", branch = "zk-mvp" }
+cosmrs = { git = "https://github.com/permissionlessweb/cosmos-rust", branch = "zk-mvp" }
+ibc-proto = { git = "https://github.com/permissionlessweb/ibc-proto-rs", branch = "zk-mvp" }
+cosmwasm-schema = { git = "https://github.com/permissionlessweb/cosmwasm", branch = "zk-mvp" }
+cw1 = { git = "https://github.com/permissionlessweb/cw-plus", branch = "zk-mvp" }
+cw1-whitelist = { git = "https://github.com/permissionlessweb/cw-plus", branch = "zk-mvp" }
+ibc-relayer-types = { git = "https://github.com/permissionlessweb/hermes", branch = "zk-mvp" }
 
 [patch.'https://github.com/permissionlessweb/cw-multi-test-fork']
-abstract-cw-multi-test = { path = "../cw-multi-test-fork" }
+cosmwasm-schema = { git = "https://github.com/permissionlessweb/cosmwasm", branch = "zk-mvp" }
+cosmwasm-std = { git = "https://github.com/permissionlessweb/cosmwasm", branch = "zk-mvp" }
+cw-storage-plus = { git = "https://github.com/permissionlessweb/cw-storage-plus", branch = "zk-mvp" }
+cw-utils = { git = "https://github.com/permissionlessweb/cw-minus", branch = "zk-mvp" }
+cw20-ics20 = { git = "https://github.com/permissionlessweb/cw-plus", branch = "zk-mvp" }
+
+[patch.'https://github.com/permissionlessweb/terp-rs']
+cosmwasm-std = { git = "https://github.com/permissionlessweb/cosmwasm", branch = "zk-mvp" }
+cw721 = { git = "https://github.com/permissionlessweb/cw-nfts", branch = "zk-mvp" }
+
+[patch.'https://github.com/permissionlessweb/cosmos-rust']
+tendermint = { git = "https://github.com/permissionlessweb/tendermint-rs", branch = "zk-mvp" }
+tendermint-proto = { git = "https://github.com/permissionlessweb/tendermint-rs", branch = "zk-mvp" }
+tendermint-rpc = { git = "https://github.com/permissionlessweb/tendermint-rs", branch = "zk-mvp" }
+informalsystems-pbjson = { git = "https://github.com/permissionlessweb/pbjson", branch = "zk-mvp" }
 
 [profile.release]
 codegen-units = 1
