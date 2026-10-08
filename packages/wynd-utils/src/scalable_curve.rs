@@ -1,6 +1,6 @@
 use cosmwasm_schema::cw_serde;
-use serde::{Deserialize, Serialize};
 use cosmwasm_std::{Decimal, Uint128};
+use serde::{Deserialize, Serialize};
 
 use crate::{Curve, CurveError, PiecewiseLinear, SaturatingLinear};
 

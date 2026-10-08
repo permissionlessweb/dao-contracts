@@ -322,7 +322,9 @@ fn test_prepare_and_decode() {
     assert!(err.to_string().contains("Protobuf message not found"));
 
     let err = suite.decode_err("cosmos.base.v1beta1.Coin", vec![0x1, 0x2, 0x3]);
-    assert!(err.to_string().contains("failed to decode Protobuf message"));
+    assert!(err
+        .to_string()
+        .contains("failed to decode Protobuf message"));
 
     suite.assert_decode(
         "cosmos.base.v1beta1.Coin",

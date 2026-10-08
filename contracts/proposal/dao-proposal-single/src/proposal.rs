@@ -198,9 +198,7 @@ impl SingleChoiceProposal {
                     does_vote_count_pass(votes_to_consider.yes, options, threshold)
                 }
             }
-            Threshold::AbsoluteCount { threshold } => {
-                votes_to_consider.yes >= threshold
-            }
+            Threshold::AbsoluteCount { threshold } => votes_to_consider.yes >= threshold,
         }
     }
 

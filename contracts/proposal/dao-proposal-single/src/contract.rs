@@ -589,8 +589,7 @@ pub fn execute_vote(
     let old_status = prop.status;
 
     prop.votes.add_vote(vote, vote_power.total);
-    prop.individual_votes
-        .add_vote(vote, vote_power.individual);
+    prop.individual_votes.add_vote(vote, vote_power.individual);
     prop.update_status(&env.block)?;
 
     PROPOSALS.save(deps.storage, proposal_id, &prop)?;
@@ -1055,11 +1054,9 @@ pub fn migrate(
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     match msg {
-        MigrateMsg::FromV1 { .. } => {
-            Err(ContractError::Std(cosmwasm_std::StdError::msg(
-                "cannot migrate from v1 -> v3. DAOs must first migrate to  =< v2.8.0-alpha.2",
-            )))
-        }
+        MigrateMsg::FromV1 { .. } => Err(ContractError::Std(cosmwasm_std::StdError::msg(
+            "cannot migrate from v1 -> v3. DAOs must first migrate to  =< v2.8.0-alpha.2",
+        ))),
         MigrateMsg::FromCompatible {} => Ok(Response::default()
             .add_attribute("action", "migrate")
             .add_attribute("from", "compatible")),

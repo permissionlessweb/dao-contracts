@@ -45,13 +45,19 @@ fn option_queries() {
 
     let mut options = suite.query_all_options().unwrap();
     options.sort();
-    let mut expected = vec![community_pool.clone(), einstein.to_string(), recipient.clone()];
+    let mut expected = vec![
+        community_pool.clone(),
+        einstein.to_string(),
+        recipient.clone(),
+    ];
     expected.sort();
     assert_eq!(options, expected);
 
     let option = suite.query_check_option(einstein.to_string()).unwrap();
     assert!(option);
 
-    let option = suite.query_check_option(api.addr_make("newton").to_string()).unwrap();
+    let option = suite
+        .query_check_option(api.addr_make("newton").to_string())
+        .unwrap();
     assert!(!option);
 }

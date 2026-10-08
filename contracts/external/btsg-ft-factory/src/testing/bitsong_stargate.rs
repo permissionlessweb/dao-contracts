@@ -1,7 +1,7 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    Addr, Api, Binary, BlockInfo, Coin, CustomMsg, CustomQuery, Querier, StdError, StdResult,
-    Storage, Uint64, from_json, to_json_binary,
+    from_json, to_json_binary, Addr, Api, Binary, BlockInfo, Coin, CustomMsg, CustomQuery, Querier,
+    StdError, StdResult, Storage, Uint64,
 };
 use cw_multi_test::{AppResponse, BankSudo, CosmosRouter, Stargate, SudoMsg};
 use prost::Message;
@@ -85,18 +85,20 @@ impl Stargate for StargateKeeper {
                 return Err(StdError::msg("Minter unauthorized"));
             }
 
-            router.sudo(
-                api,
-                storage,
-                block,
-                SudoMsg::Bank(BankSudo::Mint {
-                    to_address: msg.recipient.clone(),
-                    amount: vec![Coin::new(
-                        coin.amount.parse::<u128>().unwrap(),
-                        coin.denom.clone(),
-                    )],
-                }),
-            ).map_err(|e| StdError::msg(e.to_string()))?;
+            router
+                .sudo(
+                    api,
+                    storage,
+                    block,
+                    SudoMsg::Bank(BankSudo::Mint {
+                        to_address: msg.recipient.clone(),
+                        amount: vec![Coin::new(
+                            coin.amount.parse::<u128>().unwrap(),
+                            coin.denom.clone(),
+                        )],
+                    }),
+                )
+                .map_err(|e| StdError::msg(e.to_string()))?;
 
             return Ok(AppResponse {
                 events: vec![],

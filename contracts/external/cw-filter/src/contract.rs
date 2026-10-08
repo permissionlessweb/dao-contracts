@@ -119,9 +119,8 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Info {} => to_json_binary(&query_info(deps)?),
         QueryMsg::ProtobufRegistry {} => to_json_binary(&query_protobuf_registry(deps)?),
         QueryMsg::Filter { filter, msg } => {
-            let filter: serde_json::Value = serde_json::from_str(&filter).map_err(|e| {
-                cosmwasm_std::StdError::msg(format!("invalid filter JSON: {e}"))
-            })?;
+            let filter: serde_json::Value = serde_json::from_str(&filter)
+                .map_err(|e| cosmwasm_std::StdError::msg(format!("invalid filter JSON: {e}")))?;
             to_json_binary(&query_filter(deps, filter, msg)?)
         }
     }

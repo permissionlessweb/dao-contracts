@@ -354,7 +354,7 @@ impl MultipleChoiceProposal {
 mod tests {
     use super::*;
 
-    use cosmwasm_std::{Uint128, testing::mock_env};
+    use cosmwasm_std::{testing::mock_env, Uint128};
     use dao_voting::multiple_choice::{MultipleChoiceOption, MultipleChoiceOptions};
 
     fn create_proposal(

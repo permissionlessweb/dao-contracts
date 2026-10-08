@@ -8,7 +8,8 @@ pub const DAO: Item<cosmwasm_std::Addr> = Item::new("dao");
 /// The underlying voting module that provides the real voter membership
 /// and token weights. This adapter delegates to it for membership queries
 /// and wraps results with ZK proof verification via PollRegistry.
-pub const UNDERLYING_VOTING_MODULE: Item<cosmwasm_std::Addr> = Item::new("underlying_voting_module");
+pub const UNDERLYING_VOTING_MODULE: Item<cosmwasm_std::Addr> =
+    Item::new("underlying_voting_module");
 
 /// The PollRegistry contract address that manages ZK poll lifecycle
 /// (merkle root registration, proof verification, tally accumulation).

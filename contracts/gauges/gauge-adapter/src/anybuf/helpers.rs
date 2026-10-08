@@ -63,7 +63,7 @@ pub fn get_coins_from_bytes(coin_bytes: Vec<Vec<u8>>) -> Vec<Coin> {
 // creates coins from bufany bytes
 pub fn get_coin_from_bytes(coin_bytes: Vec<u8>) -> Coin {
     let bufany_token = Bufany::deserialize(&coin_bytes).unwrap();
-    
+
     coin(
         u128::from_str_radix(&bufany_token.string(2).clone().unwrap(), 10).unwrap(),
         bufany_token.string(1).clone().unwrap(),
@@ -71,7 +71,6 @@ pub fn get_coin_from_bytes(coin_bytes: Vec<u8>) -> Coin {
 }
 
 pub fn new_amount_gauge_fraction(amnt: Uint256, fraction: Decimal) -> StdResult<Uint256> {
-    amnt
-        .checked_mul_floor(fraction)
+    amnt.checked_mul_floor(fraction)
         .map_err(|x| StdError::msg(x.to_string()))
 }

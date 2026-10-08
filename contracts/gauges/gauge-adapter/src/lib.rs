@@ -9,5 +9,5 @@ pub mod anybuf;
 #[cfg(test)]
 mod multitest;
 
-pub use crate::error::ContractError;
 pub use crate::anybuf::*;
+pub use crate::error::ContractError;

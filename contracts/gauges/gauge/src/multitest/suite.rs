@@ -1,10 +1,10 @@
 use anyhow::Result as AnyResult;
+use cosmwasm_std::testing::MockApi;
 use cosmwasm_std::{
     coin, to_json_binary, Addr, Coin, CosmosMsg, Decimal, StdError, StdResult, Uint256, WasmMsg,
 };
 use cw4::Member;
 use cw4_group::msg::ExecuteMsg as Cw4ExecuteMsg;
-use cosmwasm_std::testing::MockApi;
 use cw_multi_test::{App, AppResponse, ContractWrapper, Executor};
 use cw_utils::Duration;
 use dao_interface::{
@@ -209,7 +209,9 @@ impl SuiteBuilder {
 
         if let Some(core_balance) = self.initial_core_balance {
             app.init_modules(|router, _, storage| -> AnyResult<()> {
-                router.bank.init_balance(storage, &core, vec![core_balance])
+                router
+                    .bank
+                    .init_balance(storage, &core, vec![core_balance])
                     .map_err(|e| anyhow::anyhow!("{e}"))
             })
             .unwrap();
@@ -290,12 +292,14 @@ impl Suite {
         sender: impl Into<String>,
         gauge_id: u64,
     ) -> AnyResult<AppResponse> {
-        self.app.execute_contract(
-            Addr::unchecked(sender),
-            gauge.clone(),
-            &ExecuteMsg::StopGauge { gauge: gauge_id },
-            &[],
-        ).map_err(|e| anyhow::anyhow!("{e}"))
+        self.app
+            .execute_contract(
+                Addr::unchecked(sender),
+                gauge.clone(),
+                &ExecuteMsg::StopGauge { gauge: gauge_id },
+                &[],
+            )
+            .map_err(|e| anyhow::anyhow!("{e}"))
     }
 
     pub fn add_option(
@@ -305,15 +309,17 @@ impl Suite {
         gauge_id: u64,
         option: impl Into<String>,
     ) -> AnyResult<AppResponse> {
-        self.app.execute_contract(
-            Addr::unchecked(voter),
-            gauge.clone(),
-            &ExecuteMsg::AddOption {
-                gauge: gauge_id,
-                option: option.into(),
-            },
-            &[],
-        ).map_err(|e| anyhow::anyhow!("{e}"))
+        self.app
+            .execute_contract(
+                Addr::unchecked(voter),
+                gauge.clone(),
+                &ExecuteMsg::AddOption {
+                    gauge: gauge_id,
+                    option: option.into(),
+                },
+                &[],
+            )
+            .map_err(|e| anyhow::anyhow!("{e}"))
     }
 
     pub fn remove_option(
@@ -323,15 +329,17 @@ impl Suite {
         gauge_id: u64,
         option: impl Into<String>,
     ) -> AnyResult<AppResponse> {
-        self.app.execute_contract(
-            Addr::unchecked(voter),
-            gauge.clone(),
-            &ExecuteMsg::RemoveOption {
-                gauge: gauge_id,
-                option: option.into(),
-            },
-            &[],
-        ).map_err(|e| anyhow::anyhow!("{e}"))
+        self.app
+            .execute_contract(
+                Addr::unchecked(voter),
+                gauge.clone(),
+                &ExecuteMsg::RemoveOption {
+                    gauge: gauge_id,
+                    option: option.into(),
+                },
+                &[],
+            )
+            .map_err(|e| anyhow::anyhow!("{e}"))
     }
 
     /// Helper to remove an option from the test gauge adapter
@@ -340,14 +348,16 @@ impl Suite {
         gauge_adapter: &Addr,
         option: impl Into<String>,
     ) -> AnyResult<AppResponse> {
-        self.app.execute_contract(
-            Addr::unchecked(self.owner.clone()),
-            gauge_adapter.clone(),
-            &AdapterExecuteMsg::InvalidateOption {
-                option: option.into(),
-            },
-            &[],
-        ).map_err(|e| anyhow::anyhow!("{e}"))
+        self.app
+            .execute_contract(
+                Addr::unchecked(self.owner.clone()),
+                gauge_adapter.clone(),
+                &AdapterExecuteMsg::InvalidateOption {
+                    option: option.into(),
+                },
+                &[],
+            )
+            .map_err(|e| anyhow::anyhow!("{e}"))
     }
 
     /// Helper to add an option to the test gauge adapter
@@ -356,14 +366,16 @@ impl Suite {
         gauge_adapter: &Addr,
         option: impl Into<String>,
     ) -> AnyResult<AppResponse> {
-        self.app.execute_contract(
-            Addr::unchecked(self.owner.clone()),
-            gauge_adapter.clone(),
-            &AdapterExecuteMsg::AddValidOption {
-                option: option.into(),
-            },
-            &[],
-        ).map_err(|e| anyhow::anyhow!("{e}"))
+        self.app
+            .execute_contract(
+                Addr::unchecked(self.owner.clone()),
+                gauge_adapter.clone(),
+                &AdapterExecuteMsg::AddValidOption {
+                    option: option.into(),
+                },
+                &[],
+            )
+            .map_err(|e| anyhow::anyhow!("{e}"))
     }
 
     /// Helper to vote for a single option
@@ -394,15 +406,17 @@ impl Suite {
                 .map(|(option, weight)| crate::state::Vote { option, weight })
                 .collect::<Vec<_>>()
         });
-        self.app.execute_contract(
-            Addr::unchecked(voter),
-            gauge.clone(),
-            &ExecuteMsg::PlaceVotes {
-                gauge: gauge_id,
-                votes,
-            },
-            &[],
-        ).map_err(|e| anyhow::anyhow!("{e}"))
+        self.app
+            .execute_contract(
+                Addr::unchecked(voter),
+                gauge.clone(),
+                &ExecuteMsg::PlaceVotes {
+                    gauge: gauge_id,
+                    votes,
+                },
+                &[],
+            )
+            .map_err(|e| anyhow::anyhow!("{e}"))
     }
 
     pub fn execute_options(
@@ -411,12 +425,14 @@ impl Suite {
         sender: impl Into<String>,
         gauge_id: u64,
     ) -> AnyResult<AppResponse> {
-        self.app.execute_contract(
-            Addr::unchecked(sender),
-            gauge.clone(),
-            &ExecuteMsg::Execute { gauge: gauge_id },
-            &[],
-        ).map_err(|e| anyhow::anyhow!("{e}"))
+        self.app
+            .execute_contract(
+                Addr::unchecked(sender),
+                gauge.clone(),
+                &ExecuteMsg::Execute { gauge: gauge_id },
+                &[],
+            )
+            .map_err(|e| anyhow::anyhow!("{e}"))
     }
 
     pub fn query_gauge(&self, gauge_contract: Addr, id: u64) -> StdResult<GaugeResponse> {
@@ -531,7 +547,8 @@ impl Suite {
                             hook_caller: self.group_contract.to_string(),
                             owner: self.core.to_string(),
                             gauges: gauge_config.into(),
-                        }).map_err(|e| anyhow::anyhow!("{e}"))?,
+                        })
+                        .map_err(|e| anyhow::anyhow!("{e}"))?,
                         admin: Some(Admin::Address {
                             addr: self.owner.clone(),
                         }),
@@ -540,18 +557,21 @@ impl Suite {
                         salt: None,
                     }],
                     to_disable: vec![],
-                }).map_err(|e| anyhow::anyhow!("{e}"))?,
+                })
+                .map_err(|e| anyhow::anyhow!("{e}"))?,
                 funds: vec![],
             })],
             proposer: None,
             vote: None,
         });
-        self.app.execute_contract(
-            Addr::unchecked(proposer),
-            self.proposal_single.clone(),
-            &propose_msg,
-            &[],
-        ).map_err(|e| anyhow::anyhow!("{e}"))
+        self.app
+            .execute_contract(
+                Addr::unchecked(proposer),
+                self.proposal_single.clone(),
+                &propose_msg,
+                &[],
+            )
+            .map_err(|e| anyhow::anyhow!("{e}"))
     }
 
     pub fn propose_update_proposal_module_custom_hook_caller(
@@ -573,7 +593,8 @@ impl Suite {
                             hook_caller: hook_caller.into(),
                             owner: self.core.to_string(),
                             gauges: gauge_config.into(),
-                        }).map_err(|e| anyhow::anyhow!("{e}"))?,
+                        })
+                        .map_err(|e| anyhow::anyhow!("{e}"))?,
                         admin: Some(Admin::Address {
                             addr: self.owner.clone(),
                         }),
@@ -582,18 +603,21 @@ impl Suite {
                         salt: None,
                     }],
                     to_disable: vec![],
-                }).map_err(|e| anyhow::anyhow!("{e}"))?,
+                })
+                .map_err(|e| anyhow::anyhow!("{e}"))?,
                 funds: vec![],
             })],
             proposer: None,
             vote: None,
         });
-        self.app.execute_contract(
-            Addr::unchecked(proposer),
-            self.proposal_single.clone(),
-            &propose_msg,
-            &[],
-        ).map_err(|e| anyhow::anyhow!("{e}"))
+        self.app
+            .execute_contract(
+                Addr::unchecked(proposer),
+                self.proposal_single.clone(),
+                &propose_msg,
+                &[],
+            )
+            .map_err(|e| anyhow::anyhow!("{e}"))
     }
 
     pub fn propose_add_membership_change_hook(
@@ -608,18 +632,21 @@ impl Suite {
                 contract_addr: self.group_contract.to_string(),
                 msg: to_json_binary(&Cw4ExecuteMsg::AddHook {
                     addr: gauge_contract.to_string(),
-                }).map_err(|e| anyhow::anyhow!("{e}"))?,
+                })
+                .map_err(|e| anyhow::anyhow!("{e}"))?,
                 funds: vec![],
             })],
             proposer: None,
             vote: None,
         });
-        self.app.execute_contract(
-            Addr::unchecked(proposer),
-            self.proposal_single.clone(),
-            &propose_msg,
-            &[],
-        ).map_err(|e| anyhow::anyhow!("{e}"))
+        self.app
+            .execute_contract(
+                Addr::unchecked(proposer),
+                self.proposal_single.clone(),
+                &propose_msg,
+                &[],
+            )
+            .map_err(|e| anyhow::anyhow!("{e}"))
     }
 
     pub fn instantiate_adapter_and_create_gauge(
@@ -639,12 +666,14 @@ impl Suite {
             epoch_limit,
         )?;
         let gauge_adapter = option.adapter.clone();
-        self.app.execute_contract(
-            Addr::unchecked(&self.core),
-            gauge_contract,
-            &ExecuteMsg::CreateGauge(option),
-            &[],
-        ).map_err(|e| anyhow::anyhow!("{e}"))?;
+        self.app
+            .execute_contract(
+                Addr::unchecked(&self.core),
+                gauge_contract,
+                &ExecuteMsg::CreateGauge(option),
+                &[],
+            )
+            .map_err(|e| anyhow::anyhow!("{e}"))?;
         Ok(Addr::unchecked(gauge_adapter))
     }
 
@@ -656,17 +685,20 @@ impl Suite {
         reset_epoch: impl Into<Option<u64>>,
         total_epochs: impl Into<Option<u64>>,
     ) -> AnyResult<GaugeConfig> {
-        let gauge_adapter = self.app.instantiate_contract(
-            self.gauge_adapter_code_id,
-            Addr::unchecked(&self.core),
-            &AdapterInstantiateMsg {
-                options: options.iter().map(|&s| s.into()).collect(),
-                to_distribute: coin(to_distribute.0, to_distribute.1),
-            },
-            &[],
-            "gauge adapter",
-            Some(self.core.to_string()),
-        ).map_err(|e| anyhow::anyhow!("{e}"))?;
+        let gauge_adapter = self
+            .app
+            .instantiate_contract(
+                self.gauge_adapter_code_id,
+                Addr::unchecked(&self.core),
+                &AdapterInstantiateMsg {
+                    options: options.iter().map(|&s| s.into()).collect(),
+                    to_distribute: coin(to_distribute.0, to_distribute.1),
+                },
+                &[],
+                "gauge adapter",
+                Some(self.core.to_string()),
+            )
+            .map_err(|e| anyhow::anyhow!("{e}"))?;
 
         Ok(GaugeConfig {
             title: "gauge".to_owned(),
@@ -692,19 +724,21 @@ impl Suite {
         max_options_selected: impl Into<Option<u32>>,
         max_available_percentage: impl Into<Option<Decimal>>,
     ) -> AnyResult<AppResponse> {
-        self.app.execute_contract(
-            Addr::unchecked(sender),
-            gauge_contract,
-            &ExecuteMsg::UpdateGauge {
-                gauge_id,
-                epoch_size: epoch_size.into(),
-                min_percent_selected,
-                max_options_selected: max_options_selected.into(),
-                max_available_percentage: max_available_percentage.into(),
-                epoch_limit: epoch_limit.into(),
-            },
-            &[],
-        ).map_err(|e| anyhow::anyhow!("{e}"))
+        self.app
+            .execute_contract(
+                Addr::unchecked(sender),
+                gauge_contract,
+                &ExecuteMsg::UpdateGauge {
+                    gauge_id,
+                    epoch_size: epoch_size.into(),
+                    min_percent_selected,
+                    max_options_selected: max_options_selected.into(),
+                    max_available_percentage: max_available_percentage.into(),
+                    epoch_limit: epoch_limit.into(),
+                },
+                &[],
+            )
+            .map_err(|e| anyhow::anyhow!("{e}"))
     }
 
     pub fn reset_gauge(
@@ -714,12 +748,14 @@ impl Suite {
         gauge: u64,
         batch_size: u32,
     ) -> AnyResult<AppResponse> {
-        self.app.execute_contract(
-            Addr::unchecked(sender),
-            gauge_contract.clone(),
-            &ExecuteMsg::ResetGauge { gauge, batch_size },
-            &[],
-        ).map_err(|e| anyhow::anyhow!("{e}"))
+        self.app
+            .execute_contract(
+                Addr::unchecked(sender),
+                gauge_contract.clone(),
+                &ExecuteMsg::ResetGauge { gauge, batch_size },
+                &[],
+            )
+            .map_err(|e| anyhow::anyhow!("{e}"))
     }
 
     pub fn place_vote_single(
@@ -728,16 +764,18 @@ impl Suite {
         proposal_id: u64,
         vote: Vote,
     ) -> AnyResult<AppResponse> {
-        self.app.execute_contract(
-            Addr::unchecked(voter),
-            self.proposal_single.clone(),
-            &ProposalSingleExecuteMsg::Vote {
-                proposal_id,
-                vote,
-                rationale: None,
-            },
-            &[],
-        ).map_err(|e| anyhow::anyhow!("{e}"))
+        self.app
+            .execute_contract(
+                Addr::unchecked(voter),
+                self.proposal_single.clone(),
+                &ProposalSingleExecuteMsg::Vote {
+                    proposal_id,
+                    vote,
+                    rationale: None,
+                },
+                &[],
+            )
+            .map_err(|e| anyhow::anyhow!("{e}"))
     }
 
     pub fn execute_single_proposal(
@@ -745,12 +783,14 @@ impl Suite {
         executor: impl Into<String>,
         proposal_id: u64,
     ) -> AnyResult<AppResponse> {
-        self.app.execute_contract(
-            Addr::unchecked(executor),
-            self.proposal_single.clone(),
-            &ProposalSingleExecuteMsg::Execute { proposal_id },
-            &[],
-        ).map_err(|e| anyhow::anyhow!("{e}"))
+        self.app
+            .execute_contract(
+                Addr::unchecked(executor),
+                self.proposal_single.clone(),
+                &ProposalSingleExecuteMsg::Execute { proposal_id },
+                &[],
+            )
+            .map_err(|e| anyhow::anyhow!("{e}"))
     }
 
     pub fn force_update_members(
@@ -758,12 +798,14 @@ impl Suite {
         remove: Vec<String>,
         add: Vec<Member>,
     ) -> AnyResult<AppResponse> {
-        self.app.execute_contract(
-            Addr::unchecked(self.core.clone()),
-            self.group_contract.clone(),
-            &Cw4ExecuteMsg::UpdateMembers { remove, add },
-            &[],
-        ).map_err(|e| anyhow::anyhow!("{e}"))
+        self.app
+            .execute_contract(
+                Addr::unchecked(self.core.clone()),
+                self.group_contract.clone(),
+                &Cw4ExecuteMsg::UpdateMembers { remove, add },
+                &[],
+            )
+            .map_err(|e| anyhow::anyhow!("{e}"))
     }
 
     pub fn list_proposals(&self) -> StdResult<Vec<u64>> {
@@ -805,7 +847,11 @@ impl Suite {
 
     pub fn query_balance(&self, account: &str, denom: &str) -> StdResult<u128> {
         let balance = self.app.wrap().query_balance(account, denom)?;
-        Ok(balance.amount.to_string().parse::<u128>().map_err(|e| StdError::msg(e.to_string()))?)
+        Ok(balance
+            .amount
+            .to_string()
+            .parse::<u128>()
+            .map_err(|e| StdError::msg(e.to_string()))?)
     }
 
     pub fn auto_migrate_gauge(
@@ -815,13 +861,15 @@ impl Suite {
     ) -> AnyResult<AppResponse> {
         let sender = Addr::unchecked(&self.owner);
 
-        self.app.migrate_contract(
-            sender,
-            gauge.clone(),
-            &MigrateMsg {
-                gauge_config: gauge_config.into(),
-            },
-            self.gauge_code_id,
-        ).map_err(|e| anyhow::anyhow!("{e}"))
+        self.app
+            .migrate_contract(
+                sender,
+                gauge.clone(),
+                &MigrateMsg {
+                    gauge_config: gauge_config.into(),
+                },
+                self.gauge_code_id,
+            )
+            .map_err(|e| anyhow::anyhow!("{e}"))
     }
 }

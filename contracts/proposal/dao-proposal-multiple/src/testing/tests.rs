@@ -1986,7 +1986,9 @@ fn test_cant_vote_not_registered() {
         )
         .unwrap_err();
 
-    assert!(err.to_string().contains("Not registered to vote (no voting power) at time of proposal creation."))
+    assert!(err
+        .to_string()
+        .contains("Not registered to vote (no voting power) at time of proposal creation."))
 }
 
 #[test]
@@ -3841,7 +3843,9 @@ fn test_revoting_same_vote_twice() {
         .unwrap_err();
 
     // Can't cast the same vote twice.
-    assert!(err.to_string().contains("Already cast a vote with that option. Change your vote to revote."));
+    assert!(err
+        .to_string()
+        .contains("Already cast a vote with that option. Change your vote to revote."));
 }
 
 /// Tests that revoting into a non-existing vote option
@@ -4448,7 +4452,9 @@ fn test_no_double_refund_on_execute_fail_and_close() {
         )
         .unwrap_err();
 
-    assert!(err.to_string().contains("Only rejected proposals may be closed"));
+    assert!(err
+        .to_string()
+        .contains("Only rejected proposals may be closed"));
 
     // Check that our deposit was not refunded a second time on close.
     let balance = query_balance_cw20(&app, token_contract.to_string(), addr_str(CREATOR_ADDR));
@@ -5114,7 +5120,9 @@ fn test_open_proposal_passes_with_zero_timelock_veto_duration() {
         )
         .unwrap_err();
 
-    assert!(err.to_string().contains("The veto timelock duration has expired."));
+    assert!(err
+        .to_string()
+        .contains("The veto timelock duration has expired."));
 }
 
 #[test]

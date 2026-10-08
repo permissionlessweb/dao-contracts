@@ -1,5 +1,5 @@
-use cosmwasm_std::testing::{mock_dependencies, mock_env, message_info, MockApi};
-use cosmwasm_std::{Addr, Coin, Decimal, Uint128, Uint256, Validator, coins, to_json_binary};
+use cosmwasm_std::testing::{message_info, mock_dependencies, mock_env, MockApi};
+use cosmwasm_std::{coins, to_json_binary, Addr, Coin, Decimal, Uint128, Uint256, Validator};
 use cw20::{Cw20Coin, Cw20ExecuteMsg, Cw20ReceiveMsg};
 use cw_denom::{CheckedDenom, UncheckedDenom};
 use cw_multi_test::{App, AppBuilder, BankSudo, Executor, StakingInfo, SudoMsg};
@@ -463,8 +463,7 @@ fn test_catch_imposter_cw20() {
     let (_, cw20_code_id, _) = setup_contracts(&mut app);
 
     let TestCase {
-        cw_vesting_addr,
-        ..
+        cw_vesting_addr, ..
     } = setup_test_case(&mut app, InstantiateMsg::default(), &[]);
 
     // Create imposter cw20

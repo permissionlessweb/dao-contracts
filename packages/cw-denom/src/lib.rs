@@ -7,7 +7,8 @@ use std::fmt::{self};
 
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    Addr, BankMsg, Coin, CosmosMsg, CustomQuery, Deps, QuerierWrapper, StdError, StdResult, Uint256, WasmMsg, to_json_binary
+    to_json_binary, Addr, BankMsg, Coin, CosmosMsg, CustomQuery, Deps, QuerierWrapper, StdError,
+    StdResult, Uint256, WasmMsg,
 };
 
 use thiserror::Error;
@@ -35,7 +36,6 @@ impl PartialEq for DenomError {
         core::mem::discriminant(self) == core::mem::discriminant(other)
     }
 }
-
 
 /// A denom that has been checked to point to a valid asset. This enum
 /// should never be constructed literally and should always be built
@@ -277,9 +277,7 @@ mod tests {
         assert_eq!(
             err,
             DenomError::InvalidCw20 {
-                err: StdError::msg(format!(
-                    "Querier system error: No such contract: {cw20}",
-                ))
+                err: StdError::msg(format!("Querier system error: No such contract: {cw20}",))
             }
         )
     }
@@ -294,10 +292,7 @@ mod tests {
 
         let unchecked = UncheckedDenom::Cw20("HasCapitalsSoShouldNotValidate".to_string());
         let err = unchecked.into_checked(deps.as_ref()).unwrap_err();
-        assert_eq!(
-            err,
-            DenomError::Std(StdError::msg("Error decoding bech32"))
-        )
+        assert_eq!(err, DenomError::Std(StdError::msg("Error decoding bech32")))
     }
 
     #[test]

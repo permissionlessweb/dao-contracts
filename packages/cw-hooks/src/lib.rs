@@ -23,8 +23,6 @@ pub enum HookError {
     HookNotRegistered {},
 }
 
-
-
 impl PartialEq for HookError {
     fn eq(&self, other: &Self) -> bool {
         core::mem::discriminant(self) == core::mem::discriminant(other)

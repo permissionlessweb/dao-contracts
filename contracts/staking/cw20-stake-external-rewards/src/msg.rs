@@ -32,8 +32,7 @@ pub enum ExecuteMsg {
 }
 
 #[cw_serde]
-pub enum MigrateMsg {
-}
+pub enum MigrateMsg {}
 
 #[cw_serde]
 pub enum ReceiveMsg {

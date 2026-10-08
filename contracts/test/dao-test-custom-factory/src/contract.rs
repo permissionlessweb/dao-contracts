@@ -409,10 +409,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
                                 assert_valid_percentage_threshold(percent)?;
                             }
                             ActiveThreshold::AbsoluteCount { count } => {
-                                assert_valid_absolute_count_threshold(
-                                    count,
-                                    initial_supply,
-                                )?;
+                                assert_valid_absolute_count_threshold(count, initial_supply)?;
                             }
                         }
                     }

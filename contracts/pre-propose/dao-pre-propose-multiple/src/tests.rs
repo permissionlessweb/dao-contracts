@@ -876,7 +876,9 @@ fn test_permissions() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("Message sender is not proposal module"));
+    assert!(err
+        .to_string()
+        .contains("Message sender is not proposal module"));
 
     // Non-members may not propose when open_propose_submission is
     // disabled.
@@ -901,7 +903,9 @@ fn test_permissions() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("You are not allowed to submit proposals"))
+    assert!(err
+        .to_string()
+        .contains("You are not allowed to submit proposals"))
 }
 
 #[test]
@@ -1006,7 +1010,9 @@ fn test_no_deposit_required_members_submission() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("You are not allowed to submit proposals"));
+    assert!(err
+        .to_string()
+        .contains("You are not allowed to submit proposals"));
 
     let id = make_proposal(&mut app, pre_propose, proposal_single.clone(), "ekez", &[]);
     let new_status = vote(
@@ -1039,7 +1045,11 @@ fn test_anyone_denylist() {
     let rando = "rando";
 
     // Proposal succeeds when anyone can propose.
-    assert!(query_can_propose(&app, pre_propose.clone(), addr_str(rando)));
+    assert!(query_can_propose(
+        &app,
+        pre_propose.clone(),
+        addr_str(rando)
+    ));
     make_proposal(
         &mut app,
         pre_propose.clone(),
@@ -1059,7 +1069,11 @@ fn test_anyone_denylist() {
     );
 
     // Proposing fails if on denylist.
-    assert!(!query_can_propose(&app, pre_propose.clone(), addr_str(rando)));
+    assert!(!query_can_propose(
+        &app,
+        pre_propose.clone(),
+        addr_str(rando)
+    ));
     let err = app
         .execute_contract(
             addr(rando),
@@ -1081,10 +1095,16 @@ fn test_anyone_denylist() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("You are not allowed to submit proposals"));
+    assert!(err
+        .to_string()
+        .contains("You are not allowed to submit proposals"));
 
     // Proposing succeeds if not on denylist.
-    assert!(query_can_propose(&app, pre_propose.clone(), addr_str("ekez")));
+    assert!(query_can_propose(
+        &app,
+        pre_propose.clone(),
+        addr_str("ekez")
+    ));
     make_proposal(&mut app, pre_propose, proposal_single.clone(), "ekez", &[]);
 }
 
@@ -1110,7 +1130,11 @@ fn test_specific_allowlist_denylist() {
     );
 
     // Proposal succeeds for member.
-    assert!(query_can_propose(&app, pre_propose.clone(), addr_str("ekez")));
+    assert!(query_can_propose(
+        &app,
+        pre_propose.clone(),
+        addr_str("ekez")
+    ));
     make_proposal(
         &mut app,
         pre_propose.clone(),
@@ -1122,7 +1146,11 @@ fn test_specific_allowlist_denylist() {
     let rando = "rando";
 
     // Proposing fails for non-member.
-    assert!(!query_can_propose(&app, pre_propose.clone(), addr_str(rando)));
+    assert!(!query_can_propose(
+        &app,
+        pre_propose.clone(),
+        addr_str(rando)
+    ));
     let err = app
         .execute_contract(
             addr(rando),
@@ -1144,7 +1172,9 @@ fn test_specific_allowlist_denylist() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("You are not allowed to submit proposals"));
+    assert!(err
+        .to_string()
+        .contains("You are not allowed to submit proposals"));
 
     update_config(
         &mut app,
@@ -1159,7 +1189,11 @@ fn test_specific_allowlist_denylist() {
     );
 
     // Proposal succeeds if on allowlist.
-    assert!(query_can_propose(&app, pre_propose.clone(), addr_str(rando)));
+    assert!(query_can_propose(
+        &app,
+        pre_propose.clone(),
+        addr_str(rando)
+    ));
     make_proposal(
         &mut app,
         pre_propose.clone(),
@@ -1181,7 +1215,11 @@ fn test_specific_allowlist_denylist() {
     );
 
     // Proposing fails if on denylist.
-    assert!(!query_can_propose(&app, pre_propose.clone(), addr_str("ekez")));
+    assert!(!query_can_propose(
+        &app,
+        pre_propose.clone(),
+        addr_str("ekez")
+    ));
     let err = app
         .execute_contract(
             addr("ekez"),
@@ -1203,7 +1241,9 @@ fn test_specific_allowlist_denylist() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("You are not allowed to submit proposals"));
+    assert!(err
+        .to_string()
+        .contains("You are not allowed to submit proposals"));
 
     update_config(
         &mut app,
@@ -1218,7 +1258,11 @@ fn test_specific_allowlist_denylist() {
     );
 
     // Proposing fails if members not allowed.
-    assert!(!query_can_propose(&app, pre_propose.clone(), addr_str("ekez")));
+    assert!(!query_can_propose(
+        &app,
+        pre_propose.clone(),
+        addr_str("ekez")
+    ));
     let err = app
         .execute_contract(
             addr("ekez"),
@@ -1240,10 +1284,16 @@ fn test_specific_allowlist_denylist() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("You are not allowed to submit proposals"));
+    assert!(err
+        .to_string()
+        .contains("You are not allowed to submit proposals"));
 
     // Proposal succeeds if on allowlist.
-    assert!(query_can_propose(&app, pre_propose.clone(), addr_str(rando)));
+    assert!(query_can_propose(
+        &app,
+        pre_propose.clone(),
+        addr_str(rando)
+    ));
     make_proposal(
         &mut app,
         pre_propose.clone(),
@@ -1553,7 +1603,9 @@ fn test_update_config() {
             denylist: vec![],
         },
     );
-    assert!(err.to_string().contains("doesn't allow anyone to submit proposals"));
+    assert!(err
+        .to_string()
+        .contains("doesn't allow anyone to submit proposals"));
 
     // Errors when allowlist and denylist overlap.
     let err = update_config_should_fail(
@@ -1567,7 +1619,9 @@ fn test_update_config() {
             denylist: vec![addr("ekez")],
         },
     );
-    assert!(err.to_string().contains("Denylist cannot contain addresses in the allowlist"));
+    assert!(err
+        .to_string()
+        .contains("Denylist cannot contain addresses in the allowlist"));
 }
 
 #[test]
@@ -1940,7 +1994,9 @@ fn test_update_submission_policy() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("doesn't allow anyone to submit proposals"));
+    assert!(err
+        .to_string()
+        .contains("doesn't allow anyone to submit proposals"));
 
     // Set dao_members to false and add allowlist.
     app.execute_contract(
@@ -1985,7 +2041,9 @@ fn test_update_submission_policy() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("Denylist cannot contain addresses in the allowlist"));
+    assert!(err
+        .to_string()
+        .contains("Denylist cannot contain addresses in the allowlist"));
 }
 
 #[test]
@@ -2275,7 +2333,10 @@ fn test_migrate_from_v241() {
         proposal_single.as_str(),
         get_proposal_module(app, pre_propose_v2.clone()).as_str()
     );
-    assert_eq!(core_addr.as_str(), get_dao(app, pre_propose_v2.clone()).as_str());
+    assert_eq!(
+        core_addr.as_str(),
+        get_dao(app, pre_propose_v2.clone()).as_str()
+    );
     let info: ContractVersion = from_json(
         app.wrap()
             .query_wasm_raw(pre_propose.clone(), "contract_info".as_bytes())
@@ -2389,8 +2450,10 @@ fn test_migrate_from_v241() {
                             msgs: vec![cw_v1::CosmosMsg::Wasm(cw_v1::WasmMsg::Migrate {
                                 contract_addr: pre_propose.to_string(),
                                 new_code_id: dppm_latest_id,
-                                msg: cw_v1::to_json_binary(&MigrateMsg::FromUnderV250 { policy: None })
-                                    .unwrap(),
+                                msg: cw_v1::to_json_binary(&MigrateMsg::FromUnderV250 {
+                                    policy: None,
+                                })
+                                .unwrap(),
                             })],
                         },
                         dv_v241::multiple_choice::MultipleChoiceOption {
@@ -2637,7 +2700,10 @@ fn test_migrate_from_v241_with_policy_update() {
         proposal_single.as_str(),
         get_proposal_module(app, pre_propose_v2.clone()).as_str()
     );
-    assert_eq!(core_addr.as_str(), get_dao(app, pre_propose_v2.clone()).as_str());
+    assert_eq!(
+        core_addr.as_str(),
+        get_dao(app, pre_propose_v2.clone()).as_str()
+    );
     let info: ContractVersion = from_json(
         app.wrap()
             .query_wasm_raw(pre_propose_v2.clone(), "contract_info".as_bytes())
@@ -2861,7 +2927,9 @@ fn test_migrate_from_v241_with_policy_update() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("You are not allowed to submit proposals"));
+    assert!(err
+        .to_string()
+        .contains("You are not allowed to submit proposals"));
 
     app.execute_contract(
         addr("noob"),

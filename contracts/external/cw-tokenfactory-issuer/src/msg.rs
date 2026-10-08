@@ -90,7 +90,9 @@ pub enum ExecuteMsg {
 
     /// Set denom metadata. see: https://docs.cosmos.network/main/modules/bank#denom-metadata.
     #[cfg(any(feature = "osmosis_tokenfactory", feature = "cosmwasm_tokenfactory"))]
-    SetDenomMetadata { metadata: cosmwasm_std::DenomMetadata },
+    SetDenomMetadata {
+        metadata: cosmwasm_std::DenomMetadata,
+    },
 
     /// Grant/revoke mint allowance.
     SetMinterAllowance { address: String, allowance: Uint256 },

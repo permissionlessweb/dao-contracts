@@ -160,7 +160,7 @@ pub fn instantiate(
 
                 // Sort denom units by exponent, must be in ascending order
                 denom_units.sort_by_key(|a| a.exponent);
-                
+
                 to_json_binary(&IssuerInstantiateMsg::NewToken {
                     subdenom: subdenom.to_string(),
                     metadata: cosmwasm_std::DenomMetadata {
@@ -506,10 +506,7 @@ pub fn query_voting_power_at_height(
     let power = STAKED_BALANCES
         .may_load_at_height(deps.storage, &address, height)?
         .unwrap_or_default();
-    Ok(VotingPowerAtHeightResponse {
-        power,
-        height,
-    })
+    Ok(VotingPowerAtHeightResponse { power, height })
 }
 
 pub fn query_total_power_at_height(
@@ -521,10 +518,7 @@ pub fn query_total_power_at_height(
     let power = STAKED_TOTAL
         .may_load_at_height(deps.storage, height)?
         .unwrap_or_default();
-    Ok(TotalPowerAtHeightResponse {
-        power,
-        height,
-    })
+    Ok(TotalPowerAtHeightResponse { power, height })
 }
 
 pub fn query_info(deps: Deps) -> StdResult<Binary> {
@@ -601,7 +595,9 @@ pub fn query_is_active(deps: Deps) -> StdResult<Binary> {
                         .query(&cosmwasm_std::QueryRequest::Bank(BankQuery::Supply {
                             denom,
                         }))?;
-                let total_power = total_potential_power.amount.amount
+                let total_power = total_potential_power
+                    .amount
+                    .amount
                     .checked_mul(Uint256::from(PRECISION_FACTOR))?;
                 // under the hood decimals are `atomics / 10^decimal_places`.
                 // cosmwasm doesn't give us a Decimal * Uint256
@@ -903,9 +899,7 @@ pub fn reply(deps: DepsMut, env: Env, msg: Reply) -> Result<Response, ContractEr
             _ => Err(ContractError::UnknownReplyId { id: msg.id }),
         },
         cosmwasm_std::SubMsgResult::Err(e) => match msg.id {
-            INSTANTIATE_TOKEN_FACTORY_ISSUER_REPLY_ID => {
-                Err(ContractError::InstantiateError { e })
-            }
+            INSTANTIATE_TOKEN_FACTORY_ISSUER_REPLY_ID => Err(ContractError::InstantiateError { e }),
             _ => Err(ContractError::UnknownReplyId { id: msg.id }),
         },
     }

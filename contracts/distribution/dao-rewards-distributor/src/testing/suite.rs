@@ -524,15 +524,17 @@ impl Suite {
 
     pub fn withdraw_error(&mut self, id: u64) -> ContractError {
         let msg = ExecuteMsg::Withdraw { id };
-        dao_rewards_distributor::ContractError::Std(self.base
-            .app
-            .execute_contract(
-                Addr::unchecked(OWNER),
-                self.distribution_contract.clone(),
-                &msg,
-                &[],
-            )
-            .unwrap_err())
+        dao_rewards_distributor::ContractError::Std(
+            self.base
+                .app
+                .execute_contract(
+                    Addr::unchecked(OWNER),
+                    self.distribution_contract.clone(),
+                    &msg,
+                    &[],
+                )
+                .unwrap_err(),
+        )
     }
 
     pub fn register_hook(&mut self, addr: Addr) {
@@ -1026,14 +1028,16 @@ impl Suite {
             amount: amount.into(),
             denom,
         };
-        dao_rewards_distributor::ContractError::Std(self.base
-            .app
-            .execute_contract(
-                MockApi::default().addr_make("no_one"),
-                self.distribution_contract.clone(),
-                &msg,
-                &[],
-            )
-            .unwrap_err())
+        dao_rewards_distributor::ContractError::Std(
+            self.base
+                .app
+                .execute_contract(
+                    MockApi::default().addr_make("no_one"),
+                    self.distribution_contract.clone(),
+                    &msg,
+                    &[],
+                )
+                .unwrap_err(),
+        )
     }
 }

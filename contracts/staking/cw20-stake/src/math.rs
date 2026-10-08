@@ -62,7 +62,10 @@ pub(crate) fn amount_to_claim(staked_total: Uint256, balance: Uint256, ask: Uint
     //
     // full_mul returns Uint512 to avoid intermediate overflow, then
     // the result is divided and safely converted back to Uint256.
-    ask.full_mul(balance).div(Uint512::from(staked_total)).try_into().unwrap()
+    ask.full_mul(balance)
+        .div(Uint512::from(staked_total))
+        .try_into()
+        .unwrap()
 }
 
 #[cfg(test)]

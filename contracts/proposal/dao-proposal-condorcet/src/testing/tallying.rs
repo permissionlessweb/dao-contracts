@@ -96,7 +96,12 @@ fn test_condorcet_paradox() {
 #[test]
 fn test_tally_overflow() {
     let candidates = 6;
-    let mut tally = Tally::new(candidates, Uint256::from(u128::MAX), 0, Expiration::Never {});
+    let mut tally = Tally::new(
+        candidates,
+        Uint256::from(u128::MAX),
+        0,
+        Expiration::Never {},
+    );
 
     tally.add_vote(
         Vote::new(vec![1, 2, 3, 4, 5, 0], candidates).unwrap(),

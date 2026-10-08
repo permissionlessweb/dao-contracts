@@ -1,7 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    Addr, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, MigrateInfo, Reply, Response, StdError, StdResult, SubMsg, Uint128, Uint256, WasmMsg, from_json, to_json_binary
+    from_json, to_json_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo,
+    MigrateInfo, Reply, Response, StdError, StdResult, SubMsg, Uint128, Uint256, WasmMsg,
 };
 use cw2::{get_contract_version, set_contract_version, ContractVersion};
 use cw721::{
@@ -27,8 +28,7 @@ use crate::msg::{
 };
 use crate::state::{
     register_staked_nft, register_unstaked_nfts, Config, ACTIVE_THRESHOLD, CONFIG, DAO, HOOKS,
-    INITIAL_NFTS, NFT_BALANCES, NFT_CLAIMS, STAKED_NFTS_PER_OWNER,
-    TOTAL_STAKED_NFTS,
+    INITIAL_NFTS, NFT_BALANCES, NFT_CLAIMS, STAKED_NFTS_PER_OWNER, TOTAL_STAKED_NFTS,
 };
 use crate::ContractError;
 
@@ -100,10 +100,9 @@ pub fn instantiate(
                 // Check Absolute count is less than the supply of NFTs for existing
                 // NFT contracts. For new NFT contracts, we will check this in the reply.
                 if let NftContract::Existing { ref address } = msg.nft_contract {
-                    let nft_supply: NumTokensResponse = deps.querier.query_wasm_smart(
-                        address,
-                        &cw721_base::msg::QueryMsg::NumTokens {},
-                    )?;
+                    let nft_supply: NumTokensResponse = deps
+                        .querier
+                        .query_wasm_smart(address, &cw721_base::msg::QueryMsg::NumTokens {})?;
                     // Check the absolute count is less than the supply of NFTs and
                     // greater than zero.
                     assert_valid_absolute_count_threshold(
@@ -396,12 +395,10 @@ pub fn execute_claim_nfts(
         .map(|token_id| -> StdResult<CosmosMsg> {
             Ok(WasmMsg::Execute {
                 contract_addr: config.nft_address.to_string(),
-                msg: to_json_binary(
-                    &Cw721ExecuteMsg::<Empty, Empty, Empty>::TransferNft {
-                        recipient: info.sender.to_string(),
-                        token_id,
-                    },
-                )?,
+                msg: to_json_binary(&Cw721ExecuteMsg::<Empty, Empty, Empty>::TransferNft {
+                    recipient: info.sender.to_string(),
+                    token_id,
+                })?,
                 funds: vec![],
             }
             .into())
@@ -631,7 +628,10 @@ pub fn query_voting_power_at_height(
     let power = NFT_BALANCES
         .may_load_at_height(deps.storage, &address, height)?
         .unwrap_or_default();
-    to_json_binary(&dao_interface::voting::VotingPowerAtHeightResponse { power: power.into(), height })
+    to_json_binary(&dao_interface::voting::VotingPowerAtHeightResponse {
+        power: power.into(),
+        height,
+    })
 }
 
 pub fn query_total_power_at_height(deps: Deps, env: Env, height: Option<u64>) -> StdResult<Binary> {
@@ -639,7 +639,10 @@ pub fn query_total_power_at_height(deps: Deps, env: Env, height: Option<u64>) ->
     let power = TOTAL_STAKED_NFTS
         .may_load_at_height(deps.storage, height)?
         .unwrap_or_default();
-    to_json_binary(&dao_interface::voting::TotalPowerAtHeightResponse { power: power.into(), height })
+    to_json_binary(&dao_interface::voting::TotalPowerAtHeightResponse {
+        power: power.into(),
+        height,
+    })
 }
 
 pub fn query_config(deps: Deps) -> StdResult<Binary> {
@@ -722,7 +725,12 @@ pub fn query_staked_nfts(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg, _info: MigrateInfo) -> Result<Response, ContractError> {
+pub fn migrate(
+    deps: DepsMut,
+    _env: Env,
+    _msg: MigrateMsg,
+    _info: MigrateInfo,
+) -> Result<Response, ContractError> {
     let storage_version: ContractVersion = get_contract_version(deps.storage)?;
 
     // Only migrate if newer

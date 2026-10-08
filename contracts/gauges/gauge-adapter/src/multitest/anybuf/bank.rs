@@ -1,12 +1,12 @@
 use anybuf::Anybuf;
+use cosmwasm_std::testing::MockApi;
 use cosmwasm_std::{coin, coins, to_json_binary, BankMsg};
 use cw_denom::UncheckedDenom;
-use cosmwasm_std::testing::MockApi;
 
 use crate::{
     msg::{
-        AdapterAuthzMsg, AdapterBankMsg, AllOptionsResponse, AssetUnchecked,
-        CheckOptionResponse, StargateWire, SubmissionMsg,
+        AdapterAuthzMsg, AdapterBankMsg, AllOptionsResponse, AssetUnchecked, CheckOptionResponse,
+        StargateWire, SubmissionMsg,
     },
     multitest::suite::{native_submission_helper, setup_gauge_adapter, OWNER, TREASURY},
 };

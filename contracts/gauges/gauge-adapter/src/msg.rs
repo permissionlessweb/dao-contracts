@@ -4,7 +4,6 @@ use cw20::Cw20ReceiveMsg;
 use cw_denom::UncheckedDenom;
 use cw_ownable::{cw_ownable_execute, cw_ownable_query};
 
-
 #[cw_serde]
 pub struct InstantiateMsg {
     /// Address that is allowed to return deposits.

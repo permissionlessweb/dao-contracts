@@ -18,8 +18,7 @@ pub trait DaoDeployData: Clone {
         Self: Sized,
     {
         let msg = self.clone().into_init();
-        let json =
-            serde_json::to_vec(&msg).map_err(|e| format!("serialize failed: {e}"))?;
+        let json = serde_json::to_vec(&msg).map_err(|e| format!("serialize failed: {e}"))?;
         let _: Self::Init =
             serde_json::from_slice(&json).map_err(|e| format!("deserialize failed: {e}"))?;
         Ok(())

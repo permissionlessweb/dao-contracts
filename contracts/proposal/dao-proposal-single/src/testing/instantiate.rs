@@ -607,7 +607,7 @@ pub(crate) fn instantiate_with_cw4_groups_governance(
     };
 
     println!("{:#?}", initial_weights);
-    
+
     let governance_instantiate = dao_interface::msg::InstantiateMsg {
         admin: None,
         name: "DAO DAO".to_string(),

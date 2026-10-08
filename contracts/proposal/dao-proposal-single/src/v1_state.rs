@@ -11,11 +11,7 @@
 use cosmwasm_std::{Addr, CosmosMsg, Empty, Uint128};
 use cw_storage_plus::{Item, Map};
 use cw_utils::{Duration, Expiration};
-use dao_voting::{
-    status::Status,
-    threshold::Threshold,
-    voting::Votes,
-};
+use dao_voting::{status::Status, threshold::Threshold, voting::Votes};
 use serde::{Deserialize, Serialize};
 
 // ---------------------------------------------------------------------------

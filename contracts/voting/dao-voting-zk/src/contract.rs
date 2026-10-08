@@ -264,7 +264,7 @@ fn query_voting_power_at_height(
         let poll_id = snap.poll_id;
         let registry = POLL_REGISTRY.load(deps.storage)?;
 
-// Query PollRegistry for poll state
+        // Query PollRegistry for poll state
         let poll_state: Result<PollState, _> = deps.querier.query_wasm_smart(
             registry,
             &PollRegistryQuery::GetPoll {

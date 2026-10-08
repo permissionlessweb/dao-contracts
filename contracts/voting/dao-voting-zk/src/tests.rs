@@ -21,8 +21,7 @@ mod tests {
         }
     }
 
-    fn setup_test() -> OwnedDeps<MockStorage, MockApi, cosmwasm_std::testing::MockQuerier, Empty>
-    {
+    fn setup_test() -> OwnedDeps<MockStorage, MockApi, cosmwasm_std::testing::MockQuerier, Empty> {
         let mut deps = mock_dependencies();
         let env = mock_env();
         let info = mock_info("dao");
@@ -44,7 +43,9 @@ mod tests {
         let dao = DAO.load(deps.as_ref().storage).unwrap();
         assert_eq!(dao, addr_make("dao"));
 
-        let underlying = UNDERLYING_VOTING_MODULE.load(deps.as_ref().storage).unwrap();
+        let underlying = UNDERLYING_VOTING_MODULE
+            .load(deps.as_ref().storage)
+            .unwrap();
         assert_eq!(underlying, addr_make("underlying_module"));
 
         let registry = POLL_REGISTRY.load(deps.as_ref().storage).unwrap();
@@ -241,7 +242,9 @@ mod tests {
         )
         .unwrap();
 
-        let underlying = UNDERLYING_VOTING_MODULE.load(deps.as_ref().storage).unwrap();
+        let underlying = UNDERLYING_VOTING_MODULE
+            .load(deps.as_ref().storage)
+            .unwrap();
         assert_eq!(underlying, addr_make("new_underlying"));
 
         let registry = POLL_REGISTRY.load(deps.as_ref().storage).unwrap();

@@ -150,7 +150,11 @@ impl ModuleUpdate {
 mod tests {
     use super::*;
 
-    use cosmwasm_std::{Addr, Uint128, Uint256, WasmMsg, coins, testing::{MockApi, mock_dependencies}, to_json_binary};
+    use cosmwasm_std::{
+        coins,
+        testing::{mock_dependencies, MockApi},
+        to_json_binary, Addr, Uint128, Uint256, WasmMsg,
+    };
 
     #[test]
     fn test_module_instantiate_admin_none() {
@@ -349,9 +353,6 @@ mod tests {
         assert_eq!(submessages, vec![]);
 
         // Item updated.
-        assert_eq!(
-            item.may_load(deps.as_mut().storage).unwrap(),
-            Some(ekez)
-        );
+        assert_eq!(item.may_load(deps.as_mut().storage).unwrap(), Some(ekez));
     }
 }

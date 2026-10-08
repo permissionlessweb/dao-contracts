@@ -656,9 +656,9 @@ where
                     .add_attribute("from", version)
                     .add_attribute("to", CONTRACT_VERSION))
             }
-            MigrateMsg::Extension { .. } => Err(PreProposeError::Std(StdError::msg(
-                "not implemented",
-            ))),
+            MigrateMsg::Extension { .. } => {
+                Err(PreProposeError::Std(StdError::msg("not implemented")))
+            }
         }
     }
 }

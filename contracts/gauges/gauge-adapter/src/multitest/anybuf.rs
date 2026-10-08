@@ -1,6 +1,6 @@
 mod authz;
 mod bank;
+mod distribution;
 mod gov;
 mod staking;
-mod distribution;
 mod wasm;

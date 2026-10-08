@@ -58,7 +58,8 @@ pub fn create_dao(
                     initial_dao_balance: None,
                 },
                 active_threshold: None,
-            }).map_err(|e| anyhow::anyhow!("{}", e))?,
+            })
+            .map_err(|e| anyhow::anyhow!("{}", e))?,
             admin: Some(Admin::CoreModule {}),
             label: "DAO DAO Voting Module".to_string(),
             funds: None,
@@ -103,7 +104,8 @@ pub fn create_dao(
                 },
                 veto: None,
                 delegation_module: None,
-            }).map_err(|e| anyhow::anyhow!("{}", e))?,
+            })
+            .map_err(|e| anyhow::anyhow!("{}", e))?,
             admin: Some(Admin::CoreModule {}),
             funds: None,
             label: "DAO DAO Proposal Module".to_string(),

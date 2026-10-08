@@ -6,13 +6,13 @@ use crate::msg::{
     SubmissionResponse,
 };
 use anyhow::Result as AnyResult;
+use cosmwasm_std::testing::MockApi;
 use cosmwasm_std::{coins, to_json_binary, Addr, BankMsg, Binary, Coin, Uint128, Uint256};
 use cw20::{BalanceResponse, Cw20QueryMsg};
 use cw20::{Cw20Coin, MinterResponse};
 use cw20_base::msg::ExecuteMsg as Cw20BaseExecuteMsg;
 use cw20_base::msg::InstantiateMsg as Cw20BaseInstantiateMsg;
 use cw_denom::UncheckedDenom;
-use cosmwasm_std::testing::MockApi;
 use cw_multi_test::{App, AppResponse, ContractWrapper, Executor};
 
 pub const NATIVE: &str = "juno";
@@ -66,10 +66,10 @@ impl GaugeAdapterApp {
     }
 
     pub fn query_check_option(&self, option: String) -> AnyResult<CheckOptionResponse> {
-        self.app.wrap().query_wasm_smart(
-            self.addr.clone(),
-            &AdapterQueryMsg::CheckOption { option },
-        ).map_err(|e| anyhow::anyhow!("{e}"))
+        self.app
+            .wrap()
+            .query_wasm_smart(self.addr.clone(), &AdapterQueryMsg::CheckOption { option })
+            .map_err(|e| anyhow::anyhow!("{e}"))
     }
 
     pub fn give_balance(&mut self, addr: &str, coins: Vec<Coin>) {
@@ -146,17 +146,20 @@ pub fn native_submission_helper(
     msg: SubmissionMsg,
 ) -> AnyResult<AppResponse> {
     let funds = native_tokens.map(|c| vec![c]).unwrap_or_default();
-    gauge.app.execute_contract(
-        MockApi::default().addr_make(sender),
-        gauge.addr.clone(),
-        &ExecuteMsg::CreateSubmission {
-            name: "DAOers".to_string(),
-            url: "https://daodao.zone".to_string(),
-            address: MockApi::default().addr_make(recipient).to_string(),
-            message: msg,
-        },
-        &funds,
-    ).map_err(|e| anyhow::anyhow!("{e}"))
+    gauge
+        .app
+        .execute_contract(
+            MockApi::default().addr_make(sender),
+            gauge.addr.clone(),
+            &ExecuteMsg::CreateSubmission {
+                name: "DAOers".to_string(),
+                url: "https://daodao.zone".to_string(),
+                address: MockApi::default().addr_make(recipient).to_string(),
+                message: msg,
+            },
+            &funds,
+        )
+        .map_err(|e| anyhow::anyhow!("{e}"))
 }
 
 /// Returns a valid default SubmissionMsg (Bank::MsgSend) for tests that don't care about message content.
@@ -207,7 +210,8 @@ impl SuiteBuilder {
 
     // Allows to initialize the suite with native coins associated to an address.
     pub fn with_funds(mut self, addr: &str, funds: &[Coin]) -> Self {
-        self.funds.push((MockApi::default().addr_make(addr), funds.into()));
+        self.funds
+            .push((MockApi::default().addr_make(addr), funds.into()));
         self
     }
 
@@ -316,7 +320,10 @@ impl SuiteBuilder {
         // Mint initial native token if any.
         app.init_modules(|router, _, storage| -> AnyResult<()> {
             for (addr, coin) in self.funds {
-                router.bank.init_balance(storage, &addr, coin).map_err(|e| anyhow::anyhow!("{e}"))?;
+                router
+                    .bank
+                    .init_balance(storage, &addr, coin)
+                    .map_err(|e| anyhow::anyhow!("{e}"))?;
             }
             Ok(())
         })
@@ -353,17 +360,19 @@ impl Suite {
         address: String,
         funds: &[Coin],
     ) -> AnyResult<AppResponse> {
-        self.app.execute_contract(
-            sender,
-            self.gauge_adapter.clone(),
-            &ExecuteMsg::CreateSubmission {
-                name,
-                url,
-                address,
-                message: default_submission_msg(),
-            },
-            funds,
-        ).map_err(|e| anyhow::anyhow!("{e}"))
+        self.app
+            .execute_contract(
+                sender,
+                self.gauge_adapter.clone(),
+                &ExecuteMsg::CreateSubmission {
+                    name,
+                    url,
+                    address,
+                    message: default_submission_msg(),
+                },
+                funds,
+            )
+            .map_err(|e| anyhow::anyhow!("{e}"))
     }
 
     pub fn execute_receive_through_cw20(
@@ -381,45 +390,57 @@ impl Suite {
             url,
             address,
             message: default_submission_msg(),
-        }).map_err(|e| anyhow::anyhow!("{e}"))?;
+        })
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
 
-        self.app.execute_contract(
-            sender,
-            cw20_addr,
-            &Cw20BaseExecuteMsg::Send {
-                contract: self.gauge_adapter.to_string(),
-                amount: Uint256::from(amount),
-                msg,
-            },
-            &[],
-        ).map_err(|e| anyhow::anyhow!("{e}"))
+        self.app
+            .execute_contract(
+                sender,
+                cw20_addr,
+                &Cw20BaseExecuteMsg::Send {
+                    contract: self.gauge_adapter.to_string(),
+                    amount: Uint256::from(amount),
+                    msg,
+                },
+                &[],
+            )
+            .map_err(|e| anyhow::anyhow!("{e}"))
     }
 
     pub fn execute_return_deposit(&mut self, sender: &str) -> AnyResult<AppResponse> {
         // sender is expected to already be a valid bech32 addr (e.g. from suite.owner)
-        self.app.execute_contract(
-            Addr::unchecked(sender),
-            self.gauge_adapter.clone(),
-            &ExecuteMsg::ReturnDeposits {},
-            &[],
-        ).map_err(|e| anyhow::anyhow!("{e}"))
+        self.app
+            .execute_contract(
+                Addr::unchecked(sender),
+                self.gauge_adapter.clone(),
+                &ExecuteMsg::ReturnDeposits {},
+                &[],
+            )
+            .map_err(|e| anyhow::anyhow!("{e}"))
     }
 
     // ---------------------------------------------------------------------------------------------
     // Queries
     // ---------------------------------------------------------------------------------------------
     pub fn query_submission(&self, address: String) -> AnyResult<SubmissionResponse> {
-        self.app.wrap().query_wasm_smart(
-            self.gauge_adapter.clone(),
-            &AdapterQueryMsg::Submission { address },
-        ).map_err(|e| anyhow::anyhow!("{e}"))
+        self.app
+            .wrap()
+            .query_wasm_smart(
+                self.gauge_adapter.clone(),
+                &AdapterQueryMsg::Submission { address },
+            )
+            .map_err(|e| anyhow::anyhow!("{e}"))
     }
 
     pub fn query_submissions(&self) -> AnyResult<Vec<SubmissionResponse>> {
-        let res: AllSubmissionsResponse = self.app.wrap().query_wasm_smart(
-            self.gauge_adapter.clone(),
-            &AdapterQueryMsg::AllSubmissions {},
-        ).map_err(|e| anyhow::anyhow!("{e}"))?;
+        let res: AllSubmissionsResponse = self
+            .app
+            .wrap()
+            .query_wasm_smart(
+                self.gauge_adapter.clone(),
+                &AdapterQueryMsg::AllSubmissions {},
+            )
+            .map_err(|e| anyhow::anyhow!("{e}"))?;
 
         Ok(res.submissions)
     }
@@ -435,10 +456,14 @@ impl Suite {
     }
 
     pub fn query_check_option(&self, option: String) -> AnyResult<bool> {
-        let res: CheckOptionResponse = self.app.wrap().query_wasm_smart(
-            self.gauge_adapter.clone(),
-            &AdapterQueryMsg::CheckOption { option },
-        ).map_err(|e| anyhow::anyhow!("{e}"))?;
+        let res: CheckOptionResponse = self
+            .app
+            .wrap()
+            .query_wasm_smart(
+                self.gauge_adapter.clone(),
+                &AdapterQueryMsg::CheckOption { option },
+            )
+            .map_err(|e| anyhow::anyhow!("{e}"))?;
 
         Ok(res.valid)
     }
@@ -473,19 +498,35 @@ impl Suite {
     }
 
     pub fn query_cw20_balance(&self, user: &str, contract: &Addr) -> AnyResult<u128> {
-        let balance: BalanceResponse = self.app.wrap().query_wasm_smart(
-            contract,
-            &Cw20QueryMsg::Balance {
-                address: user.to_owned(),
-            },
-        ).map_err(|e| anyhow::anyhow!("{e}"))?;
+        let balance: BalanceResponse = self
+            .app
+            .wrap()
+            .query_wasm_smart(
+                contract,
+                &Cw20QueryMsg::Balance {
+                    address: user.to_owned(),
+                },
+            )
+            .map_err(|e| anyhow::anyhow!("{e}"))?;
 
-        balance.balance.to_string().parse::<u128>().map_err(|e| anyhow::anyhow!("{e}"))
+        balance
+            .balance
+            .to_string()
+            .parse::<u128>()
+            .map_err(|e| anyhow::anyhow!("{e}"))
     }
 
     pub fn query_native_balance(&self, user: &str) -> AnyResult<u128> {
-        let balance = self.app.wrap().query_balance(user, NATIVE).map_err(|e| anyhow::anyhow!("{e}"))?;
+        let balance = self
+            .app
+            .wrap()
+            .query_balance(user, NATIVE)
+            .map_err(|e| anyhow::anyhow!("{e}"))?;
 
-        balance.amount.to_string().parse::<u128>().map_err(|e| anyhow::anyhow!("{e}"))
+        balance
+            .amount
+            .to_string()
+            .parse::<u128>()
+            .map_err(|e| anyhow::anyhow!("{e}"))
     }
 }

@@ -41,7 +41,10 @@ mod tokenfactory_msg {
         }
     }
 
-    pub fn msg_set_denom_metadata(sender: String, metadata: cosmwasm_std::DenomMetadata) -> MsgSetDenomMetadata {
+    pub fn msg_set_denom_metadata(
+        sender: String,
+        metadata: cosmwasm_std::DenomMetadata,
+    ) -> MsgSetDenomMetadata {
         MsgSetDenomMetadata {
             sender,
             metadata: Some(OsmosisMetadata {

@@ -3,8 +3,8 @@ use std::collections::HashSet;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    attr, to_json_binary, Attribute, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order,
-    Reply, Response, StdError, StdResult, SubMsg, WasmMsg,MigrateInfo,
+    attr, to_json_binary, Attribute, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
+    MigrateInfo, Order, Reply, Response, StdError, StdResult, SubMsg, WasmMsg,
 };
 use cw_storage_plus::Bound;
 
@@ -821,8 +821,7 @@ fn query_list_roles(
 }
 
 fn query_get_authorization(deps: Deps, id: u64) -> StdResult<AuthorizationResponse> {
-    let authorization =
-        Authorization::load(&deps, id).map_err(|e| StdError::msg(e.to_string()))?;
+    let authorization = Authorization::load(&deps, id).map_err(|e| StdError::msg(e.to_string()))?;
     Ok(AuthorizationResponse { authorization })
 }
 
@@ -945,9 +944,9 @@ fn query_list_assignments_by_address(
 }
 
 fn query_get_action(deps: Deps, action_id: u64) -> StdResult<ActionResponse> {
-    let action = LOG.load(deps.storage, action_id).map_err(|_| {
-        StdError::msg(ContractError::ActionNotFound { id: action_id }.to_string())
-    })?;
+    let action = LOG
+        .load(deps.storage, action_id)
+        .map_err(|_| StdError::msg(ContractError::ActionNotFound { id: action_id }.to_string()))?;
     Ok(ActionResponse { action })
 }
 
@@ -1348,11 +1347,7 @@ fn query_authorized_by(
     })
 }
 
-fn query_test_filter(
-    deps: Deps,
-    filter: String,
-    msg: CosmosMsg,
-) -> StdResult<TestFilterResponse> {
+fn query_test_filter(deps: Deps, filter: String, msg: CosmosMsg) -> StdResult<TestFilterResponse> {
     let filter_contract = FILTER.load(deps.storage)?;
     // Test the filter.
     let result = Authorization::filter_allows(&deps, &filter_contract, filter, msg, false);
@@ -1378,7 +1373,12 @@ fn query_test_filter(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg,_info: MigrateInfo) -> Result<Response, ContractError> {
+pub fn migrate(
+    deps: DepsMut,
+    _env: Env,
+    _msg: MigrateMsg,
+    _info: MigrateInfo,
+) -> Result<Response, ContractError> {
     // Set contract to version to latest
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     Ok(Response::default())

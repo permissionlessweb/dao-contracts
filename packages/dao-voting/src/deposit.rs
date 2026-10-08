@@ -224,9 +224,7 @@ impl CheckedDepositInfo {
         if self.amount.is_zero() {
             return Ok(vec![]);
         }
-        let message = self
-            .denom
-            .get_transfer_to_message(depositor, self.amount)?;
+        let message = self.denom.get_transfer_to_message(depositor, self.amount)?;
         Ok(vec![message])
     }
 }

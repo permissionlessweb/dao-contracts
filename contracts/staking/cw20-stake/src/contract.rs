@@ -155,7 +155,9 @@ pub fn execute_stake(
         deps.storage,
         &sender,
         env.block.height,
-        |bal| -> StdResult<Uint128> { Ok(bal.unwrap_or_default().checked_add(amount_to_stake_u128)?) },
+        |bal| -> StdResult<Uint128> {
+            Ok(bal.unwrap_or_default().checked_add(amount_to_stake_u128)?)
+        },
     )?;
     STAKED_TOTAL.update(
         deps.storage,

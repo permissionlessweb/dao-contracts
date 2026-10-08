@@ -1,10 +1,12 @@
-use cosmwasm_std::{BankMsg, CosmosMsg, DepsMut, Env, MessageInfo, Response, Uint128, Uint256, coins};
+use cosmwasm_std::{
+    coins, BankMsg, CosmosMsg, DepsMut, Env, MessageInfo, Response, Uint128, Uint256,
+};
 
+#[cfg(any(feature = "osmosis_tokenfactory", feature = "cosmwasm_tokenfactory"))]
+use cw_tokenfactory_types::msg::msg_set_denom_metadata;
 use cw_tokenfactory_types::msg::{msg_burn, msg_change_admin, msg_mint};
 #[cfg(feature = "osmosis_tokenfactory")]
 use cw_tokenfactory_types::msg::{msg_force_transfer, msg_set_before_send_hook};
-#[cfg(any(feature = "osmosis_tokenfactory", feature = "cosmwasm_tokenfactory"))]
-use {cw_tokenfactory_types::msg::msg_set_denom_metadata,};
 
 use crate::error::ContractError;
 use crate::helpers::{check_before_send_hook_features_enabled, check_is_not_frozen};

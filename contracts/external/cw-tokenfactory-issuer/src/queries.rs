@@ -36,9 +36,7 @@ pub fn query_mint_allowance(deps: Deps, address: String) -> StdResult<AllowanceR
     let allowance = MINTER_ALLOWANCES
         .may_load(deps.storage, &deps.api.addr_validate(&address)?)?
         .unwrap_or_else(Uint256::zero);
-    Ok(AllowanceResponse {
-        allowance,
-    })
+    Ok(AllowanceResponse { allowance })
 }
 
 /// Returns the allowance of the specified address. Response: AllowanceResponse
@@ -46,9 +44,7 @@ pub fn query_burn_allowance(deps: Deps, address: String) -> StdResult<AllowanceR
     let allowance = BURNER_ALLOWANCES
         .may_load(deps.storage, &deps.api.addr_validate(&address)?)?
         .unwrap_or_else(Uint256::zero);
-    Ok(AllowanceResponse {
-        allowance,
-    })
+    Ok(AllowanceResponse { allowance })
 }
 
 /// Helper function used in allowance list queries.

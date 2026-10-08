@@ -1,4 +1,7 @@
-use cosmwasm_std::{testing::{mock_dependencies, MockApi}, Addr, StdError};
+use cosmwasm_std::{
+    testing::{mock_dependencies, MockApi},
+    Addr, StdError,
+};
 
 use crate::{LoadedItem, SnapshotVectorMap};
 

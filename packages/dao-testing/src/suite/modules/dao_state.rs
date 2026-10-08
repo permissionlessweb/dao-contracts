@@ -42,12 +42,7 @@ impl ModuleRegistry {
     }
 
     /// Quick save: just key, addr, and category.
-    pub fn save_module(
-        &mut self,
-        key: impl Into<String>,
-        addr: Addr,
-        category: ModuleCategory,
-    ) {
+    pub fn save_module(&mut self, key: impl Into<String>, addr: Addr, category: ModuleCategory) {
         self.modules.insert(
             key.into(),
             ModuleEntry {
@@ -207,11 +202,7 @@ impl DaoStateRegistry {
     }
 
     /// Remove a module from a specific DAO's registry.
-    pub fn remove_module(
-        &mut self,
-        dao_key: &str,
-        module_key: &str,
-    ) -> Option<ModuleEntry> {
+    pub fn remove_module(&mut self, dao_key: &str, module_key: &str) -> Option<ModuleEntry> {
         self.daos
             .get_mut(dao_key)
             .and_then(|dao| dao.modules.remove(module_key))
@@ -380,7 +371,14 @@ mod tests {
 
         // Nonexistent DAO returns empty
         assert!(reg.get_module("nonexistent", "my_calendar").is_none());
-        assert!(reg.save_module("nonexistent", "x", Addr::unchecked("y"), ModuleCategory::Custom("test".into())).is_err());
+        assert!(reg
+            .save_module(
+                "nonexistent",
+                "x",
+                Addr::unchecked("y"),
+                ModuleCategory::Custom("test".into())
+            )
+            .is_err());
     }
 
     #[test]

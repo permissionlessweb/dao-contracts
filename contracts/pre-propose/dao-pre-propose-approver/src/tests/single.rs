@@ -60,12 +60,8 @@ fn discover_approver_core_addr(with_cw20: bool) -> String {
     let dps_id = app.store_code(dao_proposal_single_contract());
 
     // First DAO - same as real setup but with a dummy approver
-    let proposal_module_instantiate = get_proposal_module_approval_single_instantiate(
-        &mut app,
-        None,
-        false,
-        &addr_str("dummy"),
-    );
+    let proposal_module_instantiate =
+        get_proposal_module_approval_single_instantiate(&mut app, None, false, &addr_str("dummy"));
     let _core_addr = instantiate_with_cw4_groups_governance(
         &mut app,
         dps_id,
@@ -1512,7 +1508,9 @@ fn test_update_config() {
             denylist: vec![],
         },
     );
-    assert!(err.to_string().contains("doesn't allow anyone to submit proposals"));
+    assert!(err
+        .to_string()
+        .contains("doesn't allow anyone to submit proposals"));
 
     // Errors when allowlist and denylist overlap.
     let err = update_config_should_fail(
@@ -1526,7 +1524,9 @@ fn test_update_config() {
             denylist: vec![MockApi::default().addr_make("ekez")],
         },
     );
-    assert!(err.to_string().contains("Denylist cannot contain addresses in the allowlist"));
+    assert!(err
+        .to_string()
+        .contains("Denylist cannot contain addresses in the allowlist"));
 }
 
 #[test]

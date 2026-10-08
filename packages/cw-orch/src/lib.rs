@@ -5,6 +5,8 @@ mod distribution;
 #[cfg(not(target_arch = "wasm32"))]
 mod external;
 #[cfg(not(target_arch = "wasm32"))]
+mod gauges;
+#[cfg(not(target_arch = "wasm32"))]
 mod pre_propose;
 #[cfg(not(target_arch = "wasm32"))]
 mod proposal;
@@ -14,8 +16,6 @@ mod staking;
 mod test_contracts;
 #[cfg(not(target_arch = "wasm32"))]
 mod voting;
-#[cfg(not(target_arch = "wasm32"))]
-mod gauges;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use core::*;
@@ -23,6 +23,8 @@ pub use core::*;
 pub use distribution::*;
 #[cfg(not(target_arch = "wasm32"))]
 pub use external::*;
+#[cfg(not(target_arch = "wasm32"))]
+pub use gauges::*;
 #[cfg(not(target_arch = "wasm32"))]
 pub use pre_propose::*;
 #[cfg(not(target_arch = "wasm32"))]
@@ -33,8 +35,6 @@ pub use staking::*;
 pub use test_contracts::*;
 #[cfg(not(target_arch = "wasm32"))]
 pub use voting::*;
-#[cfg(not(target_arch = "wasm32"))]
-pub use gauges::*;
 
 #[cfg(feature = "wasm_test")]
 #[cfg(test)]

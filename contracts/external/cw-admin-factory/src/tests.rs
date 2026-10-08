@@ -1,7 +1,8 @@
 use std::vec;
 
 use cosmwasm_std::{
-    Addr, MigrateInfo, Reply, SubMsg, SubMsgResponse, SubMsgResult, WasmMsg, testing::{MockApi, message_info, mock_dependencies, mock_env}, to_json_binary
+    testing::{message_info, mock_dependencies, mock_env, MockApi},
+    to_json_binary, Addr, MigrateInfo, Reply, SubMsg, SubMsgResponse, SubMsgResult, WasmMsg,
 };
 use cw_multi_test::{App, AppResponse, Executor};
 use dao_interface::state::{Admin, ModuleInstantiateInfo};

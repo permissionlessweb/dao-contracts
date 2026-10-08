@@ -1,7 +1,7 @@
 use anybuf::Anybuf;
+use cosmwasm_std::testing::MockApi;
 use cosmwasm_std::{coin, coins, to_json_binary};
 use cw_denom::UncheckedDenom;
-use cosmwasm_std::testing::MockApi;
 
 use crate::{
     msg::{
@@ -125,11 +125,7 @@ fn test_staking_anybuf_assertions() {
     assert_eq!(
         options,
         AllOptionsResponse {
-            options: vec![
-                einstein.clone(),
-                newton.clone(),
-                treasury.clone(),
-            ]
+            options: vec![einstein.clone(), newton.clone(), treasury.clone(),]
         },
     );
 

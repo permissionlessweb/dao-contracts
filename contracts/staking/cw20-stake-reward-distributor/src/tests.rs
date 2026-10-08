@@ -12,7 +12,6 @@ use crate::{
     state::Config,
 };
 
-
 const OWNER: &str = "owner";
 const OWNER2: &str = "owner2";
 
@@ -27,8 +26,15 @@ fn instantiate_cw20(app: &mut App, initial_balances: Vec<Cw20Coin>) -> Addr {
         marketing: None,
     };
 
-    app.instantiate_contract(cw20_id, MockApi::default().addr_make(OWNER), &msg, &[], "cw20", None)
-        .unwrap()
+    app.instantiate_contract(
+        cw20_id,
+        MockApi::default().addr_make(OWNER),
+        &msg,
+        &[],
+        "cw20",
+        None,
+    )
+    .unwrap()
 }
 
 fn instantiate_staking(app: &mut App, cw20_addr: Addr) -> Addr {
@@ -150,8 +156,13 @@ fn test_update_config() {
         reward_token: cw20_addr.to_string(),
     };
 
-    app.execute_contract(MockApi::default().addr_make(OWNER), distributor_addr.clone(), &msg, &[])
-        .unwrap();
+    app.execute_contract(
+        MockApi::default().addr_make(OWNER),
+        distributor_addr.clone(),
+        &msg,
+        &[],
+    )
+    .unwrap();
 
     let response: InfoResponse = app
         .wrap()
@@ -175,7 +186,12 @@ fn test_update_config() {
 
     // non-owner may not update config.
     let err = app
-        .execute_contract(MockApi::default().addr_make("notowner"), distributor_addr, &msg, &[])
+        .execute_contract(
+            MockApi::default().addr_make("notowner"),
+            distributor_addr,
+            &msg,
+            &[],
+        )
         .unwrap_err();
 
     assert!(err.to_string().contains("not the contract's current owner"));
@@ -206,8 +222,13 @@ fn test_distribute() {
         recipient: distributor_addr.to_string(),
         amount: Uint128::from(1000u128).into(),
     };
-    app.execute_contract(MockApi::default().addr_make(OWNER), cw20_addr.clone(), &msg, &[])
-        .unwrap();
+    app.execute_contract(
+        MockApi::default().addr_make(OWNER),
+        cw20_addr.clone(),
+        &msg,
+        &[],
+    )
+    .unwrap();
 
     app.update_block(|block| block.height += 10);
     app.execute_contract(
@@ -288,7 +309,9 @@ fn test_distribute() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("Rewards have already been distributed for this block"));
+    assert!(err
+        .to_string()
+        .contains("Rewards have already been distributed for this block"));
 }
 
 #[test]
@@ -408,8 +431,13 @@ fn test_withdraw() {
         recipient: distributor_addr.to_string(),
         amount: Uint128::from(1000u128).into(),
     };
-    app.execute_contract(MockApi::default().addr_make(OWNER), cw20_addr.clone(), &msg, &[])
-        .unwrap();
+    app.execute_contract(
+        MockApi::default().addr_make(OWNER),
+        cw20_addr.clone(),
+        &msg,
+        &[],
+    )
+    .unwrap();
 
     app.update_block(|block| block.height += 10);
     app.execute_contract(
@@ -481,15 +509,25 @@ fn test_dao_deploy() {
         reward_rate: Uint128::new(1),
         reward_token: cw20_addr.to_string(),
     };
-    app.execute_contract(MockApi::default().addr_make(OWNER), distributor_addr.clone(), &msg, &[])
-        .unwrap();
+    app.execute_contract(
+        MockApi::default().addr_make(OWNER),
+        distributor_addr.clone(),
+        &msg,
+        &[],
+    )
+    .unwrap();
 
     let msg = cw20::Cw20ExecuteMsg::Transfer {
         recipient: distributor_addr.to_string(),
         amount: Uint128::from(1000u128).into(),
     };
-    app.execute_contract(MockApi::default().addr_make(OWNER), cw20_addr.clone(), &msg, &[])
-        .unwrap();
+    app.execute_contract(
+        MockApi::default().addr_make(OWNER),
+        cw20_addr.clone(),
+        &msg,
+        &[],
+    )
+    .unwrap();
 
     app.update_block(|block| block.height += 10);
     app.execute_contract(

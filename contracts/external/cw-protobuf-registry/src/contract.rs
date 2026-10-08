@@ -474,14 +474,12 @@ fn query_decode(deps: Deps, message_name: String, value: Vec<u8>) -> StdResult<D
                 )
             },
             |fds| {
-                FileDescriptorSet::decode(fds.as_slice())
-                    .map_err(|e| StdError::msg(e.to_string()))
+                FileDescriptorSet::decode(fds.as_slice()).map_err(|e| StdError::msg(e.to_string()))
             },
         )?;
 
-    let pool = DescriptorPool::from_file_descriptor_set(file_descriptor_set).map_err(|e| {
-        StdError::msg(format!("failed to create descriptor pool from FDS: {e}"))
-    })?;
+    let pool = DescriptorPool::from_file_descriptor_set(file_descriptor_set)
+        .map_err(|e| StdError::msg(format!("failed to create descriptor pool from FDS: {e}")))?;
 
     // should never error since we created the FDS from the message name, but
     // check just in case.

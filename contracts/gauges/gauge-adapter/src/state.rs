@@ -13,7 +13,7 @@ pub struct Config {
     pub required_deposit: Option<Asset>,
     /// Address of contract where each deposit is transferred.
     pub treasury: Addr,
-    pub possible_msg: Vec<PossibleMsg>
+    pub possible_msg: Vec<PossibleMsg>,
 }
 
 pub const CONFIG: Item<Config> = Item::new("c");

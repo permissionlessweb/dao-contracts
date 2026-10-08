@@ -188,7 +188,9 @@ impl Suite {
             .execute_contract(
                 Addr::unchecked(sender),
                 self.vesting.clone(),
-                &ExecuteMsg::Distribute { amount: amount.map(|a| a.into()) },
+                &ExecuteMsg::Distribute {
+                    amount: amount.map(|a| a.into()),
+                },
                 &[],
             )
             .map(|_| ())
@@ -239,11 +241,7 @@ impl Suite {
             .map(|_| ())
     }
 
-    pub fn undelegate<S: Into<String>>(
-        &mut self,
-        sender: S,
-        amount: Uint128,
-    ) -> StdResult<()> {
+    pub fn undelegate<S: Into<String>>(&mut self, sender: S, amount: Uint128) -> StdResult<()> {
         self.app
             .execute_contract(
                 Addr::unchecked(sender),
@@ -276,7 +274,9 @@ impl Suite {
                 // anyone may call this method on a canceled vesting contract
                 MockApi::default().addr_make("random"),
                 self.vesting.clone(),
-                &ExecuteMsg::WithdrawCanceledPayment { amount: amount.map(|a| a.into()) },
+                &ExecuteMsg::WithdrawCanceledPayment {
+                    amount: amount.map(|a| a.into()),
+                },
                 &[],
             )
             .map(|_| ())
@@ -352,7 +352,8 @@ impl Suite {
     }
 
     pub fn query_distributable(&self) -> Uint128 {
-        let val: Uint256 = self.app
+        let val: Uint256 = self
+            .app
             .wrap()
             .query_wasm_smart(&self.vesting, &QueryMsg::Distributable { t: None })
             .unwrap();
@@ -366,14 +367,16 @@ impl Suite {
 
     pub fn query_vesting_token_balance<S: Into<String>>(&self, who: S) -> Uint128 {
         let vest = self.query_vest();
-        let balance: Uint256 = vest.denom
+        let balance: Uint256 = vest
+            .denom
             .query_balance(&self.app.wrap(), &Addr::unchecked(who.into()))
             .unwrap();
         Uint128::try_from(balance).unwrap()
     }
 
     pub fn query_stake(&self, q: StakeTrackerQuery) -> Uint128 {
-        let val: Uint256 = self.app
+        let val: Uint256 = self
+            .app
             .wrap()
             .query_wasm_smart(&self.vesting, &QueryMsg::Stake(q))
             .unwrap();
@@ -381,7 +384,8 @@ impl Suite {
     }
 
     pub fn query_vested(&self, t: Option<Timestamp>) -> Uint128 {
-        let val: Uint256 = self.app
+        let val: Uint256 = self
+            .app
             .wrap()
             .query_wasm_smart(&self.vesting, &QueryMsg::Vested { t })
             .unwrap();
@@ -389,7 +393,8 @@ impl Suite {
     }
 
     pub fn query_total_to_vest(&self) -> Uint128 {
-        let val: Uint256 = self.app
+        let val: Uint256 = self
+            .app
             .wrap()
             .query_wasm_smart(&self.vesting, &QueryMsg::TotalToVest {})
             .unwrap();

@@ -162,10 +162,8 @@ mod tests {
             .unwrap();
         assert_eq!(
             total_weight.power,
-            suite
-                .members
-                .iter()
-                .fold(Uint256::zero(), |acc, m| acc + Uint256::from(m.weight as u128))
+            suite.members.iter().fold(Uint256::zero(), |acc, m| acc
+                + Uint256::from(m.weight as u128))
         );
     }
 }

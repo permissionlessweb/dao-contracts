@@ -2,7 +2,9 @@ use crate::msg::{
     CW20EntitlementResponse, CW20Response, DenomResponse, ExecuteMsg, InstantiateMsg, MigrateMsg,
     NativeEntitlementResponse, QueryMsg, TotalPowerResponse, VotingContractResponse,
 };
-use cosmwasm_std::{testing::MockApi, to_json_binary, Addr, Binary, Coin, Uint128, Uint256, WasmMsg};
+use cosmwasm_std::{
+    testing::MockApi, to_json_binary, Addr, Binary, Coin, Uint128, Uint256, WasmMsg,
+};
 use cw20::Cw20Coin;
 use cw_multi_test::{next_block, App, BankSudo, Executor, SudoMsg};
 use dao_testing::contracts::{
@@ -569,7 +571,10 @@ pub fn test_claim_cw20() {
 
     let user_balance_after_claim =
         query_cw20_balance(&mut app, token_address.clone(), mock_addr("bekauz"));
-    assert_eq!(Uint256::from(expected_balance), user_balance_after_claim.balance);
+    assert_eq!(
+        Uint256::from(expected_balance),
+        user_balance_after_claim.balance
+    );
 
     // assert funds have been deducted from distributor
     let distributor_balance_after_claim =
@@ -657,7 +662,10 @@ pub fn test_claim_cw20_twice() {
         Uint256::from(amount - expected_balance),
         distributor_balance_after_claim.balance
     );
-    assert_eq!(Uint256::from(expected_balance), user_balance_after_claim.balance);
+    assert_eq!(
+        Uint256::from(expected_balance),
+        user_balance_after_claim.balance
+    );
 }
 
 #[test]
@@ -760,7 +768,10 @@ pub fn test_claim_natives_twice() {
 
     // assert only a single claim has occurred on both
     // user and distributor level
-    assert_eq!(Uint256::from(expected_balance), user_balance_after_claim.amount);
+    assert_eq!(
+        Uint256::from(expected_balance),
+        user_balance_after_claim.amount
+    );
     assert_eq!(
         Uint256::from(amount - expected_balance),
         distributor_balance_after_claim.amount
@@ -810,7 +821,10 @@ pub fn test_claim_natives() {
     let expected_balance = Uint128::new(166666);
 
     let user_balance_after_claim = query_native_balance(&mut app, mock_addr("bekauz"));
-    assert_eq!(Uint256::from(expected_balance), user_balance_after_claim.amount);
+    assert_eq!(
+        Uint256::from(expected_balance),
+        user_balance_after_claim.amount
+    );
 
     // assert funds have been deducted from distributor
     let distributor_balance_after_claim = query_native_balance(&mut app, distributor_address);
@@ -880,7 +894,10 @@ pub fn test_claim_all() {
         query_native_balance(&mut app, distributor_address.clone());
     // assert funds have been deducted from distributor and
     // user received the funds (native)
-    assert_eq!(Uint256::from(expected_balance), user_balance_after_claim.amount);
+    assert_eq!(
+        Uint256::from(expected_balance),
+        user_balance_after_claim.amount
+    );
     assert_eq!(
         Uint256::from(amount - expected_balance),
         distributor_balance_after_claim.amount
@@ -893,7 +910,10 @@ pub fn test_claim_all() {
         query_cw20_balance(&mut app, token_address, distributor_address);
     // assert funds have been deducted from distributor and
     // user received the funds (cw20)
-    assert_eq!(Uint256::from(expected_balance), user_balance_after_claim.balance);
+    assert_eq!(
+        Uint256::from(expected_balance),
+        user_balance_after_claim.balance
+    );
     assert_eq!(
         Uint256::from(amount - expected_balance),
         distributor_balance_after_claim.balance
@@ -945,7 +965,10 @@ pub fn test_claim_natives_empty_list_of_denoms() {
 
     // assert no funds have been deducted from distributor
     let distributor_balance_after_claim = query_native_balance(&mut app, distributor_address);
-    assert_eq!(Uint256::from(amount), distributor_balance_after_claim.amount);
+    assert_eq!(
+        Uint256::from(amount),
+        distributor_balance_after_claim.amount
+    );
 }
 
 #[test]
@@ -990,7 +1013,10 @@ pub fn test_redistribute_unclaimed_funds() {
 
     let expected_balance = Uint128::new(166666);
     let user_balance_after_claim = query_native_balance(&mut app, mock_addr("bekauz"));
-    assert_eq!(Uint256::from(expected_balance), user_balance_after_claim.amount);
+    assert_eq!(
+        Uint256::from(expected_balance),
+        user_balance_after_claim.amount
+    );
 
     // some time passes..
     app.update_block(next_block);
@@ -1020,7 +1046,10 @@ pub fn test_redistribute_unclaimed_funds() {
     let expected_claim = distributor_amount
         .checked_multiply_ratio(Uint128::new(10), Uint128::new(30))
         .unwrap();
-    assert_eq!(distributor_balance.amount, Uint256::from(Uint128::new(333334)));
+    assert_eq!(
+        distributor_balance.amount,
+        Uint256::from(Uint128::new(333334))
+    );
     assert_eq!(expected_claim, Uint128::new(111111));
 
     app.update_block(next_block);
@@ -1136,7 +1165,10 @@ pub fn test_claim_cw20_during_funding_period() {
         .unwrap_err();
 
     // assert the error and that the balance of distributor did not change
-    assert!(err.to_string().contains("funding period") || err.to_string().contains("ClaimDuringFunding"));
+    assert!(
+        err.to_string().contains("funding period")
+            || err.to_string().contains("ClaimDuringFunding")
+    );
     let balance = query_cw20_balance(&mut app, token_address, distributor_address);
     assert_eq!(balance.balance, Uint256::from(amount));
 }
@@ -1180,7 +1212,10 @@ pub fn test_claim_natives_during_funding_period() {
         .unwrap_err();
 
     // assert that the expected error and that balance did not change
-    assert!(err.to_string().contains("funding period") || err.to_string().contains("ClaimDuringFunding"));
+    assert!(
+        err.to_string().contains("funding period")
+            || err.to_string().contains("ClaimDuringFunding")
+    );
     let balance = query_native_balance(&mut app, distributor_address).amount;
     assert_eq!(Uint256::from(amount), balance);
 }
@@ -1218,7 +1253,10 @@ pub fn test_claim_all_during_funding_period() {
         )
         .unwrap_err();
 
-    assert!(err.to_string().contains("funding period") || err.to_string().contains("ClaimDuringFunding"));
+    assert!(
+        err.to_string().contains("funding period")
+            || err.to_string().contains("ClaimDuringFunding")
+    );
 }
 
 #[test]
@@ -1258,7 +1296,9 @@ pub fn test_fund_cw20_during_claiming_period() {
         )
         .unwrap_err();
 
-    assert!(err.to_string().contains("claim period") || err.to_string().contains("FundDuringClaiming"));
+    assert!(
+        err.to_string().contains("claim period") || err.to_string().contains("FundDuringClaiming")
+    );
 }
 
 #[test]
@@ -1292,7 +1332,9 @@ pub fn test_fund_natives_during_claiming_period() {
         )
         .unwrap_err();
 
-    assert!(err.to_string().contains("claim period") || err.to_string().contains("FundDuringClaiming"));
+    assert!(
+        err.to_string().contains("claim period") || err.to_string().contains("FundDuringClaiming")
+    );
 }
 
 #[test]

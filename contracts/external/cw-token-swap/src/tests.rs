@@ -114,7 +114,10 @@ fn test_simple_escrow() {
         .unwrap();
     assert_eq!(dao1_balance.balance, Uint256::from(100u128));
 
-    let dao2_balance = app.wrap().query_balance(MockApi::default().addr_make(DAO2), "ujuno").unwrap();
+    let dao2_balance = app
+        .wrap()
+        .query_balance(MockApi::default().addr_make(DAO2), "ujuno")
+        .unwrap();
     assert_eq!(dao2_balance.amount, Uint256::from(100u128))
 }
 
@@ -181,7 +184,9 @@ fn test_withdraw() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("Must provide funds before withdrawing"));
+    assert!(err
+        .to_string()
+        .contains("Must provide funds before withdrawing"));
 
     app.execute_contract(
         MockApi::default().addr_make(DAO2),
@@ -270,7 +275,10 @@ fn test_withdraw() {
     )
     .unwrap();
 
-    let dao1_balance = app.wrap().query_balance(MockApi::default().addr_make(DAO1), "ujuno").unwrap();
+    let dao1_balance = app
+        .wrap()
+        .query_balance(MockApi::default().addr_make(DAO1), "ujuno")
+        .unwrap();
     assert_eq!(dao1_balance.amount, Uint256::from(100u128));
 
     let status: StatusResponse = app
@@ -397,13 +405,23 @@ fn test_withdraw_post_completion() {
         .unwrap();
     assert_eq!(dao1_balance.balance, Uint256::from(100u128));
 
-    let dao2_balance = app.wrap().query_balance(MockApi::default().addr_make(DAO2), "ujuno").unwrap();
+    let dao2_balance = app
+        .wrap()
+        .query_balance(MockApi::default().addr_make(DAO2), "ujuno")
+        .unwrap();
     assert_eq!(dao2_balance.amount, Uint256::from(100u128));
 
     let err = app
-        .execute_contract(MockApi::default().addr_make(DAO1), escrow, &ExecuteMsg::Withdraw {}, &[])
+        .execute_contract(
+            MockApi::default().addr_make(DAO1),
+            escrow,
+            &ExecuteMsg::Withdraw {},
+            &[],
+        )
         .unwrap_err();
-    assert!(err.to_string().contains("Escrow funds have already been sent"))
+    assert!(err
+        .to_string()
+        .contains("Escrow funds have already been sent"))
 }
 
 #[test]
@@ -461,7 +479,9 @@ fn test_invalid_instantiate() {
         )
         .unwrap_err();
 
-    assert!(err.to_string().contains("Can not create an escrow for zero tokens"));
+    assert!(err
+        .to_string()
+        .contains("Can not create an escrow for zero tokens"));
 
     // Zero amount not allowed for cw20 tokens.
     let err = app
@@ -490,7 +510,9 @@ fn test_invalid_instantiate() {
         )
         .unwrap_err();
 
-    assert!(err.to_string().contains("Can not create an escrow for zero tokens"))
+    assert!(err
+        .to_string()
+        .contains("Can not create an escrow for zero tokens"))
 }
 
 #[test]
@@ -526,7 +548,9 @@ fn test_non_distincy_counterparties() {
         )
         .unwrap_err();
 
-    assert!(err.to_string().contains("Counterparties must have different addresses"));
+    assert!(err
+        .to_string()
+        .contains("Counterparties must have different addresses"));
 }
 
 #[test]
@@ -720,7 +744,9 @@ fn test_fund_twice() {
         )
         .unwrap_err();
 
-    assert!(err.to_string().contains("Can not provide funds more than once"));
+    assert!(err
+        .to_string()
+        .contains("Can not provide funds more than once"));
 
     let err = app
         .execute_contract(
@@ -735,7 +761,9 @@ fn test_fund_twice() {
         )
         .unwrap_err();
 
-    assert!(err.to_string().contains("Can not provide funds more than once"));
+    assert!(err
+        .to_string()
+        .contains("Can not provide funds more than once"));
 }
 
 #[test]
@@ -805,7 +833,9 @@ fn test_fund_invalid_amount() {
         )
         .unwrap_err();
 
-    assert!(err.to_string().contains("Invalid amount. Expected (100), got (10)"));
+    assert!(err
+        .to_string()
+        .contains("Invalid amount. Expected (100), got (10)"));
 
     app.sudo(SudoMsg::Bank(BankSudo::Mint {
         to_address: MockApi::default().addr_make(DAO1).to_string(),
@@ -828,7 +858,9 @@ fn test_fund_invalid_amount() {
         )
         .unwrap_err();
 
-    assert!(err.to_string().contains("Invalid amount. Expected (100), got (200)"));
+    assert!(err
+        .to_string()
+        .contains("Invalid amount. Expected (100), got (200)"));
 }
 
 #[test]
@@ -886,7 +918,9 @@ fn test_fund_invalid_denom() {
         )
         .unwrap_err();
 
-    assert!(err.to_string().contains("Provided funds do not match promised funds"))
+    assert!(err
+        .to_string()
+        .contains("Provided funds do not match promised funds"))
 }
 
 #[test]
@@ -978,7 +1012,9 @@ fn test_fund_invalid_cw20() {
         )
         .unwrap_err();
 
-    assert!(err.to_string().contains("Provided funds do not match promised funds"));
+    assert!(err
+        .to_string()
+        .contains("Provided funds do not match promised funds"));
 
     // Try and fund the contract with the correct cw20 but incorrect
     // provider.
@@ -995,7 +1031,9 @@ fn test_fund_invalid_cw20() {
         )
         .unwrap_err();
 
-    assert!(err.to_string().contains("Provided funds do not match promised funds"))
+    assert!(err
+        .to_string()
+        .contains("Provided funds do not match promised funds"))
 }
 
 #[test]

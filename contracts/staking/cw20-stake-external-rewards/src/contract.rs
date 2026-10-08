@@ -14,7 +14,8 @@ use crate::ContractError::{
 use cosmwasm_std::entry_point;
 
 use cosmwasm_std::{
-    Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, MigrateInfo, Response, StdError, StdResult, Uint128, Uint256, WasmMsg, from_json, to_json_binary
+    from_json, to_json_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Empty, Env,
+    MessageInfo, MigrateInfo, Response, StdError, StdResult, Uint128, Uint256, WasmMsg,
 };
 use cw2::set_contract_version;
 use cw20::{Cw20ReceiveMsg, Denom};
@@ -82,7 +83,12 @@ pub fn instantiate(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg, _info: MigrateInfo) -> Result<Response, ContractError> {
+pub fn migrate(
+    _deps: DepsMut,
+    _env: Env,
+    _msg: MigrateMsg,
+    _info: MigrateInfo,
+) -> Result<Response, ContractError> {
     Err(ContractError::Std(cosmwasm_std::StdError::msg(
         "cannot migrate from v1 -> v3. DAOs must first migrate to  =< v2.8.0-alpha.2",
     )))
@@ -133,7 +139,10 @@ pub fn execute_fund_native(
 
     match config.reward_token {
         Denom::Native(denom) => {
-            let amount: Uint128 = cw_utils::must_pay(&info, &denom).map_err(|_| InvalidFunds {})?.try_into().unwrap();
+            let amount: Uint128 = cw_utils::must_pay(&info, &denom)
+                .map_err(|_| InvalidFunds {})?
+                .try_into()
+                .unwrap();
             execute_fund(deps, env, info.sender, amount)
         }
         Cw20(_) => Err(InvalidFunds {}),
@@ -246,7 +255,10 @@ pub fn get_transfer_msg(recipient: Addr, amount: Uint128, denom: Denom) -> StdRe
     match denom {
         Denom::Native(denom) => Ok(BankMsg::Send {
             to_address: recipient.into_string(),
-            amount: vec![Coin { denom, amount: amount.into() }],
+            amount: vec![Coin {
+                denom,
+                amount: amount.into(),
+            }],
         }
         .into()),
         Denom::Cw20(addr) => {

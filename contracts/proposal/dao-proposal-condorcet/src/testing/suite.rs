@@ -1,4 +1,6 @@
-use cosmwasm_std::{coins, testing::MockApi, to_json_binary, Addr, BankMsg, CosmosMsg, Decimal, StdResult};
+use cosmwasm_std::{
+    coins, testing::MockApi, to_json_binary, Addr, BankMsg, CosmosMsg, Decimal, StdResult,
+};
 use cw_multi_test::{next_block, App, Executor};
 use cw_utils::Duration;
 use dao_interface::{
@@ -70,10 +72,7 @@ impl SuiteBuilder {
     }
 
     pub fn with_voters(mut self, voters: &[(&str, u64)]) -> Self {
-        self.with_voters = voters
-            .iter()
-            .map(|(a, p)| (addr_str(a), *p))
-            .collect();
+        self.with_voters = voters.iter().map(|(a, p)| (addr_str(a), *p)).collect();
         self
     }
 

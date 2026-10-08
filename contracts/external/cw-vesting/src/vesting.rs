@@ -259,11 +259,7 @@ impl Payment {
             ];
 
             if !to_owner.is_zero() {
-                msgs.push(
-                    vesting
-                        .denom
-                        .get_transfer_to_message(owner, to_owner)?,
-                );
+                msgs.push(vesting.denom.get_transfer_to_message(owner, to_owner)?);
             }
             if !to_vestee.is_zero() {
                 msgs.push(
@@ -299,9 +295,7 @@ impl Payment {
                 };
                 self.vesting.save(storage, &vesting)?;
 
-                Ok(vesting
-                    .denom
-                    .get_transfer_to_message(owner, request)?)
+                Ok(vesting.denom.get_transfer_to_message(owner, request)?)
             }
         } else {
             Err(ContractError::NotCancelled)
@@ -426,9 +420,10 @@ impl Vest {
             Ok(Self {
                 claimed: Uint256::zero(),
                 slashed: Uint256::zero(),
-                vested: init
-                    .schedule
-                    .into_curve(Uint128::try_from(init.total).map_err(|e| ContractError::Std(e.into()))?, init.duration_seconds)?,
+                vested: init.schedule.into_curve(
+                    Uint128::try_from(init.total).map_err(|e| ContractError::Std(e.into()))?,
+                    init.duration_seconds,
+                )?,
                 start_time: init.start_time,
                 denom: init.denom,
                 recipient: init.recipient,

@@ -716,10 +716,12 @@ pub fn execute(
         .query_minter_ownership(deps.storage)?
         .owner;
     println!("{:#?}", own);
-    if let Some(o) = own { match o == info.sender {
-        true => {}
-        false => return Err(ContractError::Unauthorized {}),
-    } }
+    if let Some(o) = own {
+        match o == info.sender {
+            true => {}
+            false => return Err(ContractError::Unauthorized {}),
+        }
+    }
     match msg {
         cw721::msg::Cw721ExecuteMsg::UpdateExtension { msg } => match msg {
             ExecuteExt::CreateCalendar { owner, extension } => {
@@ -1000,7 +1002,7 @@ pub mod execute {
                     event.extension = new;
                 }
             }
-        } 
+        }
         Ok(Response::new()
             .add_attribute("action", "update_event")
             .add_attribute("e_d", e_d.to_string()))

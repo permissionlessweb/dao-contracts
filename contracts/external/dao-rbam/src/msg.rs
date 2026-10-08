@@ -373,10 +373,7 @@ pub enum QueryMsg {
 
     // Helpers
     #[returns(TestFilterResponse)]
-    TestFilter {
-        filter: String,
-        msg: CosmosMsg,
-    },
+    TestFilter { filter: String, msg: CosmosMsg },
 }
 
 #[cw_serde]

@@ -527,5 +527,3 @@ pub fn validate_and_update_delegated_vp(
 
     Ok(())
 }
-
- 

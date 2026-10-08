@@ -58,19 +58,15 @@ impl MultipleChoiceVotes {
 
     // Add a vote to the tally
     pub fn add_vote(&mut self, vote: MultipleChoiceVote, weight: Uint256) -> StdResult<()> {
-        self.vote_weights[vote.option_id as usize] = self
-            .get(vote)
-            .checked_add(weight)
-            .map_err(StdError::msg)?;
+        self.vote_weights[vote.option_id as usize] =
+            self.get(vote).checked_add(weight).map_err(StdError::msg)?;
         Ok(())
     }
 
     // Remove a vote from the tally
     pub fn remove_vote(&mut self, vote: MultipleChoiceVote, weight: Uint256) -> StdResult<()> {
-        self.vote_weights[vote.option_id as usize] = self
-            .get(vote)
-            .checked_sub(weight)
-            .map_err(StdError::msg)?;
+        self.vote_weights[vote.option_id as usize] =
+            self.get(vote).checked_sub(weight).map_err(StdError::msg)?;
         Ok(())
     }
 

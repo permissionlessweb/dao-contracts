@@ -1,5 +1,5 @@
-use cosmwasm_std::Uint256;
 use cosmwasm_std::testing::MockApi;
+use cosmwasm_std::Uint256;
 use dao_voting::voting::Vote;
 
 use super::suite::SuiteBuilder;

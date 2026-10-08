@@ -123,14 +123,7 @@ fn handle_voting_power_changed_hook(
     } else {
         // if not a delegate, check if they have any delegations, and update
         // delegate VPs accordingly
-        handle_delegator_voting_power_changed_hook(
-            deps,
-            env,
-            addr,
-            new_vp,
-            vp_delta,
-            increased,
-        )
+        handle_delegator_voting_power_changed_hook(deps, env, addr, new_vp, vp_delta, increased)
     }
 }
 

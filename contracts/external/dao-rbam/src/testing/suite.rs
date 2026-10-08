@@ -841,11 +841,7 @@ impl Suite {
         );
     }
 
-    pub fn update_enabled_err(
-        &mut self,
-        sender: impl Into<String>,
-        enabled: bool,
-    ) -> StdError {
+    pub fn update_enabled_err(&mut self, sender: impl Into<String>, enabled: bool) -> StdError {
         self.base.execute_smart_err(
             sender,
             &self.rbam_addr,
@@ -1112,11 +1108,7 @@ impl Suite {
             .execute_smart_ok(sender, &self.rbam_addr, &ExecuteMsg::Assign { assign }, &[]);
     }
 
-    pub fn assign_err(
-        &mut self,
-        sender: impl Into<String>,
-        assign: Vec<Assignment>,
-    ) -> StdError {
+    pub fn assign_err(&mut self, sender: impl Into<String>, assign: Vec<Assignment>) -> StdError {
         self.base
             .execute_smart_err(sender, &self.rbam_addr, &ExecuteMsg::Assign { assign }, &[])
     }
@@ -1126,11 +1118,7 @@ impl Suite {
             .execute_smart_ok(sender, &self.rbam_addr, &ExecuteMsg::Revoke { revoke }, &[]);
     }
 
-    pub fn revoke_err(
-        &mut self,
-        sender: impl Into<String>,
-        revoke: Vec<Assignment>,
-    ) -> StdError {
+    pub fn revoke_err(&mut self, sender: impl Into<String>, revoke: Vec<Assignment>) -> StdError {
         self.base
             .execute_smart_err(sender, &self.rbam_addr, &ExecuteMsg::Revoke { revoke }, &[])
     }

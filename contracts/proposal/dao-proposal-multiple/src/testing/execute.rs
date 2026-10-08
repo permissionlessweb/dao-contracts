@@ -43,7 +43,9 @@ pub fn make_proposal(
                     amount,
                     refund_policy: _,
                 }) => match denom {
-                    CheckedDenom::Native(denom) => coins(Uint128::try_from(amount).unwrap().u128(), denom),
+                    CheckedDenom::Native(denom) => {
+                        coins(Uint128::try_from(amount).unwrap().u128(), denom)
+                    }
                     CheckedDenom::Cw20(addr) => {
                         // Give an allowance, no funds.
                         app.execute_contract(

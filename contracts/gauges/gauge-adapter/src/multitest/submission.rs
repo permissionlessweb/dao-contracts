@@ -2,17 +2,15 @@ use crate::{msg::SubmissionResponse, ContractError};
 
 use super::suite::SuiteBuilder;
 
-use cosmwasm_std::{coin, Addr, Uint128};
 use cosmwasm_std::testing::MockApi;
+use cosmwasm_std::{coin, Addr, Uint128};
 
 #[test]
 fn create_default_submission() {
     let api = MockApi::default();
     let community_pool = api.addr_make("community_pool").to_string();
 
-    let suite = SuiteBuilder::new()
-        .with_treasury("community_pool")
-        .build();
+    let suite = SuiteBuilder::new().with_treasury("community_pool").build();
 
     // this one is created by default during instantiation
     assert_eq!(
@@ -47,7 +45,8 @@ fn create_submission_no_required_deposit() {
         .unwrap_err();
 
     assert!(
-        err.to_string().contains("invalid amount for required deposit"),
+        err.to_string()
+            .contains("invalid amount for required deposit"),
         "Expected error to contain 'invalid amount for required deposit', got: {}",
         err
     );
@@ -116,7 +115,8 @@ fn overwrite_existing_submission() {
         .unwrap_err();
 
     assert!(
-        err.to_string().contains("only previous sender can overwrite it"),
+        err.to_string()
+            .contains("only previous sender can overwrite it"),
         "Expected error to contain 'only previous sender can overwrite it', got: {}",
         err
     );
@@ -132,7 +132,8 @@ fn overwrite_existing_submission() {
         )
         .unwrap_err();
     assert!(
-        err.to_string().contains("only previous sender can overwrite it"),
+        err.to_string()
+            .contains("only previous sender can overwrite it"),
         "Expected error to contain 'only previous sender can overwrite it', got: {}",
         err
     );
@@ -190,7 +191,8 @@ fn create_submission_required_deposit() {
         .unwrap_err();
 
     assert!(
-        err.to_string().contains("invalid amount for required deposit"),
+        err.to_string()
+            .contains("invalid amount for required deposit"),
         "Expected error to contain 'invalid amount for required deposit', got: {}",
         err
     );
@@ -278,7 +280,8 @@ fn create_receive_required_deposit() {
         .unwrap_err();
 
     assert!(
-        err.to_string().contains("invalid amount for required deposit"),
+        err.to_string()
+            .contains("invalid amount for required deposit"),
         "Expected error to contain 'invalid amount for required deposit', got: {}",
         err,
     );
@@ -436,7 +439,10 @@ fn return_deposits_required_native_deposit_multiple_deposits() {
         suite.query_native_balance(suite.owner.as_ref()).unwrap(),
         1_000u128,
     );
-    assert_eq!(suite.query_native_balance(einstein.as_ref()).unwrap(), 1_000u128,);
+    assert_eq!(
+        suite.query_native_balance(einstein.as_ref()).unwrap(),
+        1_000u128,
+    );
     assert_eq!(suite.query_native_balance(&recipient).unwrap(), 0u128,);
     assert_eq!(
         suite

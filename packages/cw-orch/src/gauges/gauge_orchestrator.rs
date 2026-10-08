@@ -3,7 +3,13 @@ use cw_orch::{interface, prelude::*};
 use gauge_orchestrator::contract::{execute, instantiate, query};
 use gauge_orchestrator::msg::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
 
-#[interface(InstantiateMsg, ExecuteMsg, QueryMsg, MigrateMsg, id = "gauge-orchestrator")]
+#[interface(
+    InstantiateMsg,
+    ExecuteMsg,
+    QueryMsg,
+    MigrateMsg,
+    id = "gauge-orchestrator"
+)]
 pub struct GaugeOrchestrator;
 
 impl<Chain> Uploadable for GaugeOrchestrator<Chain> {

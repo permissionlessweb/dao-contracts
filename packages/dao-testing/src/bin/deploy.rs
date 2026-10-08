@@ -265,7 +265,14 @@ fn build_plan(profile: &StackProfile, path: &Path) -> Value {
         }),
     ];
 
-    if recreate || profile.dao.core_addr.as_ref().map(|s| s.is_empty()).unwrap_or(true) {
+    if recreate
+        || profile
+            .dao
+            .core_addr
+            .as_ref()
+            .map(|s| s.is_empty())
+            .unwrap_or(true)
+    {
         steps.push(json!({
             "id": "recreate_or_create",
             "action": "spawn_dao",
@@ -379,15 +386,11 @@ fn cmd_export_state(args: &[String]) -> Result<(), i32> {
                 .and_then(|e| e.appstate.as_ref())
                 .map(|rel| terp_core_root().join(rel))
         })
-        .unwrap_or_else(|| {
-            terp_core_root().join("artifacts/community-core-local/APPSTATE.json")
-        });
+        .unwrap_or_else(|| terp_core_root().join("artifacts/community-core-local/APPSTATE.json"));
 
     let cw_state_path = flag_value(args, "--cw-state")
         .map(PathBuf::from)
-        .unwrap_or_else(|| {
-            dirs_state_home().join("state.json")
-        });
+        .unwrap_or_else(|| dirs_state_home().join("state.json"));
 
     let appstate: Value = if appstate_path.is_file() {
         serde_json::from_str(&fs::read_to_string(&appstate_path).map_err(|e| {

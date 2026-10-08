@@ -1,7 +1,7 @@
 use anybuf::Anybuf;
+use cosmwasm_std::testing::MockApi;
 use cosmwasm_std::{coin, coins, to_json_binary};
 use cw_denom::UncheckedDenom;
-use cosmwasm_std::testing::MockApi;
 
 use crate::{
     msg::{

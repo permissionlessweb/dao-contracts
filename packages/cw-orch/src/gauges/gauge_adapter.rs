@@ -3,7 +3,13 @@ use cw_orch::{interface, prelude::*};
 use gauge_adapter::contract::{execute, instantiate, query};
 use gauge_adapter::msg::{AdapterQueryMsg, ExecuteMsg, InstantiateMsg, MigrateMsg};
 
-#[interface(InstantiateMsg, ExecuteMsg, AdapterQueryMsg, MigrateMsg, id = "gauge-adapter")]
+#[interface(
+    InstantiateMsg,
+    ExecuteMsg,
+    AdapterQueryMsg,
+    MigrateMsg,
+    id = "gauge-adapter"
+)]
 pub struct GaugeAdapter;
 
 impl<Chain> Uploadable for GaugeAdapter<Chain> {

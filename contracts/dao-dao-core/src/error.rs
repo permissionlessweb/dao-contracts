@@ -2,7 +2,7 @@ use cosmwasm_std::{Addr, StdError};
 use cw_utils::ParseReplyError;
 use thiserror::Error;
 
-#[derive(Error, Debug, )]
+#[derive(Error, Debug)]
 pub enum ContractError {
     #[error(transparent)]
     Std(#[from] StdError),
@@ -61,8 +61,7 @@ pub enum ContractError {
     InitialActionsError { error: String },
 }
 
-
-impl PartialEq for ContractError  {
+impl PartialEq for ContractError {
     fn eq(&self, other: &Self) -> bool {
         core::mem::discriminant(self) == core::mem::discriminant(other)
     }

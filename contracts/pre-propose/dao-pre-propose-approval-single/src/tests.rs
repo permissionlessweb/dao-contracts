@@ -12,8 +12,7 @@ use dao_pre_propose_base::{msg::DepositInfoResponse, state::Config};
 use dao_proposal_single as dps;
 use dao_testing::{
     contracts::{
-        cw20_base_contract, dao_pre_propose_approval_single_contract,
-        dao_proposal_single_contract,
+        cw20_base_contract, dao_pre_propose_approval_single_contract, dao_proposal_single_contract,
     },
     helpers::instantiate_with_cw4_groups_governance,
 };
@@ -482,8 +481,12 @@ fn test_native_permutation(
     );
 
     mint_natives(&mut app, &addr_str("ekez"), coins(10, "ujuno"));
-    let pre_propose_id =
-        make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &coins(10, "ujuno"));
+    let pre_propose_id = make_pre_proposal(
+        &mut app,
+        pre_propose.clone(),
+        &addr_str("ekez"),
+        &coins(10, "ujuno"),
+    );
 
     // Make sure it went away.
     let balance = get_balance_native(&app, &addr_str("ekez"), "ujuno");
@@ -505,7 +508,13 @@ fn test_native_permutation(
                 EndStatus::Passed => (Vote::Yes, Status::Passed, execute_proposal),
                 EndStatus::Failed => (Vote::No, Status::Rejected, close_proposal),
             };
-            let new_status = vote(&mut app, proposal_single.clone(), &addr_str("ekez"), id, position);
+            let new_status = vote(
+                &mut app,
+                proposal_single.clone(),
+                &addr_str("ekez"),
+                id,
+                position,
+            );
             assert_eq!(new_status, expected_status);
 
             // Close or execute the proposal to trigger a refund.
@@ -572,7 +581,12 @@ fn test_cw20_permutation(
     match approval_status {
         ApprovalStatus::Approved => {
             // Approver approves, new proposal id is returned
-            let id = approve_proposal(&mut app, pre_propose.clone(), &addr_str("approver"), pre_propose_id);
+            let id = approve_proposal(
+                &mut app,
+                pre_propose.clone(),
+                &addr_str("approver"),
+                pre_propose_id,
+            );
 
             // Voting happens on newly created proposal
             #[allow(clippy::type_complexity)]
@@ -584,7 +598,13 @@ fn test_cw20_permutation(
                 EndStatus::Passed => (Vote::Yes, Status::Passed, execute_proposal),
                 EndStatus::Failed => (Vote::No, Status::Rejected, close_proposal),
             };
-            let new_status = vote(&mut app, proposal_single.clone(), &addr_str("ekez"), id, position);
+            let new_status = vote(
+                &mut app,
+                proposal_single.clone(),
+                &addr_str("ekez"),
+                id,
+                position,
+            );
             assert_eq!(new_status, expected_status);
 
             // Close or execute the proposal to trigger a refund.
@@ -593,7 +613,12 @@ fn test_cw20_permutation(
         ApprovalStatus::Rejected => {
             // Proposal is rejected by approver
             // No proposal is created so there is no voting
-            reject_proposal(&mut app, pre_propose.clone(), &addr_str("approver"), pre_propose_id);
+            reject_proposal(
+                &mut app,
+                pre_propose.clone(),
+                &addr_str("approver"),
+                pre_propose_id,
+            );
         }
     };
 
@@ -809,8 +834,12 @@ fn test_multiple_open_proposals() {
     );
 
     mint_natives(&mut app, &addr_str("ekez"), coins(20, "ujuno"));
-    let first_pre_propose_id =
-        make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &coins(10, "ujuno"));
+    let first_pre_propose_id = make_pre_proposal(
+        &mut app,
+        pre_propose.clone(),
+        &addr_str("ekez"),
+        &coins(10, "ujuno"),
+    );
     let balance = get_balance_native(&app, &addr_str("ekez"), "ujuno");
     assert_eq!(Uint256::from(10u128), balance);
 
@@ -824,13 +853,22 @@ fn test_multiple_open_proposals() {
     let balance = get_balance_native(&app, &addr_str("ekez"), "ujuno");
     assert_eq!(Uint256::from(10u128), balance);
 
-    let second_pre_propose_id =
-        make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &coins(10, "ujuno"));
+    let second_pre_propose_id = make_pre_proposal(
+        &mut app,
+        pre_propose.clone(),
+        &addr_str("ekez"),
+        &coins(10, "ujuno"),
+    );
     let balance = get_balance_native(&app, &addr_str("ekez"), "ujuno");
     assert_eq!(Uint256::zero(), balance);
 
     // Approver approves prop, balance remains the same
-    let second_id = approve_proposal(&mut app, pre_propose, &addr_str("approver"), second_pre_propose_id);
+    let second_id = approve_proposal(
+        &mut app,
+        pre_propose,
+        &addr_str("approver"),
+        second_pre_propose_id,
+    );
     let balance = get_balance_native(&app, &addr_str("ekez"), "ujuno");
     assert_eq!(Uint256::zero(), balance);
 
@@ -848,7 +886,12 @@ fn test_multiple_open_proposals() {
     let balance = get_balance_native(&app, &addr_str("ekez"), "ujuno");
     assert_eq!(Uint256::zero(), balance);
 
-    execute_proposal(&mut app, proposal_single.clone(), &addr_str("ekez"), first_id);
+    execute_proposal(
+        &mut app,
+        proposal_single.clone(),
+        &addr_str("ekez"),
+        first_id,
+    );
 
     // First proposal refunded.
     let balance = get_balance_native(&app, &addr_str("ekez"), "ujuno");
@@ -896,8 +939,18 @@ fn test_pending_proposal_queries() {
     );
 
     mint_natives(&mut app, &addr_str("ekez"), coins(20, "ujuno"));
-    make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &coins(10, "ujuno"));
-    make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &coins(10, "ujuno"));
+    make_pre_proposal(
+        &mut app,
+        pre_propose.clone(),
+        &addr_str("ekez"),
+        &coins(10, "ujuno"),
+    );
+    make_pre_proposal(
+        &mut app,
+        pre_propose.clone(),
+        &addr_str("ekez"),
+        &coins(10, "ujuno"),
+    );
 
     // Query for individual proposal
     let prop1: Proposal = app
@@ -979,8 +1032,18 @@ fn test_completed_proposal_queries() {
     );
 
     mint_natives(&mut app, &addr_str("ekez"), coins(20, "ujuno"));
-    let approve_id = make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &coins(10, "ujuno"));
-    let reject_id = make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &coins(10, "ujuno"));
+    let approve_id = make_pre_proposal(
+        &mut app,
+        pre_propose.clone(),
+        &addr_str("ekez"),
+        &coins(10, "ujuno"),
+    );
+    let reject_id = make_pre_proposal(
+        &mut app,
+        pre_propose.clone(),
+        &addr_str("ekez"),
+        &coins(10, "ujuno"),
+    );
 
     let is_pending: bool = app
         .wrap()
@@ -993,9 +1056,18 @@ fn test_completed_proposal_queries() {
         .unwrap();
     assert!(is_pending);
 
-    let created_approved_id =
-        approve_proposal(&mut app, pre_propose.clone(), &addr_str("approver"), approve_id);
-    reject_proposal(&mut app, pre_propose.clone(), &addr_str("approver"), reject_id);
+    let created_approved_id = approve_proposal(
+        &mut app,
+        pre_propose.clone(),
+        &addr_str("approver"),
+        approve_id,
+    );
+    reject_proposal(
+        &mut app,
+        pre_propose.clone(),
+        &addr_str("approver"),
+        reject_id,
+    );
 
     let is_pending: bool = app
         .wrap()
@@ -1374,7 +1446,8 @@ fn test_no_deposit_required_open_submission() {
     );
 
     // Non-member proposes.
-    let pre_propose_id = make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("nonmember"), &[]);
+    let pre_propose_id =
+        make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("nonmember"), &[]);
 
     // Approver approves
     let id = approve_proposal(&mut app, pre_propose, &addr_str("approver"), pre_propose_id);
@@ -1442,7 +1515,11 @@ fn test_anyone_denylist() {
     let rando = "rando";
 
     // Proposal succeeds when anyone can propose.
-    assert!(query_can_propose(&app, pre_propose.clone(), addr_str(rando)));
+    assert!(query_can_propose(
+        &app,
+        pre_propose.clone(),
+        addr_str(rando)
+    ));
     make_pre_proposal(&mut app, pre_propose.clone(), &addr_str(rando), &[]);
 
     update_config(
@@ -1456,7 +1533,11 @@ fn test_anyone_denylist() {
     );
 
     // Proposing fails if on denylist.
-    assert!(!query_can_propose(&app, pre_propose.clone(), addr_str(rando)));
+    assert!(!query_can_propose(
+        &app,
+        pre_propose.clone(),
+        addr_str(rando)
+    ));
     let err = app
         .execute_contract(
             MockApi::default().addr_make(rando),
@@ -1475,7 +1556,11 @@ fn test_anyone_denylist() {
     assert!(err.to_string().contains("not allowed to submit proposals"));
 
     // Proposing succeeds if not on denylist.
-    assert!(query_can_propose(&app, pre_propose.clone(), addr_str("ekez")));
+    assert!(query_can_propose(
+        &app,
+        pre_propose.clone(),
+        addr_str("ekez")
+    ));
     make_pre_proposal(&mut app, pre_propose, &addr_str("ekez"), &[]);
 }
 
@@ -1501,13 +1586,21 @@ fn test_specific_allowlist_denylist() {
     );
 
     // Proposal succeeds for member.
-    assert!(query_can_propose(&app, pre_propose.clone(), addr_str("ekez")));
+    assert!(query_can_propose(
+        &app,
+        pre_propose.clone(),
+        addr_str("ekez")
+    ));
     make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &[]);
 
     let rando = "rando";
 
     // Proposing fails for non-member.
-    assert!(!query_can_propose(&app, pre_propose.clone(), addr_str(rando)));
+    assert!(!query_can_propose(
+        &app,
+        pre_propose.clone(),
+        addr_str(rando)
+    ));
     let err = app
         .execute_contract(
             MockApi::default().addr_make(rando),
@@ -1538,7 +1631,11 @@ fn test_specific_allowlist_denylist() {
     );
 
     // Proposal succeeds if on allowlist.
-    assert!(query_can_propose(&app, pre_propose.clone(), addr_str(rando)));
+    assert!(query_can_propose(
+        &app,
+        pre_propose.clone(),
+        addr_str(rando)
+    ));
     make_pre_proposal(&mut app, pre_propose.clone(), &addr_str(rando), &[]);
 
     update_config(
@@ -1554,7 +1651,11 @@ fn test_specific_allowlist_denylist() {
     );
 
     // Proposing fails if on denylist.
-    assert!(!query_can_propose(&app, pre_propose.clone(), addr_str("ekez")));
+    assert!(!query_can_propose(
+        &app,
+        pre_propose.clone(),
+        addr_str("ekez")
+    ));
     let err = app
         .execute_contract(
             MockApi::default().addr_make("ekez"),
@@ -1585,7 +1686,11 @@ fn test_specific_allowlist_denylist() {
     );
 
     // Proposing fails if members not allowed.
-    assert!(!query_can_propose(&app, pre_propose.clone(), addr_str("ekez")));
+    assert!(!query_can_propose(
+        &app,
+        pre_propose.clone(),
+        addr_str("ekez")
+    ));
     let err = app
         .execute_contract(
             MockApi::default().addr_make("ekez"),
@@ -1604,7 +1709,11 @@ fn test_specific_allowlist_denylist() {
     assert!(err.to_string().contains("not allowed to submit proposals"));
 
     // Proposal succeeds if on allowlist.
-    assert!(query_can_propose(&app, pre_propose.clone(), addr_str(rando)));
+    assert!(query_can_propose(
+        &app,
+        pre_propose.clone(),
+        addr_str(rando)
+    ));
     make_pre_proposal(&mut app, pre_propose.clone(), &addr_str(rando), &[]);
 }
 
@@ -1773,7 +1882,12 @@ fn test_update_config() {
     let pre_propose_id = make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &[]);
 
     // Approver approves
-    let id = approve_proposal(&mut app, pre_propose.clone(), &addr_str("approver"), pre_propose_id);
+    let id = approve_proposal(
+        &mut app,
+        pre_propose.clone(),
+        &addr_str("approver"),
+        pre_propose_id,
+    );
 
     update_config(
         &mut app,
@@ -1814,8 +1928,12 @@ fn test_update_config() {
 
     // New proposals should have the new deposit info.
     mint_natives(&mut app, &addr_str("ekez"), coins(10, "ujuno"));
-    let new_pre_propose_id =
-        make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &coins(10, "ujuno"));
+    let new_pre_propose_id = make_pre_proposal(
+        &mut app,
+        pre_propose.clone(),
+        &addr_str("ekez"),
+        &coins(10, "ujuno"),
+    );
 
     // Approver approves
     let new_id = approve_proposal(
@@ -1839,8 +1957,20 @@ fn test_update_config() {
     );
 
     // Both proposals should be allowed to complete.
-    vote(&mut app, proposal_single.clone(), &addr_str("ekez"), id, Vote::Yes);
-    vote(&mut app, proposal_single.clone(), &addr_str("ekez"), new_id, Vote::Yes);
+    vote(
+        &mut app,
+        proposal_single.clone(),
+        &addr_str("ekez"),
+        id,
+        Vote::Yes,
+    );
+    vote(
+        &mut app,
+        proposal_single.clone(),
+        &addr_str("ekez"),
+        new_id,
+        Vote::Yes,
+    );
     execute_proposal(&mut app, proposal_single.clone(), &addr_str("ekez"), id);
     execute_proposal(&mut app, proposal_single.clone(), &addr_str("ekez"), new_id);
     // Deposit should not have been refunded (never policy in use).
@@ -1968,7 +2098,10 @@ fn test_update_submission_policy() {
         Config {
             deposit_info: None,
             submission_policy: PreProposeSubmissionPolicy::Anyone {
-                denylist: vec![MockApi::default().addr_make("else"), MockApi::default().addr_make("someone")],
+                denylist: vec![
+                    MockApi::default().addr_make("else"),
+                    MockApi::default().addr_make("someone")
+                ],
             },
         }
     );
@@ -2124,7 +2257,10 @@ fn test_update_submission_policy() {
             submission_policy: PreProposeSubmissionPolicy::Specific {
                 dao_members: true,
                 allowlist: vec![],
-                denylist: vec![MockApi::default().addr_make("else"), MockApi::default().addr_make("someone")],
+                denylist: vec![
+                    MockApi::default().addr_make("else"),
+                    MockApi::default().addr_make("someone")
+                ],
             },
         }
     );
@@ -2207,7 +2343,10 @@ fn test_update_submission_policy() {
             deposit_info: None,
             submission_policy: PreProposeSubmissionPolicy::Specific {
                 dao_members: true,
-                allowlist: vec![MockApi::default().addr_make("else"), MockApi::default().addr_make("someone")],
+                allowlist: vec![
+                    MockApi::default().addr_make("else"),
+                    MockApi::default().addr_make("someone")
+                ],
                 denylist: vec![],
             },
         }
@@ -2256,7 +2395,9 @@ fn test_update_submission_policy() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("doesn't allow anyone to submit proposals"));
+    assert!(err
+        .to_string()
+        .contains("doesn't allow anyone to submit proposals"));
 
     // Set dao_members to false and add allowlist.
     app.execute_contract(
@@ -2301,7 +2442,9 @@ fn test_update_submission_policy() {
             &[],
         )
         .unwrap_err();
-    assert!(err.to_string().contains("Denylist cannot contain addresses in the allowlist"));
+    assert!(err
+        .to_string()
+        .contains("Denylist cannot contain addresses in the allowlist"));
 }
 
 #[test]
@@ -2372,8 +2515,12 @@ fn test_withdraw() {
 
     // Make a proposal with the native tokens to put some in the system.
     mint_natives(&mut app, &addr_str("ekez"), coins(10, "ujuno"));
-    let native_pre_propose_id =
-        make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &coins(10, "ujuno"));
+    let native_pre_propose_id = make_pre_proposal(
+        &mut app,
+        pre_propose.clone(),
+        &addr_str("ekez"),
+        &coins(10, "ujuno"),
+    );
 
     // Approver approves
     let native_id = approve_proposal(
@@ -2410,7 +2557,8 @@ fn test_withdraw() {
         cw20_address.clone(),
         Uint128::new(10),
     );
-    let cw20_pre_propose_id = make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &[]);
+    let cw20_pre_propose_id =
+        make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &[]);
 
     // Approver approves
     let cw20_id = approve_proposal(
@@ -2439,7 +2587,12 @@ fn test_withdraw() {
         cw20_id,
         Vote::Yes,
     );
-    execute_proposal(&mut app, proposal_single.clone(), &addr_str("ekez"), cw20_id);
+    execute_proposal(
+        &mut app,
+        proposal_single.clone(),
+        &addr_str("ekez"),
+        cw20_id,
+    );
 
     // Make sure the proposal module has fallen back to anyone can
     // propose becuase of our malfunction.
@@ -2461,7 +2614,12 @@ fn test_withdraw() {
         native_id,
         Vote::No,
     );
-    close_proposal(&mut app, proposal_single.clone(), &addr_str("ekez"), native_id);
+    close_proposal(
+        &mut app,
+        proposal_single.clone(),
+        &addr_str("ekez"),
+        native_id,
+    );
     withdraw(
         &mut app,
         pre_propose.clone(),
@@ -2476,13 +2634,9 @@ fn test_withdraw() {
 mod v241_migration_tests {
     use super::*;
     use cosmwasm_std::{CosmosMsg, WasmMsg};
-    use serde_json::json;
     use dao_interface_v241 as di_v241;
     use dao_pre_propose_approval_single_v241 as dppas_v241;
     use dao_proposal_single_v241 as dps_v241;
-    use dao_voting::voting::SingleChoiceAutoVote;
-    use dao_voting_cw4_v241 as dvcw4_v241;
-    use dao_voting_v241 as dv_v241;
     use dao_testing::contracts::{
         cw4_group_contract,
         v241::{
@@ -2490,6 +2644,10 @@ mod v241_migration_tests {
             dao_proposal_single_v241_contract, dao_voting_cw4_v241_contract,
         },
     };
+    use dao_voting::voting::SingleChoiceAutoVote;
+    use dao_voting_cw4_v241 as dvcw4_v241;
+    use dao_voting_v241 as dv_v241;
+    use serde_json::json;
 
     #[test]
     fn test_migrate_from_v241() {
@@ -2501,200 +2659,200 @@ mod v241_migration_tests {
         let dpps_v241_id = app.store_code(dao_pre_propose_approval_single_v241_contract());
         let dps_v241_id = app.store_code(dao_proposal_single_v241_contract());
 
-    let governance_instantiate = di_v241::msg::InstantiateMsg {
-        dao_uri: None,
-        admin: None,
-        name: "DAO DAO".to_string(),
-        description: "A DAO that builds DAOs".to_string(),
-        image_url: None,
-        automatically_add_cw20s: true,
-        automatically_add_cw721s: true,
-        voting_module_instantiate_info: di_v241::state::ModuleInstantiateInfo {
-            code_id: dvcw4_v241_id,
-            msg: serde_json::to_vec(&json!({
-                "group_contract": {
-                    "new": {
-                        "cw4_group_code_id": cw4_id,
-                        "initial_members": [
-                            {"addr": addr_str("ekez"), "weight": 9},
-                            {"addr": addr_str("keze"), "weight": 8}
-                        ]
-                    }
-                }
-            }))
-            .unwrap()
-            .into(),
-            admin: Some(di_v241::state::Admin::CoreModule {}),
-            funds: vec![],
-            label: "DAO DAO voting module".to_string(),
-        },
-        proposal_modules_instantiate_info: vec![di_v241::state::ModuleInstantiateInfo {
-            code_id: dps_v241_id,
-            msg: serde_json::to_vec(&json!({
-                "threshold": {
-                    "absolute_percentage": {
-                        "percentage": {"majority": {}}
-                    }
-                },
-                "max_voting_period": {"time": 86400},
-                "min_voting_period": null,
-                "only_members_execute": false,
-                "allow_revoting": false,
-                "pre_propose_info": {
-                    "module_may_propose": {
-                        "info": {
-                            "code_id": dpps_v241_id,
-                            "msg": serde_json::to_string(&json!({
-                                "deposit_info": null,
-                                "open_proposal_submission": false,
-                                "extension": {
-                                    "approver": addr_str("approver")
-                                }
-                            })).unwrap(),
-                            "admin": {"core_module": {}},
-                            "funds": [],
-                            "label": "baby's first pre-propose module"
+        let governance_instantiate = di_v241::msg::InstantiateMsg {
+            dao_uri: None,
+            admin: None,
+            name: "DAO DAO".to_string(),
+            description: "A DAO that builds DAOs".to_string(),
+            image_url: None,
+            automatically_add_cw20s: true,
+            automatically_add_cw721s: true,
+            voting_module_instantiate_info: di_v241::state::ModuleInstantiateInfo {
+                code_id: dvcw4_v241_id,
+                msg: serde_json::to_vec(&json!({
+                    "group_contract": {
+                        "new": {
+                            "cw4_group_code_id": cw4_id,
+                            "initial_members": [
+                                {"addr": addr_str("ekez"), "weight": 9},
+                                {"addr": addr_str("keze"), "weight": 8}
+                            ]
                         }
                     }
+                }))
+                .unwrap()
+                .into(),
+                admin: Some(di_v241::state::Admin::CoreModule {}),
+                funds: vec![],
+                label: "DAO DAO voting module".to_string(),
+            },
+            proposal_modules_instantiate_info: vec![di_v241::state::ModuleInstantiateInfo {
+                code_id: dps_v241_id,
+                msg: serde_json::to_vec(&json!({
+                    "threshold": {
+                        "absolute_percentage": {
+                            "percentage": {"majority": {}}
+                        }
+                    },
+                    "max_voting_period": {"time": 86400},
+                    "min_voting_period": null,
+                    "only_members_execute": false,
+                    "allow_revoting": false,
+                    "pre_propose_info": {
+                        "module_may_propose": {
+                            "info": {
+                                "code_id": dpps_v241_id,
+                                "msg": serde_json::to_string(&json!({
+                                    "deposit_info": null,
+                                    "open_proposal_submission": false,
+                                    "extension": {
+                                        "approver": addr_str("approver")
+                                    }
+                                })).unwrap(),
+                                "admin": {"core_module": {}},
+                                "funds": [],
+                                "label": "baby's first pre-propose module"
+                            }
+                        }
+                    },
+                    "close_proposal_on_execution_failure": false,
+                    "veto": null
+                }))
+                .unwrap()
+                .into(),
+                admin: Some(di_v241::state::Admin::CoreModule {}),
+                funds: vec![],
+                label: "DAO DAO governance module".to_string(),
+            }],
+            initial_items: None,
+        };
+
+        let core_addr = app
+            .instantiate_contract(
+                core_id,
+                MockApi::default().addr_make("ekez"),
+                &governance_instantiate,
+                &[],
+                "DAO DAO",
+                None,
+            )
+            .unwrap();
+
+        app.update_block(|block| block.height += 1);
+
+        let proposal_modules: Vec<di_v241::state::ProposalModule> = app
+            .wrap()
+            .query_wasm_smart(
+                core_addr.clone(),
+                &di_v241::msg::QueryMsg::ProposalModules {
+                    start_after: None,
+                    limit: None,
                 },
-                "close_proposal_on_execution_failure": false,
-                "veto": null
-            }))
-            .unwrap()
-            .into(),
-            admin: Some(di_v241::state::Admin::CoreModule {}),
-            funds: vec![],
-            label: "DAO DAO governance module".to_string(),
-        }],
-        initial_items: None,
-    };
+            )
+            .unwrap();
 
-    let core_addr = app
-        .instantiate_contract(
-            core_id,
+        assert_eq!(proposal_modules.len(), 1);
+        let proposal_single_v241 = proposal_modules.into_iter().next().unwrap().address;
+        let proposal_single = Addr::unchecked(proposal_single_v241.as_str());
+        let proposal_creation_policy = app
+            .wrap()
+            .query_wasm_smart(
+                proposal_single.clone(),
+                &dps_v241::msg::QueryMsg::ProposalCreationPolicy {},
+            )
+            .unwrap();
+
+        let pre_propose_v241 = match proposal_creation_policy {
+            dv_v241::pre_propose::ProposalCreationPolicy::Module { addr } => addr,
+            _ => panic!("expected a module for the proposal creation policy"),
+        };
+        let pre_propose = Addr::unchecked(pre_propose_v241.as_str());
+
+        // Make sure things were set up correctly.
+        assert_eq!(
+            proposal_single,
+            get_proposal_module(app, pre_propose.clone())
+        );
+        assert_eq!(core_addr, get_dao(app, pre_propose.clone()));
+        let info: ContractVersion = from_json(
+            app.wrap()
+                .query_wasm_raw(pre_propose.clone(), "contract_info".as_bytes())
+                .unwrap()
+                .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            ContractVersion {
+                contract: "crates.io:dao-pre-propose-approval-single".to_string(),
+                version: "2.4.1".to_string()
+            },
+            info,
+        );
+
+        app.execute_contract(
             MockApi::default().addr_make("ekez"),
-            &governance_instantiate,
+            pre_propose.clone(),
+            &dppas_v241::msg::ExecuteMsg::Propose {
+                msg: dppas_v241::msg::ProposeMessage::Propose {
+                    title: "title1".to_string(),
+                    description: "d".to_string(),
+                    msgs: vec![],
+                    vote: Some(dv_v241::voting::SingleChoiceAutoVote {
+                        vote: dv_v241::voting::Vote::Yes,
+                        rationale: None,
+                    }),
+                },
+            },
             &[],
-            "DAO DAO",
-            None,
         )
         .unwrap();
-
-    app.update_block(|block| block.height += 1);
-
-    let proposal_modules: Vec<di_v241::state::ProposalModule> = app
-        .wrap()
-        .query_wasm_smart(
-            core_addr.clone(),
-            &di_v241::msg::QueryMsg::ProposalModules {
-                start_after: None,
-                limit: None,
+        app.execute_contract(
+            MockApi::default().addr_make("approver"),
+            pre_propose.clone(),
+            &dppas_v241::msg::ExecuteMsg::Extension {
+                msg: dppas_v241::msg::ExecuteExt::Approve { id: 1 },
             },
+            &[],
         )
         .unwrap();
 
-    assert_eq!(proposal_modules.len(), 1);
-    let proposal_single_v241 = proposal_modules.into_iter().next().unwrap().address;
-    let proposal_single = Addr::unchecked(proposal_single_v241.as_str());
-    let proposal_creation_policy = app
-        .wrap()
-        .query_wasm_smart(
+        let proposal: dps_v241::query::ProposalResponse = app
+            .wrap()
+            .query_wasm_smart(
+                proposal_single.clone(),
+                &dps_v241::msg::QueryMsg::Proposal { proposal_id: 1 },
+            )
+            .unwrap();
+
+        assert_eq!(proposal.proposal.status, dv_v241::status::Status::Passed);
+        assert_eq!(proposal.proposal.proposer, addr("ekez"));
+        assert_eq!(proposal.proposal.title, "title1".to_string());
+        assert_eq!(proposal.proposal.description, "d".to_string());
+        assert_eq!(proposal.proposal.msgs, vec![]);
+
+        app.execute_contract(
+            MockApi::default().addr_make("ekez"),
             proposal_single.clone(),
-            &dps_v241::msg::QueryMsg::ProposalCreationPolicy {},
+            &dps_v241::msg::ExecuteMsg::Execute { proposal_id: 1 },
+            &[],
         )
         .unwrap();
 
-    let pre_propose_v241 = match proposal_creation_policy {
-        dv_v241::pre_propose::ProposalCreationPolicy::Module { addr } => addr,
-        _ => panic!("expected a module for the proposal creation policy"),
-    };
-    let pre_propose = Addr::unchecked(pre_propose_v241.as_str());
+        let proposal: dps_v241::query::ProposalResponse = app
+            .wrap()
+            .query_wasm_smart(
+                proposal_single.clone(),
+                &dps_v241::msg::QueryMsg::Proposal { proposal_id: 1 },
+            )
+            .unwrap();
 
-    // Make sure things were set up correctly.
-    assert_eq!(
-        proposal_single,
-        get_proposal_module(app, pre_propose.clone())
-    );
-    assert_eq!(core_addr, get_dao(app, pre_propose.clone()));
-    let info: ContractVersion = from_json(
-        app.wrap()
-            .query_wasm_raw(pre_propose.clone(), "contract_info".as_bytes())
-            .unwrap()
-            .unwrap(),
-    )
-    .unwrap();
-    assert_eq!(
-        ContractVersion {
-            contract: "crates.io:dao-pre-propose-approval-single".to_string(),
-            version: "2.4.1".to_string()
-        },
-        info,
-    );
+        assert_eq!(proposal.proposal.status, dv_v241::status::Status::Executed);
 
-    app.execute_contract(
-        MockApi::default().addr_make("ekez"),
-        pre_propose.clone(),
-        &dppas_v241::msg::ExecuteMsg::Propose {
-            msg: dppas_v241::msg::ProposeMessage::Propose {
-                title: "title1".to_string(),
-                description: "d".to_string(),
-                msgs: vec![],
-                vote: Some(dv_v241::voting::SingleChoiceAutoVote {
-                    vote: dv_v241::voting::Vote::Yes,
-                    rationale: None,
-                }),
-            },
-        },
-        &[],
-    )
-    .unwrap();
-    app.execute_contract(
-        MockApi::default().addr_make("approver"),
-        pre_propose.clone(),
-        &dppas_v241::msg::ExecuteMsg::Extension {
-            msg: dppas_v241::msg::ExecuteExt::Approve { id: 1 },
-        },
-        &[],
-    )
-    .unwrap();
+        // UPGRADE ONLY PRE-PROPOSE TO LATEST VIA DAO PROPOSAL
 
-    let proposal: dps_v241::query::ProposalResponse = app
-        .wrap()
-        .query_wasm_smart(
-            proposal_single.clone(),
-            &dps_v241::msg::QueryMsg::Proposal { proposal_id: 1 },
-        )
-        .unwrap();
+        let dppas_latest_id = app.store_code(dao_pre_propose_approval_single_contract());
 
-    assert_eq!(proposal.proposal.status, dv_v241::status::Status::Passed);
-    assert_eq!(proposal.proposal.proposer, addr("ekez"));
-    assert_eq!(proposal.proposal.title, "title1".to_string());
-    assert_eq!(proposal.proposal.description, "d".to_string());
-    assert_eq!(proposal.proposal.msgs, vec![]);
-
-    app.execute_contract(
-        MockApi::default().addr_make("ekez"),
-        proposal_single.clone(),
-        &dps_v241::msg::ExecuteMsg::Execute { proposal_id: 1 },
-        &[],
-    )
-    .unwrap();
-
-    let proposal: dps_v241::query::ProposalResponse = app
-        .wrap()
-        .query_wasm_smart(
-            proposal_single.clone(),
-            &dps_v241::msg::QueryMsg::Proposal { proposal_id: 1 },
-        )
-        .unwrap();
-
-    assert_eq!(proposal.proposal.status, dv_v241::status::Status::Executed);
-
-    // UPGRADE ONLY PRE-PROPOSE TO LATEST VIA DAO PROPOSAL
-
-    let dppas_latest_id = app.store_code(dao_pre_propose_approval_single_contract());
-
-    app.execute_contract(
+        app.execute_contract(
         MockApi::default().addr_make("ekez"),
         pre_propose.clone(),
         &dppas_v241::msg::ExecuteMsg::Propose {
@@ -2720,404 +2878,420 @@ mod v241_migration_tests {
         &[],
     )
     .unwrap();
-    app.execute_contract(
-        MockApi::default().addr_make("approver"),
-        pre_propose.clone(),
-        &dppas_v241::msg::ExecuteMsg::Extension {
-            msg: dppas_v241::msg::ExecuteExt::Approve { id: 2 },
-        },
-        &[],
-    )
-    .unwrap();
-    app.execute_contract(
-        MockApi::default().addr_make("ekez"),
-        proposal_single.clone(),
-        &dps_v241::msg::ExecuteMsg::Execute { proposal_id: 2 },
-        &[],
-    )
-    .unwrap();
-    let proposal: dps_v241::query::ProposalResponse = app
-        .wrap()
-        .query_wasm_smart(
-            proposal_single.clone(),
-            &dps_v241::msg::QueryMsg::Proposal { proposal_id: 2 },
-        )
-        .unwrap();
-    assert_eq!(proposal.proposal.status, dv_v241::status::Status::Executed);
-
-    // MAKE SURE PRE PROPOSE INFO CHANGED
-
-    let info: ContractVersion = from_json(
-        app.wrap()
-            .query_wasm_raw(pre_propose.clone(), "contract_info".as_bytes())
-            .unwrap()
-            .unwrap(),
-    )
-    .unwrap();
-    assert_eq!(
-        ContractVersion {
-            contract: CONTRACT_NAME.to_string(),
-            version: CONTRACT_VERSION.to_string()
-        },
-        info,
-    );
-
-    // MAKE SURE PRE PROPOSE CONFIG WAS UPDATED
-
-    let config: Config = app
-        .wrap()
-        .query_wasm_smart(pre_propose.clone(), &QueryMsg::Config {})
-        .unwrap();
-    assert_eq!(
-        Config {
-            deposit_info: None,
-            submission_policy: PreProposeSubmissionPolicy::Specific {
-                dao_members: true,
-                allowlist: vec![],
-                denylist: vec![]
-            }
-        },
-        config
-    );
-
-    // NOW MAKE SURE WE CAN MAKE AND VOTE ON NEW PROPOSALS
-
-    app.execute_contract(
-        MockApi::default().addr_make("ekez"),
-        pre_propose.clone(),
-        &ExecuteMsg::Propose {
-            msg: ProposeMessage::Propose {
-                title: "title2 on latest version".to_string(),
-                description: "d".to_string(),
-                msgs: vec![],
-                vote: Some(SingleChoiceAutoVote {
-                    vote: Vote::Yes,
-                    rationale: None,
-                }),
+        app.execute_contract(
+            MockApi::default().addr_make("approver"),
+            pre_propose.clone(),
+            &dppas_v241::msg::ExecuteMsg::Extension {
+                msg: dppas_v241::msg::ExecuteExt::Approve { id: 2 },
             },
-        },
-        &[],
-    )
-    .unwrap();
-    app.execute_contract(
-        MockApi::default().addr_make("approver"),
-        pre_propose.clone(),
-        &ExecuteMsg::Extension {
-            msg: ExecuteExt::Approve { id: 3 },
-        },
-        &[],
-    )
-    .unwrap();
-    app.execute_contract(
-        MockApi::default().addr_make("ekez"),
-        proposal_single.clone(),
-        &dps_v241::msg::ExecuteMsg::Execute { proposal_id: 3 },
-        &[],
-    )
-    .unwrap();
-    let proposal: dps_v241::query::ProposalResponse = app
-        .wrap()
-        .query_wasm_smart(
-            proposal_single.clone(),
-            &dps_v241::msg::QueryMsg::Proposal { proposal_id: 3 },
+            &[],
         )
         .unwrap();
-    assert_eq!(proposal.proposal.status, dv_v241::status::Status::Executed);
-}
+        app.execute_contract(
+            MockApi::default().addr_make("ekez"),
+            proposal_single.clone(),
+            &dps_v241::msg::ExecuteMsg::Execute { proposal_id: 2 },
+            &[],
+        )
+        .unwrap();
+        let proposal: dps_v241::query::ProposalResponse = app
+            .wrap()
+            .query_wasm_smart(
+                proposal_single.clone(),
+                &dps_v241::msg::QueryMsg::Proposal { proposal_id: 2 },
+            )
+            .unwrap();
+        assert_eq!(proposal.proposal.status, dv_v241::status::Status::Executed);
 
-#[test]
-fn test_migrate_from_v241_with_policy_update() {
-    let app = &mut App::default();
+        // MAKE SURE PRE PROPOSE INFO CHANGED
 
-    let core_id = app.store_code(dao_dao_core_v241_contract());
-    let cw4_id = app.store_code(cw4_group_contract());
-    let dvcw4_v241_id = app.store_code(dao_voting_cw4_v241_contract());
-    let dpps_v241_id = app.store_code(dao_pre_propose_approval_single_v241_contract());
-    let dps_v241_id = app.store_code(dao_proposal_single_v241_contract());
+        let info: ContractVersion = from_json(
+            app.wrap()
+                .query_wasm_raw(pre_propose.clone(), "contract_info".as_bytes())
+                .unwrap()
+                .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            ContractVersion {
+                contract: CONTRACT_NAME.to_string(),
+                version: CONTRACT_VERSION.to_string()
+            },
+            info,
+        );
 
-    let governance_instantiate = di_v241::msg::InstantiateMsg {
-        dao_uri: None,
-        admin: None,
-        name: "DAO DAO".to_string(),
-        description: "A DAO that builds DAOs".to_string(),
-        image_url: None,
-        automatically_add_cw20s: true,
-        automatically_add_cw721s: true,
-        voting_module_instantiate_info: di_v241::state::ModuleInstantiateInfo {
-            code_id: dvcw4_v241_id,
-            msg: to_json_binary(&dvcw4_v241::msg::InstantiateMsg {
-                group_contract: dvcw4_v241::msg::GroupContract::New {
-                    cw4_group_code_id: cw4_id,
-                    initial_members: vec![
-                        cw4::Member {
-                            addr: addr_str("ekez"),
-                            weight: 9,
-                        },
-                        cw4::Member {
-                            addr: addr_str("keze"),
-                            weight: 8,
-                        },
-                    ],
+        // MAKE SURE PRE PROPOSE CONFIG WAS UPDATED
+
+        let config: Config = app
+            .wrap()
+            .query_wasm_smart(pre_propose.clone(), &QueryMsg::Config {})
+            .unwrap();
+        assert_eq!(
+            Config {
+                deposit_info: None,
+                submission_policy: PreProposeSubmissionPolicy::Specific {
+                    dao_members: true,
+                    allowlist: vec![],
+                    denylist: vec![]
+                }
+            },
+            config
+        );
+
+        // NOW MAKE SURE WE CAN MAKE AND VOTE ON NEW PROPOSALS
+
+        app.execute_contract(
+            MockApi::default().addr_make("ekez"),
+            pre_propose.clone(),
+            &ExecuteMsg::Propose {
+                msg: ProposeMessage::Propose {
+                    title: "title2 on latest version".to_string(),
+                    description: "d".to_string(),
+                    msgs: vec![],
+                    vote: Some(SingleChoiceAutoVote {
+                        vote: Vote::Yes,
+                        rationale: None,
+                    }),
                 },
-            })
-            .unwrap(),
-            admin: Some(di_v241::state::Admin::CoreModule {}),
-            funds: vec![],
-            label: "DAO DAO voting module".to_string(),
-        },
-        proposal_modules_instantiate_info: vec![di_v241::state::ModuleInstantiateInfo {
-            code_id: dps_v241_id,
-            msg: to_json_binary(&dps_v241::msg::InstantiateMsg {
-                threshold: dv_v241::threshold::Threshold::AbsolutePercentage {
-                    percentage: dv_v241::threshold::PercentageThreshold::Majority {},
-                },
-                max_voting_period: cw_utils::Duration::Time(86400),
-                min_voting_period: None,
-                only_members_execute: false,
-                allow_revoting: false,
-                pre_propose_info: dv_v241::pre_propose::PreProposeInfo::ModuleMayPropose {
-                    info: di_v241::state::ModuleInstantiateInfo {
-                        code_id: dpps_v241_id,
-                        msg: to_json_binary(&dppas_v241::msg::InstantiateMsg {
-                            deposit_info: None,
-                            open_proposal_submission: false,
-                            extension: dppas_v241::msg::InstantiateExt {
-                                approver: addr_str("approver"),
+            },
+            &[],
+        )
+        .unwrap();
+        app.execute_contract(
+            MockApi::default().addr_make("approver"),
+            pre_propose.clone(),
+            &ExecuteMsg::Extension {
+                msg: ExecuteExt::Approve { id: 3 },
+            },
+            &[],
+        )
+        .unwrap();
+        app.execute_contract(
+            MockApi::default().addr_make("ekez"),
+            proposal_single.clone(),
+            &dps_v241::msg::ExecuteMsg::Execute { proposal_id: 3 },
+            &[],
+        )
+        .unwrap();
+        let proposal: dps_v241::query::ProposalResponse = app
+            .wrap()
+            .query_wasm_smart(
+                proposal_single.clone(),
+                &dps_v241::msg::QueryMsg::Proposal { proposal_id: 3 },
+            )
+            .unwrap();
+        assert_eq!(proposal.proposal.status, dv_v241::status::Status::Executed);
+    }
+
+    #[test]
+    fn test_migrate_from_v241_with_policy_update() {
+        let app = &mut App::default();
+
+        let core_id = app.store_code(dao_dao_core_v241_contract());
+        let cw4_id = app.store_code(cw4_group_contract());
+        let dvcw4_v241_id = app.store_code(dao_voting_cw4_v241_contract());
+        let dpps_v241_id = app.store_code(dao_pre_propose_approval_single_v241_contract());
+        let dps_v241_id = app.store_code(dao_proposal_single_v241_contract());
+
+        let governance_instantiate = di_v241::msg::InstantiateMsg {
+            dao_uri: None,
+            admin: None,
+            name: "DAO DAO".to_string(),
+            description: "A DAO that builds DAOs".to_string(),
+            image_url: None,
+            automatically_add_cw20s: true,
+            automatically_add_cw721s: true,
+            voting_module_instantiate_info: di_v241::state::ModuleInstantiateInfo {
+                code_id: dvcw4_v241_id,
+                msg: to_json_binary(&dvcw4_v241::msg::InstantiateMsg {
+                    group_contract: dvcw4_v241::msg::GroupContract::New {
+                        cw4_group_code_id: cw4_id,
+                        initial_members: vec![
+                            cw4::Member {
+                                addr: addr_str("ekez"),
+                                weight: 9,
                             },
+                            cw4::Member {
+                                addr: addr_str("keze"),
+                                weight: 8,
+                            },
+                        ],
+                    },
+                })
+                .unwrap(),
+                admin: Some(di_v241::state::Admin::CoreModule {}),
+                funds: vec![],
+                label: "DAO DAO voting module".to_string(),
+            },
+            proposal_modules_instantiate_info: vec![di_v241::state::ModuleInstantiateInfo {
+                code_id: dps_v241_id,
+                msg: to_json_binary(&dps_v241::msg::InstantiateMsg {
+                    threshold: dv_v241::threshold::Threshold::AbsolutePercentage {
+                        percentage: dv_v241::threshold::PercentageThreshold::Majority {},
+                    },
+                    max_voting_period: cw_utils::Duration::Time(86400),
+                    min_voting_period: None,
+                    only_members_execute: false,
+                    allow_revoting: false,
+                    pre_propose_info: dv_v241::pre_propose::PreProposeInfo::ModuleMayPropose {
+                        info: di_v241::state::ModuleInstantiateInfo {
+                            code_id: dpps_v241_id,
+                            msg: to_json_binary(&dppas_v241::msg::InstantiateMsg {
+                                deposit_info: None,
+                                open_proposal_submission: false,
+                                extension: dppas_v241::msg::InstantiateExt {
+                                    approver: addr_str("approver"),
+                                },
+                            })
+                            .unwrap(),
+                            admin: Some(di_v241::state::Admin::CoreModule {}),
+                            funds: vec![],
+                            label: "baby's first pre-propose module".to_string(),
+                        },
+                    },
+                    close_proposal_on_execution_failure: false,
+                    veto: None,
+                })
+                .unwrap(),
+                admin: Some(di_v241::state::Admin::CoreModule {}),
+                funds: vec![],
+                label: "DAO DAO governance module".to_string(),
+            }],
+            initial_items: None,
+        };
+
+        let core_addr = app
+            .instantiate_contract(
+                core_id,
+                MockApi::default().addr_make("ekez"),
+                &governance_instantiate,
+                &[],
+                "DAO DAO",
+                None,
+            )
+            .unwrap();
+
+        app.update_block(|block| block.height += 1);
+
+        let proposal_modules: Vec<di_v241::state::ProposalModule> = app
+            .wrap()
+            .query_wasm_smart(
+                core_addr.clone(),
+                &di_v241::msg::QueryMsg::ProposalModules {
+                    start_after: None,
+                    limit: None,
+                },
+            )
+            .unwrap();
+
+        assert_eq!(proposal_modules.len(), 1);
+        let proposal_single = proposal_modules.into_iter().next().unwrap().address;
+        let proposal_creation_policy = app
+            .wrap()
+            .query_wasm_smart(
+                proposal_single.clone(),
+                &dps_v241::msg::QueryMsg::ProposalCreationPolicy {},
+            )
+            .unwrap();
+
+        let pre_propose = match proposal_creation_policy {
+            dv_v241::pre_propose::ProposalCreationPolicy::Module { addr } => addr,
+            _ => panic!("expected a module for the proposal creation policy"),
+        };
+
+        // Make sure things were set up correctly.
+        assert_eq!(
+            proposal_single,
+            get_proposal_module(app, pre_propose.clone())
+        );
+        assert_eq!(core_addr, get_dao(app, pre_propose.clone()));
+        let info: ContractVersion = from_json(
+            app.wrap()
+                .query_wasm_raw(pre_propose.clone(), "contract_info".as_bytes())
+                .unwrap()
+                .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            ContractVersion {
+                contract: "crates.io:dao-pre-propose-approval-single".to_string(),
+                version: "2.4.1".to_string()
+            },
+            info,
+        );
+
+        app.execute_contract(
+            MockApi::default().addr_make("ekez"),
+            pre_propose.clone(),
+            &dppas_v241::msg::ExecuteMsg::Propose {
+                msg: dppas_v241::msg::ProposeMessage::Propose {
+                    title: "title1".to_string(),
+                    description: "d".to_string(),
+                    msgs: vec![],
+                    vote: Some(dv_v241::voting::SingleChoiceAutoVote {
+                        vote: dv_v241::voting::Vote::Yes,
+                        rationale: None,
+                    }),
+                },
+            },
+            &[],
+        )
+        .unwrap();
+        app.execute_contract(
+            MockApi::default().addr_make("approver"),
+            pre_propose.clone(),
+            &dppas_v241::msg::ExecuteMsg::Extension {
+                msg: dppas_v241::msg::ExecuteExt::Approve { id: 1 },
+            },
+            &[],
+        )
+        .unwrap();
+
+        let proposal: dps_v241::query::ProposalResponse = app
+            .wrap()
+            .query_wasm_smart(
+                proposal_single.clone(),
+                &dps_v241::msg::QueryMsg::Proposal { proposal_id: 1 },
+            )
+            .unwrap();
+
+        assert_eq!(proposal.proposal.status, dv_v241::status::Status::Passed);
+        assert_eq!(proposal.proposal.proposer, addr("ekez"));
+        assert_eq!(proposal.proposal.title, "title1".to_string());
+        assert_eq!(proposal.proposal.description, "d".to_string());
+        assert_eq!(proposal.proposal.msgs, vec![]);
+
+        app.execute_contract(
+            MockApi::default().addr_make("ekez"),
+            proposal_single.clone(),
+            &dps_v241::msg::ExecuteMsg::Execute { proposal_id: 1 },
+            &[],
+        )
+        .unwrap();
+
+        let proposal: dps_v241::query::ProposalResponse = app
+            .wrap()
+            .query_wasm_smart(
+                proposal_single.clone(),
+                &dps_v241::msg::QueryMsg::Proposal { proposal_id: 1 },
+            )
+            .unwrap();
+
+        assert_eq!(proposal.proposal.status, dv_v241::status::Status::Executed);
+
+        // UPGRADE ONLY PRE-PROPOSE TO LATEST VIA DAO PROPOSAL WITH POLICY UPDATE
+
+        let dppas_latest_id = app.store_code(dao_pre_propose_approval_single_contract());
+
+        app.execute_contract(
+            MockApi::default().addr_make("ekez"),
+            pre_propose.clone(),
+            &dppas_v241::msg::ExecuteMsg::Propose {
+                msg: dppas_v241::msg::ProposeMessage::Propose {
+                    title: "upgrade pre-propose-single from v2.4.1".to_string(),
+                    description: "d".to_string(),
+                    msgs: vec![CosmosMsg::Wasm(WasmMsg::Migrate {
+                        contract_addr: pre_propose.to_string(),
+                        new_code_id: dppas_latest_id,
+                        msg: to_json_binary(&MigrateMsg::FromUnderV250 {
+                            policy: Some(PreProposeSubmissionPolicy::Specific {
+                                dao_members: false,
+                                allowlist: vec![MockApi::default().addr_make("noob")],
+                                denylist: vec![],
+                            }),
                         })
                         .unwrap(),
-                        admin: Some(di_v241::state::Admin::CoreModule {}),
-                        funds: vec![],
-                        label: "baby's first pre-propose module".to_string(),
+                    })],
+                    vote: Some(dv_v241::voting::SingleChoiceAutoVote {
+                        vote: dv_v241::voting::Vote::Yes,
+                        rationale: None,
+                    }),
+                },
+            },
+            &[],
+        )
+        .unwrap();
+        app.execute_contract(
+            MockApi::default().addr_make("approver"),
+            pre_propose.clone(),
+            &ExecuteMsg::Extension {
+                msg: ExecuteExt::Approve { id: 2 },
+            },
+            &[],
+        )
+        .unwrap();
+        app.execute_contract(
+            MockApi::default().addr_make("ekez"),
+            proposal_single.clone(),
+            &dps_v241::msg::ExecuteMsg::Execute { proposal_id: 2 },
+            &[],
+        )
+        .unwrap();
+        let proposal: dps_v241::query::ProposalResponse = app
+            .wrap()
+            .query_wasm_smart(
+                proposal_single.clone(),
+                &dps_v241::msg::QueryMsg::Proposal { proposal_id: 2 },
+            )
+            .unwrap();
+        assert_eq!(proposal.proposal.status, dv_v241::status::Status::Executed);
+
+        // MAKE SURE PRE PROPOSE INFO CHANGED
+
+        let info: ContractVersion = from_json(
+            app.wrap()
+                .query_wasm_raw(pre_propose.clone(), "contract_info".as_bytes())
+                .unwrap()
+                .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            ContractVersion {
+                contract: CONTRACT_NAME.to_string(),
+                version: CONTRACT_VERSION.to_string()
+            },
+            info,
+        );
+
+        // MAKE SURE PRE PROPOSE CONFIG WAS UPDATED
+
+        let config: Config = app
+            .wrap()
+            .query_wasm_smart(pre_propose.clone(), &QueryMsg::Config {})
+            .unwrap();
+        assert_eq!(
+            Config {
+                deposit_info: None,
+                submission_policy: PreProposeSubmissionPolicy::Specific {
+                    dao_members: false,
+                    allowlist: vec![MockApi::default().addr_make("noob")],
+                    denylist: vec![]
+                }
+            },
+            config
+        );
+
+        // NOW MAKE SURE ONLY NOOB CAN MAKE PROPOSALS
+
+        let err = app
+            .execute_contract(
+                MockApi::default().addr_make("ekez"),
+                pre_propose.clone(),
+                &ExecuteMsg::Propose {
+                    msg: ProposeMessage::Propose {
+                        title: "title2 on latest version".to_string(),
+                        description: "d".to_string(),
+                        msgs: vec![],
+                        vote: None,
                     },
                 },
-                close_proposal_on_execution_failure: false,
-                veto: None,
-            })
-            .unwrap(),
-            admin: Some(di_v241::state::Admin::CoreModule {}),
-            funds: vec![],
-            label: "DAO DAO governance module".to_string(),
-        }],
-        initial_items: None,
-    };
+                &[],
+            )
+            .unwrap_err();
+        assert!(err.to_string().contains("not allowed to submit proposals"));
 
-    let core_addr = app
-        .instantiate_contract(
-            core_id,
-            MockApi::default().addr_make("ekez"),
-            &governance_instantiate,
-            &[],
-            "DAO DAO",
-            None,
-        )
-        .unwrap();
-
-    app.update_block(|block| block.height += 1);
-
-    let proposal_modules: Vec<di_v241::state::ProposalModule> = app
-        .wrap()
-        .query_wasm_smart(
-            core_addr.clone(),
-            &di_v241::msg::QueryMsg::ProposalModules {
-                start_after: None,
-                limit: None,
-            },
-        )
-        .unwrap();
-
-    assert_eq!(proposal_modules.len(), 1);
-    let proposal_single = proposal_modules.into_iter().next().unwrap().address;
-    let proposal_creation_policy = app
-        .wrap()
-        .query_wasm_smart(
-            proposal_single.clone(),
-            &dps_v241::msg::QueryMsg::ProposalCreationPolicy {},
-        )
-        .unwrap();
-
-    let pre_propose = match proposal_creation_policy {
-        dv_v241::pre_propose::ProposalCreationPolicy::Module { addr } => addr,
-        _ => panic!("expected a module for the proposal creation policy"),
-    };
-
-    // Make sure things were set up correctly.
-    assert_eq!(
-        proposal_single,
-        get_proposal_module(app, pre_propose.clone())
-    );
-    assert_eq!(core_addr, get_dao(app, pre_propose.clone()));
-    let info: ContractVersion = from_json(
-        app.wrap()
-            .query_wasm_raw(pre_propose.clone(), "contract_info".as_bytes())
-            .unwrap()
-            .unwrap(),
-    )
-    .unwrap();
-    assert_eq!(
-        ContractVersion {
-            contract: "crates.io:dao-pre-propose-approval-single".to_string(),
-            version: "2.4.1".to_string()
-        },
-        info,
-    );
-
-    app.execute_contract(
-        MockApi::default().addr_make("ekez"),
-        pre_propose.clone(),
-        &dppas_v241::msg::ExecuteMsg::Propose {
-            msg: dppas_v241::msg::ProposeMessage::Propose {
-                title: "title1".to_string(),
-                description: "d".to_string(),
-                msgs: vec![],
-                vote: Some(dv_v241::voting::SingleChoiceAutoVote {
-                    vote: dv_v241::voting::Vote::Yes,
-                    rationale: None,
-                }),
-            },
-        },
-        &[],
-    )
-    .unwrap();
-    app.execute_contract(
-        MockApi::default().addr_make("approver"),
-        pre_propose.clone(),
-        &dppas_v241::msg::ExecuteMsg::Extension {
-            msg: dppas_v241::msg::ExecuteExt::Approve { id: 1 },
-        },
-        &[],
-    )
-    .unwrap();
-
-    let proposal: dps_v241::query::ProposalResponse = app
-        .wrap()
-        .query_wasm_smart(
-            proposal_single.clone(),
-            &dps_v241::msg::QueryMsg::Proposal { proposal_id: 1 },
-        )
-        .unwrap();
-
-    assert_eq!(proposal.proposal.status, dv_v241::status::Status::Passed);
-    assert_eq!(proposal.proposal.proposer, addr("ekez"));
-    assert_eq!(proposal.proposal.title, "title1".to_string());
-    assert_eq!(proposal.proposal.description, "d".to_string());
-    assert_eq!(proposal.proposal.msgs, vec![]);
-
-    app.execute_contract(
-        MockApi::default().addr_make("ekez"),
-        proposal_single.clone(),
-        &dps_v241::msg::ExecuteMsg::Execute { proposal_id: 1 },
-        &[],
-    )
-    .unwrap();
-
-    let proposal: dps_v241::query::ProposalResponse = app
-        .wrap()
-        .query_wasm_smart(
-            proposal_single.clone(),
-            &dps_v241::msg::QueryMsg::Proposal { proposal_id: 1 },
-        )
-        .unwrap();
-
-    assert_eq!(proposal.proposal.status, dv_v241::status::Status::Executed);
-
-    // UPGRADE ONLY PRE-PROPOSE TO LATEST VIA DAO PROPOSAL WITH POLICY UPDATE
-
-    let dppas_latest_id = app.store_code(dao_pre_propose_approval_single_contract());
-
-    app.execute_contract(
-        MockApi::default().addr_make("ekez"),
-        pre_propose.clone(),
-        &dppas_v241::msg::ExecuteMsg::Propose {
-            msg: dppas_v241::msg::ProposeMessage::Propose {
-                title: "upgrade pre-propose-single from v2.4.1".to_string(),
-                description: "d".to_string(),
-                msgs: vec![CosmosMsg::Wasm(WasmMsg::Migrate {
-                    contract_addr: pre_propose.to_string(),
-                    new_code_id: dppas_latest_id,
-                    msg: to_json_binary(&MigrateMsg::FromUnderV250 {
-                        policy: Some(PreProposeSubmissionPolicy::Specific {
-                            dao_members: false,
-                            allowlist: vec![MockApi::default().addr_make("noob")],
-                            denylist: vec![],
-                        }),
-                    })
-                    .unwrap(),
-                })],
-                vote: Some(dv_v241::voting::SingleChoiceAutoVote {
-                    vote: dv_v241::voting::Vote::Yes,
-                    rationale: None,
-                }),
-            },
-        },
-        &[],
-    )
-    .unwrap();
-    app.execute_contract(
-        MockApi::default().addr_make("approver"),
-        pre_propose.clone(),
-        &ExecuteMsg::Extension {
-            msg: ExecuteExt::Approve { id: 2 },
-        },
-        &[],
-    )
-    .unwrap();
-    app.execute_contract(
-        MockApi::default().addr_make("ekez"),
-        proposal_single.clone(),
-        &dps_v241::msg::ExecuteMsg::Execute { proposal_id: 2 },
-        &[],
-    )
-    .unwrap();
-    let proposal: dps_v241::query::ProposalResponse = app
-        .wrap()
-        .query_wasm_smart(
-            proposal_single.clone(),
-            &dps_v241::msg::QueryMsg::Proposal { proposal_id: 2 },
-        )
-        .unwrap();
-    assert_eq!(proposal.proposal.status, dv_v241::status::Status::Executed);
-
-    // MAKE SURE PRE PROPOSE INFO CHANGED
-
-    let info: ContractVersion = from_json(
-        app.wrap()
-            .query_wasm_raw(pre_propose.clone(), "contract_info".as_bytes())
-            .unwrap()
-            .unwrap(),
-    )
-    .unwrap();
-    assert_eq!(
-        ContractVersion {
-            contract: CONTRACT_NAME.to_string(),
-            version: CONTRACT_VERSION.to_string()
-        },
-        info,
-    );
-
-    // MAKE SURE PRE PROPOSE CONFIG WAS UPDATED
-
-    let config: Config = app
-        .wrap()
-        .query_wasm_smart(pre_propose.clone(), &QueryMsg::Config {})
-        .unwrap();
-    assert_eq!(
-        Config {
-            deposit_info: None,
-            submission_policy: PreProposeSubmissionPolicy::Specific {
-                dao_members: false,
-                allowlist: vec![MockApi::default().addr_make("noob")],
-                denylist: vec![]
-            }
-        },
-        config
-    );
-
-    // NOW MAKE SURE ONLY NOOB CAN MAKE PROPOSALS
-
-    let err = app
-        .execute_contract(
-            MockApi::default().addr_make("ekez"),
+        app.execute_contract(
+            MockApi::default().addr_make("noob"),
             pre_propose.clone(),
             &ExecuteMsg::Propose {
                 msg: ProposeMessage::Propose {
@@ -3129,57 +3303,41 @@ fn test_migrate_from_v241_with_policy_update() {
             },
             &[],
         )
-        .unwrap_err();
-    assert!(err.to_string().contains("not allowed to submit proposals"));
-
-    app.execute_contract(
-        MockApi::default().addr_make("noob"),
-        pre_propose.clone(),
-        &ExecuteMsg::Propose {
-            msg: ProposeMessage::Propose {
-                title: "title2 on latest version".to_string(),
-                description: "d".to_string(),
-                msgs: vec![],
-                vote: None,
+        .unwrap();
+        app.execute_contract(
+            MockApi::default().addr_make("approver"),
+            pre_propose.clone(),
+            &dppas_v241::msg::ExecuteMsg::Extension {
+                msg: dppas_v241::msg::ExecuteExt::Approve { id: 3 },
             },
-        },
-        &[],
-    )
-    .unwrap();
-    app.execute_contract(
-        MockApi::default().addr_make("approver"),
-        pre_propose.clone(),
-        &dppas_v241::msg::ExecuteMsg::Extension {
-            msg: dppas_v241::msg::ExecuteExt::Approve { id: 3 },
-        },
-        &[],
-    )
-    .unwrap();
-    app.execute_contract(
-        MockApi::default().addr_make("ekez"),
-        proposal_single.clone(),
-        &dps_v241::msg::ExecuteMsg::Vote {
-            proposal_id: 3,
-            vote: dv_v241::voting::Vote::Yes,
-            rationale: None,
-        },
-        &[],
-    )
-    .unwrap();
-    app.execute_contract(
-        MockApi::default().addr_make("ekez"),
-        proposal_single.clone(),
-        &dps_v241::msg::ExecuteMsg::Execute { proposal_id: 3 },
-        &[],
-    )
-    .unwrap();
-    let proposal: dps_v241::query::ProposalResponse = app
-        .wrap()
-        .query_wasm_smart(
-            proposal_single.clone(),
-            &dps_v241::msg::QueryMsg::Proposal { proposal_id: 3 },
+            &[],
         )
         .unwrap();
-    assert_eq!(proposal.proposal.status, dv_v241::status::Status::Executed);
-}
+        app.execute_contract(
+            MockApi::default().addr_make("ekez"),
+            proposal_single.clone(),
+            &dps_v241::msg::ExecuteMsg::Vote {
+                proposal_id: 3,
+                vote: dv_v241::voting::Vote::Yes,
+                rationale: None,
+            },
+            &[],
+        )
+        .unwrap();
+        app.execute_contract(
+            MockApi::default().addr_make("ekez"),
+            proposal_single.clone(),
+            &dps_v241::msg::ExecuteMsg::Execute { proposal_id: 3 },
+            &[],
+        )
+        .unwrap();
+        let proposal: dps_v241::query::ProposalResponse = app
+            .wrap()
+            .query_wasm_smart(
+                proposal_single.clone(),
+                &dps_v241::msg::QueryMsg::Proposal { proposal_id: 3 },
+            )
+            .unwrap();
+        assert_eq!(proposal.proposal.status, dv_v241::status::Status::Executed);
+    }
 } // mod v241_migration_tests

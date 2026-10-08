@@ -1,7 +1,7 @@
 use std::borrow::BorrowMut;
 
 use cosmwasm_std::testing::MockApi;
-use cosmwasm_std::{Addr, Uint128, Uint256, coin, to_json_binary};
+use cosmwasm_std::{coin, to_json_binary, Addr, Uint128, Uint256};
 use cw20::{Cw20Coin, Cw20ExecuteMsg, Denom};
 use cw_multi_test::{next_block, App, BankSudo, Executor, SudoMsg};
 use cw_ownable::{Action, Ownership};
@@ -10,10 +10,7 @@ use dao_testing::contracts::{
     cw20_base_contract, cw20_stake_contract, cw20_stake_external_rewards_contract,
 };
 
-use crate::msg::{
-    ExecuteMsg, InfoResponse, PendingRewardsResponse, QueryMsg, ReceiveMsg,
-};
-
+use crate::msg::{ExecuteMsg, InfoResponse, PendingRewardsResponse, QueryMsg, ReceiveMsg};
 
 const OWNER: &str = "owner";
 const ADDR1: &str = "addr1";
@@ -35,8 +32,15 @@ fn instantiate_cw20(app: &mut App, initial_balances: Vec<Cw20Coin>) -> Addr {
         marketing: None,
     };
 
-    app.instantiate_contract(cw20_id, MockApi::default().addr_make(ADDR1), &msg, &[], "cw20", None)
-        .unwrap()
+    app.instantiate_contract(
+        cw20_id,
+        MockApi::default().addr_make(ADDR1),
+        &msg,
+        &[],
+        "cw20",
+        None,
+    )
+    .unwrap()
 }
 
 fn instantiate_staking(app: &mut App, cw20: Addr, unstaking_duration: Option<Duration>) -> Addr {
@@ -77,8 +81,13 @@ fn unstake_tokens(app: &mut App, staking_addr: &Addr, address: &str, amount: u12
     let msg = cw20_stake::msg::ExecuteMsg::Unstake {
         amount: Uint128::new(amount).into(),
     };
-    app.execute_contract(MockApi::default().addr_make(address), staking_addr.clone(), &msg, &[])
-        .unwrap();
+    app.execute_contract(
+        MockApi::default().addr_make(address),
+        staking_addr.clone(),
+        &msg,
+        &[],
+    )
+    .unwrap();
 }
 
 fn setup_staking_contract(app: &mut App, initial_balances: Vec<Cw20Coin>) -> (Addr, Addr) {
@@ -89,13 +98,7 @@ fn setup_staking_contract(app: &mut App, initial_balances: Vec<Cw20Coin>) -> (Ad
     let staking_addr = instantiate_staking(app, cw20_addr.clone(), None);
     app.update_block(next_block);
     for coin in initial_balances {
-        stake_tokens(
-            app,
-            &staking_addr,
-            &cw20_addr,
-            coin.address,
-            coin.amount,
-        );
+        stake_tokens(app, &staking_addr, &cw20_addr, coin.address, coin.amount);
     }
     (staking_addr, cw20_addr)
 }
@@ -120,7 +123,12 @@ fn setup_reward_contract(
         addr: reward_addr.to_string(),
     };
     let _result = app
-        .execute_contract(MockApi::default().addr_make(OWNER), staking_contract, &msg, &[])
+        .execute_contract(
+            MockApi::default().addr_make(OWNER),
+            staking_contract,
+            &msg,
+            &[],
+        )
         .unwrap();
     reward_addr
 }
@@ -168,7 +176,12 @@ fn assert_pending_rewards(app: &mut App, reward_addr: &Addr, address: &str, expe
 fn claim_rewards(app: &mut App, reward_addr: Addr, address: &str) {
     let msg = ExecuteMsg::Claim {};
     app.borrow_mut()
-        .execute_contract(MockApi::default().addr_make(address), reward_addr, &msg, &[])
+        .execute_contract(
+            MockApi::default().addr_make(address),
+            reward_addr,
+            &msg,
+            &[],
+        )
         .unwrap();
 }
 
@@ -302,9 +315,15 @@ fn test_native_rewards() {
     assert_pending_rewards(&mut app, &reward_addr, ADDR2, 1000);
     assert_pending_rewards(&mut app, &reward_addr, ADDR3, 1000);
 
-    assert_eq!(get_balance_native(&app, MockApi::default().addr_make(ADDR1), &denom), Uint256::zero());
+    assert_eq!(
+        get_balance_native(&app, MockApi::default().addr_make(ADDR1), &denom),
+        Uint256::zero()
+    );
     claim_rewards(&mut app, reward_addr.clone(), ADDR1);
-    assert_eq!(get_balance_native(&app, MockApi::default().addr_make(ADDR1), &denom), Uint256::new(2000));
+    assert_eq!(
+        get_balance_native(&app, MockApi::default().addr_make(ADDR1), &denom),
+        Uint256::new(2000)
+    );
     assert_pending_rewards(&mut app, &reward_addr, ADDR1, 0);
 
     app.borrow_mut().update_block(|b| b.height += 10);
@@ -321,13 +340,31 @@ fn test_native_rewards() {
     assert_pending_rewards(&mut app, &reward_addr, ADDR3, 3500);
 
     claim_rewards(&mut app, reward_addr.clone(), ADDR1);
-    assert_eq!(get_balance_native(&app, MockApi::default().addr_make(ADDR1), &denom), Uint256::new(17000));
+    assert_eq!(
+        get_balance_native(&app, MockApi::default().addr_make(ADDR1), &denom),
+        Uint256::new(17000)
+    );
 
     claim_rewards(&mut app, reward_addr.clone(), ADDR2);
-    assert_eq!(get_balance_native(&app, MockApi::default().addr_make(ADDR2), &denom), Uint256::new(3500));
+    assert_eq!(
+        get_balance_native(&app, MockApi::default().addr_make(ADDR2), &denom),
+        Uint256::new(3500)
+    );
 
-    stake_tokens(&mut app, &staking_addr, &cw20_addr, MockApi::default().addr_make(ADDR2), Uint256::new(50));
-    stake_tokens(&mut app, &staking_addr, &cw20_addr, MockApi::default().addr_make(ADDR3), Uint256::new(50));
+    stake_tokens(
+        &mut app,
+        &staking_addr,
+        &cw20_addr,
+        MockApi::default().addr_make(ADDR2),
+        Uint256::new(50),
+    );
+    stake_tokens(
+        &mut app,
+        &staking_addr,
+        &cw20_addr,
+        MockApi::default().addr_make(ADDR3),
+        Uint256::new(50),
+    );
 
     app.borrow_mut().update_block(|b| b.height += 10);
     assert_pending_rewards(&mut app, &reward_addr, ADDR1, 5000);
@@ -358,7 +395,10 @@ fn test_native_rewards() {
         get_balance_native(&app, MockApi::default().addr_make(ADDR2), &denom),
         Uint256::new(24997500)
     );
-    assert_eq!(get_balance_native(&app, MockApi::default().addr_make(ADDR3), &denom), Uint256::new(0));
+    assert_eq!(
+        get_balance_native(&app, MockApi::default().addr_make(ADDR3), &denom),
+        Uint256::new(0)
+    );
     assert_eq!(
         get_balance_native(&app, &reward_addr, &denom),
         Uint256::new(24997500)
@@ -402,7 +442,10 @@ fn test_native_rewards() {
         get_balance_native(&app, MockApi::default().addr_make(ADDR2), &denom),
         Uint256::new(74997500)
     );
-    assert_eq!(get_balance_native(&app, MockApi::default().addr_make(ADDR3), &denom), Uint256::zero());
+    assert_eq!(
+        get_balance_native(&app, MockApi::default().addr_make(ADDR3), &denom),
+        Uint256::zero()
+    );
     assert_eq!(
         get_balance_native(&app, &reward_addr, &denom),
         Uint256::new(74997500)
@@ -455,7 +498,13 @@ fn test_native_rewards() {
 
     app.borrow_mut().update_block(|b| b.height = 1000000);
     unstake_tokens(&mut app, &staking_addr, ADDR3, 1);
-    stake_tokens(&mut app, &staking_addr, &cw20_addr, MockApi::default().addr_make(ADDR3), 1u128);
+    stake_tokens(
+        &mut app,
+        &staking_addr,
+        &cw20_addr,
+        MockApi::default().addr_make(ADDR3),
+        1u128,
+    );
 }
 
 #[test]
@@ -569,8 +618,20 @@ fn test_cw20_rewards() {
         Uint256::new(3500)
     );
 
-    stake_tokens(&mut app, &staking_addr, &cw20_addr, MockApi::default().addr_make(ADDR2), Uint256::new(50));
-    stake_tokens(&mut app, &staking_addr, &cw20_addr, MockApi::default().addr_make(ADDR3), Uint256::new(50));
+    stake_tokens(
+        &mut app,
+        &staking_addr,
+        &cw20_addr,
+        MockApi::default().addr_make(ADDR2),
+        Uint256::new(50),
+    );
+    stake_tokens(
+        &mut app,
+        &staking_addr,
+        &cw20_addr,
+        MockApi::default().addr_make(ADDR3),
+        Uint256::new(50),
+    );
 
     app.borrow_mut().update_block(|b| b.height += 10);
     assert_pending_rewards(&mut app, &reward_addr, ADDR1, 5000);
@@ -685,7 +746,13 @@ fn test_cw20_rewards() {
 
     app.borrow_mut().update_block(|b| b.height = 1000000);
     unstake_tokens(&mut app, &staking_addr, ADDR3, 1);
-    stake_tokens(&mut app, &staking_addr, &cw20_addr, MockApi::default().addr_make(ADDR3), 1u128);
+    stake_tokens(
+        &mut app,
+        &staking_addr,
+        &cw20_addr,
+        MockApi::default().addr_make(ADDR3),
+        1u128,
+    );
 }
 
 #[test]
@@ -895,7 +962,12 @@ fn update_reward_duration() {
     let msg = ExecuteMsg::UpdateRewardDuration { new_duration: 100 };
     let err = app
         .borrow_mut()
-        .execute_contract(MockApi::default().addr_make("non-admin"), reward_addr.clone(), &msg, &[])
+        .execute_contract(
+            MockApi::default().addr_make("non-admin"),
+            reward_addr.clone(),
+            &msg,
+            &[],
+        )
         .unwrap_err();
     assert!(err.to_string().contains("not the contract's current owner"));
 
@@ -1007,7 +1079,12 @@ fn test_update_owner() {
     });
     let err = app
         .borrow_mut()
-        .execute_contract(MockApi::default().addr_make(ADDR1), reward_addr.clone(), &msg, &[])
+        .execute_contract(
+            MockApi::default().addr_make(ADDR1),
+            reward_addr.clone(),
+            &msg,
+            &[],
+        )
         .unwrap_err();
     assert!(err.to_string().contains("not the contract's current owner"));
 

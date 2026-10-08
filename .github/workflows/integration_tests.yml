@@ -28,11 +28,11 @@ jobs:
           docker-images: true
           swap-storage: true
 
-      - name: Install nightly-2024-01-08 toolchain
+      - name: Install 1.91.0 toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: nightly-2024-01-08
+          toolchain: 1.91.0
           target: wasm32-unknown-unknown
           override: true
 

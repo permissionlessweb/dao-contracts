@@ -1,4 +1,7 @@
-use cosmwasm_std::{Timestamp, Uint128, Uint256, testing::{MockApi, mock_dependencies}};
+use cosmwasm_std::{
+    testing::{mock_dependencies, MockApi},
+    Timestamp, Uint128, Uint256,
+};
 use cw_denom::CheckedDenom;
 use wynd_utils::CurveError;
 
@@ -216,7 +219,10 @@ fn test_complex_close() {
             owner_withdrawable: Uint256::new(50)
         }
     );
-    assert_eq!(Uint256::new(vest.vested(time).u128()) - vest.claimed, Uint256::new(25));
+    assert_eq!(
+        Uint256::new(vest.vested(time).u128()) - vest.claimed,
+        Uint256::new(25)
+    );
 
     payment
         .on_undelegate(storage, time, "v1".to_string(), Uint256::new(50), 25)

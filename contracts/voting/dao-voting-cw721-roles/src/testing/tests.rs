@@ -12,7 +12,9 @@ use crate::{
     },
 };
 
-use super::{addr, addr_str, instantiate::instantiate_cw721_roles, setup_test, CommonTest, CREATOR_ADDR};
+use super::{
+    addr, addr_str, instantiate::instantiate_cw721_roles, setup_test, CommonTest, CREATOR_ADDR,
+};
 
 #[test]
 fn test_info_query_works() -> cosmwasm_std::StdResult<()> {
@@ -43,7 +45,8 @@ fn test_use_existing_nft_contract() {
     let mut app = App::default();
     let module_id = app.store_code(dao_voting_cw721_roles_contract());
 
-    let (cw721_addr, _) = instantiate_cw721_roles(&mut app, &addr_str(CREATOR_ADDR), &addr_str(CREATOR_ADDR));
+    let (cw721_addr, _) =
+        instantiate_cw721_roles(&mut app, &addr_str(CREATOR_ADDR), &addr_str(CREATOR_ADDR));
     let module_addr = app
         .instantiate_contract(
             module_id,
@@ -64,7 +67,14 @@ fn test_use_existing_nft_contract() {
     assert_eq!(total.power, Uint256::zero());
 
     // Creator mints themselves a new NFT
-    mint_nft(&mut app, &cw721_addr, &addr_str(CREATOR_ADDR), &addr_str(CREATOR_ADDR), "1").unwrap();
+    mint_nft(
+        &mut app,
+        &cw721_addr,
+        &addr_str(CREATOR_ADDR),
+        &addr_str(CREATOR_ADDR),
+        "1",
+    )
+    .unwrap();
 
     // Get voting power for creator
     let vp = query_voting_power(&app, &module_addr, &addr_str(CREATOR_ADDR), None).unwrap();

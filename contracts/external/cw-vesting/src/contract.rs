@@ -271,10 +271,7 @@ pub fn execute_delegate(
 
     let msg = StakingMsg::Delegate {
         validator: validator.clone(),
-        amount: Coin {
-            denom,
-            amount,
-        },
+        amount: Coin { denom, amount },
     };
 
     Ok(Response::new()
@@ -340,10 +337,7 @@ pub fn execute_redelegate(
     let msg = StakingMsg::Redelegate {
         src_validator: src_validator.clone(),
         dst_validator: dst_validator.clone(),
-        amount: Coin {
-            denom,
-            amount,
-        },
+        amount: Coin { denom, amount },
     };
 
     Ok(Response::new()
@@ -387,10 +381,7 @@ pub fn execute_undelegate(
 
     let msg = StakingMsg::Undelegate {
         validator: validator.clone(),
-        amount: Coin {
-            denom,
-            amount,
-        },
+        amount: Coin { denom, amount },
     };
 
     Ok(Response::default()

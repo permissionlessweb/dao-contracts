@@ -1,6 +1,6 @@
 use anybuf::{Anybuf, Bufany};
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{ Addr, Binary, Coin, CosmosMsg, Decimal, Deps, Empty, StdResult};
+use cosmwasm_std::{Addr, Binary, Coin, CosmosMsg, Decimal, Deps, Empty, StdResult};
 
 use crate::{
     get_coins_from_bytes,

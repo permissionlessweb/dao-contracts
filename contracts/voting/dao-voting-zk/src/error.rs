@@ -36,13 +36,28 @@ impl PartialEq for ContractError {
         match (self, other) {
             (ContractError::Std(_), ContractError::Std(_)) => true,
             (ContractError::Unauthorized {}, ContractError::Unauthorized {}) => true,
-            (ContractError::SnapshotAlreadyExists { proposal_id: a }, ContractError::SnapshotAlreadyExists { proposal_id: b }) => a == b,
-            (ContractError::NoSnapshot { proposal_id: a }, ContractError::NoSnapshot { proposal_id: b }) => a == b,
+            (
+                ContractError::SnapshotAlreadyExists { proposal_id: a },
+                ContractError::SnapshotAlreadyExists { proposal_id: b },
+            ) => a == b,
+            (
+                ContractError::NoSnapshot { proposal_id: a },
+                ContractError::NoSnapshot { proposal_id: b },
+            ) => a == b,
             (ContractError::NoPoll { poll_id: a }, ContractError::NoPoll { poll_id: b }) => a == b,
-            (ContractError::InvalidMerkleRoot { reason: a }, ContractError::InvalidMerkleRoot { reason: b }) => a == b,
+            (
+                ContractError::InvalidMerkleRoot { reason: a },
+                ContractError::InvalidMerkleRoot { reason: b },
+            ) => a == b,
             (ContractError::ZeroTotalPower {}, ContractError::ZeroTotalPower {}) => true,
-            (ContractError::PollRegistryQuery { reason: a }, ContractError::PollRegistryQuery { reason: b }) => a == b,
-            (ContractError::PollRegistryExecute { reason: a }, ContractError::PollRegistryExecute { reason: b }) => a == b,
+            (
+                ContractError::PollRegistryQuery { reason: a },
+                ContractError::PollRegistryQuery { reason: b },
+            ) => a == b,
+            (
+                ContractError::PollRegistryExecute { reason: a },
+                ContractError::PollRegistryExecute { reason: b },
+            ) => a == b,
             _ => false,
         }
     }

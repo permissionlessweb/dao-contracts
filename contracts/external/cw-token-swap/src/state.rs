@@ -79,10 +79,7 @@ impl CheckedTokenInfo {
         Ok(match self {
             Self::Native { denom, amount } => BankMsg::Send {
                 to_address: recipient.to_string(),
-                amount: vec![Coin {
-                    denom,
-                    amount,
-                }],
+                amount: vec![Coin { denom, amount }],
             }
             .into(),
             Self::Cw20 {
