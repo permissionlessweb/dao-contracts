@@ -1,4 +1,5 @@
 #[cfg(test)]
+#[allow(clippy::module_inception)]
 mod tests {
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env, MockApi, MockStorage},

@@ -1,0 +1,83 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "dao_voting_cw721_staked_msg_NftClaimsResponse",
+      "type": "struct",
+      "properties": {
+        "nft_claims": {
+          "value": 7
+        }
+      }
+    },
+    {
+      "name": "dao_voting_cw721_staked_msg_NftClaim",
+      "type": "struct",
+      "properties": {
+        "legacy": {
+          "description": "Whether the claim is a legacy claim.",
+          "value": 6
+        },
+        "release_at": {
+          "description": "The expiration time of the claim.",
+          "value": 3
+        },
+        "token_id": {
+          "description": "The token ID of the NFT being claimed.",
+          "value": 2
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "cw_utils_expiration_Expiration",
+      "description": "Expiration represents a point in time when some event happens.\nIt can compare with a BlockInfo and will return is_expired() == true\nonce the condition is hit (and for every block in the future)",
+      "type": "enum",
+      "cases": {
+        "at_height": {
+          "description": "AtHeight will expire when `env.block.height` >= height",
+          "type": "tuple",
+          "items": [
+            4
+          ]
+        },
+        "at_time": {
+          "description": "AtTime will expire when `env.block.time` >= time",
+          "type": "tuple",
+          "items": [
+            5
+          ]
+        },
+        "never": {
+          "description": "Never will never expire. Used to express the empty variant",
+          "type": "named",
+          "properties": {}
+        }
+      }
+    },
+    {
+      "name": "u64",
+      "type": "integer",
+      "precision": 64,
+      "signed": false
+    },
+    {
+      "name": "cosmwasm_std_timestamp_Timestamp",
+      "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+      "type": "timestamp"
+    },
+    {
+      "name": "bool",
+      "type": "boolean"
+    },
+    {
+      "name": "alloc::vec::Vec<dao_voting_cw721_staked::msg::NftClaim>",
+      "type": "array",
+      "items": 1
+    }
+  ]
+}

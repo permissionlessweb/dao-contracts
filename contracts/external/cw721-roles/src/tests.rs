@@ -14,7 +14,7 @@ const ALICE: &str = "alice";
 const BOB: &str = "bob";
 const DAO: &str = "dao";
 
-struct TestAccounts {
+pub(crate) struct TestAccounts {
     alice: Addr,
     bob: Addr,
     dao: Addr,

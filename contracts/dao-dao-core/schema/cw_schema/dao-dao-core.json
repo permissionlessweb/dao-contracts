@@ -1,0 +1,4000 @@
+{
+  "contract_name": "dao-dao-core",
+  "contract_version": "2.8.0-alpha.3",
+  "idl_version": "1.0.0",
+  "instantiate": {
+    "type": "v1",
+    "root": 0,
+    "definitions": [
+      {
+        "name": "dao_interface_msg_InstantiateMsg",
+        "type": "struct",
+        "properties": {
+          "admin": {
+            "description": "Optional Admin with the ability to execute DAO messages\ndirectly. Useful for building SubDAOs controlled by a parent\nDAO. If no admin is specified the contract is set as its own\nadmin so that the admin may be updated later by governance.",
+            "value": 2
+          },
+          "automatically_add_cw20s": {
+            "description": "If true the contract will automatically add received cw20\ntokens to its treasury.",
+            "value": 3
+          },
+          "automatically_add_cw721s": {
+            "description": "If true the contract will automatically add received cw721\ntokens to its treasury.",
+            "value": 3
+          },
+          "dao_uri": {
+            "description": "Implements the DAO Star standard: <https://daostar.one/EIP>",
+            "value": 2
+          },
+          "description": {
+            "description": "A description of the core contract.",
+            "value": 1
+          },
+          "image_url": {
+            "description": "An image URL to describe the core module contract.",
+            "value": 2
+          },
+          "initial_actions": {
+            "description": "Actions for the DAO to execute immediately.",
+            "value": 38
+          },
+          "initial_items": {
+            "description": "The items to instantiate this DAO with. Items are arbitrary\nkey-value pairs whose contents are controlled by governance.\n\nIt is an error to provide two items with the same key.",
+            "value": 17
+          },
+          "name": {
+            "description": "The name of the core contract.",
+            "value": 1
+          },
+          "proposal_modules_instantiate_info": {
+            "description": "Instantiate information for the core contract's proposal modules.\nNOTE: the pre-propose-base package depends on it being the case\nthat the core module instantiates its proposal module.",
+            "value": 14
+          },
+          "voting_module_instantiate_info": {
+            "description": "Instantiate information for the core contract's voting\npower module.",
+            "value": 4
+          }
+        }
+      },
+      {
+        "name": "String",
+        "type": "string"
+      },
+      {
+        "name": "core::option::Option<alloc::string::String>",
+        "type": "optional",
+        "inner": 1
+      },
+      {
+        "name": "bool",
+        "type": "boolean"
+      },
+      {
+        "name": "dao_interface_state_ModuleInstantiateInfo",
+        "description": "Information needed to instantiate a module.",
+        "type": "struct",
+        "properties": {
+          "admin": {
+            "description": "CosmWasm level admin of the instantiated contract. See:\n<https://docs.cosmwasm.com/docs/1.0/smart-contracts/migration>",
+            "value": 8
+          },
+          "code_id": {
+            "description": "Code ID of the contract to be instantiated.",
+            "value": 5
+          },
+          "funds": {
+            "description": "Funds to be sent to the instantiated contract.",
+            "value": 12
+          },
+          "label": {
+            "description": "Label for the instantiated contract.",
+            "value": 1
+          },
+          "msg": {
+            "description": "Instantiate message to be used to create the contract.",
+            "value": 6
+          },
+          "salt": {
+            "description": "Salt to use with instantiate2, if defined. Otherwise uses normal\ninstantiate.",
+            "value": 13
+          }
+        }
+      },
+      {
+        "name": "u64",
+        "type": "integer",
+        "precision": 64,
+        "signed": false
+      },
+      {
+        "name": "cosmwasm_std_binary_Binary",
+        "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization\nwith serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>.\nSee also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+        "type": "binary"
+      },
+      {
+        "name": "dao_interface_state_Admin",
+        "description": "Information about the CosmWasm level admin of a contract. Used in\nconjunction with `ModuleInstantiateInfo` to instantiate modules.",
+        "type": "enum",
+        "cases": {
+          "address": {
+            "description": "Set the admin to a specified address.",
+            "type": "named",
+            "properties": {
+              "addr": {
+                "value": 1
+              }
+            }
+          },
+          "core_module": {
+            "description": "Sets the admin as the core module address.",
+            "type": "named",
+            "properties": {}
+          }
+        }
+      },
+      {
+        "name": "core::option::Option<dao_interface::state::Admin>",
+        "type": "optional",
+        "inner": 7
+      },
+      {
+        "name": "cosmwasm_std_coin_Coin",
+        "type": "struct",
+        "properties": {
+          "amount": {
+            "value": 10
+          },
+          "denom": {
+            "value": 1
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_math_uint256_Uint256",
+        "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+        "type": "integer",
+        "precision": 256,
+        "signed": false
+      },
+      {
+        "name": "alloc::vec::Vec<cosmwasm_std::coin::Coin>",
+        "type": "array",
+        "items": 9
+      },
+      {
+        "name": "core::option::Option<alloc::vec::Vec<cosmwasm_std::coin::Coin>>",
+        "type": "optional",
+        "inner": 11
+      },
+      {
+        "name": "core::option::Option<cosmwasm_std::binary::Binary>",
+        "type": "optional",
+        "inner": 6
+      },
+      {
+        "name": "alloc::vec::Vec<dao_interface::state::ModuleInstantiateInfo>",
+        "type": "array",
+        "items": 4
+      },
+      {
+        "name": "dao_interface_msg_InitialItem",
+        "description": "Information about an item to be stored in the items list.",
+        "type": "struct",
+        "properties": {
+          "key": {
+            "description": "The name of the item.",
+            "value": 1
+          },
+          "value": {
+            "description": "The value the item will have at instantiation time.",
+            "value": 1
+          }
+        }
+      },
+      {
+        "name": "alloc::vec::Vec<dao_interface::msg::InitialItem>",
+        "type": "array",
+        "items": 15
+      },
+      {
+        "name": "core::option::Option<alloc::vec::Vec<dao_interface::msg::InitialItem>>",
+        "type": "optional",
+        "inner": 16
+      },
+      {
+        "name": "cosmwasm_std_results_cosmos_msg_CosmosMsg",
+        "type": "enum",
+        "cases": {
+          "any": {
+            "description": "`CosmosMsg::Any` replaces the \"stargate message\" – a message wrapped\nin a [protobuf Any](https://protobuf.dev/programming-guides/proto3/#any)\nthat is supported by the chain. It behaves the same as\n`CosmosMsg::Stargate` but has a better name and slightly improved syntax.\n\nThis is feature-gated at compile time with `cosmwasm_2_0` because\na chain running CosmWasm < 2.0 cannot process this.",
+            "type": "tuple",
+            "items": [
+              23
+            ]
+          },
+          "bank": {
+            "type": "tuple",
+            "items": [
+              19
+            ]
+          },
+          "custom": {
+            "type": "tuple",
+            "items": [
+              20
+            ]
+          },
+          "distribution": {
+            "type": "tuple",
+            "items": [
+              22
+            ]
+          },
+          "gov": {
+            "type": "tuple",
+            "items": [
+              32
+            ]
+          },
+          "ibc": {
+            "type": "tuple",
+            "items": [
+              24
+            ]
+          },
+          "staking": {
+            "type": "tuple",
+            "items": [
+              21
+            ]
+          },
+          "stargate": {
+            "description": "This is the same structure as messages in `TxBody` from [ADR-020](https://github.com/cosmos/cosmos-sdk/blob/master/docs/architecture/adr-020-protobuf-transaction-encoding.md)",
+            "type": "named",
+            "properties": {
+              "type_url": {
+                "value": 1
+              },
+              "value": {
+                "value": 6
+              }
+            }
+          },
+          "wasm": {
+            "type": "tuple",
+            "items": [
+              31
+            ]
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_results_cosmos_msg_BankMsg",
+        "description": "The message types of the bank module.\n\nSee https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/bank/v1beta1/tx.proto",
+        "type": "enum",
+        "cases": {
+          "burn": {
+            "description": "This will burn the given coins from the contract's account.\nThere is no Cosmos SDK message that performs this, but it can be done by calling the bank keeper.\nImportant if a contract controls significant token supply that must be retired.",
+            "type": "named",
+            "properties": {
+              "amount": {
+                "value": 11
+              }
+            }
+          },
+          "send": {
+            "description": "Sends native tokens from the contract to the given address.\n\nThis is translated to a [MsgSend](https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/bank/v1beta1/tx.proto#L19-L28).\n`from_address` is automatically filled with the current contract's address.",
+            "type": "named",
+            "properties": {
+              "amount": {
+                "value": 11
+              },
+              "to_address": {
+                "value": 1
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_results_empty_Empty",
+        "description": "An empty struct that serves as a placeholder in different places,\nsuch as contracts that don't set a custom message.\n\nIt is designed to be expressible in correct JSON and JSON Schema but\ncontains no meaningful data. Previously we used enums without cases,\nbut those cannot be represented as valid JSON Schema (https://github.com/CosmWasm/cosmwasm/issues/451)",
+        "type": "struct",
+        "properties": {}
+      },
+      {
+        "name": "cosmwasm_std_results_cosmos_msg_StakingMsg",
+        "description": "The message types of the staking module.\n\nSee https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto",
+        "type": "enum",
+        "cases": {
+          "delegate": {
+            "description": "This is translated to a [MsgDelegate](https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto#L81-L90).\n`delegator_address` is automatically filled with the current contract's address.",
+            "type": "named",
+            "properties": {
+              "amount": {
+                "value": 9
+              },
+              "validator": {
+                "value": 1
+              }
+            }
+          },
+          "redelegate": {
+            "description": "This is translated to a [MsgBeginRedelegate](https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto#L95-L105).\n`delegator_address` is automatically filled with the current contract's address.",
+            "type": "named",
+            "properties": {
+              "amount": {
+                "value": 9
+              },
+              "dst_validator": {
+                "value": 1
+              },
+              "src_validator": {
+                "value": 1
+              }
+            }
+          },
+          "undelegate": {
+            "description": "This is translated to a [MsgUndelegate](https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto#L112-L121).\n`delegator_address` is automatically filled with the current contract's address.",
+            "type": "named",
+            "properties": {
+              "amount": {
+                "value": 9
+              },
+              "validator": {
+                "value": 1
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_results_cosmos_msg_DistributionMsg",
+        "description": "The message types of the distribution module.\n\nSee https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto",
+        "type": "enum",
+        "cases": {
+          "fund_community_pool": {
+            "description": "This is translated to a [MsgFundCommunityPool](https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto#L69-L76).\n`depositor` is automatically filled with the current contract's address.",
+            "type": "named",
+            "properties": {
+              "amount": {
+                "description": "The amount to spend",
+                "value": 11
+              }
+            }
+          },
+          "set_withdraw_address": {
+            "description": "This is translated to a [MsgSetWithdrawAddress](https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto#L29-L37).\n`delegator_address` is automatically filled with the current contract's address.",
+            "type": "named",
+            "properties": {
+              "address": {
+                "description": "The `withdraw_address`",
+                "value": 1
+              }
+            }
+          },
+          "withdraw_delegator_reward": {
+            "description": "This is translated to a [MsgWithdrawDelegatorReward](https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto#L42-L50).\n`delegator_address` is automatically filled with the current contract's address.",
+            "type": "named",
+            "properties": {
+              "validator": {
+                "description": "The `validator_address`",
+                "value": 1
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_results_cosmos_msg_AnyMsg",
+        "description": "A message encoded the same way as a protobuf [Any](https://github.com/protocolbuffers/protobuf/blob/master/src/google/protobuf/any.proto).\nThis is the same structure as messages in `TxBody` from [ADR-020](https://github.com/cosmos/cosmos-sdk/blob/master/docs/architecture/adr-020-protobuf-transaction-encoding.md)",
+        "type": "struct",
+        "properties": {
+          "type_url": {
+            "value": 1
+          },
+          "value": {
+            "value": 6
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_ibc_IbcMsg",
+        "description": "These are messages in the IBC lifecycle. Only usable by IBC-enabled contracts\n(contracts that directly speak the IBC protocol via 6 entry points)",
+        "type": "enum",
+        "cases": {
+          "close_channel": {
+            "description": "This will close an existing channel that is owned by this contract.\nPort is auto-assigned to the contract's IBC port",
+            "type": "named",
+            "properties": {
+              "channel_id": {
+                "value": 1
+              }
+            }
+          },
+          "send_packet": {
+            "description": "Sends an IBC packet with given data over the existing channel.\nData should be encoded in a format defined by the channel version,\nand the module on the other side should know how to parse this.",
+            "type": "named",
+            "properties": {
+              "channel_id": {
+                "value": 1
+              },
+              "data": {
+                "value": 6
+              },
+              "timeout": {
+                "description": "when packet times out, measured on remote chain",
+                "value": 25
+              }
+            }
+          },
+          "transfer": {
+            "description": "Sends bank tokens owned by the contract to the given address on another chain.\nThe channel must already be established between the ibctransfer module on this chain\nand a matching module on the remote chain.\nWe cannot select the port_id, this is whatever the local chain has bound the ibctransfer\nmodule to.",
+            "type": "named",
+            "properties": {
+              "amount": {
+                "description": "packet data only supports one coin\nhttps://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/ibc/applications/transfer/v1/transfer.proto#L11-L20",
+                "value": 9
+              },
+              "channel_id": {
+                "description": "existing channel to send the tokens over",
+                "value": 1
+              },
+              "memo": {
+                "description": "An optional memo. See the blog post\n[\"Moving Beyond Simple Token Transfers\"](https://medium.com/the-interchain-foundation/moving-beyond-simple-token-transfers-d42b2b1dc29b)\nfor more information.\n\nThere is no difference between setting this to `None` or an empty string.\n\nThis field is only supported on chains with CosmWasm >= 2.0 and silently\nignored on older chains.\nIf you need support for both 1.x and 2.x chain with the same codebase,\nit is recommended to use `CosmosMsg::Stargate` with a custom MsgTransfer\nprotobuf encoder instead.",
+                "value": 2
+              },
+              "timeout": {
+                "description": "when packet times out, measured on remote chain",
+                "value": 25
+              },
+              "to_address": {
+                "description": "address on the remote chain to receive these tokens",
+                "value": 1
+              }
+            }
+          },
+          "write_acknowledgement": {
+            "description": "Acknowledges a packet that this contract received over IBC.\nThis allows acknowledging a packet that was not acknowledged yet in the `ibc_packet_receive` call.",
+            "type": "named",
+            "properties": {
+              "ack": {
+                "description": "The acknowledgement to send back",
+                "value": 30
+              },
+              "channel_id": {
+                "description": "Existing channel where the packet was received",
+                "value": 1
+              },
+              "packet_sequence": {
+                "description": "Sequence number of the packet that was received",
+                "value": 5
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_ibc_IbcTimeout",
+        "description": "In IBC each package must set at least one type of timeout:\nthe timestamp or the block height. Using this rather complex enum instead of\ntwo timeout fields we ensure that at least one timeout is set.",
+        "type": "struct",
+        "properties": {
+          "block": {
+            "value": 27
+          },
+          "timestamp": {
+            "value": 29
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_ibc_IbcTimeoutBlock",
+        "description": "IBCTimeoutHeight Height is a monotonically increasing data type\nthat can be compared against another Height for the purposes of updating and\nfreezing clients.\nOrdering is (revision_number, timeout_height)",
+        "type": "struct",
+        "properties": {
+          "height": {
+            "description": "block height after which the packet times out.\nthe height within the given revision",
+            "value": 5
+          },
+          "revision": {
+            "description": "the version that the client is currently on\n(e.g. after resetting the chain this could increment 1 as height drops to 0)",
+            "value": 5
+          }
+        }
+      },
+      {
+        "name": "core::option::Option<cosmwasm_std::ibc::IbcTimeoutBlock>",
+        "type": "optional",
+        "inner": 26
+      },
+      {
+        "name": "cosmwasm_std_timestamp_Timestamp",
+        "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+        "type": "timestamp"
+      },
+      {
+        "name": "core::option::Option<cosmwasm_std::timestamp::Timestamp>",
+        "type": "optional",
+        "inner": 28
+      },
+      {
+        "name": "cosmwasm_std_ibc_IbcAcknowledgement",
+        "type": "struct",
+        "properties": {
+          "data": {
+            "value": 6
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_results_cosmos_msg_WasmMsg",
+        "description": "The message types of the wasm module.\n\nSee https://github.com/CosmWasm/wasmd/blob/v0.14.0/x/wasm/internal/types/tx.proto",
+        "type": "enum",
+        "cases": {
+          "clear_admin": {
+            "description": "Clears the admin on the given contract, so no more migration possible.\nFails if this contract is not currently admin of the target contract.",
+            "type": "named",
+            "properties": {
+              "contract_addr": {
+                "value": 1
+              }
+            }
+          },
+          "execute": {
+            "description": "Dispatches a call to another contract at a known address (with known ABI).\n\nThis is translated to a [MsgExecuteContract](https://github.com/CosmWasm/wasmd/blob/v0.14.0/x/wasm/internal/types/tx.proto#L68-L78).\n`sender` is automatically filled with the current contract's address.",
+            "type": "named",
+            "properties": {
+              "contract_addr": {
+                "value": 1
+              },
+              "funds": {
+                "value": 11
+              },
+              "msg": {
+                "description": "msg is the json-encoded ExecuteMsg struct (as raw Binary)",
+                "value": 6
+              }
+            }
+          },
+          "instantiate": {
+            "description": "Instantiates a new contract from previously uploaded Wasm code.\n\nThe contract address is non-predictable. But it is guaranteed that\nwhen emitting the same Instantiate message multiple times,\nmultiple instances on different addresses will be generated. See also\nInstantiate2.\n\nThis is translated to a [MsgInstantiateContract](https://github.com/CosmWasm/wasmd/blob/v0.29.2/proto/cosmwasm/wasm/v1/tx.proto#L53-L71).\n`sender` is automatically filled with the current contract's address.",
+            "type": "named",
+            "properties": {
+              "admin": {
+                "value": 2
+              },
+              "code_id": {
+                "value": 5
+              },
+              "funds": {
+                "value": 11
+              },
+              "label": {
+                "description": "A human-readable label for the contract.\n\nValid values should:\n- not be empty\n- not be bigger than 128 bytes (or some chain-specific limit)\n- not start / end with whitespace",
+                "value": 1
+              },
+              "msg": {
+                "description": "msg is the JSON-encoded InstantiateMsg struct (as raw Binary)",
+                "value": 6
+              }
+            }
+          },
+          "instantiate2": {
+            "description": "Instantiates a new contract from previously uploaded Wasm code\nusing a predictable address derivation algorithm implemented in\n[`cosmwasm_std::instantiate2_address`].\n\nThis is translated to a [MsgInstantiateContract2](https://github.com/CosmWasm/wasmd/blob/v0.29.2/proto/cosmwasm/wasm/v1/tx.proto#L73-L96).\n`sender` is automatically filled with the current contract's address.\n`fix_msg` is automatically set to false.",
+            "type": "named",
+            "properties": {
+              "admin": {
+                "value": 2
+              },
+              "code_id": {
+                "value": 5
+              },
+              "funds": {
+                "value": 11
+              },
+              "label": {
+                "description": "A human-readable label for the contract.\n\nValid values should:\n- not be empty\n- not be bigger than 128 bytes (or some chain-specific limit)\n- not start / end with whitespace",
+                "value": 1
+              },
+              "msg": {
+                "description": "msg is the JSON-encoded InstantiateMsg struct (as raw Binary)",
+                "value": 6
+              },
+              "salt": {
+                "value": 6
+              }
+            }
+          },
+          "migrate": {
+            "description": "Migrates a given contract to use new wasm code. Passes a MigrateMsg to allow us to\ncustomize behavior.\n\nOnly the contract admin (as defined in wasmd), if any, is able to make this call.\n\nThis is translated to a [MsgMigrateContract](https://github.com/CosmWasm/wasmd/blob/v0.14.0/x/wasm/internal/types/tx.proto#L86-L96).\n`sender` is automatically filled with the current contract's address.",
+            "type": "named",
+            "properties": {
+              "contract_addr": {
+                "value": 1
+              },
+              "msg": {
+                "description": "msg is the json-encoded MigrateMsg struct that will be passed to the new code",
+                "value": 6
+              },
+              "new_code_id": {
+                "description": "the code_id of the new logic to place in the given contract",
+                "value": 5
+              }
+            }
+          },
+          "update_admin": {
+            "description": "Sets a new admin (for migrate) on the given contract.\nFails if this contract is not currently admin of the target contract.",
+            "type": "named",
+            "properties": {
+              "admin": {
+                "value": 1
+              },
+              "contract_addr": {
+                "value": 1
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_results_cosmos_msg_GovMsg",
+        "description": "This message type allows the contract to interact with the [x/gov] module in order\nto cast votes.\n\n[x/gov]: https://github.com/cosmos/cosmos-sdk/tree/v0.45.12/x/gov\n\n## Examples\n\nCast a simple vote:\n\n```\n# use cosmwasm_std::{\n#     HexBinary,\n#     Storage, Api, Querier, DepsMut, Deps, entry_point, Env, StdError, MessageInfo,\n#     Response, QueryResponse,\n# };\n# type ExecuteMsg = ();\nuse cosmwasm_std::{GovMsg, VoteOption};\n\n#[entry_point]\npub fn execute(\ndeps: DepsMut,\nenv: Env,\ninfo: MessageInfo,\nmsg: ExecuteMsg,\n) -> Result<Response, StdError> {\n// ...\nOk(Response::new().add_message(GovMsg::Vote {\nproposal_id: 4,\noption: VoteOption::Yes,\n}))\n}\n```\n\nCast a weighted vote:\n\n```\n# use cosmwasm_std::{\n#     HexBinary,\n#     Storage, Api, Querier, DepsMut, Deps, entry_point, Env, StdError, MessageInfo,\n#     Response, QueryResponse,\n# };\n# type ExecuteMsg = ();\n# #[cfg(feature = \"cosmwasm_1_2\")]\nuse cosmwasm_std::{Decimal, GovMsg, VoteOption, WeightedVoteOption};\n\n# #[cfg(feature = \"cosmwasm_1_2\")]\n#[entry_point]\npub fn execute(\ndeps: DepsMut,\nenv: Env,\ninfo: MessageInfo,\nmsg: ExecuteMsg,\n) -> Result<Response, StdError> {\n// ...\nOk(Response::new().add_message(GovMsg::VoteWeighted {\nproposal_id: 4,\noptions: vec![\nWeightedVoteOption {\noption: VoteOption::Yes,\nweight: Decimal::percent(65),\n},\nWeightedVoteOption {\noption: VoteOption::Abstain,\nweight: Decimal::percent(35),\n},\n],\n}))\n}\n```",
+        "type": "enum",
+        "cases": {
+          "vote": {
+            "description": "This maps directly to [MsgVote](https://github.com/cosmos/cosmos-sdk/blob/v0.42.5/proto/cosmos/gov/v1beta1/tx.proto#L46-L56) in the Cosmos SDK with voter set to the contract address.",
+            "type": "named",
+            "properties": {
+              "option": {
+                "description": "The vote option.\n\nThis used to be called \"vote\", but was changed for consistency with Cosmos SDK.",
+                "value": 33
+              },
+              "proposal_id": {
+                "value": 5
+              }
+            }
+          },
+          "vote_weighted": {
+            "description": "This maps directly to [MsgVoteWeighted](https://github.com/cosmos/cosmos-sdk/blob/v0.45.8/proto/cosmos/gov/v1beta1/tx.proto#L66-L78) in the Cosmos SDK with voter set to the contract address.",
+            "type": "named",
+            "properties": {
+              "options": {
+                "value": 36
+              },
+              "proposal_id": {
+                "value": 5
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_results_cosmos_msg_VoteOption",
+        "type": "enum",
+        "cases": {
+          "abstain": {
+            "type": "unit"
+          },
+          "no": {
+            "type": "unit"
+          },
+          "no_with_veto": {
+            "type": "unit"
+          },
+          "yes": {
+            "type": "unit"
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_results_cosmos_msg_WeightedVoteOption",
+        "type": "struct",
+        "properties": {
+          "option": {
+            "value": 33
+          },
+          "weight": {
+            "value": 35
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_math_decimal_Decimal",
+        "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 340282366920938463463.374607431768211455 = (2^128 - 1) / 10^18",
+        "type": "decimal",
+        "precision": 128,
+        "signed": false
+      },
+      {
+        "name": "alloc::vec::Vec<cosmwasm_std::results::cosmos_msg::WeightedVoteOption>",
+        "type": "array",
+        "items": 34
+      },
+      {
+        "name": "alloc::vec::Vec<cosmwasm_std::results::cosmos_msg::CosmosMsg>",
+        "type": "array",
+        "items": 18
+      },
+      {
+        "name": "core::option::Option<alloc::vec::Vec<cosmwasm_std::results::cosmos_msg::CosmosMsg>>",
+        "type": "optional",
+        "inner": 37
+      }
+    ]
+  },
+  "execute": {
+    "type": "v1",
+    "root": 0,
+    "definitions": [
+      {
+        "name": "dao_interface_msg_ExecuteMsg",
+        "type": "enum",
+        "cases": {
+          "accept_admin_nomination": {
+            "description": "Callable by a nominated admin. Admins are nominated via the\n`NominateAdmin` message. Accepting a nomination will make the\nnominated address the new admin.\n\nRequiring that the new admin accepts the nomination before\nbecoming the admin protects against a typo causing the admin\nto change to an invalid address.",
+            "type": "named",
+            "properties": {}
+          },
+          "execute_admin_msgs": {
+            "description": "Callable by the Admin, if one is configured.\nExecutes messages in order.",
+            "type": "named",
+            "properties": {
+              "msgs": {
+                "value": 27
+              }
+            }
+          },
+          "execute_proposal_hook": {
+            "description": "Callable by proposal modules. The DAO will execute the\nmessages in the hook in order.",
+            "type": "named",
+            "properties": {
+              "msgs": {
+                "value": 27
+              }
+            }
+          },
+          "nominate_admin": {
+            "description": "Callable by the admin of the contract. If ADMIN is None the\nadmin is set as the contract itself so that it may be updated\nlater by vote. If ADMIN is Some a new admin is proposed and\nthat new admin may become the admin by executing the\n`AcceptAdminNomination` message.\n\nIf there is already a pending admin nomination the\n`WithdrawAdminNomination` message must be executed before a\nnew admin may be nominated.",
+            "type": "named",
+            "properties": {
+              "admin": {
+                "value": 19
+              }
+            }
+          },
+          "pause": {
+            "description": "Pauses the DAO for a set duration.\nWhen paused the DAO is unable to execute proposals",
+            "type": "named",
+            "properties": {
+              "duration": {
+                "value": 28
+              }
+            }
+          },
+          "receive": {
+            "description": "Executed when the contract receives a cw20 token. Depending on\nthe contract's configuration the contract will automatically\nadd the token to its treasury.",
+            "type": "tuple",
+            "items": [
+              29
+            ]
+          },
+          "receive_nft": {
+            "description": "Executed when the contract receives a cw721 token. Depending\non the contract's configuration the contract will\nautomatically add the token to its treasury.",
+            "type": "tuple",
+            "items": [
+              30
+            ]
+          },
+          "remove_item": {
+            "description": "Removes an item from the governance contract's item map.",
+            "type": "named",
+            "properties": {
+              "key": {
+                "value": 3
+              }
+            }
+          },
+          "set_item": {
+            "description": "Adds an item to the governance contract's item map. If the\nitem already exists the existing value is overridden. If the\nitem does not exist a new item is added.",
+            "type": "named",
+            "properties": {
+              "key": {
+                "value": 3
+              },
+              "value": {
+                "value": 3
+              }
+            }
+          },
+          "unpause": {
+            "description": "Unpauses the DAO",
+            "type": "named",
+            "properties": {}
+          },
+          "update_config": {
+            "description": "Callable by the core contract. Replaces the current\ngovernance contract config with the provided config.",
+            "type": "named",
+            "properties": {
+              "config": {
+                "value": 31
+              }
+            }
+          },
+          "update_cw20_list": {
+            "description": "Updates the list of cw20 tokens this contract has registered.",
+            "type": "named",
+            "properties": {
+              "to_add": {
+                "value": 33
+              },
+              "to_remove": {
+                "value": 33
+              }
+            }
+          },
+          "update_cw721_list": {
+            "description": "Updates the list of cw721 tokens this contract has registered.",
+            "type": "named",
+            "properties": {
+              "to_add": {
+                "value": 33
+              },
+              "to_remove": {
+                "value": 33
+              }
+            }
+          },
+          "update_proposal_modules": {
+            "description": "Updates the governance contract's governance modules. Module\ninstantiate info in `to_add` is used to create new modules and\ninstall them.",
+            "type": "named",
+            "properties": {
+              "to_add": {
+                "description": "NOTE: the pre-propose-base package depends on it being the\ncase that the core module instantiates its proposal module.",
+                "value": 39
+              },
+              "to_disable": {
+                "value": 33
+              }
+            }
+          },
+          "update_sub_daos": {
+            "description": "Update the core module to add/remove SubDAOs and their charters",
+            "type": "named",
+            "properties": {
+              "to_add": {
+                "value": 41
+              },
+              "to_remove": {
+                "value": 33
+              }
+            }
+          },
+          "update_voting_module": {
+            "description": "Callable by the core contract. Replaces the current\nvoting module with a new one instantiated by the governance\ncontract.",
+            "type": "named",
+            "properties": {
+              "module": {
+                "value": 34
+              }
+            }
+          },
+          "withdraw_admin_nomination": {
+            "description": "Callable by the current admin. Withdraws the current admin\nnomination.",
+            "type": "named",
+            "properties": {}
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_results_cosmos_msg_CosmosMsg",
+        "type": "enum",
+        "cases": {
+          "any": {
+            "description": "`CosmosMsg::Any` replaces the \"stargate message\" – a message wrapped\nin a [protobuf Any](https://protobuf.dev/programming-guides/proto3/#any)\nthat is supported by the chain. It behaves the same as\n`CosmosMsg::Stargate` but has a better name and slightly improved syntax.\n\nThis is feature-gated at compile time with `cosmwasm_2_0` because\na chain running CosmWasm < 2.0 cannot process this.",
+            "type": "tuple",
+            "items": [
+              11
+            ]
+          },
+          "bank": {
+            "type": "tuple",
+            "items": [
+              2
+            ]
+          },
+          "custom": {
+            "type": "tuple",
+            "items": [
+              7
+            ]
+          },
+          "distribution": {
+            "type": "tuple",
+            "items": [
+              9
+            ]
+          },
+          "gov": {
+            "type": "tuple",
+            "items": [
+              22
+            ]
+          },
+          "ibc": {
+            "type": "tuple",
+            "items": [
+              12
+            ]
+          },
+          "staking": {
+            "type": "tuple",
+            "items": [
+              8
+            ]
+          },
+          "stargate": {
+            "description": "This is the same structure as messages in `TxBody` from [ADR-020](https://github.com/cosmos/cosmos-sdk/blob/master/docs/architecture/adr-020-protobuf-transaction-encoding.md)",
+            "type": "named",
+            "properties": {
+              "type_url": {
+                "value": 3
+              },
+              "value": {
+                "value": 10
+              }
+            }
+          },
+          "wasm": {
+            "type": "tuple",
+            "items": [
+              21
+            ]
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_results_cosmos_msg_BankMsg",
+        "description": "The message types of the bank module.\n\nSee https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/bank/v1beta1/tx.proto",
+        "type": "enum",
+        "cases": {
+          "burn": {
+            "description": "This will burn the given coins from the contract's account.\nThere is no Cosmos SDK message that performs this, but it can be done by calling the bank keeper.\nImportant if a contract controls significant token supply that must be retired.",
+            "type": "named",
+            "properties": {
+              "amount": {
+                "value": 6
+              }
+            }
+          },
+          "send": {
+            "description": "Sends native tokens from the contract to the given address.\n\nThis is translated to a [MsgSend](https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/bank/v1beta1/tx.proto#L19-L28).\n`from_address` is automatically filled with the current contract's address.",
+            "type": "named",
+            "properties": {
+              "amount": {
+                "value": 6
+              },
+              "to_address": {
+                "value": 3
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "String",
+        "type": "string"
+      },
+      {
+        "name": "cosmwasm_std_coin_Coin",
+        "type": "struct",
+        "properties": {
+          "amount": {
+            "value": 5
+          },
+          "denom": {
+            "value": 3
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_math_uint256_Uint256",
+        "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+        "type": "integer",
+        "precision": 256,
+        "signed": false
+      },
+      {
+        "name": "alloc::vec::Vec<cosmwasm_std::coin::Coin>",
+        "type": "array",
+        "items": 4
+      },
+      {
+        "name": "cosmwasm_std_results_empty_Empty",
+        "description": "An empty struct that serves as a placeholder in different places,\nsuch as contracts that don't set a custom message.\n\nIt is designed to be expressible in correct JSON and JSON Schema but\ncontains no meaningful data. Previously we used enums without cases,\nbut those cannot be represented as valid JSON Schema (https://github.com/CosmWasm/cosmwasm/issues/451)",
+        "type": "struct",
+        "properties": {}
+      },
+      {
+        "name": "cosmwasm_std_results_cosmos_msg_StakingMsg",
+        "description": "The message types of the staking module.\n\nSee https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto",
+        "type": "enum",
+        "cases": {
+          "delegate": {
+            "description": "This is translated to a [MsgDelegate](https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto#L81-L90).\n`delegator_address` is automatically filled with the current contract's address.",
+            "type": "named",
+            "properties": {
+              "amount": {
+                "value": 4
+              },
+              "validator": {
+                "value": 3
+              }
+            }
+          },
+          "redelegate": {
+            "description": "This is translated to a [MsgBeginRedelegate](https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto#L95-L105).\n`delegator_address` is automatically filled with the current contract's address.",
+            "type": "named",
+            "properties": {
+              "amount": {
+                "value": 4
+              },
+              "dst_validator": {
+                "value": 3
+              },
+              "src_validator": {
+                "value": 3
+              }
+            }
+          },
+          "undelegate": {
+            "description": "This is translated to a [MsgUndelegate](https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto#L112-L121).\n`delegator_address` is automatically filled with the current contract's address.",
+            "type": "named",
+            "properties": {
+              "amount": {
+                "value": 4
+              },
+              "validator": {
+                "value": 3
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_results_cosmos_msg_DistributionMsg",
+        "description": "The message types of the distribution module.\n\nSee https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto",
+        "type": "enum",
+        "cases": {
+          "fund_community_pool": {
+            "description": "This is translated to a [MsgFundCommunityPool](https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto#L69-L76).\n`depositor` is automatically filled with the current contract's address.",
+            "type": "named",
+            "properties": {
+              "amount": {
+                "description": "The amount to spend",
+                "value": 6
+              }
+            }
+          },
+          "set_withdraw_address": {
+            "description": "This is translated to a [MsgSetWithdrawAddress](https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto#L29-L37).\n`delegator_address` is automatically filled with the current contract's address.",
+            "type": "named",
+            "properties": {
+              "address": {
+                "description": "The `withdraw_address`",
+                "value": 3
+              }
+            }
+          },
+          "withdraw_delegator_reward": {
+            "description": "This is translated to a [MsgWithdrawDelegatorReward](https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto#L42-L50).\n`delegator_address` is automatically filled with the current contract's address.",
+            "type": "named",
+            "properties": {
+              "validator": {
+                "description": "The `validator_address`",
+                "value": 3
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_binary_Binary",
+        "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization\nwith serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>.\nSee also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+        "type": "binary"
+      },
+      {
+        "name": "cosmwasm_std_results_cosmos_msg_AnyMsg",
+        "description": "A message encoded the same way as a protobuf [Any](https://github.com/protocolbuffers/protobuf/blob/master/src/google/protobuf/any.proto).\nThis is the same structure as messages in `TxBody` from [ADR-020](https://github.com/cosmos/cosmos-sdk/blob/master/docs/architecture/adr-020-protobuf-transaction-encoding.md)",
+        "type": "struct",
+        "properties": {
+          "type_url": {
+            "value": 3
+          },
+          "value": {
+            "value": 10
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_ibc_IbcMsg",
+        "description": "These are messages in the IBC lifecycle. Only usable by IBC-enabled contracts\n(contracts that directly speak the IBC protocol via 6 entry points)",
+        "type": "enum",
+        "cases": {
+          "close_channel": {
+            "description": "This will close an existing channel that is owned by this contract.\nPort is auto-assigned to the contract's IBC port",
+            "type": "named",
+            "properties": {
+              "channel_id": {
+                "value": 3
+              }
+            }
+          },
+          "send_packet": {
+            "description": "Sends an IBC packet with given data over the existing channel.\nData should be encoded in a format defined by the channel version,\nand the module on the other side should know how to parse this.",
+            "type": "named",
+            "properties": {
+              "channel_id": {
+                "value": 3
+              },
+              "data": {
+                "value": 10
+              },
+              "timeout": {
+                "description": "when packet times out, measured on remote chain",
+                "value": 13
+              }
+            }
+          },
+          "transfer": {
+            "description": "Sends bank tokens owned by the contract to the given address on another chain.\nThe channel must already be established between the ibctransfer module on this chain\nand a matching module on the remote chain.\nWe cannot select the port_id, this is whatever the local chain has bound the ibctransfer\nmodule to.",
+            "type": "named",
+            "properties": {
+              "amount": {
+                "description": "packet data only supports one coin\nhttps://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/ibc/applications/transfer/v1/transfer.proto#L11-L20",
+                "value": 4
+              },
+              "channel_id": {
+                "description": "existing channel to send the tokens over",
+                "value": 3
+              },
+              "memo": {
+                "description": "An optional memo. See the blog post\n[\"Moving Beyond Simple Token Transfers\"](https://medium.com/the-interchain-foundation/moving-beyond-simple-token-transfers-d42b2b1dc29b)\nfor more information.\n\nThere is no difference between setting this to `None` or an empty string.\n\nThis field is only supported on chains with CosmWasm >= 2.0 and silently\nignored on older chains.\nIf you need support for both 1.x and 2.x chain with the same codebase,\nit is recommended to use `CosmosMsg::Stargate` with a custom MsgTransfer\nprotobuf encoder instead.",
+                "value": 19
+              },
+              "timeout": {
+                "description": "when packet times out, measured on remote chain",
+                "value": 13
+              },
+              "to_address": {
+                "description": "address on the remote chain to receive these tokens",
+                "value": 3
+              }
+            }
+          },
+          "write_acknowledgement": {
+            "description": "Acknowledges a packet that this contract received over IBC.\nThis allows acknowledging a packet that was not acknowledged yet in the `ibc_packet_receive` call.",
+            "type": "named",
+            "properties": {
+              "ack": {
+                "description": "The acknowledgement to send back",
+                "value": 20
+              },
+              "channel_id": {
+                "description": "Existing channel where the packet was received",
+                "value": 3
+              },
+              "packet_sequence": {
+                "description": "Sequence number of the packet that was received",
+                "value": 15
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_ibc_IbcTimeout",
+        "description": "In IBC each package must set at least one type of timeout:\nthe timestamp or the block height. Using this rather complex enum instead of\ntwo timeout fields we ensure that at least one timeout is set.",
+        "type": "struct",
+        "properties": {
+          "block": {
+            "value": 16
+          },
+          "timestamp": {
+            "value": 18
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_ibc_IbcTimeoutBlock",
+        "description": "IBCTimeoutHeight Height is a monotonically increasing data type\nthat can be compared against another Height for the purposes of updating and\nfreezing clients.\nOrdering is (revision_number, timeout_height)",
+        "type": "struct",
+        "properties": {
+          "height": {
+            "description": "block height after which the packet times out.\nthe height within the given revision",
+            "value": 15
+          },
+          "revision": {
+            "description": "the version that the client is currently on\n(e.g. after resetting the chain this could increment 1 as height drops to 0)",
+            "value": 15
+          }
+        }
+      },
+      {
+        "name": "u64",
+        "type": "integer",
+        "precision": 64,
+        "signed": false
+      },
+      {
+        "name": "core::option::Option<cosmwasm_std::ibc::IbcTimeoutBlock>",
+        "type": "optional",
+        "inner": 14
+      },
+      {
+        "name": "cosmwasm_std_timestamp_Timestamp",
+        "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+        "type": "timestamp"
+      },
+      {
+        "name": "core::option::Option<cosmwasm_std::timestamp::Timestamp>",
+        "type": "optional",
+        "inner": 17
+      },
+      {
+        "name": "core::option::Option<alloc::string::String>",
+        "type": "optional",
+        "inner": 3
+      },
+      {
+        "name": "cosmwasm_std_ibc_IbcAcknowledgement",
+        "type": "struct",
+        "properties": {
+          "data": {
+            "value": 10
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_results_cosmos_msg_WasmMsg",
+        "description": "The message types of the wasm module.\n\nSee https://github.com/CosmWasm/wasmd/blob/v0.14.0/x/wasm/internal/types/tx.proto",
+        "type": "enum",
+        "cases": {
+          "clear_admin": {
+            "description": "Clears the admin on the given contract, so no more migration possible.\nFails if this contract is not currently admin of the target contract.",
+            "type": "named",
+            "properties": {
+              "contract_addr": {
+                "value": 3
+              }
+            }
+          },
+          "execute": {
+            "description": "Dispatches a call to another contract at a known address (with known ABI).\n\nThis is translated to a [MsgExecuteContract](https://github.com/CosmWasm/wasmd/blob/v0.14.0/x/wasm/internal/types/tx.proto#L68-L78).\n`sender` is automatically filled with the current contract's address.",
+            "type": "named",
+            "properties": {
+              "contract_addr": {
+                "value": 3
+              },
+              "funds": {
+                "value": 6
+              },
+              "msg": {
+                "description": "msg is the json-encoded ExecuteMsg struct (as raw Binary)",
+                "value": 10
+              }
+            }
+          },
+          "instantiate": {
+            "description": "Instantiates a new contract from previously uploaded Wasm code.\n\nThe contract address is non-predictable. But it is guaranteed that\nwhen emitting the same Instantiate message multiple times,\nmultiple instances on different addresses will be generated. See also\nInstantiate2.\n\nThis is translated to a [MsgInstantiateContract](https://github.com/CosmWasm/wasmd/blob/v0.29.2/proto/cosmwasm/wasm/v1/tx.proto#L53-L71).\n`sender` is automatically filled with the current contract's address.",
+            "type": "named",
+            "properties": {
+              "admin": {
+                "value": 19
+              },
+              "code_id": {
+                "value": 15
+              },
+              "funds": {
+                "value": 6
+              },
+              "label": {
+                "description": "A human-readable label for the contract.\n\nValid values should:\n- not be empty\n- not be bigger than 128 bytes (or some chain-specific limit)\n- not start / end with whitespace",
+                "value": 3
+              },
+              "msg": {
+                "description": "msg is the JSON-encoded InstantiateMsg struct (as raw Binary)",
+                "value": 10
+              }
+            }
+          },
+          "instantiate2": {
+            "description": "Instantiates a new contract from previously uploaded Wasm code\nusing a predictable address derivation algorithm implemented in\n[`cosmwasm_std::instantiate2_address`].\n\nThis is translated to a [MsgInstantiateContract2](https://github.com/CosmWasm/wasmd/blob/v0.29.2/proto/cosmwasm/wasm/v1/tx.proto#L73-L96).\n`sender` is automatically filled with the current contract's address.\n`fix_msg` is automatically set to false.",
+            "type": "named",
+            "properties": {
+              "admin": {
+                "value": 19
+              },
+              "code_id": {
+                "value": 15
+              },
+              "funds": {
+                "value": 6
+              },
+              "label": {
+                "description": "A human-readable label for the contract.\n\nValid values should:\n- not be empty\n- not be bigger than 128 bytes (or some chain-specific limit)\n- not start / end with whitespace",
+                "value": 3
+              },
+              "msg": {
+                "description": "msg is the JSON-encoded InstantiateMsg struct (as raw Binary)",
+                "value": 10
+              },
+              "salt": {
+                "value": 10
+              }
+            }
+          },
+          "migrate": {
+            "description": "Migrates a given contract to use new wasm code. Passes a MigrateMsg to allow us to\ncustomize behavior.\n\nOnly the contract admin (as defined in wasmd), if any, is able to make this call.\n\nThis is translated to a [MsgMigrateContract](https://github.com/CosmWasm/wasmd/blob/v0.14.0/x/wasm/internal/types/tx.proto#L86-L96).\n`sender` is automatically filled with the current contract's address.",
+            "type": "named",
+            "properties": {
+              "contract_addr": {
+                "value": 3
+              },
+              "msg": {
+                "description": "msg is the json-encoded MigrateMsg struct that will be passed to the new code",
+                "value": 10
+              },
+              "new_code_id": {
+                "description": "the code_id of the new logic to place in the given contract",
+                "value": 15
+              }
+            }
+          },
+          "update_admin": {
+            "description": "Sets a new admin (for migrate) on the given contract.\nFails if this contract is not currently admin of the target contract.",
+            "type": "named",
+            "properties": {
+              "admin": {
+                "value": 3
+              },
+              "contract_addr": {
+                "value": 3
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_results_cosmos_msg_GovMsg",
+        "description": "This message type allows the contract to interact with the [x/gov] module in order\nto cast votes.\n\n[x/gov]: https://github.com/cosmos/cosmos-sdk/tree/v0.45.12/x/gov\n\n## Examples\n\nCast a simple vote:\n\n```\n# use cosmwasm_std::{\n#     HexBinary,\n#     Storage, Api, Querier, DepsMut, Deps, entry_point, Env, StdError, MessageInfo,\n#     Response, QueryResponse,\n# };\n# type ExecuteMsg = ();\nuse cosmwasm_std::{GovMsg, VoteOption};\n\n#[entry_point]\npub fn execute(\ndeps: DepsMut,\nenv: Env,\ninfo: MessageInfo,\nmsg: ExecuteMsg,\n) -> Result<Response, StdError> {\n// ...\nOk(Response::new().add_message(GovMsg::Vote {\nproposal_id: 4,\noption: VoteOption::Yes,\n}))\n}\n```\n\nCast a weighted vote:\n\n```\n# use cosmwasm_std::{\n#     HexBinary,\n#     Storage, Api, Querier, DepsMut, Deps, entry_point, Env, StdError, MessageInfo,\n#     Response, QueryResponse,\n# };\n# type ExecuteMsg = ();\n# #[cfg(feature = \"cosmwasm_1_2\")]\nuse cosmwasm_std::{Decimal, GovMsg, VoteOption, WeightedVoteOption};\n\n# #[cfg(feature = \"cosmwasm_1_2\")]\n#[entry_point]\npub fn execute(\ndeps: DepsMut,\nenv: Env,\ninfo: MessageInfo,\nmsg: ExecuteMsg,\n) -> Result<Response, StdError> {\n// ...\nOk(Response::new().add_message(GovMsg::VoteWeighted {\nproposal_id: 4,\noptions: vec![\nWeightedVoteOption {\noption: VoteOption::Yes,\nweight: Decimal::percent(65),\n},\nWeightedVoteOption {\noption: VoteOption::Abstain,\nweight: Decimal::percent(35),\n},\n],\n}))\n}\n```",
+        "type": "enum",
+        "cases": {
+          "vote": {
+            "description": "This maps directly to [MsgVote](https://github.com/cosmos/cosmos-sdk/blob/v0.42.5/proto/cosmos/gov/v1beta1/tx.proto#L46-L56) in the Cosmos SDK with voter set to the contract address.",
+            "type": "named",
+            "properties": {
+              "option": {
+                "description": "The vote option.\n\nThis used to be called \"vote\", but was changed for consistency with Cosmos SDK.",
+                "value": 23
+              },
+              "proposal_id": {
+                "value": 15
+              }
+            }
+          },
+          "vote_weighted": {
+            "description": "This maps directly to [MsgVoteWeighted](https://github.com/cosmos/cosmos-sdk/blob/v0.45.8/proto/cosmos/gov/v1beta1/tx.proto#L66-L78) in the Cosmos SDK with voter set to the contract address.",
+            "type": "named",
+            "properties": {
+              "options": {
+                "value": 26
+              },
+              "proposal_id": {
+                "value": 15
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_results_cosmos_msg_VoteOption",
+        "type": "enum",
+        "cases": {
+          "abstain": {
+            "type": "unit"
+          },
+          "no": {
+            "type": "unit"
+          },
+          "no_with_veto": {
+            "type": "unit"
+          },
+          "yes": {
+            "type": "unit"
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_results_cosmos_msg_WeightedVoteOption",
+        "type": "struct",
+        "properties": {
+          "option": {
+            "value": 23
+          },
+          "weight": {
+            "value": 25
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_math_decimal_Decimal",
+        "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 340282366920938463463.374607431768211455 = (2^128 - 1) / 10^18",
+        "type": "decimal",
+        "precision": 128,
+        "signed": false
+      },
+      {
+        "name": "alloc::vec::Vec<cosmwasm_std::results::cosmos_msg::WeightedVoteOption>",
+        "type": "array",
+        "items": 24
+      },
+      {
+        "name": "alloc::vec::Vec<cosmwasm_std::results::cosmos_msg::CosmosMsg>",
+        "type": "array",
+        "items": 1
+      },
+      {
+        "name": "cw_utils_expiration_Duration",
+        "description": "Duration is a delta of time. You can add it to a BlockInfo or Expiration to\nmove that further in the future. Note that an height-based Duration and\na time-based Expiration cannot be combined",
+        "type": "enum",
+        "cases": {
+          "height": {
+            "type": "tuple",
+            "items": [
+              15
+            ]
+          },
+          "time": {
+            "description": "Time in seconds",
+            "type": "tuple",
+            "items": [
+              15
+            ]
+          }
+        }
+      },
+      {
+        "name": "cw20_receiver_Cw20ReceiveMsg",
+        "description": "Cw20ReceiveMsg should be de/serialized under `Receive()` variant in a ExecuteMsg",
+        "type": "struct",
+        "properties": {
+          "amount": {
+            "value": 5
+          },
+          "msg": {
+            "value": 10
+          },
+          "sender": {
+            "value": 3
+          }
+        }
+      },
+      {
+        "name": "cw721_receiver_Cw721ReceiveMsg",
+        "description": "Cw721ReceiveMsg should be de/serialized under `Receive()` variant in a ExecuteMsg",
+        "type": "struct",
+        "properties": {
+          "msg": {
+            "value": 10
+          },
+          "sender": {
+            "value": 3
+          },
+          "token_id": {
+            "value": 3
+          }
+        }
+      },
+      {
+        "name": "dao_interface_state_Config",
+        "description": "Top level config type for core module.",
+        "type": "struct",
+        "properties": {
+          "automatically_add_cw20s": {
+            "description": "If true the contract will automatically add received cw20\ntokens to its treasury.",
+            "value": 32
+          },
+          "automatically_add_cw721s": {
+            "description": "If true the contract will automatically add received cw721\ntokens to its treasury.",
+            "value": 32
+          },
+          "dao_uri": {
+            "description": "The URI for the DAO as defined by the DAOstar standard\n<https://daostar.one/EIP>",
+            "value": 19
+          },
+          "description": {
+            "description": "A description of the contract.",
+            "value": 3
+          },
+          "image_url": {
+            "description": "An optional image URL for displaying alongside the contract.",
+            "value": 19
+          },
+          "name": {
+            "description": "The name of the contract.",
+            "value": 3
+          }
+        }
+      },
+      {
+        "name": "bool",
+        "type": "boolean"
+      },
+      {
+        "name": "alloc::vec::Vec<alloc::string::String>",
+        "type": "array",
+        "items": 3
+      },
+      {
+        "name": "dao_interface_state_ModuleInstantiateInfo",
+        "description": "Information needed to instantiate a module.",
+        "type": "struct",
+        "properties": {
+          "admin": {
+            "description": "CosmWasm level admin of the instantiated contract. See:\n<https://docs.cosmwasm.com/docs/1.0/smart-contracts/migration>",
+            "value": 36
+          },
+          "code_id": {
+            "description": "Code ID of the contract to be instantiated.",
+            "value": 15
+          },
+          "funds": {
+            "description": "Funds to be sent to the instantiated contract.",
+            "value": 37
+          },
+          "label": {
+            "description": "Label for the instantiated contract.",
+            "value": 3
+          },
+          "msg": {
+            "description": "Instantiate message to be used to create the contract.",
+            "value": 10
+          },
+          "salt": {
+            "description": "Salt to use with instantiate2, if defined. Otherwise uses normal\ninstantiate.",
+            "value": 38
+          }
+        }
+      },
+      {
+        "name": "dao_interface_state_Admin",
+        "description": "Information about the CosmWasm level admin of a contract. Used in\nconjunction with `ModuleInstantiateInfo` to instantiate modules.",
+        "type": "enum",
+        "cases": {
+          "address": {
+            "description": "Set the admin to a specified address.",
+            "type": "named",
+            "properties": {
+              "addr": {
+                "value": 3
+              }
+            }
+          },
+          "core_module": {
+            "description": "Sets the admin as the core module address.",
+            "type": "named",
+            "properties": {}
+          }
+        }
+      },
+      {
+        "name": "core::option::Option<dao_interface::state::Admin>",
+        "type": "optional",
+        "inner": 35
+      },
+      {
+        "name": "core::option::Option<alloc::vec::Vec<cosmwasm_std::coin::Coin>>",
+        "type": "optional",
+        "inner": 6
+      },
+      {
+        "name": "core::option::Option<cosmwasm_std::binary::Binary>",
+        "type": "optional",
+        "inner": 10
+      },
+      {
+        "name": "alloc::vec::Vec<dao_interface::state::ModuleInstantiateInfo>",
+        "type": "array",
+        "items": 34
+      },
+      {
+        "name": "dao_interface_query_SubDao",
+        "type": "struct",
+        "properties": {
+          "addr": {
+            "description": "The contract address of the SubDAO",
+            "value": 3
+          },
+          "charter": {
+            "description": "The purpose/constitution for the SubDAO",
+            "value": 19
+          }
+        }
+      },
+      {
+        "name": "alloc::vec::Vec<dao_interface::query::SubDao>",
+        "type": "array",
+        "items": 40
+      }
+    ]
+  },
+  "query": {
+    "type": "v1",
+    "root": 0,
+    "definitions": [
+      {
+        "name": "dao_interface_msg_QueryMsg",
+        "type": "enum",
+        "cases": {
+          "active_proposal_modules": {
+            "description": "Gets the active proposal modules associated with the\ncontract.",
+            "type": "named",
+            "properties": {
+              "limit": {
+                "value": 4
+              },
+              "start_after": {
+                "value": 2
+              }
+            }
+          },
+          "admin": {
+            "description": "Get's the DAO's admin. Returns `Addr`.",
+            "type": "named",
+            "properties": {}
+          },
+          "admin_nomination": {
+            "description": "Get's the currently nominated admin (if any).",
+            "type": "named",
+            "properties": {}
+          },
+          "config": {
+            "description": "Gets the contract's config.",
+            "type": "named",
+            "properties": {}
+          },
+          "cw20_balances": {
+            "description": "Gets the token balance for each cw20 registered with the\ncontract.",
+            "type": "named",
+            "properties": {
+              "limit": {
+                "value": 4
+              },
+              "start_after": {
+                "value": 2
+              }
+            }
+          },
+          "cw20_token_list": {
+            "description": "Lists the addresses of the cw20 tokens in this contract's\ntreasury.",
+            "type": "named",
+            "properties": {
+              "limit": {
+                "value": 4
+              },
+              "start_after": {
+                "value": 2
+              }
+            }
+          },
+          "cw721_token_list": {
+            "description": "Lists the addresses of the cw721 tokens in this contract's\ntreasury.",
+            "type": "named",
+            "properties": {
+              "limit": {
+                "value": 4
+              },
+              "start_after": {
+                "value": 2
+              }
+            }
+          },
+          "dao_uri": {
+            "description": "Implements the DAO Star standard: <https://daostar.one/EIP>",
+            "type": "named",
+            "properties": {}
+          },
+          "dump_state": {
+            "description": "Dumps all of the core contract's state in a single\nquery. Useful for frontends as performance for queries is more\nlimited by network times than compute times.",
+            "type": "named",
+            "properties": {}
+          },
+          "get_item": {
+            "description": "Gets the address associated with an item key.",
+            "type": "named",
+            "properties": {
+              "key": {
+                "value": 1
+              }
+            }
+          },
+          "info": {
+            "description": "Returns contract version info",
+            "type": "named",
+            "properties": {}
+          },
+          "initial_actions": {
+            "description": "Returns the actions executed by the DAO on instantiation, if any.",
+            "type": "named",
+            "properties": {}
+          },
+          "list_items": {
+            "description": "Lists all of the items associted with the contract. For\nexample, given the items `{ \"group\": \"foo\", \"subdao\": \"bar\"}`\nthis query would return `[(\"group\", \"foo\"), (\"subdao\",\n\"bar\")]`.",
+            "type": "named",
+            "properties": {
+              "limit": {
+                "value": 4
+              },
+              "start_after": {
+                "value": 2
+              }
+            }
+          },
+          "list_sub_daos": {
+            "description": "Returns all SubDAOs with their charters in a vec.\nstart_after is bound exclusive and asks for a string address.",
+            "type": "named",
+            "properties": {
+              "limit": {
+                "value": 4
+              },
+              "start_after": {
+                "value": 2
+              }
+            }
+          },
+          "pause_info": {
+            "description": "Returns information about if the contract is currently paused.",
+            "type": "named",
+            "properties": {}
+          },
+          "proposal_module_count": {
+            "description": "Gets the number of active and total proposal modules\nregistered with this module.",
+            "type": "named",
+            "properties": {}
+          },
+          "proposal_modules": {
+            "description": "Gets all proposal modules associated with the\ncontract.",
+            "type": "named",
+            "properties": {
+              "limit": {
+                "value": 4
+              },
+              "start_after": {
+                "value": 2
+              }
+            }
+          },
+          "total_power_at_height": {
+            "description": "Returns the total voting power at a given block height.",
+            "type": "named",
+            "properties": {
+              "height": {
+                "value": 6
+              }
+            }
+          },
+          "voting_module": {
+            "description": "Gets the contract's voting module.",
+            "type": "named",
+            "properties": {}
+          },
+          "voting_power_at_height": {
+            "description": "Returns the voting power for an address at a given height.",
+            "type": "named",
+            "properties": {
+              "address": {
+                "value": 1
+              },
+              "height": {
+                "value": 6
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "String",
+        "type": "string"
+      },
+      {
+        "name": "core::option::Option<alloc::string::String>",
+        "type": "optional",
+        "inner": 1
+      },
+      {
+        "name": "u32",
+        "type": "integer",
+        "precision": 32,
+        "signed": false
+      },
+      {
+        "name": "core::option::Option<u32>",
+        "type": "optional",
+        "inner": 3
+      },
+      {
+        "name": "u64",
+        "type": "integer",
+        "precision": 64,
+        "signed": false
+      },
+      {
+        "name": "core::option::Option<u64>",
+        "type": "optional",
+        "inner": 5
+      }
+    ]
+  },
+  "migrate": {
+    "type": "v1",
+    "root": 0,
+    "definitions": [
+      {
+        "name": "dao_interface_msg_MigrateMsg",
+        "type": "enum",
+        "cases": {
+          "from_compatible": {
+            "type": "named",
+            "properties": {}
+          },
+          "from_v1": {
+            "type": "named",
+            "properties": {
+              "dao_uri": {
+                "value": 2
+              },
+              "params": {
+                "value": 26
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "String",
+        "type": "string"
+      },
+      {
+        "name": "core::option::Option<alloc::string::String>",
+        "type": "optional",
+        "inner": 1
+      },
+      {
+        "name": "dao_interface_migrate_msg_MigrateParams",
+        "type": "struct",
+        "properties": {
+          "migrator_code_id": {
+            "value": 4
+          },
+          "params": {
+            "value": 5
+          }
+        }
+      },
+      {
+        "name": "u64",
+        "type": "integer",
+        "precision": 64,
+        "signed": false
+      },
+      {
+        "name": "dao_interface_migrate_msg_MigrateV1ToV2",
+        "type": "struct",
+        "properties": {
+          "migration_params": {
+            "value": 8
+          },
+          "sub_daos": {
+            "value": 7
+          },
+          "v1_code_ids": {
+            "value": 24
+          },
+          "v2_code_ids": {
+            "value": 25
+          }
+        }
+      },
+      {
+        "name": "dao_interface_query_SubDao",
+        "type": "struct",
+        "properties": {
+          "addr": {
+            "description": "The contract address of the SubDAO",
+            "value": 1
+          },
+          "charter": {
+            "description": "The purpose/constitution for the SubDAO",
+            "value": 2
+          }
+        }
+      },
+      {
+        "name": "alloc::vec::Vec<dao_interface::query::SubDao>",
+        "type": "array",
+        "items": 6
+      },
+      {
+        "name": "dao_interface_migrate_msg_MigrationModuleParams",
+        "type": "struct",
+        "properties": {
+          "migrate_stake_cw20_manager": {
+            "description": "Rather or not to migrate the stake_cw20 contract and its\nmanager. If this is not set to true and a stake_cw20\ncontract is detected in the DAO's configuration the\nmigration will be aborted.",
+            "value": 10
+          },
+          "proposal_params": {
+            "value": 23
+          }
+        }
+      },
+      {
+        "name": "bool",
+        "type": "boolean"
+      },
+      {
+        "name": "core::option::Option<bool>",
+        "type": "optional",
+        "inner": 9
+      },
+      {
+        "name": "dao_interface_migrate_msg_ProposalParams",
+        "description": "The params we need to provide for migration msgs",
+        "type": "struct",
+        "properties": {
+          "close_proposal_on_execution_failure": {
+            "value": 9
+          },
+          "pre_propose_info": {
+            "value": 12
+          }
+        }
+      },
+      {
+        "name": "dao_interface_migrate_msg_PreProposeInfo",
+        "type": "enum",
+        "cases": {
+          "anyone_may_propose": {
+            "description": "Anyone may create a proposal free of charge.",
+            "type": "named",
+            "properties": {}
+          },
+          "module_may_propose": {
+            "description": "The module specified in INFO has exclusive rights to proposal\ncreation.",
+            "type": "named",
+            "properties": {
+              "info": {
+                "value": 13
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "dao_interface_state_ModuleInstantiateInfo",
+        "description": "Information needed to instantiate a module.",
+        "type": "struct",
+        "properties": {
+          "admin": {
+            "description": "CosmWasm level admin of the instantiated contract. See:\n<https://docs.cosmwasm.com/docs/1.0/smart-contracts/migration>",
+            "value": 16
+          },
+          "code_id": {
+            "description": "Code ID of the contract to be instantiated.",
+            "value": 4
+          },
+          "funds": {
+            "description": "Funds to be sent to the instantiated contract.",
+            "value": 20
+          },
+          "label": {
+            "description": "Label for the instantiated contract.",
+            "value": 1
+          },
+          "msg": {
+            "description": "Instantiate message to be used to create the contract.",
+            "value": 14
+          },
+          "salt": {
+            "description": "Salt to use with instantiate2, if defined. Otherwise uses normal\ninstantiate.",
+            "value": 21
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_binary_Binary",
+        "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization\nwith serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>.\nSee also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+        "type": "binary"
+      },
+      {
+        "name": "dao_interface_state_Admin",
+        "description": "Information about the CosmWasm level admin of a contract. Used in\nconjunction with `ModuleInstantiateInfo` to instantiate modules.",
+        "type": "enum",
+        "cases": {
+          "address": {
+            "description": "Set the admin to a specified address.",
+            "type": "named",
+            "properties": {
+              "addr": {
+                "value": 1
+              }
+            }
+          },
+          "core_module": {
+            "description": "Sets the admin as the core module address.",
+            "type": "named",
+            "properties": {}
+          }
+        }
+      },
+      {
+        "name": "core::option::Option<dao_interface::state::Admin>",
+        "type": "optional",
+        "inner": 15
+      },
+      {
+        "name": "cosmwasm_std_coin_Coin",
+        "type": "struct",
+        "properties": {
+          "amount": {
+            "value": 18
+          },
+          "denom": {
+            "value": 1
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_math_uint256_Uint256",
+        "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+        "type": "integer",
+        "precision": 256,
+        "signed": false
+      },
+      {
+        "name": "alloc::vec::Vec<cosmwasm_std::coin::Coin>",
+        "type": "array",
+        "items": 17
+      },
+      {
+        "name": "core::option::Option<alloc::vec::Vec<cosmwasm_std::coin::Coin>>",
+        "type": "optional",
+        "inner": 19
+      },
+      {
+        "name": "core::option::Option<cosmwasm_std::binary::Binary>",
+        "type": "optional",
+        "inner": 14
+      },
+      {
+        "name": "(alloc::string::String, dao_interface::migrate_msg::ProposalParams)",
+        "type": "tuple",
+        "items": [
+          1,
+          11
+        ]
+      },
+      {
+        "name": "alloc::vec::Vec<(alloc::string::String, dao_interface::migrate_msg::ProposalParams)>",
+        "type": "array",
+        "items": 22
+      },
+      {
+        "name": "dao_interface_migrate_msg_V1CodeIds",
+        "type": "struct",
+        "properties": {
+          "cw20_stake": {
+            "value": 4
+          },
+          "cw20_staked_balances_voting": {
+            "value": 4
+          },
+          "cw4_voting": {
+            "value": 4
+          },
+          "proposal_single": {
+            "value": 4
+          }
+        }
+      },
+      {
+        "name": "dao_interface_migrate_msg_V2CodeIds",
+        "type": "struct",
+        "properties": {
+          "cw20_stake": {
+            "value": 4
+          },
+          "cw20_staked_balances_voting": {
+            "value": 4
+          },
+          "cw4_voting": {
+            "value": 4
+          },
+          "proposal_single": {
+            "value": 4
+          }
+        }
+      },
+      {
+        "name": "core::option::Option<dao_interface::migrate_msg::MigrateParams>",
+        "type": "optional",
+        "inner": 3
+      }
+    ]
+  },
+  "sudo": null,
+  "responses": {
+    "active_proposal_modules": {
+      "type": "v1",
+      "root": 4,
+      "definitions": [
+        {
+          "name": "dao_interface_state_ProposalModule",
+          "description": "Top level type describing a proposal module.",
+          "type": "struct",
+          "properties": {
+            "address": {
+              "description": "The address of the proposal module.",
+              "value": 1
+            },
+            "prefix": {
+              "description": "The URL prefix of this proposal module as derived from the module ID.\nPrefixes are mapped to letters, e.g. 0 is 'A', and 26 is 'AA'.",
+              "value": 2
+            },
+            "status": {
+              "description": "The status of the proposal module, e.g. 'Enabled' or 'Disabled.'",
+              "value": 3
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        },
+        {
+          "name": "String",
+          "type": "string"
+        },
+        {
+          "name": "dao_interface_state_ProposalModuleStatus",
+          "description": "The status of a proposal module.",
+          "type": "enum",
+          "cases": {
+            "disabled": {
+              "type": "unit"
+            },
+            "enabled": {
+              "type": "unit"
+            }
+          }
+        },
+        {
+          "name": "alloc::vec::Vec<dao_interface::state::ProposalModule>",
+          "type": "array",
+          "items": 0
+        }
+      ]
+    },
+    "admin": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        }
+      ]
+    },
+    "admin_nomination": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "dao_interface_query_AdminNominationResponse",
+          "description": "Returned by the `AdminNomination` query.",
+          "type": "struct",
+          "properties": {
+            "nomination": {
+              "description": "The currently nominated admin or None if no nomination is\npending.",
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        },
+        {
+          "name": "core::option::Option<cosmwasm_std::addresses::Addr>",
+          "type": "optional",
+          "inner": 1
+        }
+      ]
+    },
+    "config": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "dao_interface_state_Config",
+          "description": "Top level config type for core module.",
+          "type": "struct",
+          "properties": {
+            "automatically_add_cw20s": {
+              "description": "If true the contract will automatically add received cw20\ntokens to its treasury.",
+              "value": 3
+            },
+            "automatically_add_cw721s": {
+              "description": "If true the contract will automatically add received cw721\ntokens to its treasury.",
+              "value": 3
+            },
+            "dao_uri": {
+              "description": "The URI for the DAO as defined by the DAOstar standard\n<https://daostar.one/EIP>",
+              "value": 2
+            },
+            "description": {
+              "description": "A description of the contract.",
+              "value": 1
+            },
+            "image_url": {
+              "description": "An optional image URL for displaying alongside the contract.",
+              "value": 2
+            },
+            "name": {
+              "description": "The name of the contract.",
+              "value": 1
+            }
+          }
+        },
+        {
+          "name": "String",
+          "type": "string"
+        },
+        {
+          "name": "core::option::Option<alloc::string::String>",
+          "type": "optional",
+          "inner": 1
+        },
+        {
+          "name": "bool",
+          "type": "boolean"
+        }
+      ]
+    },
+    "cw20_balances": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "dao_interface_query_Cw20BalanceResponse",
+          "description": "Returned by the `Cw20Balances` query.",
+          "type": "struct",
+          "properties": {
+            "addr": {
+              "description": "The address of the token.",
+              "value": 1
+            },
+            "balance": {
+              "description": "The contract's balance.",
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        },
+        {
+          "name": "cosmwasm_std_math_uint256_Uint256",
+          "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+          "type": "integer",
+          "precision": 256,
+          "signed": false
+        }
+      ]
+    },
+    "cw20_token_list": {
+      "type": "v1",
+      "root": 1,
+      "definitions": [
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        },
+        {
+          "name": "alloc::vec::Vec<cosmwasm_std::addresses::Addr>",
+          "type": "array",
+          "items": 0
+        }
+      ]
+    },
+    "cw721_token_list": {
+      "type": "v1",
+      "root": 1,
+      "definitions": [
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        },
+        {
+          "name": "alloc::vec::Vec<cosmwasm_std::addresses::Addr>",
+          "type": "array",
+          "items": 0
+        }
+      ]
+    },
+    "dao_u_r_i": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "dao_interface_query_DaoURIResponse",
+          "type": "struct",
+          "properties": {
+            "dao_uri": {
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "String",
+          "type": "string"
+        },
+        {
+          "name": "core::option::Option<alloc::string::String>",
+          "type": "optional",
+          "inner": 1
+        }
+      ]
+    },
+    "dump_state": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "dao_interface_query_DumpStateResponse",
+          "description": "Relevant state for the governance module. Returned by the\n`DumpState` query.",
+          "type": "struct",
+          "properties": {
+            "active_proposal_module_count": {
+              "description": "The number of active proposal modules.",
+              "value": 14
+            },
+            "admin": {
+              "description": "Optional DAO Admin",
+              "value": 1
+            },
+            "config": {
+              "description": "The governance contract's config.",
+              "value": 2
+            },
+            "initial_actions": {
+              "description": "The initial actions executed by the DAO on instantiation, if any.",
+              "value": 37
+            },
+            "pause_info": {
+              "description": "The pause state of the DAO.",
+              "value": 6
+            },
+            "proposal_modules": {
+              "description": "The governance modules associated with the governance\ncontract.",
+              "value": 13
+            },
+            "total_proposal_module_count": {
+              "description": "The total number of proposal modules.",
+              "value": 14
+            },
+            "version": {
+              "description": "The governance contract's version.",
+              "value": 10
+            },
+            "voting_module": {
+              "description": "The voting module associated with the governance contract.",
+              "value": 1
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        },
+        {
+          "name": "dao_interface_state_Config",
+          "description": "Top level config type for core module.",
+          "type": "struct",
+          "properties": {
+            "automatically_add_cw20s": {
+              "description": "If true the contract will automatically add received cw20\ntokens to its treasury.",
+              "value": 5
+            },
+            "automatically_add_cw721s": {
+              "description": "If true the contract will automatically add received cw721\ntokens to its treasury.",
+              "value": 5
+            },
+            "dao_uri": {
+              "description": "The URI for the DAO as defined by the DAOstar standard\n<https://daostar.one/EIP>",
+              "value": 4
+            },
+            "description": {
+              "description": "A description of the contract.",
+              "value": 3
+            },
+            "image_url": {
+              "description": "An optional image URL for displaying alongside the contract.",
+              "value": 4
+            },
+            "name": {
+              "description": "The name of the contract.",
+              "value": 3
+            }
+          }
+        },
+        {
+          "name": "String",
+          "type": "string"
+        },
+        {
+          "name": "core::option::Option<alloc::string::String>",
+          "type": "optional",
+          "inner": 3
+        },
+        {
+          "name": "bool",
+          "type": "boolean"
+        },
+        {
+          "name": "dao_interface_query_PauseInfoResponse",
+          "description": "Information about if the contract is currently paused.",
+          "type": "enum",
+          "cases": {
+            "paused": {
+              "type": "named",
+              "properties": {
+                "expiration": {
+                  "value": 7
+                }
+              }
+            },
+            "unpaused": {
+              "type": "named",
+              "properties": {}
+            }
+          }
+        },
+        {
+          "name": "cw_utils_expiration_Expiration",
+          "description": "Expiration represents a point in time when some event happens.\nIt can compare with a BlockInfo and will return is_expired() == true\nonce the condition is hit (and for every block in the future)",
+          "type": "enum",
+          "cases": {
+            "at_height": {
+              "description": "AtHeight will expire when `env.block.height` >= height",
+              "type": "tuple",
+              "items": [
+                8
+              ]
+            },
+            "at_time": {
+              "description": "AtTime will expire when `env.block.time` >= time",
+              "type": "tuple",
+              "items": [
+                9
+              ]
+            },
+            "never": {
+              "description": "Never will never expire. Used to express the empty variant",
+              "type": "named",
+              "properties": {}
+            }
+          }
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        },
+        {
+          "name": "cosmwasm_std_timestamp_Timestamp",
+          "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+          "type": "timestamp"
+        },
+        {
+          "name": "cw2_ContractVersion",
+          "type": "struct",
+          "properties": {
+            "contract": {
+              "description": "contract is the crate name of the implementing contract, e.g. `crate:cw20-base`\nwe will use other prefixes for other languages, and their standard global namespacing",
+              "value": 3
+            },
+            "version": {
+              "description": "version is any string that this implementation knows. It may be simple counter \"1\", \"2\".\nor semantic version on release tags \"v0.7.0\", or some custom feature flag list.\nthe only code that needs to understand the version parsing is code that knows how to\nmigrate from the given contract (and is tied to its implementation somehow)",
+              "value": 3
+            }
+          }
+        },
+        {
+          "name": "dao_interface_state_ProposalModule",
+          "description": "Top level type describing a proposal module.",
+          "type": "struct",
+          "properties": {
+            "address": {
+              "description": "The address of the proposal module.",
+              "value": 1
+            },
+            "prefix": {
+              "description": "The URL prefix of this proposal module as derived from the module ID.\nPrefixes are mapped to letters, e.g. 0 is 'A', and 26 is 'AA'.",
+              "value": 3
+            },
+            "status": {
+              "description": "The status of the proposal module, e.g. 'Enabled' or 'Disabled.'",
+              "value": 12
+            }
+          }
+        },
+        {
+          "name": "dao_interface_state_ProposalModuleStatus",
+          "description": "The status of a proposal module.",
+          "type": "enum",
+          "cases": {
+            "disabled": {
+              "type": "unit"
+            },
+            "enabled": {
+              "type": "unit"
+            }
+          }
+        },
+        {
+          "name": "alloc::vec::Vec<dao_interface::state::ProposalModule>",
+          "type": "array",
+          "items": 11
+        },
+        {
+          "name": "u32",
+          "type": "integer",
+          "precision": 32,
+          "signed": false
+        },
+        {
+          "name": "cosmwasm_std_results_cosmos_msg_CosmosMsg",
+          "type": "enum",
+          "cases": {
+            "any": {
+              "description": "`CosmosMsg::Any` replaces the \"stargate message\" – a message wrapped\nin a [protobuf Any](https://protobuf.dev/programming-guides/proto3/#any)\nthat is supported by the chain. It behaves the same as\n`CosmosMsg::Stargate` but has a better name and slightly improved syntax.\n\nThis is feature-gated at compile time with `cosmwasm_2_0` because\na chain running CosmWasm < 2.0 cannot process this.",
+              "type": "tuple",
+              "items": [
+                24
+              ]
+            },
+            "bank": {
+              "type": "tuple",
+              "items": [
+                16
+              ]
+            },
+            "custom": {
+              "type": "tuple",
+              "items": [
+                20
+              ]
+            },
+            "distribution": {
+              "type": "tuple",
+              "items": [
+                22
+              ]
+            },
+            "gov": {
+              "type": "tuple",
+              "items": [
+                32
+              ]
+            },
+            "ibc": {
+              "type": "tuple",
+              "items": [
+                25
+              ]
+            },
+            "staking": {
+              "type": "tuple",
+              "items": [
+                21
+              ]
+            },
+            "stargate": {
+              "description": "This is the same structure as messages in `TxBody` from [ADR-020](https://github.com/cosmos/cosmos-sdk/blob/master/docs/architecture/adr-020-protobuf-transaction-encoding.md)",
+              "type": "named",
+              "properties": {
+                "type_url": {
+                  "value": 3
+                },
+                "value": {
+                  "value": 23
+                }
+              }
+            },
+            "wasm": {
+              "type": "tuple",
+              "items": [
+                31
+              ]
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_results_cosmos_msg_BankMsg",
+          "description": "The message types of the bank module.\n\nSee https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/bank/v1beta1/tx.proto",
+          "type": "enum",
+          "cases": {
+            "burn": {
+              "description": "This will burn the given coins from the contract's account.\nThere is no Cosmos SDK message that performs this, but it can be done by calling the bank keeper.\nImportant if a contract controls significant token supply that must be retired.",
+              "type": "named",
+              "properties": {
+                "amount": {
+                  "value": 19
+                }
+              }
+            },
+            "send": {
+              "description": "Sends native tokens from the contract to the given address.\n\nThis is translated to a [MsgSend](https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/bank/v1beta1/tx.proto#L19-L28).\n`from_address` is automatically filled with the current contract's address.",
+              "type": "named",
+              "properties": {
+                "amount": {
+                  "value": 19
+                },
+                "to_address": {
+                  "value": 3
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_coin_Coin",
+          "type": "struct",
+          "properties": {
+            "amount": {
+              "value": 18
+            },
+            "denom": {
+              "value": 3
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_math_uint256_Uint256",
+          "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+          "type": "integer",
+          "precision": 256,
+          "signed": false
+        },
+        {
+          "name": "alloc::vec::Vec<cosmwasm_std::coin::Coin>",
+          "type": "array",
+          "items": 17
+        },
+        {
+          "name": "cosmwasm_std_results_empty_Empty",
+          "description": "An empty struct that serves as a placeholder in different places,\nsuch as contracts that don't set a custom message.\n\nIt is designed to be expressible in correct JSON and JSON Schema but\ncontains no meaningful data. Previously we used enums without cases,\nbut those cannot be represented as valid JSON Schema (https://github.com/CosmWasm/cosmwasm/issues/451)",
+          "type": "struct",
+          "properties": {}
+        },
+        {
+          "name": "cosmwasm_std_results_cosmos_msg_StakingMsg",
+          "description": "The message types of the staking module.\n\nSee https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto",
+          "type": "enum",
+          "cases": {
+            "delegate": {
+              "description": "This is translated to a [MsgDelegate](https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto#L81-L90).\n`delegator_address` is automatically filled with the current contract's address.",
+              "type": "named",
+              "properties": {
+                "amount": {
+                  "value": 17
+                },
+                "validator": {
+                  "value": 3
+                }
+              }
+            },
+            "redelegate": {
+              "description": "This is translated to a [MsgBeginRedelegate](https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto#L95-L105).\n`delegator_address` is automatically filled with the current contract's address.",
+              "type": "named",
+              "properties": {
+                "amount": {
+                  "value": 17
+                },
+                "dst_validator": {
+                  "value": 3
+                },
+                "src_validator": {
+                  "value": 3
+                }
+              }
+            },
+            "undelegate": {
+              "description": "This is translated to a [MsgUndelegate](https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto#L112-L121).\n`delegator_address` is automatically filled with the current contract's address.",
+              "type": "named",
+              "properties": {
+                "amount": {
+                  "value": 17
+                },
+                "validator": {
+                  "value": 3
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_results_cosmos_msg_DistributionMsg",
+          "description": "The message types of the distribution module.\n\nSee https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto",
+          "type": "enum",
+          "cases": {
+            "fund_community_pool": {
+              "description": "This is translated to a [MsgFundCommunityPool](https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto#L69-L76).\n`depositor` is automatically filled with the current contract's address.",
+              "type": "named",
+              "properties": {
+                "amount": {
+                  "description": "The amount to spend",
+                  "value": 19
+                }
+              }
+            },
+            "set_withdraw_address": {
+              "description": "This is translated to a [MsgSetWithdrawAddress](https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto#L29-L37).\n`delegator_address` is automatically filled with the current contract's address.",
+              "type": "named",
+              "properties": {
+                "address": {
+                  "description": "The `withdraw_address`",
+                  "value": 3
+                }
+              }
+            },
+            "withdraw_delegator_reward": {
+              "description": "This is translated to a [MsgWithdrawDelegatorReward](https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto#L42-L50).\n`delegator_address` is automatically filled with the current contract's address.",
+              "type": "named",
+              "properties": {
+                "validator": {
+                  "description": "The `validator_address`",
+                  "value": 3
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_binary_Binary",
+          "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization\nwith serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>.\nSee also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+          "type": "binary"
+        },
+        {
+          "name": "cosmwasm_std_results_cosmos_msg_AnyMsg",
+          "description": "A message encoded the same way as a protobuf [Any](https://github.com/protocolbuffers/protobuf/blob/master/src/google/protobuf/any.proto).\nThis is the same structure as messages in `TxBody` from [ADR-020](https://github.com/cosmos/cosmos-sdk/blob/master/docs/architecture/adr-020-protobuf-transaction-encoding.md)",
+          "type": "struct",
+          "properties": {
+            "type_url": {
+              "value": 3
+            },
+            "value": {
+              "value": 23
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_ibc_IbcMsg",
+          "description": "These are messages in the IBC lifecycle. Only usable by IBC-enabled contracts\n(contracts that directly speak the IBC protocol via 6 entry points)",
+          "type": "enum",
+          "cases": {
+            "close_channel": {
+              "description": "This will close an existing channel that is owned by this contract.\nPort is auto-assigned to the contract's IBC port",
+              "type": "named",
+              "properties": {
+                "channel_id": {
+                  "value": 3
+                }
+              }
+            },
+            "send_packet": {
+              "description": "Sends an IBC packet with given data over the existing channel.\nData should be encoded in a format defined by the channel version,\nand the module on the other side should know how to parse this.",
+              "type": "named",
+              "properties": {
+                "channel_id": {
+                  "value": 3
+                },
+                "data": {
+                  "value": 23
+                },
+                "timeout": {
+                  "description": "when packet times out, measured on remote chain",
+                  "value": 26
+                }
+              }
+            },
+            "transfer": {
+              "description": "Sends bank tokens owned by the contract to the given address on another chain.\nThe channel must already be established between the ibctransfer module on this chain\nand a matching module on the remote chain.\nWe cannot select the port_id, this is whatever the local chain has bound the ibctransfer\nmodule to.",
+              "type": "named",
+              "properties": {
+                "amount": {
+                  "description": "packet data only supports one coin\nhttps://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/ibc/applications/transfer/v1/transfer.proto#L11-L20",
+                  "value": 17
+                },
+                "channel_id": {
+                  "description": "existing channel to send the tokens over",
+                  "value": 3
+                },
+                "memo": {
+                  "description": "An optional memo. See the blog post\n[\"Moving Beyond Simple Token Transfers\"](https://medium.com/the-interchain-foundation/moving-beyond-simple-token-transfers-d42b2b1dc29b)\nfor more information.\n\nThere is no difference between setting this to `None` or an empty string.\n\nThis field is only supported on chains with CosmWasm >= 2.0 and silently\nignored on older chains.\nIf you need support for both 1.x and 2.x chain with the same codebase,\nit is recommended to use `CosmosMsg::Stargate` with a custom MsgTransfer\nprotobuf encoder instead.",
+                  "value": 4
+                },
+                "timeout": {
+                  "description": "when packet times out, measured on remote chain",
+                  "value": 26
+                },
+                "to_address": {
+                  "description": "address on the remote chain to receive these tokens",
+                  "value": 3
+                }
+              }
+            },
+            "write_acknowledgement": {
+              "description": "Acknowledges a packet that this contract received over IBC.\nThis allows acknowledging a packet that was not acknowledged yet in the `ibc_packet_receive` call.",
+              "type": "named",
+              "properties": {
+                "ack": {
+                  "description": "The acknowledgement to send back",
+                  "value": 30
+                },
+                "channel_id": {
+                  "description": "Existing channel where the packet was received",
+                  "value": 3
+                },
+                "packet_sequence": {
+                  "description": "Sequence number of the packet that was received",
+                  "value": 8
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_ibc_IbcTimeout",
+          "description": "In IBC each package must set at least one type of timeout:\nthe timestamp or the block height. Using this rather complex enum instead of\ntwo timeout fields we ensure that at least one timeout is set.",
+          "type": "struct",
+          "properties": {
+            "block": {
+              "value": 28
+            },
+            "timestamp": {
+              "value": 29
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_ibc_IbcTimeoutBlock",
+          "description": "IBCTimeoutHeight Height is a monotonically increasing data type\nthat can be compared against another Height for the purposes of updating and\nfreezing clients.\nOrdering is (revision_number, timeout_height)",
+          "type": "struct",
+          "properties": {
+            "height": {
+              "description": "block height after which the packet times out.\nthe height within the given revision",
+              "value": 8
+            },
+            "revision": {
+              "description": "the version that the client is currently on\n(e.g. after resetting the chain this could increment 1 as height drops to 0)",
+              "value": 8
+            }
+          }
+        },
+        {
+          "name": "core::option::Option<cosmwasm_std::ibc::IbcTimeoutBlock>",
+          "type": "optional",
+          "inner": 27
+        },
+        {
+          "name": "core::option::Option<cosmwasm_std::timestamp::Timestamp>",
+          "type": "optional",
+          "inner": 9
+        },
+        {
+          "name": "cosmwasm_std_ibc_IbcAcknowledgement",
+          "type": "struct",
+          "properties": {
+            "data": {
+              "value": 23
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_results_cosmos_msg_WasmMsg",
+          "description": "The message types of the wasm module.\n\nSee https://github.com/CosmWasm/wasmd/blob/v0.14.0/x/wasm/internal/types/tx.proto",
+          "type": "enum",
+          "cases": {
+            "clear_admin": {
+              "description": "Clears the admin on the given contract, so no more migration possible.\nFails if this contract is not currently admin of the target contract.",
+              "type": "named",
+              "properties": {
+                "contract_addr": {
+                  "value": 3
+                }
+              }
+            },
+            "execute": {
+              "description": "Dispatches a call to another contract at a known address (with known ABI).\n\nThis is translated to a [MsgExecuteContract](https://github.com/CosmWasm/wasmd/blob/v0.14.0/x/wasm/internal/types/tx.proto#L68-L78).\n`sender` is automatically filled with the current contract's address.",
+              "type": "named",
+              "properties": {
+                "contract_addr": {
+                  "value": 3
+                },
+                "funds": {
+                  "value": 19
+                },
+                "msg": {
+                  "description": "msg is the json-encoded ExecuteMsg struct (as raw Binary)",
+                  "value": 23
+                }
+              }
+            },
+            "instantiate": {
+              "description": "Instantiates a new contract from previously uploaded Wasm code.\n\nThe contract address is non-predictable. But it is guaranteed that\nwhen emitting the same Instantiate message multiple times,\nmultiple instances on different addresses will be generated. See also\nInstantiate2.\n\nThis is translated to a [MsgInstantiateContract](https://github.com/CosmWasm/wasmd/blob/v0.29.2/proto/cosmwasm/wasm/v1/tx.proto#L53-L71).\n`sender` is automatically filled with the current contract's address.",
+              "type": "named",
+              "properties": {
+                "admin": {
+                  "value": 4
+                },
+                "code_id": {
+                  "value": 8
+                },
+                "funds": {
+                  "value": 19
+                },
+                "label": {
+                  "description": "A human-readable label for the contract.\n\nValid values should:\n- not be empty\n- not be bigger than 128 bytes (or some chain-specific limit)\n- not start / end with whitespace",
+                  "value": 3
+                },
+                "msg": {
+                  "description": "msg is the JSON-encoded InstantiateMsg struct (as raw Binary)",
+                  "value": 23
+                }
+              }
+            },
+            "instantiate2": {
+              "description": "Instantiates a new contract from previously uploaded Wasm code\nusing a predictable address derivation algorithm implemented in\n[`cosmwasm_std::instantiate2_address`].\n\nThis is translated to a [MsgInstantiateContract2](https://github.com/CosmWasm/wasmd/blob/v0.29.2/proto/cosmwasm/wasm/v1/tx.proto#L73-L96).\n`sender` is automatically filled with the current contract's address.\n`fix_msg` is automatically set to false.",
+              "type": "named",
+              "properties": {
+                "admin": {
+                  "value": 4
+                },
+                "code_id": {
+                  "value": 8
+                },
+                "funds": {
+                  "value": 19
+                },
+                "label": {
+                  "description": "A human-readable label for the contract.\n\nValid values should:\n- not be empty\n- not be bigger than 128 bytes (or some chain-specific limit)\n- not start / end with whitespace",
+                  "value": 3
+                },
+                "msg": {
+                  "description": "msg is the JSON-encoded InstantiateMsg struct (as raw Binary)",
+                  "value": 23
+                },
+                "salt": {
+                  "value": 23
+                }
+              }
+            },
+            "migrate": {
+              "description": "Migrates a given contract to use new wasm code. Passes a MigrateMsg to allow us to\ncustomize behavior.\n\nOnly the contract admin (as defined in wasmd), if any, is able to make this call.\n\nThis is translated to a [MsgMigrateContract](https://github.com/CosmWasm/wasmd/blob/v0.14.0/x/wasm/internal/types/tx.proto#L86-L96).\n`sender` is automatically filled with the current contract's address.",
+              "type": "named",
+              "properties": {
+                "contract_addr": {
+                  "value": 3
+                },
+                "msg": {
+                  "description": "msg is the json-encoded MigrateMsg struct that will be passed to the new code",
+                  "value": 23
+                },
+                "new_code_id": {
+                  "description": "the code_id of the new logic to place in the given contract",
+                  "value": 8
+                }
+              }
+            },
+            "update_admin": {
+              "description": "Sets a new admin (for migrate) on the given contract.\nFails if this contract is not currently admin of the target contract.",
+              "type": "named",
+              "properties": {
+                "admin": {
+                  "value": 3
+                },
+                "contract_addr": {
+                  "value": 3
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_results_cosmos_msg_GovMsg",
+          "description": "This message type allows the contract to interact with the [x/gov] module in order\nto cast votes.\n\n[x/gov]: https://github.com/cosmos/cosmos-sdk/tree/v0.45.12/x/gov\n\n## Examples\n\nCast a simple vote:\n\n```\n# use cosmwasm_std::{\n#     HexBinary,\n#     Storage, Api, Querier, DepsMut, Deps, entry_point, Env, StdError, MessageInfo,\n#     Response, QueryResponse,\n# };\n# type ExecuteMsg = ();\nuse cosmwasm_std::{GovMsg, VoteOption};\n\n#[entry_point]\npub fn execute(\ndeps: DepsMut,\nenv: Env,\ninfo: MessageInfo,\nmsg: ExecuteMsg,\n) -> Result<Response, StdError> {\n// ...\nOk(Response::new().add_message(GovMsg::Vote {\nproposal_id: 4,\noption: VoteOption::Yes,\n}))\n}\n```\n\nCast a weighted vote:\n\n```\n# use cosmwasm_std::{\n#     HexBinary,\n#     Storage, Api, Querier, DepsMut, Deps, entry_point, Env, StdError, MessageInfo,\n#     Response, QueryResponse,\n# };\n# type ExecuteMsg = ();\n# #[cfg(feature = \"cosmwasm_1_2\")]\nuse cosmwasm_std::{Decimal, GovMsg, VoteOption, WeightedVoteOption};\n\n# #[cfg(feature = \"cosmwasm_1_2\")]\n#[entry_point]\npub fn execute(\ndeps: DepsMut,\nenv: Env,\ninfo: MessageInfo,\nmsg: ExecuteMsg,\n) -> Result<Response, StdError> {\n// ...\nOk(Response::new().add_message(GovMsg::VoteWeighted {\nproposal_id: 4,\noptions: vec![\nWeightedVoteOption {\noption: VoteOption::Yes,\nweight: Decimal::percent(65),\n},\nWeightedVoteOption {\noption: VoteOption::Abstain,\nweight: Decimal::percent(35),\n},\n],\n}))\n}\n```",
+          "type": "enum",
+          "cases": {
+            "vote": {
+              "description": "This maps directly to [MsgVote](https://github.com/cosmos/cosmos-sdk/blob/v0.42.5/proto/cosmos/gov/v1beta1/tx.proto#L46-L56) in the Cosmos SDK with voter set to the contract address.",
+              "type": "named",
+              "properties": {
+                "option": {
+                  "description": "The vote option.\n\nThis used to be called \"vote\", but was changed for consistency with Cosmos SDK.",
+                  "value": 33
+                },
+                "proposal_id": {
+                  "value": 8
+                }
+              }
+            },
+            "vote_weighted": {
+              "description": "This maps directly to [MsgVoteWeighted](https://github.com/cosmos/cosmos-sdk/blob/v0.45.8/proto/cosmos/gov/v1beta1/tx.proto#L66-L78) in the Cosmos SDK with voter set to the contract address.",
+              "type": "named",
+              "properties": {
+                "options": {
+                  "value": 36
+                },
+                "proposal_id": {
+                  "value": 8
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_results_cosmos_msg_VoteOption",
+          "type": "enum",
+          "cases": {
+            "abstain": {
+              "type": "unit"
+            },
+            "no": {
+              "type": "unit"
+            },
+            "no_with_veto": {
+              "type": "unit"
+            },
+            "yes": {
+              "type": "unit"
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_results_cosmos_msg_WeightedVoteOption",
+          "type": "struct",
+          "properties": {
+            "option": {
+              "value": 33
+            },
+            "weight": {
+              "value": 35
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_math_decimal_Decimal",
+          "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 340282366920938463463.374607431768211455 = (2^128 - 1) / 10^18",
+          "type": "decimal",
+          "precision": 128,
+          "signed": false
+        },
+        {
+          "name": "alloc::vec::Vec<cosmwasm_std::results::cosmos_msg::WeightedVoteOption>",
+          "type": "array",
+          "items": 34
+        },
+        {
+          "name": "alloc::vec::Vec<cosmwasm_std::results::cosmos_msg::CosmosMsg>",
+          "type": "array",
+          "items": 15
+        }
+      ]
+    },
+    "get_item": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "dao_interface_query_GetItemResponse",
+          "description": "Returned by the `GetItem` query.",
+          "type": "struct",
+          "properties": {
+            "item": {
+              "description": "`None` if no item with the provided key was found, `Some`\notherwise.",
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "String",
+          "type": "string"
+        },
+        {
+          "name": "core::option::Option<alloc::string::String>",
+          "type": "optional",
+          "inner": 1
+        }
+      ]
+    },
+    "info": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "dao_interface_voting_InfoResponse",
+          "type": "struct",
+          "properties": {
+            "info": {
+              "value": 1
+            }
+          }
+        },
+        {
+          "name": "cw2_ContractVersion",
+          "type": "struct",
+          "properties": {
+            "contract": {
+              "description": "contract is the crate name of the implementing contract, e.g. `crate:cw20-base`\nwe will use other prefixes for other languages, and their standard global namespacing",
+              "value": 2
+            },
+            "version": {
+              "description": "version is any string that this implementation knows. It may be simple counter \"1\", \"2\".\nor semantic version on release tags \"v0.7.0\", or some custom feature flag list.\nthe only code that needs to understand the version parsing is code that knows how to\nmigrate from the given contract (and is tied to its implementation somehow)",
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "String",
+          "type": "string"
+        }
+      ]
+    },
+    "initial_actions": {
+      "type": "v1",
+      "root": 26,
+      "definitions": [
+        {
+          "name": "cosmwasm_std_results_cosmos_msg_CosmosMsg",
+          "type": "enum",
+          "cases": {
+            "any": {
+              "description": "`CosmosMsg::Any` replaces the \"stargate message\" – a message wrapped\nin a [protobuf Any](https://protobuf.dev/programming-guides/proto3/#any)\nthat is supported by the chain. It behaves the same as\n`CosmosMsg::Stargate` but has a better name and slightly improved syntax.\n\nThis is feature-gated at compile time with `cosmwasm_2_0` because\na chain running CosmWasm < 2.0 cannot process this.",
+              "type": "tuple",
+              "items": [
+                10
+              ]
+            },
+            "bank": {
+              "type": "tuple",
+              "items": [
+                1
+              ]
+            },
+            "custom": {
+              "type": "tuple",
+              "items": [
+                6
+              ]
+            },
+            "distribution": {
+              "type": "tuple",
+              "items": [
+                8
+              ]
+            },
+            "gov": {
+              "type": "tuple",
+              "items": [
+                21
+              ]
+            },
+            "ibc": {
+              "type": "tuple",
+              "items": [
+                11
+              ]
+            },
+            "staking": {
+              "type": "tuple",
+              "items": [
+                7
+              ]
+            },
+            "stargate": {
+              "description": "This is the same structure as messages in `TxBody` from [ADR-020](https://github.com/cosmos/cosmos-sdk/blob/master/docs/architecture/adr-020-protobuf-transaction-encoding.md)",
+              "type": "named",
+              "properties": {
+                "type_url": {
+                  "value": 2
+                },
+                "value": {
+                  "value": 9
+                }
+              }
+            },
+            "wasm": {
+              "type": "tuple",
+              "items": [
+                20
+              ]
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_results_cosmos_msg_BankMsg",
+          "description": "The message types of the bank module.\n\nSee https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/bank/v1beta1/tx.proto",
+          "type": "enum",
+          "cases": {
+            "burn": {
+              "description": "This will burn the given coins from the contract's account.\nThere is no Cosmos SDK message that performs this, but it can be done by calling the bank keeper.\nImportant if a contract controls significant token supply that must be retired.",
+              "type": "named",
+              "properties": {
+                "amount": {
+                  "value": 5
+                }
+              }
+            },
+            "send": {
+              "description": "Sends native tokens from the contract to the given address.\n\nThis is translated to a [MsgSend](https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/bank/v1beta1/tx.proto#L19-L28).\n`from_address` is automatically filled with the current contract's address.",
+              "type": "named",
+              "properties": {
+                "amount": {
+                  "value": 5
+                },
+                "to_address": {
+                  "value": 2
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "String",
+          "type": "string"
+        },
+        {
+          "name": "cosmwasm_std_coin_Coin",
+          "type": "struct",
+          "properties": {
+            "amount": {
+              "value": 4
+            },
+            "denom": {
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_math_uint256_Uint256",
+          "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+          "type": "integer",
+          "precision": 256,
+          "signed": false
+        },
+        {
+          "name": "alloc::vec::Vec<cosmwasm_std::coin::Coin>",
+          "type": "array",
+          "items": 3
+        },
+        {
+          "name": "cosmwasm_std_results_empty_Empty",
+          "description": "An empty struct that serves as a placeholder in different places,\nsuch as contracts that don't set a custom message.\n\nIt is designed to be expressible in correct JSON and JSON Schema but\ncontains no meaningful data. Previously we used enums without cases,\nbut those cannot be represented as valid JSON Schema (https://github.com/CosmWasm/cosmwasm/issues/451)",
+          "type": "struct",
+          "properties": {}
+        },
+        {
+          "name": "cosmwasm_std_results_cosmos_msg_StakingMsg",
+          "description": "The message types of the staking module.\n\nSee https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto",
+          "type": "enum",
+          "cases": {
+            "delegate": {
+              "description": "This is translated to a [MsgDelegate](https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto#L81-L90).\n`delegator_address` is automatically filled with the current contract's address.",
+              "type": "named",
+              "properties": {
+                "amount": {
+                  "value": 3
+                },
+                "validator": {
+                  "value": 2
+                }
+              }
+            },
+            "redelegate": {
+              "description": "This is translated to a [MsgBeginRedelegate](https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto#L95-L105).\n`delegator_address` is automatically filled with the current contract's address.",
+              "type": "named",
+              "properties": {
+                "amount": {
+                  "value": 3
+                },
+                "dst_validator": {
+                  "value": 2
+                },
+                "src_validator": {
+                  "value": 2
+                }
+              }
+            },
+            "undelegate": {
+              "description": "This is translated to a [MsgUndelegate](https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto#L112-L121).\n`delegator_address` is automatically filled with the current contract's address.",
+              "type": "named",
+              "properties": {
+                "amount": {
+                  "value": 3
+                },
+                "validator": {
+                  "value": 2
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_results_cosmos_msg_DistributionMsg",
+          "description": "The message types of the distribution module.\n\nSee https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto",
+          "type": "enum",
+          "cases": {
+            "fund_community_pool": {
+              "description": "This is translated to a [MsgFundCommunityPool](https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto#L69-L76).\n`depositor` is automatically filled with the current contract's address.",
+              "type": "named",
+              "properties": {
+                "amount": {
+                  "description": "The amount to spend",
+                  "value": 5
+                }
+              }
+            },
+            "set_withdraw_address": {
+              "description": "This is translated to a [MsgSetWithdrawAddress](https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto#L29-L37).\n`delegator_address` is automatically filled with the current contract's address.",
+              "type": "named",
+              "properties": {
+                "address": {
+                  "description": "The `withdraw_address`",
+                  "value": 2
+                }
+              }
+            },
+            "withdraw_delegator_reward": {
+              "description": "This is translated to a [MsgWithdrawDelegatorReward](https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto#L42-L50).\n`delegator_address` is automatically filled with the current contract's address.",
+              "type": "named",
+              "properties": {
+                "validator": {
+                  "description": "The `validator_address`",
+                  "value": 2
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_binary_Binary",
+          "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization\nwith serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>.\nSee also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+          "type": "binary"
+        },
+        {
+          "name": "cosmwasm_std_results_cosmos_msg_AnyMsg",
+          "description": "A message encoded the same way as a protobuf [Any](https://github.com/protocolbuffers/protobuf/blob/master/src/google/protobuf/any.proto).\nThis is the same structure as messages in `TxBody` from [ADR-020](https://github.com/cosmos/cosmos-sdk/blob/master/docs/architecture/adr-020-protobuf-transaction-encoding.md)",
+          "type": "struct",
+          "properties": {
+            "type_url": {
+              "value": 2
+            },
+            "value": {
+              "value": 9
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_ibc_IbcMsg",
+          "description": "These are messages in the IBC lifecycle. Only usable by IBC-enabled contracts\n(contracts that directly speak the IBC protocol via 6 entry points)",
+          "type": "enum",
+          "cases": {
+            "close_channel": {
+              "description": "This will close an existing channel that is owned by this contract.\nPort is auto-assigned to the contract's IBC port",
+              "type": "named",
+              "properties": {
+                "channel_id": {
+                  "value": 2
+                }
+              }
+            },
+            "send_packet": {
+              "description": "Sends an IBC packet with given data over the existing channel.\nData should be encoded in a format defined by the channel version,\nand the module on the other side should know how to parse this.",
+              "type": "named",
+              "properties": {
+                "channel_id": {
+                  "value": 2
+                },
+                "data": {
+                  "value": 9
+                },
+                "timeout": {
+                  "description": "when packet times out, measured on remote chain",
+                  "value": 12
+                }
+              }
+            },
+            "transfer": {
+              "description": "Sends bank tokens owned by the contract to the given address on another chain.\nThe channel must already be established between the ibctransfer module on this chain\nand a matching module on the remote chain.\nWe cannot select the port_id, this is whatever the local chain has bound the ibctransfer\nmodule to.",
+              "type": "named",
+              "properties": {
+                "amount": {
+                  "description": "packet data only supports one coin\nhttps://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/ibc/applications/transfer/v1/transfer.proto#L11-L20",
+                  "value": 3
+                },
+                "channel_id": {
+                  "description": "existing channel to send the tokens over",
+                  "value": 2
+                },
+                "memo": {
+                  "description": "An optional memo. See the blog post\n[\"Moving Beyond Simple Token Transfers\"](https://medium.com/the-interchain-foundation/moving-beyond-simple-token-transfers-d42b2b1dc29b)\nfor more information.\n\nThere is no difference between setting this to `None` or an empty string.\n\nThis field is only supported on chains with CosmWasm >= 2.0 and silently\nignored on older chains.\nIf you need support for both 1.x and 2.x chain with the same codebase,\nit is recommended to use `CosmosMsg::Stargate` with a custom MsgTransfer\nprotobuf encoder instead.",
+                  "value": 18
+                },
+                "timeout": {
+                  "description": "when packet times out, measured on remote chain",
+                  "value": 12
+                },
+                "to_address": {
+                  "description": "address on the remote chain to receive these tokens",
+                  "value": 2
+                }
+              }
+            },
+            "write_acknowledgement": {
+              "description": "Acknowledges a packet that this contract received over IBC.\nThis allows acknowledging a packet that was not acknowledged yet in the `ibc_packet_receive` call.",
+              "type": "named",
+              "properties": {
+                "ack": {
+                  "description": "The acknowledgement to send back",
+                  "value": 19
+                },
+                "channel_id": {
+                  "description": "Existing channel where the packet was received",
+                  "value": 2
+                },
+                "packet_sequence": {
+                  "description": "Sequence number of the packet that was received",
+                  "value": 14
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_ibc_IbcTimeout",
+          "description": "In IBC each package must set at least one type of timeout:\nthe timestamp or the block height. Using this rather complex enum instead of\ntwo timeout fields we ensure that at least one timeout is set.",
+          "type": "struct",
+          "properties": {
+            "block": {
+              "value": 15
+            },
+            "timestamp": {
+              "value": 17
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_ibc_IbcTimeoutBlock",
+          "description": "IBCTimeoutHeight Height is a monotonically increasing data type\nthat can be compared against another Height for the purposes of updating and\nfreezing clients.\nOrdering is (revision_number, timeout_height)",
+          "type": "struct",
+          "properties": {
+            "height": {
+              "description": "block height after which the packet times out.\nthe height within the given revision",
+              "value": 14
+            },
+            "revision": {
+              "description": "the version that the client is currently on\n(e.g. after resetting the chain this could increment 1 as height drops to 0)",
+              "value": 14
+            }
+          }
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        },
+        {
+          "name": "core::option::Option<cosmwasm_std::ibc::IbcTimeoutBlock>",
+          "type": "optional",
+          "inner": 13
+        },
+        {
+          "name": "cosmwasm_std_timestamp_Timestamp",
+          "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+          "type": "timestamp"
+        },
+        {
+          "name": "core::option::Option<cosmwasm_std::timestamp::Timestamp>",
+          "type": "optional",
+          "inner": 16
+        },
+        {
+          "name": "core::option::Option<alloc::string::String>",
+          "type": "optional",
+          "inner": 2
+        },
+        {
+          "name": "cosmwasm_std_ibc_IbcAcknowledgement",
+          "type": "struct",
+          "properties": {
+            "data": {
+              "value": 9
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_results_cosmos_msg_WasmMsg",
+          "description": "The message types of the wasm module.\n\nSee https://github.com/CosmWasm/wasmd/blob/v0.14.0/x/wasm/internal/types/tx.proto",
+          "type": "enum",
+          "cases": {
+            "clear_admin": {
+              "description": "Clears the admin on the given contract, so no more migration possible.\nFails if this contract is not currently admin of the target contract.",
+              "type": "named",
+              "properties": {
+                "contract_addr": {
+                  "value": 2
+                }
+              }
+            },
+            "execute": {
+              "description": "Dispatches a call to another contract at a known address (with known ABI).\n\nThis is translated to a [MsgExecuteContract](https://github.com/CosmWasm/wasmd/blob/v0.14.0/x/wasm/internal/types/tx.proto#L68-L78).\n`sender` is automatically filled with the current contract's address.",
+              "type": "named",
+              "properties": {
+                "contract_addr": {
+                  "value": 2
+                },
+                "funds": {
+                  "value": 5
+                },
+                "msg": {
+                  "description": "msg is the json-encoded ExecuteMsg struct (as raw Binary)",
+                  "value": 9
+                }
+              }
+            },
+            "instantiate": {
+              "description": "Instantiates a new contract from previously uploaded Wasm code.\n\nThe contract address is non-predictable. But it is guaranteed that\nwhen emitting the same Instantiate message multiple times,\nmultiple instances on different addresses will be generated. See also\nInstantiate2.\n\nThis is translated to a [MsgInstantiateContract](https://github.com/CosmWasm/wasmd/blob/v0.29.2/proto/cosmwasm/wasm/v1/tx.proto#L53-L71).\n`sender` is automatically filled with the current contract's address.",
+              "type": "named",
+              "properties": {
+                "admin": {
+                  "value": 18
+                },
+                "code_id": {
+                  "value": 14
+                },
+                "funds": {
+                  "value": 5
+                },
+                "label": {
+                  "description": "A human-readable label for the contract.\n\nValid values should:\n- not be empty\n- not be bigger than 128 bytes (or some chain-specific limit)\n- not start / end with whitespace",
+                  "value": 2
+                },
+                "msg": {
+                  "description": "msg is the JSON-encoded InstantiateMsg struct (as raw Binary)",
+                  "value": 9
+                }
+              }
+            },
+            "instantiate2": {
+              "description": "Instantiates a new contract from previously uploaded Wasm code\nusing a predictable address derivation algorithm implemented in\n[`cosmwasm_std::instantiate2_address`].\n\nThis is translated to a [MsgInstantiateContract2](https://github.com/CosmWasm/wasmd/blob/v0.29.2/proto/cosmwasm/wasm/v1/tx.proto#L73-L96).\n`sender` is automatically filled with the current contract's address.\n`fix_msg` is automatically set to false.",
+              "type": "named",
+              "properties": {
+                "admin": {
+                  "value": 18
+                },
+                "code_id": {
+                  "value": 14
+                },
+                "funds": {
+                  "value": 5
+                },
+                "label": {
+                  "description": "A human-readable label for the contract.\n\nValid values should:\n- not be empty\n- not be bigger than 128 bytes (or some chain-specific limit)\n- not start / end with whitespace",
+                  "value": 2
+                },
+                "msg": {
+                  "description": "msg is the JSON-encoded InstantiateMsg struct (as raw Binary)",
+                  "value": 9
+                },
+                "salt": {
+                  "value": 9
+                }
+              }
+            },
+            "migrate": {
+              "description": "Migrates a given contract to use new wasm code. Passes a MigrateMsg to allow us to\ncustomize behavior.\n\nOnly the contract admin (as defined in wasmd), if any, is able to make this call.\n\nThis is translated to a [MsgMigrateContract](https://github.com/CosmWasm/wasmd/blob/v0.14.0/x/wasm/internal/types/tx.proto#L86-L96).\n`sender` is automatically filled with the current contract's address.",
+              "type": "named",
+              "properties": {
+                "contract_addr": {
+                  "value": 2
+                },
+                "msg": {
+                  "description": "msg is the json-encoded MigrateMsg struct that will be passed to the new code",
+                  "value": 9
+                },
+                "new_code_id": {
+                  "description": "the code_id of the new logic to place in the given contract",
+                  "value": 14
+                }
+              }
+            },
+            "update_admin": {
+              "description": "Sets a new admin (for migrate) on the given contract.\nFails if this contract is not currently admin of the target contract.",
+              "type": "named",
+              "properties": {
+                "admin": {
+                  "value": 2
+                },
+                "contract_addr": {
+                  "value": 2
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_results_cosmos_msg_GovMsg",
+          "description": "This message type allows the contract to interact with the [x/gov] module in order\nto cast votes.\n\n[x/gov]: https://github.com/cosmos/cosmos-sdk/tree/v0.45.12/x/gov\n\n## Examples\n\nCast a simple vote:\n\n```\n# use cosmwasm_std::{\n#     HexBinary,\n#     Storage, Api, Querier, DepsMut, Deps, entry_point, Env, StdError, MessageInfo,\n#     Response, QueryResponse,\n# };\n# type ExecuteMsg = ();\nuse cosmwasm_std::{GovMsg, VoteOption};\n\n#[entry_point]\npub fn execute(\ndeps: DepsMut,\nenv: Env,\ninfo: MessageInfo,\nmsg: ExecuteMsg,\n) -> Result<Response, StdError> {\n// ...\nOk(Response::new().add_message(GovMsg::Vote {\nproposal_id: 4,\noption: VoteOption::Yes,\n}))\n}\n```\n\nCast a weighted vote:\n\n```\n# use cosmwasm_std::{\n#     HexBinary,\n#     Storage, Api, Querier, DepsMut, Deps, entry_point, Env, StdError, MessageInfo,\n#     Response, QueryResponse,\n# };\n# type ExecuteMsg = ();\n# #[cfg(feature = \"cosmwasm_1_2\")]\nuse cosmwasm_std::{Decimal, GovMsg, VoteOption, WeightedVoteOption};\n\n# #[cfg(feature = \"cosmwasm_1_2\")]\n#[entry_point]\npub fn execute(\ndeps: DepsMut,\nenv: Env,\ninfo: MessageInfo,\nmsg: ExecuteMsg,\n) -> Result<Response, StdError> {\n// ...\nOk(Response::new().add_message(GovMsg::VoteWeighted {\nproposal_id: 4,\noptions: vec![\nWeightedVoteOption {\noption: VoteOption::Yes,\nweight: Decimal::percent(65),\n},\nWeightedVoteOption {\noption: VoteOption::Abstain,\nweight: Decimal::percent(35),\n},\n],\n}))\n}\n```",
+          "type": "enum",
+          "cases": {
+            "vote": {
+              "description": "This maps directly to [MsgVote](https://github.com/cosmos/cosmos-sdk/blob/v0.42.5/proto/cosmos/gov/v1beta1/tx.proto#L46-L56) in the Cosmos SDK with voter set to the contract address.",
+              "type": "named",
+              "properties": {
+                "option": {
+                  "description": "The vote option.\n\nThis used to be called \"vote\", but was changed for consistency with Cosmos SDK.",
+                  "value": 22
+                },
+                "proposal_id": {
+                  "value": 14
+                }
+              }
+            },
+            "vote_weighted": {
+              "description": "This maps directly to [MsgVoteWeighted](https://github.com/cosmos/cosmos-sdk/blob/v0.45.8/proto/cosmos/gov/v1beta1/tx.proto#L66-L78) in the Cosmos SDK with voter set to the contract address.",
+              "type": "named",
+              "properties": {
+                "options": {
+                  "value": 25
+                },
+                "proposal_id": {
+                  "value": 14
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_results_cosmos_msg_VoteOption",
+          "type": "enum",
+          "cases": {
+            "abstain": {
+              "type": "unit"
+            },
+            "no": {
+              "type": "unit"
+            },
+            "no_with_veto": {
+              "type": "unit"
+            },
+            "yes": {
+              "type": "unit"
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_results_cosmos_msg_WeightedVoteOption",
+          "type": "struct",
+          "properties": {
+            "option": {
+              "value": 22
+            },
+            "weight": {
+              "value": 24
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_math_decimal_Decimal",
+          "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 340282366920938463463.374607431768211455 = (2^128 - 1) / 10^18",
+          "type": "decimal",
+          "precision": 128,
+          "signed": false
+        },
+        {
+          "name": "alloc::vec::Vec<cosmwasm_std::results::cosmos_msg::WeightedVoteOption>",
+          "type": "array",
+          "items": 23
+        },
+        {
+          "name": "alloc::vec::Vec<cosmwasm_std::results::cosmos_msg::CosmosMsg>",
+          "type": "array",
+          "items": 0
+        }
+      ]
+    },
+    "list_items": {
+      "type": "v1",
+      "root": 1,
+      "definitions": [
+        {
+          "name": "String",
+          "type": "string"
+        },
+        {
+          "name": "alloc::vec::Vec<alloc::string::String>",
+          "type": "array",
+          "items": 0
+        }
+      ]
+    },
+    "list_sub_daos": {
+      "type": "v1",
+      "root": 3,
+      "definitions": [
+        {
+          "name": "dao_interface_query_SubDao",
+          "type": "struct",
+          "properties": {
+            "addr": {
+              "description": "The contract address of the SubDAO",
+              "value": 1
+            },
+            "charter": {
+              "description": "The purpose/constitution for the SubDAO",
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "String",
+          "type": "string"
+        },
+        {
+          "name": "core::option::Option<alloc::string::String>",
+          "type": "optional",
+          "inner": 1
+        },
+        {
+          "name": "alloc::vec::Vec<dao_interface::query::SubDao>",
+          "type": "array",
+          "items": 0
+        }
+      ]
+    },
+    "pause_info": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "dao_interface_query_PauseInfoResponse",
+          "description": "Information about if the contract is currently paused.",
+          "type": "enum",
+          "cases": {
+            "paused": {
+              "type": "named",
+              "properties": {
+                "expiration": {
+                  "value": 1
+                }
+              }
+            },
+            "unpaused": {
+              "type": "named",
+              "properties": {}
+            }
+          }
+        },
+        {
+          "name": "cw_utils_expiration_Expiration",
+          "description": "Expiration represents a point in time when some event happens.\nIt can compare with a BlockInfo and will return is_expired() == true\nonce the condition is hit (and for every block in the future)",
+          "type": "enum",
+          "cases": {
+            "at_height": {
+              "description": "AtHeight will expire when `env.block.height` >= height",
+              "type": "tuple",
+              "items": [
+                2
+              ]
+            },
+            "at_time": {
+              "description": "AtTime will expire when `env.block.time` >= time",
+              "type": "tuple",
+              "items": [
+                3
+              ]
+            },
+            "never": {
+              "description": "Never will never expire. Used to express the empty variant",
+              "type": "named",
+              "properties": {}
+            }
+          }
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        },
+        {
+          "name": "cosmwasm_std_timestamp_Timestamp",
+          "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+          "type": "timestamp"
+        }
+      ]
+    },
+    "proposal_module_count": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "dao_interface_query_ProposalModuleCountResponse",
+          "type": "struct",
+          "properties": {
+            "active_proposal_module_count": {
+              "description": "The number of active proposal modules.",
+              "value": 1
+            },
+            "total_proposal_module_count": {
+              "description": "The total number of proposal modules.",
+              "value": 1
+            }
+          }
+        },
+        {
+          "name": "u32",
+          "type": "integer",
+          "precision": 32,
+          "signed": false
+        }
+      ]
+    },
+    "proposal_modules": {
+      "type": "v1",
+      "root": 4,
+      "definitions": [
+        {
+          "name": "dao_interface_state_ProposalModule",
+          "description": "Top level type describing a proposal module.",
+          "type": "struct",
+          "properties": {
+            "address": {
+              "description": "The address of the proposal module.",
+              "value": 1
+            },
+            "prefix": {
+              "description": "The URL prefix of this proposal module as derived from the module ID.\nPrefixes are mapped to letters, e.g. 0 is 'A', and 26 is 'AA'.",
+              "value": 2
+            },
+            "status": {
+              "description": "The status of the proposal module, e.g. 'Enabled' or 'Disabled.'",
+              "value": 3
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        },
+        {
+          "name": "String",
+          "type": "string"
+        },
+        {
+          "name": "dao_interface_state_ProposalModuleStatus",
+          "description": "The status of a proposal module.",
+          "type": "enum",
+          "cases": {
+            "disabled": {
+              "type": "unit"
+            },
+            "enabled": {
+              "type": "unit"
+            }
+          }
+        },
+        {
+          "name": "alloc::vec::Vec<dao_interface::state::ProposalModule>",
+          "type": "array",
+          "items": 0
+        }
+      ]
+    },
+    "total_power_at_height": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "dao_interface_voting_TotalPowerAtHeightResponse",
+          "type": "struct",
+          "properties": {
+            "height": {
+              "value": 2
+            },
+            "power": {
+              "value": 1
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_math_uint256_Uint256",
+          "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+          "type": "integer",
+          "precision": 256,
+          "signed": false
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        }
+      ]
+    },
+    "voting_module": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        }
+      ]
+    },
+    "voting_power_at_height": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "dao_interface_voting_VotingPowerAtHeightResponse",
+          "type": "struct",
+          "properties": {
+            "height": {
+              "value": 2
+            },
+            "power": {
+              "value": 1
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_math_uint256_Uint256",
+          "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+          "type": "integer",
+          "precision": 256,
+          "signed": false
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "dao_rbam_msg_ListRolesResponse",
+      "type": "struct",
+      "properties": {
+        "roles": {
+          "value": 6
+        }
+      }
+    },
+    {
+      "name": "dao_rbam_role_Role",
+      "type": "struct",
+      "properties": {
+        "enabled": {
+          "description": "Whether or not the role and all its authorizations are enabled.",
+          "value": 5
+        },
+        "id": {
+          "description": "Autoincrementing ID.",
+          "value": 2
+        },
+        "metadata": {
+          "description": "Optional metadata for the role. This should either be a JSON object or\nIPFS hash.",
+          "value": 4
+        },
+        "name": {
+          "description": "Name for the role (ideally unique, but not enforced).",
+          "value": 3
+        }
+      }
+    },
+    {
+      "name": "u64",
+      "type": "integer",
+      "precision": 64,
+      "signed": false
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "core::option::Option<alloc::string::String>",
+      "type": "optional",
+      "inner": 3
+    },
+    {
+      "name": "bool",
+      "type": "boolean"
+    },
+    {
+      "name": "alloc::vec::Vec<dao_rbam::role::Role>",
+      "type": "array",
+      "items": 1
+    }
+  ]
+}

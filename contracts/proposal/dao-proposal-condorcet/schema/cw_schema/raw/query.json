@@ -1,0 +1,45 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "dao_proposal_condorcet_msg_QueryMsg",
+      "type": "enum",
+      "cases": {
+        "config": {
+          "type": "named",
+          "properties": {}
+        },
+        "dao": {
+          "description": "Returns the address of the DAO this module belongs to",
+          "type": "named",
+          "properties": {}
+        },
+        "info": {
+          "description": "Returns contract version info",
+          "type": "named",
+          "properties": {}
+        },
+        "next_proposal_id": {
+          "description": "Returns the proposal ID that will be assigned to the\nnext proposal created.",
+          "type": "named",
+          "properties": {}
+        },
+        "proposal": {
+          "type": "named",
+          "properties": {
+            "id": {
+              "value": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "u32",
+      "type": "integer",
+      "precision": 32,
+      "signed": false
+    }
+  ]
+}

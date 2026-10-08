@@ -541,6 +541,7 @@ impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for DaoDaoSuite<Chain> {
 // ═══════════════════════════════════════════════════════════════════════
 
 /// Extract enum variant names + descriptions from a schema section's `oneOf`.
+#[allow(dead_code)] // called by the commented generate_suite_api_docs test
 fn extract_variants(section: &serde_json::Value) -> Vec<(String, String)> {
     let one_of = match section.get("oneOf").and_then(|v| v.as_array()) {
         Some(a) => a,
@@ -567,6 +568,7 @@ fn extract_variants(section: &serde_json::Value) -> Vec<(String, String)> {
 }
 
 /// Extract instantiate fields: (name, description, required).
+#[allow(dead_code)]
 fn extract_instantiate_fields(section: &serde_json::Value) -> Vec<(String, String, bool)> {
     let required: Vec<String> = section
         .get("required")
@@ -596,6 +598,7 @@ fn extract_instantiate_fields(section: &serde_json::Value) -> Vec<(String, Strin
 }
 
 /// `snake_case` → `PascalCase`.
+#[allow(dead_code)]
 fn to_pascal(s: &str) -> String {
     s.split('_')
         .map(|w| {
@@ -608,6 +611,7 @@ fn to_pascal(s: &str) -> String {
         .collect()
 }
 
+#[allow(dead_code)]
 fn truncate(s: &str, max: usize) -> String {
     if s.len() > max {
         format!("{}...", &s[..max.saturating_sub(3)])
@@ -621,8 +625,6 @@ fn truncate(s: &str, max: usize) -> String {
 // ═══════════════════════════════════════════════════════════════════════
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     // #[test]
     // fn keys_match_manifest() {
     //     let manifest = contract_manifest();

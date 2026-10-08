@@ -1,0 +1,55 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "cw721_msg_Cw721InstantiateMsg_core_option_Option_cosmwasm_std_results_empty_Empty__",
+      "type": "struct",
+      "properties": {
+        "collection_info_extension": {
+          "description": "Optional extension of the collection metadata",
+          "value": 3
+        },
+        "creator": {
+          "description": "Sets the creator of collection. The creator is the only one eligible to update `CollectionInfo`.",
+          "value": 4
+        },
+        "minter": {
+          "description": "The minter is the only one who can create new NFTs.\nThis is designed for a base NFT that is controlled by an external program\nor contract. You will likely replace this with custom logic in custom NFTs",
+          "value": 4
+        },
+        "name": {
+          "description": "Name of the NFT contract",
+          "value": 1
+        },
+        "symbol": {
+          "description": "Symbol of the NFT contract",
+          "value": 1
+        },
+        "withdraw_address": {
+          "value": 4
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "cosmwasm_std_results_empty_Empty",
+      "description": "An empty struct that serves as a placeholder in different places,\nsuch as contracts that don't set a custom message.\n\nIt is designed to be expressible in correct JSON and JSON Schema but\ncontains no meaningful data. Previously we used enums without cases,\nbut those cannot be represented as valid JSON Schema (https://github.com/CosmWasm/cosmwasm/issues/451)",
+      "type": "struct",
+      "properties": {}
+    },
+    {
+      "name": "core::option::Option<cosmwasm_std::results::empty::Empty>",
+      "type": "optional",
+      "inner": 2
+    },
+    {
+      "name": "core::option::Option<alloc::string::String>",
+      "type": "optional",
+      "inner": 1
+    }
+  ]
+}

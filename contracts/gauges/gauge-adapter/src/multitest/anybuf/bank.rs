@@ -40,7 +40,7 @@ fn test_bank_anybuf_assertions() {
             msg: to_json_binary(
                 &Anybuf::new()
                     .append_string(1, owner.clone())
-                    .append_string(2, "grantee".to_string())
+                    .append_string(2, "grantee")
                     .into_vec(),
             )
             .unwrap(),

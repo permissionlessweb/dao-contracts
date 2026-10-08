@@ -1,0 +1,19 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "dao_interface_voting_DenomResponse",
+      "type": "struct",
+      "properties": {
+        "denom": {
+          "value": 1
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    }
+  ]
+}

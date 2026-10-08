@@ -1,0 +1,26 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "dao_interface_query_GetItemResponse",
+      "description": "Returned by the `GetItem` query.",
+      "type": "struct",
+      "properties": {
+        "item": {
+          "description": "`None` if no item with the provided key was found, `Some`\notherwise.",
+          "value": 2
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "core::option::Option<alloc::string::String>",
+      "type": "optional",
+      "inner": 1
+    }
+  ]
+}

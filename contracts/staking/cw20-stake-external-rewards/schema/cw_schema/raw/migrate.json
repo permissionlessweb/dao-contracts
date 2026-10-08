@@ -1,0 +1,11 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "cw20_stake_external_rewards_msg_MigrateMsg",
+      "type": "enum",
+      "cases": {}
+    }
+  ]
+}

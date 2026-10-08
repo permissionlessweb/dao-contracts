@@ -26,11 +26,9 @@ pub(crate) fn execute_stake_changed(
 
     match msg {
         StakeChangedHookMsg::Stake { addr, amount } => {
-            let amount: Uint256 = amount.try_into().unwrap();
             handle_voting_power_changed_hook(deps, &env, addr, amount, true)
         }
         StakeChangedHookMsg::Unstake { addr, amount } => {
-            let amount: Uint256 = amount.try_into().unwrap();
             handle_voting_power_changed_hook(deps, &env, addr, amount, false)
         }
     }
@@ -110,9 +108,7 @@ fn handle_voting_power_changed_hook(
         // the next block. since the member changed their voting power in the
         // current block, we need to use the new value.
         Some(env.block.height + 1),
-    )?
-    .try_into()
-    .unwrap();
+    )?;
 
     // depending on whether the voting power hook was fired for a delegate or
     // delegator, we need to handle the voting power change differently. check

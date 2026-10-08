@@ -1,0 +1,11 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "dao_voting_cw4_msg_ExecuteMsg",
+      "type": "enum",
+      "cases": {}
+    }
+  ]
+}

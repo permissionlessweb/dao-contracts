@@ -109,7 +109,7 @@ impl SuiteBuilder {
 
         Suite {
             app,
-            owner: self.instantiate.owner.map(|o| Addr::unchecked(o)),
+            owner: self.instantiate.owner.map(Addr::unchecked),
             total: Uint128::try_from(self.instantiate.total).unwrap(),
             receiver: Addr::unchecked(self.instantiate.recipient),
             vesting,

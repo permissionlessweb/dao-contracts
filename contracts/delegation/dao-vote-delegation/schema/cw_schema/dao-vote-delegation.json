@@ -1,0 +1,995 @@
+{
+  "contract_name": "dao-vote-delegation",
+  "contract_version": "2.8.0-alpha.3",
+  "idl_version": "1.0.0",
+  "instantiate": {
+    "type": "v1",
+    "root": 0,
+    "definitions": [
+      {
+        "name": "dao_vote_delegation_msg_InstantiateMsg",
+        "type": "struct",
+        "properties": {
+          "dao": {
+            "description": "The DAO. If not provided, the instantiator is used.",
+            "value": 2
+          },
+          "delegation_validity_blocks": {
+            "description": "the number of blocks a delegation is valid for, after which it must be\nrenewed by the delegator. if not set, the delegation will never expire.",
+            "value": 10
+          },
+          "max_delegations": {
+            "description": "the total number of delegations a member can have. this should be set\nbased on the max gas allowed in a single block for the given chain.\n\nthis limit is relevant for two reasons:\n1. when voting power is updated for a delegator, we must loop through\nall of their delegates and update their delegated voting power\n2. when a delegator casts a vote on a proposal that overrides their\ndelegates' votes, we must loop through all of their delegates and\nupdate the proposal vote tally accordingly\n\nin tests on Neutron, with a block max gas of 30M (which is one of the\nlowest gas limits on any chain), we found that 50 delegations is a safe\nupper bound, so this defaults to 50.",
+            "value": 10
+          },
+          "no_sync_proposal_modules": {
+            "description": "Whether or not to sync proposal modules initially. If there are too\nmany, the instantiation will run out of gas, so this should be disabled\nand `SyncProposalModules` called manually.\n\nDefaults to `false`.",
+            "value": 6
+          },
+          "vp_cap_percent": {
+            "description": "the maximum percent of voting power that a single delegate can wield.\nthey can be delegated any amount of voting power—this cap is only\napplied when casting votes.",
+            "value": 8
+          },
+          "vp_hook_callers": {
+            "description": "The authorized voting power changed hook callers.",
+            "value": 4
+          }
+        }
+      },
+      {
+        "name": "String",
+        "type": "string"
+      },
+      {
+        "name": "core::option::Option<alloc::string::String>",
+        "type": "optional",
+        "inner": 1
+      },
+      {
+        "name": "alloc::vec::Vec<alloc::string::String>",
+        "type": "array",
+        "items": 1
+      },
+      {
+        "name": "core::option::Option<alloc::vec::Vec<alloc::string::String>>",
+        "type": "optional",
+        "inner": 3
+      },
+      {
+        "name": "bool",
+        "type": "boolean"
+      },
+      {
+        "name": "core::option::Option<bool>",
+        "type": "optional",
+        "inner": 5
+      },
+      {
+        "name": "cosmwasm_std_math_decimal_Decimal",
+        "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 340282366920938463463.374607431768211455 = (2^128 - 1) / 10^18",
+        "type": "decimal",
+        "precision": 128,
+        "signed": false
+      },
+      {
+        "name": "core::option::Option<cosmwasm_std::math::decimal::Decimal>",
+        "type": "optional",
+        "inner": 7
+      },
+      {
+        "name": "u64",
+        "type": "integer",
+        "precision": 64,
+        "signed": false
+      },
+      {
+        "name": "core::option::Option<u64>",
+        "type": "optional",
+        "inner": 9
+      }
+    ]
+  },
+  "execute": {
+    "type": "v1",
+    "root": 0,
+    "definitions": [
+      {
+        "name": "dao_vote_delegation_msg_ExecuteMsg",
+        "type": "enum",
+        "cases": {
+          "delegate": {
+            "description": "Create a delegation or update an existing one.",
+            "type": "named",
+            "properties": {
+              "delegate": {
+                "description": "the delegate to delegate to",
+                "value": 1
+              },
+              "percent": {
+                "description": "the percent of voting power to delegate",
+                "value": 2
+              }
+            }
+          },
+          "member_changed_hook": {
+            "description": "Called when a member is added or removed\nto a cw4-groups or cw721-roles contract.",
+            "type": "tuple",
+            "items": [
+              16
+            ]
+          },
+          "nft_stake_change_hook": {
+            "description": "Called when NFTs are staked or unstaked.",
+            "type": "tuple",
+            "items": [
+              19
+            ]
+          },
+          "register": {
+            "description": "Register as a delegate.",
+            "type": "named",
+            "properties": {}
+          },
+          "stake_change_hook": {
+            "description": "Called when tokens are staked or unstaked.",
+            "type": "tuple",
+            "items": [
+              21
+            ]
+          },
+          "sync": {
+            "description": "Re-derives an address' delegated voting power from their current\nvoting power. Can be called by anyone.\n\nThis exists to repair a delegate's total delegated VP after a voting\npower change hook for one of their delegators was missed (e.g. due to\na stake/unstake hook failure that is tolerated rather than reverting\nthe underlying stake change, or any other voting power change that\nnever reached this contract). Since delegated VP is tracked via\ndeltas rather than being recomputed from scratch on every query, a\nmissed hook would otherwise cause permanent drift between a\ndelegate's total and the sum of what their delegators actually\ndelegate. This message lets anyone force a resync once the missed\nchange is noticed.\n\nIf `delegator` is a registered delegate, this behaves like the\ndelegate branch of the voting power change hook, unregistering them if\nthey no longer have any voting power. Otherwise, this re-syncs their\ncontribution to each of their delegates' totals to match their\ncurrent voting power.",
+            "type": "named",
+            "properties": {
+              "delegator": {
+                "description": "the address to sync.",
+                "value": 1
+              }
+            }
+          },
+          "sync_proposal_modules": {
+            "description": "Sync the active proposal modules from the DAO. Can be called by anyone.",
+            "type": "named",
+            "properties": {
+              "limit": {
+                "description": "the maximum number of proposal modules to return. passed through to\nthe DAO proposal modules query.",
+                "value": 7
+              },
+              "start_after": {
+                "description": "the proposal module to start after, if any. passed through to the\nDAO proposal modules query.",
+                "value": 5
+              }
+            }
+          },
+          "undelegate": {
+            "description": "Revoke a delegation.",
+            "type": "named",
+            "properties": {
+              "delegate": {
+                "description": "the delegate to undelegate from",
+                "value": 1
+              }
+            }
+          },
+          "unregister": {
+            "description": "Unregister as a delegate.",
+            "type": "named",
+            "properties": {}
+          },
+          "update_config": {
+            "description": "Updates the configuration of the delegation system.",
+            "type": "named",
+            "properties": {
+              "delegation_validity_blocks": {
+                "description": "the number of blocks a delegation is valid for, after which it must\nbe renewed by the delegator. if not set, the delegation will never\nexpire.",
+                "value": 11
+              },
+              "max_delegations": {
+                "description": "the total number of delegations a member can have. this should be\nset based on the max gas allowed in a single block for the given\nchain.\n\nthis limit is relevant for two reasons:\n1. when voting power is updated for a delegator, we must loop\nthrough all of their delegates and update their delegated voting\npower\n2. when a delegator casts a vote on a proposal that overrides their\ndelegates' votes, we must loop through all of their delegates\nand update the proposal vote tally accordingly",
+                "value": 15
+              },
+              "vp_cap_percent": {
+                "description": "the maximum percent of voting power that a single delegate can\nwield. they can be delegated any amount of voting power—this cap is\nonly applied when casting votes.",
+                "value": 8
+              }
+            }
+          },
+          "update_voting_power_hook_callers": {
+            "description": "Update the authorized voting power changed hook callers.",
+            "type": "named",
+            "properties": {
+              "add": {
+                "description": "the addresses to add.",
+                "value": 4
+              },
+              "remove": {
+                "description": "the addresses to remove.",
+                "value": 4
+              }
+            }
+          },
+          "vote_hook": {
+            "description": "Called when a vote is cast.",
+            "type": "tuple",
+            "items": [
+              23
+            ]
+          }
+        }
+      },
+      {
+        "name": "String",
+        "type": "string"
+      },
+      {
+        "name": "cosmwasm_std_math_decimal_Decimal",
+        "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 340282366920938463463.374607431768211455 = (2^128 - 1) / 10^18",
+        "type": "decimal",
+        "precision": 128,
+        "signed": false
+      },
+      {
+        "name": "alloc::vec::Vec<alloc::string::String>",
+        "type": "array",
+        "items": 1
+      },
+      {
+        "name": "core::option::Option<alloc::vec::Vec<alloc::string::String>>",
+        "type": "optional",
+        "inner": 3
+      },
+      {
+        "name": "core::option::Option<alloc::string::String>",
+        "type": "optional",
+        "inner": 1
+      },
+      {
+        "name": "u32",
+        "type": "integer",
+        "precision": 32,
+        "signed": false
+      },
+      {
+        "name": "core::option::Option<u32>",
+        "type": "optional",
+        "inner": 6
+      },
+      {
+        "name": "dao_interface_helpers_OptionalUpdate_cosmwasm_std_math_decimal_Decimal_",
+        "description": "An update type that allows partial updates of optional fields.",
+        "type": "struct",
+        "items": [
+          10
+        ]
+      },
+      {
+        "name": "dao_interface_helpers_Update_cosmwasm_std_math_decimal_Decimal_",
+        "type": "enum",
+        "cases": {
+          "clear": {
+            "type": "unit"
+          },
+          "set": {
+            "type": "tuple",
+            "items": [
+              2
+            ]
+          }
+        }
+      },
+      {
+        "name": "core::option::Option<dao_interface::helpers::Update<cosmwasm_std::math::decimal::Decimal>>",
+        "type": "optional",
+        "inner": 9
+      },
+      {
+        "name": "dao_interface_helpers_OptionalUpdate_u64_",
+        "description": "An update type that allows partial updates of optional fields.",
+        "type": "struct",
+        "items": [
+          14
+        ]
+      },
+      {
+        "name": "dao_interface_helpers_Update_u64_",
+        "type": "enum",
+        "cases": {
+          "clear": {
+            "type": "unit"
+          },
+          "set": {
+            "type": "tuple",
+            "items": [
+              13
+            ]
+          }
+        }
+      },
+      {
+        "name": "u64",
+        "type": "integer",
+        "precision": 64,
+        "signed": false
+      },
+      {
+        "name": "core::option::Option<dao_interface::helpers::Update<u64>>",
+        "type": "optional",
+        "inner": 12
+      },
+      {
+        "name": "core::option::Option<u64>",
+        "type": "optional",
+        "inner": 13
+      },
+      {
+        "name": "cw4_hook_MemberChangedHookMsg",
+        "description": "MemberChangedHookMsg should be de/serialized under `MemberChangedHook()` variant in a ExecuteMsg.\nThis contains a list of all diffs on the given transaction.",
+        "type": "struct",
+        "properties": {
+          "diffs": {
+            "value": 18
+          }
+        }
+      },
+      {
+        "name": "cw4_hook_MemberDiff",
+        "description": "MemberDiff shows the old and new states for a given cw4 member\nThey cannot both be None.\nold = None, new = Some -> Insert\nold = Some, new = Some -> Update\nold = Some, new = None -> Delete",
+        "type": "struct",
+        "properties": {
+          "key": {
+            "value": 1
+          },
+          "new": {
+            "value": 15
+          },
+          "old": {
+            "value": 15
+          }
+        }
+      },
+      {
+        "name": "alloc::vec::Vec<cw4::hook::MemberDiff>",
+        "type": "array",
+        "items": 17
+      },
+      {
+        "name": "dao_hooks_nft_stake_NftStakeChangedHookMsg",
+        "description": "An enum representing NFT staking hooks.",
+        "type": "enum",
+        "cases": {
+          "stake": {
+            "type": "named",
+            "properties": {
+              "addr": {
+                "value": 20
+              },
+              "token_id": {
+                "value": 1
+              }
+            }
+          },
+          "unstake": {
+            "type": "named",
+            "properties": {
+              "addr": {
+                "value": 20
+              },
+              "token_ids": {
+                "value": 3
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_addresses_Addr",
+        "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+        "type": "address"
+      },
+      {
+        "name": "dao_hooks_stake_StakeChangedHookMsg",
+        "description": "An enum representing staking hooks.",
+        "type": "enum",
+        "cases": {
+          "stake": {
+            "type": "named",
+            "properties": {
+              "addr": {
+                "value": 20
+              },
+              "amount": {
+                "value": 22
+              }
+            }
+          },
+          "unstake": {
+            "type": "named",
+            "properties": {
+              "addr": {
+                "value": 20
+              },
+              "amount": {
+                "value": 22
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_math_uint256_Uint256",
+        "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+        "type": "integer",
+        "precision": 256,
+        "signed": false
+      },
+      {
+        "name": "dao_hooks_vote_VoteHookMsg",
+        "description": "An enum representing vote hooks, fired when new votes are cast.",
+        "type": "enum",
+        "cases": {
+          "new_vote": {
+            "type": "named",
+            "properties": {
+              "height": {
+                "description": "The block height at which the voting power is calculated.",
+                "value": 13
+              },
+              "individual_power": {
+                "description": "The individual voting power of the voter (excluding any delegated\nvoting power).",
+                "value": 22
+              },
+              "is_first_vote": {
+                "description": "Whether this is the first vote cast by this voter on this proposal.\nThis will always be true if revoting is disabled.",
+                "value": 24
+              },
+              "power": {
+                "description": "The total voting power of the voter.",
+                "value": 22
+              },
+              "proposal_id": {
+                "description": "The proposal ID that was voted on.",
+                "value": 13
+              },
+              "vote": {
+                "description": "The vote that was cast.",
+                "value": 1
+              },
+              "voter": {
+                "description": "The voter that cast the vote.",
+                "value": 1
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "bool",
+        "type": "boolean"
+      }
+    ]
+  },
+  "query": {
+    "type": "v1",
+    "root": 0,
+    "definitions": [
+      {
+        "name": "dao_voting_delegation_QueryMsg",
+        "type": "enum",
+        "cases": {
+          "config": {
+            "description": "Returns the config.",
+            "type": "named",
+            "properties": {}
+          },
+          "delegates": {
+            "description": "Returns the paginated list of active delegates.",
+            "type": "named",
+            "properties": {
+              "limit": {
+                "value": 6
+              },
+              "start_after": {
+                "value": 4
+              }
+            }
+          },
+          "delegations": {
+            "description": "Returns the delegations by a delegator, optionally at a given height.\nUses the current block height if not provided.",
+            "type": "named",
+            "properties": {
+              "delegator": {
+                "value": 1
+              },
+              "height": {
+                "value": 3
+              },
+              "limit": {
+                "value": 3
+              },
+              "offset": {
+                "value": 3
+              }
+            }
+          },
+          "effective_unvoted_delegated_voting_power_reduction": {
+            "description": "Returns the VP that should be removed from a delegate's effective UDVP\n(and vote tally if already voted) on a specific proposal when a\ndelegator casts a vote (potentially overriding the delegate's vote). The\n`proposal_height` field is the height at which the proposal was created.\nThe `delegated_vp` field is the amount of VP delegated by the delegator\nto the delegate for this proposal. This query takes into account the\nconfigured VP cap and should be used by proposal modules when a\ndelegator overrides a delegate's vote to compute ballot VP updates.",
+            "type": "named",
+            "properties": {
+              "delegate": {
+                "value": 1
+              },
+              "delegated_vp": {
+                "value": 7
+              },
+              "proposal_height": {
+                "value": 2
+              },
+              "proposal_id": {
+                "value": 2
+              },
+              "proposal_module": {
+                "value": 1
+              }
+            }
+          },
+          "info": {
+            "description": "Returns contract version info",
+            "type": "named",
+            "properties": {}
+          },
+          "proposal_modules": {
+            "description": "Returns the proposal modules synced from the DAO.",
+            "type": "named",
+            "properties": {
+              "limit": {
+                "value": 6
+              },
+              "start_after": {
+                "value": 4
+              }
+            }
+          },
+          "registration": {
+            "description": "Returns registration info for a delegate, optionally at a given height.",
+            "type": "named",
+            "properties": {
+              "delegate": {
+                "value": 1
+              },
+              "height": {
+                "value": 3
+              }
+            }
+          },
+          "unvoted_delegated_voting_power": {
+            "description": "Returns the VP delegated to a delegate that has not yet been used in\nvotes cast by delegators in a specific proposal. This updates\nimmediately via vote hooks (instead of being delayed 1 block like other\nhistorical queries), making it safe to vote multiple times in the same\nblock. Proposal modules are responsible for maintaining the effective VP\ncap when a delegator overrides a delegate's vote. The `proposal_height`\nfield is the height at which the proposal was created.",
+            "type": "named",
+            "properties": {
+              "delegate": {
+                "value": 1
+              },
+              "proposal_height": {
+                "value": 2
+              },
+              "proposal_id": {
+                "value": 2
+              },
+              "proposal_module": {
+                "value": 1
+              }
+            }
+          },
+          "voting_power_cap": {
+            "description": "Returns the voting power cap, optionally at a given height.",
+            "type": "named",
+            "properties": {
+              "height": {
+                "value": 3
+              }
+            }
+          },
+          "voting_power_hook_callers": {
+            "description": "Returns the voting power hook callers.",
+            "type": "named",
+            "properties": {
+              "limit": {
+                "value": 6
+              },
+              "start_after": {
+                "value": 4
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "String",
+        "type": "string"
+      },
+      {
+        "name": "u64",
+        "type": "integer",
+        "precision": 64,
+        "signed": false
+      },
+      {
+        "name": "core::option::Option<u64>",
+        "type": "optional",
+        "inner": 2
+      },
+      {
+        "name": "core::option::Option<alloc::string::String>",
+        "type": "optional",
+        "inner": 1
+      },
+      {
+        "name": "u32",
+        "type": "integer",
+        "precision": 32,
+        "signed": false
+      },
+      {
+        "name": "core::option::Option<u32>",
+        "type": "optional",
+        "inner": 5
+      },
+      {
+        "name": "cosmwasm_std_math_uint256_Uint256",
+        "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+        "type": "integer",
+        "precision": 256,
+        "signed": false
+      }
+    ]
+  },
+  "migrate": {
+    "type": "v1",
+    "root": 0,
+    "definitions": [
+      {
+        "name": "dao_vote_delegation_msg_MigrateMsg",
+        "type": "struct",
+        "properties": {}
+      }
+    ]
+  },
+  "sudo": null,
+  "responses": {
+    "config": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "dao_voting_delegation_Config",
+          "type": "struct",
+          "properties": {
+            "delegation_validity_blocks": {
+              "description": "the number of blocks a delegation is valid for, after which it must be\nrenewed by the delegator. if not set, the delegation will never expire.",
+              "value": 2
+            },
+            "max_delegations": {
+              "description": "the total number of delegations a member can have. this should be set\nbased on the max gas allowed in a single block for the given chain.\n\nthis limit is relevant for two reasons:\n1. when voting power is updated for a delegator, we must loop through\nall of their delegates and update their delegated voting power\n2. when a delegator casts a vote on a proposal that overrides their\ndelegates' votes, we must loop through all of their delegates and\nupdate the proposal vote tally accordingly\n\nin tests on Neutron, with a block max gas of 30M (which is one of the\nlowest gas limits on any chain), we found that 50 delegations is a safe\nupper bound.",
+              "value": 1
+            }
+          }
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        },
+        {
+          "name": "core::option::Option<u64>",
+          "type": "optional",
+          "inner": 1
+        }
+      ]
+    },
+    "delegates": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "dao_voting_delegation_DelegatesResponse",
+          "type": "struct",
+          "properties": {
+            "delegates": {
+              "description": "The delegates.",
+              "value": 4
+            }
+          }
+        },
+        {
+          "name": "dao_voting_delegation_DelegateResponse",
+          "type": "struct",
+          "properties": {
+            "delegate": {
+              "description": "The delegate.",
+              "value": 2
+            },
+            "power": {
+              "description": "The total voting power delegated to the delegate.",
+              "value": 3
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        },
+        {
+          "name": "cosmwasm_std_math_uint256_Uint256",
+          "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+          "type": "integer",
+          "precision": 256,
+          "signed": false
+        },
+        {
+          "name": "alloc::vec::Vec<dao_voting::delegation::DelegateResponse>",
+          "type": "array",
+          "items": 1
+        }
+      ]
+    },
+    "delegations": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "dao_voting_delegation_DelegationsResponse",
+          "type": "struct",
+          "properties": {
+            "delegations": {
+              "description": "The delegations.",
+              "value": 7
+            },
+            "height": {
+              "description": "The height at which the delegations were loaded.",
+              "value": 5
+            }
+          }
+        },
+        {
+          "name": "dao_voting_delegation_DelegationResponse",
+          "type": "struct",
+          "properties": {
+            "active": {
+              "description": "whether or not the delegation is active (i.e. the delegate is still\nregistered at the corresponding block). this can only be false if the\ndelegate was registered when the delegation was created and isn't\nanymore.",
+              "value": 4
+            },
+            "delegate": {
+              "description": "the delegate that can vote on behalf of the delegator.",
+              "value": 2
+            },
+            "expiration_height": {
+              "description": "the block height at which the delegation expires, if at all.",
+              "value": 6
+            },
+            "percent": {
+              "description": "the percent of the delegator's voting power that is delegated to the\ndelegate.",
+              "value": 3
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        },
+        {
+          "name": "cosmwasm_std_math_decimal_Decimal",
+          "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 340282366920938463463.374607431768211455 = (2^128 - 1) / 10^18",
+          "type": "decimal",
+          "precision": 128,
+          "signed": false
+        },
+        {
+          "name": "bool",
+          "type": "boolean"
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        },
+        {
+          "name": "core::option::Option<u64>",
+          "type": "optional",
+          "inner": 5
+        },
+        {
+          "name": "alloc::vec::Vec<dao_voting::delegation::DelegationResponse>",
+          "type": "array",
+          "items": 1
+        }
+      ]
+    },
+    "effective_unvoted_delegated_voting_power_reduction": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cosmwasm_std_math_uint256_Uint256",
+          "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+          "type": "integer",
+          "precision": 256,
+          "signed": false
+        }
+      ]
+    },
+    "info": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "dao_interface_voting_InfoResponse",
+          "type": "struct",
+          "properties": {
+            "info": {
+              "value": 1
+            }
+          }
+        },
+        {
+          "name": "cw2_ContractVersion",
+          "type": "struct",
+          "properties": {
+            "contract": {
+              "description": "contract is the crate name of the implementing contract, e.g. `crate:cw20-base`\nwe will use other prefixes for other languages, and their standard global namespacing",
+              "value": 2
+            },
+            "version": {
+              "description": "version is any string that this implementation knows. It may be simple counter \"1\", \"2\".\nor semantic version on release tags \"v0.7.0\", or some custom feature flag list.\nthe only code that needs to understand the version parsing is code that knows how to\nmigrate from the given contract (and is tied to its implementation somehow)",
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "String",
+          "type": "string"
+        }
+      ]
+    },
+    "proposal_modules": {
+      "type": "v1",
+      "root": 1,
+      "definitions": [
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        },
+        {
+          "name": "alloc::vec::Vec<cosmwasm_std::addresses::Addr>",
+          "type": "array",
+          "items": 0
+        }
+      ]
+    },
+    "registration": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "dao_voting_delegation_RegistrationResponse",
+          "type": "struct",
+          "properties": {
+            "height": {
+              "description": "The height at which registration was checked.",
+              "value": 3
+            },
+            "power": {
+              "description": "The total voting power delegated to the delegate. If not registered,\nthis may still be nonzero if the delegate was registered in the past.",
+              "value": 2
+            },
+            "registered": {
+              "description": "Whether or not the delegate is registered.",
+              "value": 1
+            }
+          }
+        },
+        {
+          "name": "bool",
+          "type": "boolean"
+        },
+        {
+          "name": "cosmwasm_std_math_uint256_Uint256",
+          "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+          "type": "integer",
+          "precision": 256,
+          "signed": false
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        }
+      ]
+    },
+    "unvoted_delegated_voting_power": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "dao_voting_delegation_UnvotedDelegatedVotingPowerResponse",
+          "type": "struct",
+          "properties": {
+            "effective": {
+              "description": "The unvoted delegated voting power in effect, with configured\nconstraints applied, such as the VP cap.",
+              "value": 1
+            },
+            "total": {
+              "description": "The total unvoted delegated voting power.",
+              "value": 1
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_math_uint256_Uint256",
+          "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+          "type": "integer",
+          "precision": 256,
+          "signed": false
+        }
+      ]
+    },
+    "voting_power_cap": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "dao_voting_delegation_VotingPowerCapResponse",
+          "type": "struct",
+          "properties": {
+            "height": {
+              "description": "The height at which the voting power cap was loaded.",
+              "value": 3
+            },
+            "vp_cap_percent": {
+              "description": "The voting power cap percent.",
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_math_decimal_Decimal",
+          "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 340282366920938463463.374607431768211455 = (2^128 - 1) / 10^18",
+          "type": "decimal",
+          "precision": 128,
+          "signed": false
+        },
+        {
+          "name": "core::option::Option<cosmwasm_std::math::decimal::Decimal>",
+          "type": "optional",
+          "inner": 1
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        }
+      ]
+    },
+    "voting_power_hook_callers": {
+      "type": "v1",
+      "root": 1,
+      "definitions": [
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        },
+        {
+          "name": "alloc::vec::Vec<cosmwasm_std::addresses::Addr>",
+          "type": "array",
+          "items": 0
+        }
+      ]
+    }
+  }
+}

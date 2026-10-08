@@ -1,0 +1,64 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "dao_rbam_msg_AuthorizationResponse",
+      "type": "struct",
+      "properties": {
+        "authorization": {
+          "value": 1
+        }
+      }
+    },
+    {
+      "name": "dao_rbam_role_Authorization",
+      "type": "struct",
+      "properties": {
+        "enabled": {
+          "description": "Whether or not the authorization is enabled.",
+          "value": 5
+        },
+        "filter": {
+          "description": "Optional `cw-jsonfilter` filter (JSON-encoded string). If no filter is\nprovided, no messages will be allowed, making it simply a symbolic\nauthorization (which may be useful for external systems).",
+          "value": 4
+        },
+        "id": {
+          "description": "Autoincrementing ID.",
+          "value": 2
+        },
+        "metadata": {
+          "description": "Optional metadata for the authorization. This should either be a JSON\nobject or IPFS hash.",
+          "value": 4
+        },
+        "name": {
+          "description": "Name for the authorization (ideally unique, but not enforced).",
+          "value": 3
+        },
+        "role_id": {
+          "description": "Role ID.",
+          "value": 2
+        }
+      }
+    },
+    {
+      "name": "u64",
+      "type": "integer",
+      "precision": 64,
+      "signed": false
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "core::option::Option<alloc::string::String>",
+      "type": "optional",
+      "inner": 3
+    },
+    {
+      "name": "bool",
+      "type": "boolean"
+    }
+  ]
+}

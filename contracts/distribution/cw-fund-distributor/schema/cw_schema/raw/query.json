@@ -1,0 +1,75 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "dao_voting_cw20_staked_msg_QueryMsg",
+      "type": "enum",
+      "cases": {
+        "active_threshold": {
+          "type": "named",
+          "properties": {}
+        },
+        "dao": {
+          "description": "Returns the address of the DAO this module belongs to.",
+          "type": "named",
+          "properties": {}
+        },
+        "info": {
+          "description": "Returns contract version info.",
+          "type": "named",
+          "properties": {}
+        },
+        "is_active": {
+          "type": "named",
+          "properties": {}
+        },
+        "staking_contract": {
+          "description": "Gets the address of the cw20-stake contract this voting module\nis wrapping.",
+          "type": "named",
+          "properties": {}
+        },
+        "token_contract": {
+          "type": "named",
+          "properties": {}
+        },
+        "total_power_at_height": {
+          "description": "Returns the total voting power at a given block heigh.",
+          "type": "named",
+          "properties": {
+            "height": {
+              "value": 3
+            }
+          }
+        },
+        "voting_power_at_height": {
+          "description": "Returns the voting power for an address at a given height.",
+          "type": "named",
+          "properties": {
+            "address": {
+              "value": 1
+            },
+            "height": {
+              "value": 3
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "u64",
+      "type": "integer",
+      "precision": 64,
+      "signed": false
+    },
+    {
+      "name": "core::option::Option<u64>",
+      "type": "optional",
+      "inner": 2
+    }
+  ]
+}

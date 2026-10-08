@@ -7,7 +7,7 @@ use crate::msg::{
 };
 use anyhow::Result as AnyResult;
 use cosmwasm_std::testing::MockApi;
-use cosmwasm_std::{coins, to_json_binary, Addr, BankMsg, Binary, Coin, Uint128, Uint256};
+use cosmwasm_std::{coins, to_json_binary, Addr, BankMsg, Binary, Coin, Uint256};
 use cw20::{BalanceResponse, Cw20QueryMsg};
 use cw20::{Cw20Coin, MinterResponse};
 use cw20_base::msg::ExecuteMsg as Cw20BaseExecuteMsg;

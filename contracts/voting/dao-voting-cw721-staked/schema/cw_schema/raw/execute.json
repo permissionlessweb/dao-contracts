@@ -1,0 +1,195 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "dao_voting_cw721_staked_msg_ExecuteMsg",
+      "type": "enum",
+      "cases": {
+        "add_hook": {
+          "description": "Adds a hook which is called on staking / unstaking events.\nOnly callable by the DAO that initialized this voting contract.",
+          "type": "named",
+          "properties": {
+            "addr": {
+              "value": 2
+            }
+          }
+        },
+        "claim_nfts": {
+          "description": "Claim NFTs that have been unstaked for the specified duration.",
+          "type": "named",
+          "properties": {
+            "r_type": {
+              "value": 5
+            }
+          }
+        },
+        "receive_nft": {
+          "description": "Used to stake NFTs. To stake a NFT send a cw721 send message\nto this contract with the NFT you would like to stake. The\n`msg` field is ignored.",
+          "type": "tuple",
+          "items": [
+            1
+          ]
+        },
+        "remove_hook": {
+          "description": "Removes a hook which is called on staking / unstaking events.\nOnly callable by the DAO that initialized this voting contract.",
+          "type": "named",
+          "properties": {
+            "addr": {
+              "value": 2
+            }
+          }
+        },
+        "unstake": {
+          "description": "Unstakes the specified token_ids on behalf of the\nsender. token_ids must have unique values and have non-zero\nlength.",
+          "type": "named",
+          "properties": {
+            "token_ids": {
+              "value": 4
+            }
+          }
+        },
+        "update_active_threshold": {
+          "description": "Sets the active threshold to a new value.\nOnly callable by the DAO that initialized this voting contract.",
+          "type": "named",
+          "properties": {
+            "new_threshold": {
+              "value": 12
+            }
+          }
+        },
+        "update_config": {
+          "description": "Updates the contract configuration, namely unstaking duration.\nOnly callable by the DAO that initialized this voting contract.",
+          "type": "named",
+          "properties": {
+            "duration": {
+              "value": 8
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "cw721_receiver_Cw721ReceiveMsg",
+      "description": "Cw721ReceiveMsg should be de/serialized under `Receive()` variant in a ExecuteMsg",
+      "type": "struct",
+      "properties": {
+        "msg": {
+          "value": 3
+        },
+        "sender": {
+          "value": 2
+        },
+        "token_id": {
+          "value": 2
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "cosmwasm_std_binary_Binary",
+      "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization\nwith serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>.\nSee also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+      "type": "binary"
+    },
+    {
+      "name": "alloc::vec::Vec<alloc::string::String>",
+      "type": "array",
+      "items": 2
+    },
+    {
+      "name": "dao_voting_cw721_staked_msg_ClaimType",
+      "type": "enum",
+      "cases": {
+        "all": {
+          "description": "Claims all non-legacy claims.",
+          "type": "unit"
+        },
+        "specific": {
+          "description": "Claims specific non-legacy NFTs.",
+          "type": "tuple",
+          "items": [
+            4
+          ]
+        }
+      }
+    },
+    {
+      "name": "cw_utils_expiration_Duration",
+      "description": "Duration is a delta of time. You can add it to a BlockInfo or Expiration to\nmove that further in the future. Note that an height-based Duration and\na time-based Expiration cannot be combined",
+      "type": "enum",
+      "cases": {
+        "height": {
+          "type": "tuple",
+          "items": [
+            7
+          ]
+        },
+        "time": {
+          "description": "Time in seconds",
+          "type": "tuple",
+          "items": [
+            7
+          ]
+        }
+      }
+    },
+    {
+      "name": "u64",
+      "type": "integer",
+      "precision": 64,
+      "signed": false
+    },
+    {
+      "name": "core::option::Option<cw_utils::expiration::Duration>",
+      "type": "optional",
+      "inner": 6
+    },
+    {
+      "name": "dao_voting_threshold_ActiveThreshold",
+      "description": "The threshold of tokens that must be staked in order for this\nvoting module to be active. If this is not reached, this module\nwill response to `is_active` queries with false and proposal\nmodules which respect active thresholds will not allow the\ncreation of proposals.",
+      "type": "enum",
+      "cases": {
+        "absolute_count": {
+          "description": "The absolute number of tokens that must be staked for the\nmodule to be active.",
+          "type": "named",
+          "properties": {
+            "count": {
+              "value": 10
+            }
+          }
+        },
+        "percentage": {
+          "description": "The percentage of tokens that must be staked for the module to\nbe active. Computed as `staked / total_supply`.",
+          "type": "named",
+          "properties": {
+            "percent": {
+              "value": 11
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "cosmwasm_std_math_uint256_Uint256",
+      "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+      "type": "integer",
+      "precision": 256,
+      "signed": false
+    },
+    {
+      "name": "cosmwasm_std_math_decimal256_Decimal256",
+      "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal256(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 115792089237316195423570985008687907853269984665640564039457.584007913129639935 = (2^256 - 1) / 10^18",
+      "type": "decimal",
+      "precision": 256,
+      "signed": false
+    },
+    {
+      "name": "core::option::Option<dao_voting::threshold::ActiveThreshold>",
+      "type": "optional",
+      "inner": 9
+    }
+  ]
+}

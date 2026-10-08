@@ -1,0 +1,61 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "cw20_stake_msg_InstantiateMsg",
+      "type": "struct",
+      "properties": {
+        "owner": {
+          "value": 2
+        },
+        "token_address": {
+          "value": 1
+        },
+        "unstaking_duration": {
+          "value": 5
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "core::option::Option<alloc::string::String>",
+      "type": "optional",
+      "inner": 1
+    },
+    {
+      "name": "cw_utils_expiration_Duration",
+      "description": "Duration is a delta of time. You can add it to a BlockInfo or Expiration to\nmove that further in the future. Note that an height-based Duration and\na time-based Expiration cannot be combined",
+      "type": "enum",
+      "cases": {
+        "height": {
+          "type": "tuple",
+          "items": [
+            4
+          ]
+        },
+        "time": {
+          "description": "Time in seconds",
+          "type": "tuple",
+          "items": [
+            4
+          ]
+        }
+      }
+    },
+    {
+      "name": "u64",
+      "type": "integer",
+      "precision": 64,
+      "signed": false
+    },
+    {
+      "name": "core::option::Option<cw_utils::expiration::Duration>",
+      "type": "optional",
+      "inner": 3
+    }
+  ]
+}

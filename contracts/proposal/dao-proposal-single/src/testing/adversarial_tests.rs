@@ -390,7 +390,7 @@ pub fn test_passed_prop_state_remains_after_vote_swing() {
     );
 
     // assert that the initial "threshold" address balance is 0
-    let balance = query_balance_cw20(&app, gov_token.to_string(), &addr_str("threshold"));
+    let balance = query_balance_cw20(&app, gov_token.to_string(), addr_str("threshold"));
     assert_eq!(Uint256::from(balance.u128()), Uint256::zero());
 
     // vote enough to pass the proposal
@@ -450,6 +450,6 @@ pub fn test_passed_prop_state_remains_after_vote_swing() {
     assert_eq!(proposal.proposal.status, Status::Executed);
     assert_eq!(proposal.proposal.votes.yes, Uint256::new(20));
     assert_eq!(proposal.proposal.votes.no, Uint256::new(80));
-    let balance = query_balance_cw20(&app, gov_token.to_string(), &addr_str("threshold"));
+    let balance = query_balance_cw20(&app, gov_token.to_string(), addr_str("threshold"));
     assert_eq!(Uint256::from(balance.u128()), Uint256::new(100_000_000));
 }

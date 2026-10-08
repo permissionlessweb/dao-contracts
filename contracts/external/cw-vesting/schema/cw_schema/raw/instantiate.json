@@ -1,0 +1,142 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "cw_vesting_msg_InstantiateMsg",
+      "type": "struct",
+      "properties": {
+        "denom": {
+          "description": "The type and denom of token being vested.",
+          "value": 4
+        },
+        "description": {
+          "description": "A description for the payment to provide more context.",
+          "value": 2
+        },
+        "owner": {
+          "description": "The optional owner address of the contract. If an owner is\nspecified, the owner may cancel the vesting contract at any\ntime and withdraw unvested funds.",
+          "value": 2
+        },
+        "recipient": {
+          "description": "The receiver address of the vesting tokens.",
+          "value": 1
+        },
+        "schedule": {
+          "description": "The vesting schedule, can be either `SaturatingLinear` vesting\n(which vests evenly over time), or `PiecewiseLinear` which can\nrepresent a more complicated vesting schedule.",
+          "value": 5
+        },
+        "start_time": {
+          "description": "The time to start vesting, or None to start vesting when the\ncontract is instantiated. `start_time` may be in the past,\nthough the contract checks that `start_time +\nvesting_duration_seconds > now`. Otherwise, this would amount\nto a regular fund transfer.",
+          "value": 11
+        },
+        "title": {
+          "description": "The a name or title for this payment.",
+          "value": 1
+        },
+        "total": {
+          "description": "The total amount of tokens to be vested.",
+          "value": 3
+        },
+        "unbonding_duration_seconds": {
+          "description": "The unbonding duration for the chain this contract is deployed\non. Smart contracts do not have access to this data as\nstargate queries are disabled on most chains, and cosmwasm-std\nprovides no way to query it.\n\nThis value being too high will cause this contract to hold\nfunds for longer than needed, this value being too low will\nreduce the quality of error messages and require additional\nexternal calculations with correct values to withdraw\navaliable funds from the contract.",
+          "value": 6
+        },
+        "vesting_duration_seconds": {
+          "description": "The length of the vesting schedule in seconds. Must be\nnon-zero, though one second vesting durations are\nallowed. This may be combined with a `start_time` in the\nfuture to create an agreement that instantly vests at a time\nin the future, and allows the receiver to stake vesting tokens\nbefore the agreement completes.\n\nSee `suite_tests/tests.rs`\n`test_almost_instavest_in_the_future` for an example of this.",
+          "value": 6
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "core::option::Option<alloc::string::String>",
+      "type": "optional",
+      "inner": 1
+    },
+    {
+      "name": "cosmwasm_std_math_uint256_Uint256",
+      "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+      "type": "integer",
+      "precision": 256,
+      "signed": false
+    },
+    {
+      "name": "cw_denom_UncheckedDenom",
+      "description": "A denom that has not been checked to confirm it points to a valid\nasset.",
+      "type": "enum",
+      "cases": {
+        "cw20": {
+          "description": "A cw20 asset.",
+          "type": "tuple",
+          "items": [
+            1
+          ]
+        },
+        "native": {
+          "description": "A native (bank module) asset.",
+          "type": "tuple",
+          "items": [
+            1
+          ]
+        }
+      }
+    },
+    {
+      "name": "cw_vesting_vesting_Schedule",
+      "type": "enum",
+      "cases": {
+        "piecewise_linear": {
+          "description": "Vests by linearally interpolating between the provided\n(seconds, amount) points. The first amount must be zero and\nthe last amount the total vesting amount. `seconds` are\nseconds since the vest start time.\n\nThere is a problem in the underlying Curve library that\ndoesn't allow zero start values, so the first value of\n`seconds` must be > 1. To start at a particular time (if you\nneed that level of percision), subtract one from the true\nstart time, and make the first `seconds` value `1`.\n\n<https://github.com/cosmorama/wynddao/pull/4>",
+          "type": "tuple",
+          "items": [
+            9
+          ]
+        },
+        "saturating_linear": {
+          "description": "Vests linearally from `0` to `total`.",
+          "type": "unit"
+        }
+      }
+    },
+    {
+      "name": "u64",
+      "type": "integer",
+      "precision": 64,
+      "signed": false
+    },
+    {
+      "name": "cosmwasm_std_math_uint128_Uint128",
+      "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding,\nsuch that the full u128 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n```\n# use cosmwasm_std::Uint128;\nlet a = Uint128::from(123u128);\nassert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64);\nassert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32);\nassert_eq!(c.u128(), 70);\n```",
+      "type": "integer",
+      "precision": 128,
+      "signed": false
+    },
+    {
+      "name": "(u64, cosmwasm_std::math::uint128::Uint128)",
+      "type": "tuple",
+      "items": [
+        6,
+        7
+      ]
+    },
+    {
+      "name": "alloc::vec::Vec<(u64, cosmwasm_std::math::uint128::Uint128)>",
+      "type": "array",
+      "items": 8
+    },
+    {
+      "name": "cosmwasm_std_timestamp_Timestamp",
+      "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+      "type": "timestamp"
+    },
+    {
+      "name": "core::option::Option<cosmwasm_std::timestamp::Timestamp>",
+      "type": "optional",
+      "inner": 10
+    }
+  ]
+}

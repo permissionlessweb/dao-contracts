@@ -43,7 +43,7 @@ fn test_distribution_anybuf_assertions() {
             msg: to_json_binary(
                 &Anybuf::new()
                     .append_string(1, owner.clone())
-                    .append_string(2, "grantee".to_string())
+                    .append_string(2, "grantee")
                     .into_vec(),
             )
             .unwrap(),
@@ -68,9 +68,9 @@ fn test_distribution_anybuf_assertions() {
                 &Anybuf::new()
                     .append_repeated_message(
                         1,
-                        &vec![&Anybuf::new()
-                            .append_string(1, "juno".to_string())
-                            .append_string(2, "1000".to_string())],
+                        &[&Anybuf::new()
+                            .append_string(1, "juno")
+                            .append_string(2, "1000")],
                     )
                     .into_vec(),
             )

@@ -1,0 +1,20 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "cw_protobuf_registry_msg_DecodeResponse",
+      "type": "struct",
+      "properties": {
+        "value": {
+          "description": "JSON-encoded decoded protobuf message.",
+          "value": 1
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    }
+  ]
+}

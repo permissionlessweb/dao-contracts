@@ -215,7 +215,7 @@ impl DaoTestingSuite<Cw20DaoExtra> for DaoTestingSuiteCw20<'_> {
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{Uint128, Uint256};
+    use cosmwasm_std::Uint256;
 
     use super::*;
 

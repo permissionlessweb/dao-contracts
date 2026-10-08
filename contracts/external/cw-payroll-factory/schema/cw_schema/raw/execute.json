@@ -1,0 +1,262 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "cw_payroll_factory_msg_ExecuteMsg",
+      "type": "enum",
+      "cases": {
+        "instantiate_native_payroll_contract": {
+          "description": "Instantiates a new vesting contract that is funded by a native token.",
+          "type": "named",
+          "properties": {
+            "instantiate_msg": {
+              "value": 5
+            },
+            "label": {
+              "value": 2
+            }
+          }
+        },
+        "receive": {
+          "description": "Instantiates a new vesting contract that is funded by a cw20 token.",
+          "type": "tuple",
+          "items": [
+            1
+          ]
+        },
+        "update_code_id": {
+          "description": "Callable only by the current owner. Updates the code ID used\nwhile instantiating vesting contracts.",
+          "type": "named",
+          "properties": {
+            "vesting_code_id": {
+              "value": 9
+            }
+          }
+        },
+        "update_ownership": {
+          "description": "Update the contract's ownership. The `action` to be provided\ncan be either to propose transferring ownership to an account,\naccept a pending ownership transfer, or renounce the ownership\npermanently.",
+          "type": "tuple",
+          "items": [
+            15
+          ]
+        }
+      }
+    },
+    {
+      "name": "cw20_receiver_Cw20ReceiveMsg",
+      "description": "Cw20ReceiveMsg should be de/serialized under `Receive()` variant in a ExecuteMsg",
+      "type": "struct",
+      "properties": {
+        "amount": {
+          "value": 3
+        },
+        "msg": {
+          "value": 4
+        },
+        "sender": {
+          "value": 2
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "cosmwasm_std_math_uint256_Uint256",
+      "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+      "type": "integer",
+      "precision": 256,
+      "signed": false
+    },
+    {
+      "name": "cosmwasm_std_binary_Binary",
+      "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization\nwith serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>.\nSee also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+      "type": "binary"
+    },
+    {
+      "name": "cw_vesting_msg_InstantiateMsg",
+      "type": "struct",
+      "properties": {
+        "denom": {
+          "description": "The type and denom of token being vested.",
+          "value": 7
+        },
+        "description": {
+          "description": "A description for the payment to provide more context.",
+          "value": 6
+        },
+        "owner": {
+          "description": "The optional owner address of the contract. If an owner is\nspecified, the owner may cancel the vesting contract at any\ntime and withdraw unvested funds.",
+          "value": 6
+        },
+        "recipient": {
+          "description": "The receiver address of the vesting tokens.",
+          "value": 2
+        },
+        "schedule": {
+          "description": "The vesting schedule, can be either `SaturatingLinear` vesting\n(which vests evenly over time), or `PiecewiseLinear` which can\nrepresent a more complicated vesting schedule.",
+          "value": 8
+        },
+        "start_time": {
+          "description": "The time to start vesting, or None to start vesting when the\ncontract is instantiated. `start_time` may be in the past,\nthough the contract checks that `start_time +\nvesting_duration_seconds > now`. Otherwise, this would amount\nto a regular fund transfer.",
+          "value": 14
+        },
+        "title": {
+          "description": "The a name or title for this payment.",
+          "value": 2
+        },
+        "total": {
+          "description": "The total amount of tokens to be vested.",
+          "value": 3
+        },
+        "unbonding_duration_seconds": {
+          "description": "The unbonding duration for the chain this contract is deployed\non. Smart contracts do not have access to this data as\nstargate queries are disabled on most chains, and cosmwasm-std\nprovides no way to query it.\n\nThis value being too high will cause this contract to hold\nfunds for longer than needed, this value being too low will\nreduce the quality of error messages and require additional\nexternal calculations with correct values to withdraw\navaliable funds from the contract.",
+          "value": 9
+        },
+        "vesting_duration_seconds": {
+          "description": "The length of the vesting schedule in seconds. Must be\nnon-zero, though one second vesting durations are\nallowed. This may be combined with a `start_time` in the\nfuture to create an agreement that instantly vests at a time\nin the future, and allows the receiver to stake vesting tokens\nbefore the agreement completes.\n\nSee `suite_tests/tests.rs`\n`test_almost_instavest_in_the_future` for an example of this.",
+          "value": 9
+        }
+      }
+    },
+    {
+      "name": "core::option::Option<alloc::string::String>",
+      "type": "optional",
+      "inner": 2
+    },
+    {
+      "name": "cw_denom_UncheckedDenom",
+      "description": "A denom that has not been checked to confirm it points to a valid\nasset.",
+      "type": "enum",
+      "cases": {
+        "cw20": {
+          "description": "A cw20 asset.",
+          "type": "tuple",
+          "items": [
+            2
+          ]
+        },
+        "native": {
+          "description": "A native (bank module) asset.",
+          "type": "tuple",
+          "items": [
+            2
+          ]
+        }
+      }
+    },
+    {
+      "name": "cw_vesting_vesting_Schedule",
+      "type": "enum",
+      "cases": {
+        "piecewise_linear": {
+          "description": "Vests by linearally interpolating between the provided\n(seconds, amount) points. The first amount must be zero and\nthe last amount the total vesting amount. `seconds` are\nseconds since the vest start time.\n\nThere is a problem in the underlying Curve library that\ndoesn't allow zero start values, so the first value of\n`seconds` must be > 1. To start at a particular time (if you\nneed that level of percision), subtract one from the true\nstart time, and make the first `seconds` value `1`.\n\n<https://github.com/cosmorama/wynddao/pull/4>",
+          "type": "tuple",
+          "items": [
+            12
+          ]
+        },
+        "saturating_linear": {
+          "description": "Vests linearally from `0` to `total`.",
+          "type": "unit"
+        }
+      }
+    },
+    {
+      "name": "u64",
+      "type": "integer",
+      "precision": 64,
+      "signed": false
+    },
+    {
+      "name": "cosmwasm_std_math_uint128_Uint128",
+      "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding,\nsuch that the full u128 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n```\n# use cosmwasm_std::Uint128;\nlet a = Uint128::from(123u128);\nassert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64);\nassert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32);\nassert_eq!(c.u128(), 70);\n```",
+      "type": "integer",
+      "precision": 128,
+      "signed": false
+    },
+    {
+      "name": "(u64, cosmwasm_std::math::uint128::Uint128)",
+      "type": "tuple",
+      "items": [
+        9,
+        10
+      ]
+    },
+    {
+      "name": "alloc::vec::Vec<(u64, cosmwasm_std::math::uint128::Uint128)>",
+      "type": "array",
+      "items": 11
+    },
+    {
+      "name": "cosmwasm_std_timestamp_Timestamp",
+      "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+      "type": "timestamp"
+    },
+    {
+      "name": "core::option::Option<cosmwasm_std::timestamp::Timestamp>",
+      "type": "optional",
+      "inner": 13
+    },
+    {
+      "name": "cw_ownable_Action",
+      "description": "Actions that can be taken to alter the contract's ownership",
+      "type": "enum",
+      "cases": {
+        "accept_ownership": {
+          "description": "Accept the pending ownership transfer.\n\nCan only be called by the pending owner.",
+          "type": "unit"
+        },
+        "renounce_ownership": {
+          "description": "Give up the contract's ownership and the possibility of appointing\na new owner.\n\nCan only be invoked by the contract's current owner.\n\nAny existing pending ownership transfer is canceled.",
+          "type": "unit"
+        },
+        "transfer_ownership": {
+          "description": "Propose to transfer the contract's ownership to another account,\noptionally with an expiry time.\n\nCan only be called by the contract's current owner.\n\nAny existing pending ownership transfer is overwritten.",
+          "type": "named",
+          "properties": {
+            "expiry": {
+              "value": 17
+            },
+            "new_owner": {
+              "value": 2
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "cw_utils_expiration_Expiration",
+      "description": "Expiration represents a point in time when some event happens.\nIt can compare with a BlockInfo and will return is_expired() == true\nonce the condition is hit (and for every block in the future)",
+      "type": "enum",
+      "cases": {
+        "at_height": {
+          "description": "AtHeight will expire when `env.block.height` >= height",
+          "type": "tuple",
+          "items": [
+            9
+          ]
+        },
+        "at_time": {
+          "description": "AtTime will expire when `env.block.time` >= time",
+          "type": "tuple",
+          "items": [
+            13
+          ]
+        },
+        "never": {
+          "description": "Never will never expire. Used to express the empty variant",
+          "type": "named",
+          "properties": {}
+        }
+      }
+    },
+    {
+      "name": "core::option::Option<cw_utils::expiration::Expiration>",
+      "type": "optional",
+      "inner": 16
+    }
+  ]
+}

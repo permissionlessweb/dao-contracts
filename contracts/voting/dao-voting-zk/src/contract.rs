@@ -273,7 +273,7 @@ fn query_voting_power_at_height(
         );
 
         match poll_state {
-            Ok(state) => {
+            Ok(_state) => {
                 let underlying = UNDERLYING_VOTING_MODULE.load(deps.storage)?;
                 let vp_response: dao_interface::voting::VotingPowerAtHeightResponse =
                     deps.querier.query_wasm_smart(
@@ -284,15 +284,8 @@ fn query_voting_power_at_height(
                         },
                     )?;
 
-                // For "complete" polls, return the voter's snapshot weight
-                // (ZK participation tracked by PollRegistry).
-                // For "active" polls, return the voter's underlying weight
-                // as maximum possible voting power.
-                let power = if state.status == "complete" {
-                    vp_response.power
-                } else {
-                    vp_response.power
-                };
+                // Both registered poll states report the underlying module power.
+                let power = vp_response.power;
 
                 to_json_binary(&dao_interface::voting::VotingPowerAtHeightResponse {
                     power,

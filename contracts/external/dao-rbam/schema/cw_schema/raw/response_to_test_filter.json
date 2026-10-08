@@ -1,0 +1,29 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "dao_rbam_msg_TestFilterResponse",
+      "type": "enum",
+      "cases": {
+        "fail": {
+          "type": "named",
+          "properties": {
+            "reason": {
+              "description": "The reason for the filter failing.",
+              "value": 1
+            }
+          }
+        },
+        "pass": {
+          "type": "named",
+          "properties": {}
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    }
+  ]
+}

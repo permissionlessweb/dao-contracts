@@ -1,0 +1,839 @@
+{
+  "contract_name": "cw-vesting",
+  "contract_version": "2.8.0-alpha.3",
+  "idl_version": "1.0.0",
+  "instantiate": {
+    "type": "v1",
+    "root": 0,
+    "definitions": [
+      {
+        "name": "cw_vesting_msg_InstantiateMsg",
+        "type": "struct",
+        "properties": {
+          "denom": {
+            "description": "The type and denom of token being vested.",
+            "value": 4
+          },
+          "description": {
+            "description": "A description for the payment to provide more context.",
+            "value": 2
+          },
+          "owner": {
+            "description": "The optional owner address of the contract. If an owner is\nspecified, the owner may cancel the vesting contract at any\ntime and withdraw unvested funds.",
+            "value": 2
+          },
+          "recipient": {
+            "description": "The receiver address of the vesting tokens.",
+            "value": 1
+          },
+          "schedule": {
+            "description": "The vesting schedule, can be either `SaturatingLinear` vesting\n(which vests evenly over time), or `PiecewiseLinear` which can\nrepresent a more complicated vesting schedule.",
+            "value": 5
+          },
+          "start_time": {
+            "description": "The time to start vesting, or None to start vesting when the\ncontract is instantiated. `start_time` may be in the past,\nthough the contract checks that `start_time +\nvesting_duration_seconds > now`. Otherwise, this would amount\nto a regular fund transfer.",
+            "value": 11
+          },
+          "title": {
+            "description": "The a name or title for this payment.",
+            "value": 1
+          },
+          "total": {
+            "description": "The total amount of tokens to be vested.",
+            "value": 3
+          },
+          "unbonding_duration_seconds": {
+            "description": "The unbonding duration for the chain this contract is deployed\non. Smart contracts do not have access to this data as\nstargate queries are disabled on most chains, and cosmwasm-std\nprovides no way to query it.\n\nThis value being too high will cause this contract to hold\nfunds for longer than needed, this value being too low will\nreduce the quality of error messages and require additional\nexternal calculations with correct values to withdraw\navaliable funds from the contract.",
+            "value": 6
+          },
+          "vesting_duration_seconds": {
+            "description": "The length of the vesting schedule in seconds. Must be\nnon-zero, though one second vesting durations are\nallowed. This may be combined with a `start_time` in the\nfuture to create an agreement that instantly vests at a time\nin the future, and allows the receiver to stake vesting tokens\nbefore the agreement completes.\n\nSee `suite_tests/tests.rs`\n`test_almost_instavest_in_the_future` for an example of this.",
+            "value": 6
+          }
+        }
+      },
+      {
+        "name": "String",
+        "type": "string"
+      },
+      {
+        "name": "core::option::Option<alloc::string::String>",
+        "type": "optional",
+        "inner": 1
+      },
+      {
+        "name": "cosmwasm_std_math_uint256_Uint256",
+        "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+        "type": "integer",
+        "precision": 256,
+        "signed": false
+      },
+      {
+        "name": "cw_denom_UncheckedDenom",
+        "description": "A denom that has not been checked to confirm it points to a valid\nasset.",
+        "type": "enum",
+        "cases": {
+          "cw20": {
+            "description": "A cw20 asset.",
+            "type": "tuple",
+            "items": [
+              1
+            ]
+          },
+          "native": {
+            "description": "A native (bank module) asset.",
+            "type": "tuple",
+            "items": [
+              1
+            ]
+          }
+        }
+      },
+      {
+        "name": "cw_vesting_vesting_Schedule",
+        "type": "enum",
+        "cases": {
+          "piecewise_linear": {
+            "description": "Vests by linearally interpolating between the provided\n(seconds, amount) points. The first amount must be zero and\nthe last amount the total vesting amount. `seconds` are\nseconds since the vest start time.\n\nThere is a problem in the underlying Curve library that\ndoesn't allow zero start values, so the first value of\n`seconds` must be > 1. To start at a particular time (if you\nneed that level of percision), subtract one from the true\nstart time, and make the first `seconds` value `1`.\n\n<https://github.com/cosmorama/wynddao/pull/4>",
+            "type": "tuple",
+            "items": [
+              9
+            ]
+          },
+          "saturating_linear": {
+            "description": "Vests linearally from `0` to `total`.",
+            "type": "unit"
+          }
+        }
+      },
+      {
+        "name": "u64",
+        "type": "integer",
+        "precision": 64,
+        "signed": false
+      },
+      {
+        "name": "cosmwasm_std_math_uint128_Uint128",
+        "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding,\nsuch that the full u128 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n```\n# use cosmwasm_std::Uint128;\nlet a = Uint128::from(123u128);\nassert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64);\nassert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32);\nassert_eq!(c.u128(), 70);\n```",
+        "type": "integer",
+        "precision": 128,
+        "signed": false
+      },
+      {
+        "name": "(u64, cosmwasm_std::math::uint128::Uint128)",
+        "type": "tuple",
+        "items": [
+          6,
+          7
+        ]
+      },
+      {
+        "name": "alloc::vec::Vec<(u64, cosmwasm_std::math::uint128::Uint128)>",
+        "type": "array",
+        "items": 8
+      },
+      {
+        "name": "cosmwasm_std_timestamp_Timestamp",
+        "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+        "type": "timestamp"
+      },
+      {
+        "name": "core::option::Option<cosmwasm_std::timestamp::Timestamp>",
+        "type": "optional",
+        "inner": 10
+      }
+    ]
+  },
+  "execute": {
+    "type": "v1",
+    "root": 0,
+    "definitions": [
+      {
+        "name": "cw_vesting_msg_ExecuteMsg",
+        "type": "enum",
+        "cases": {
+          "cancel": {
+            "description": "Cancels the vesting payment. The current amount vested becomes\nthe total amount that will ever vest, and all pending and\nfuture staking rewards from tokens staked by this contract\nwill be sent to the owner. Tote that canceling does not impact\nalready vested tokens.\n\nUpon canceling, the contract will use any liquid tokens in the\ncontract to settle pending payments to the vestee, and then\nreturns the rest to the owner. Staked tokens are then split\nbetween the owner and the vestee according to the number of\ntokens that the vestee is entitled to.\n\nThe vestee will no longer receive staking rewards after\ncancelation, and may unbond and distribute (vested - claimed)\ntokens at their leisure. the owner will receive staking\nrewards and may unbond and withdraw (staked - (vested -\nclaimed)) tokens at their leisure.",
+            "type": "named",
+            "properties": {}
+          },
+          "delegate": {
+            "description": "This is translated to a\n[MsgDelegate](https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto#L81-L90).\n`delegator_address` is automatically filled with the current\ncontract's address.  Note: this only works with the native\nstaking denom of a Cosmos chain.  Only callable by Vesting\nPayment Recipient.",
+            "type": "named",
+            "properties": {
+              "amount": {
+                "description": "The amount to delegate.",
+                "value": 3
+              },
+              "validator": {
+                "description": "The validator to delegate to.",
+                "value": 2
+              }
+            }
+          },
+          "distribute": {
+            "description": "Distribute vested tokens to the vest receiver. Anyone may call\nthis method.",
+            "type": "named",
+            "properties": {
+              "amount": {
+                "description": "The amount of tokens to distribute. If none are specified\nall claimable tokens will be distributed.",
+                "value": 5
+              }
+            }
+          },
+          "receive": {
+            "description": "Fund the contract with a cw20 token. The `msg` field must have\nthe shape `{\"fund\":{}}`, and the amount sent must be the same\nas the amount to be vested (as set during instantiation).\nAnyone may call this method so long as the contract has not\nyet been funded.",
+            "type": "tuple",
+            "items": [
+              1
+            ]
+          },
+          "redelegate": {
+            "description": "This is translated to a\n[MsgBeginRedelegate](https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto#L96).\n`delegator_address` is automatically filled with the current\ncontract's address.  Only callable by Vesting Payment\nRecipient.",
+            "type": "named",
+            "properties": {
+              "amount": {
+                "value": 3
+              },
+              "dst_validator": {
+                "value": 2
+              },
+              "src_validator": {
+                "value": 2
+              }
+            }
+          },
+          "register_slash": {
+            "description": "Registers a slash event bonded or unbonding tokens with the\ncontract. Only callable by the owner as the contract is unable\nto verify that the slash actually occured. The owner is\nassumed to be honest.\n\nA future version of this contract may be able to\npermissionlessly take slashing evidence:\n<https://github.com/CosmWasm/mesh-security/issues/35>",
+            "type": "named",
+            "properties": {
+              "amount": {
+                "description": "The number of tokens that THIS CONTRACT lost as a result\nof the slash. Note that this differs from the total amount\nslashed from the validator.",
+                "value": 3
+              },
+              "during_unbonding": {
+                "description": "If the slash happened during unbonding. Set to false in\nthe common case where the slash impacted bonding tokens.",
+                "value": 7
+              },
+              "time": {
+                "description": "The time the slash event occured. Note that this is not\nvalidated beyond validating that it is < now. This means\nthat if two slash events occur for a single validator, and\nthen this method is called, a dishonest sender could\nregister those two slashes as a single larger one at the\ntime of the first slash.\n\nThe result of this is that the staked balances tracked in\nthis contract can not be relied on for accurate values in\nthe past. Staked balances will be correct at time=now.",
+                "value": 6
+              },
+              "validator": {
+                "description": "The validator the slash occured for.",
+                "value": 2
+              }
+            }
+          },
+          "set_withdraw_address": {
+            "description": "This is translated to a\n[MsgSetWithdrawAddress](https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto#L31-L37).\n`delegator_address` is automatically filled with the current\ncontract's address.  Only callable by Vesting Payment\nRecipient.",
+            "type": "named",
+            "properties": {
+              "address": {
+                "value": 2
+              }
+            }
+          },
+          "undelegate": {
+            "description": "This is translated to a\n[MsgUndelegate](https://github.com/cosmos/cosmos-sdk/blob/v0.40.0/proto/cosmos/staking/v1beta1/tx.proto#L112-L121).\n`delegator_address` is automatically filled with the current\ncontract's address.  Only callable by Vesting Payment\nRecipient.",
+            "type": "named",
+            "properties": {
+              "amount": {
+                "description": "The amount to delegate",
+                "value": 3
+              },
+              "validator": {
+                "description": "The validator to undelegate from",
+                "value": 2
+              }
+            }
+          },
+          "update_ownership": {
+            "description": "Update the contract's ownership. The `action` to be provided\ncan be either to propose transferring ownership to an account,\naccept a pending ownership transfer, or renounce the ownership\npermanently.",
+            "type": "tuple",
+            "items": [
+              8
+            ]
+          },
+          "withdraw_canceled_payment": {
+            "description": "If the owner cancels a payment and there are not enough liquid\ntokens to settle the owner may become entitled to some number\nof staked tokens. They may then unbond those tokens and then\ncall this method to return them.",
+            "type": "named",
+            "properties": {
+              "amount": {
+                "description": "The amount to withdraw.",
+                "value": 5
+              }
+            }
+          },
+          "withdraw_delegator_reward": {
+            "description": "This is translated to a\n[MsgWithdrawDelegatorReward](https://github.com/cosmos/cosmos-sdk/blob/v0.42.4/proto/cosmos/distribution/v1beta1/tx.proto#L42-L50).\n`delegator_address` is automatically filled with the current\ncontract's address.",
+            "type": "named",
+            "properties": {
+              "validator": {
+                "description": "The validator to claim rewards for.",
+                "value": 2
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "cw20_receiver_Cw20ReceiveMsg",
+        "description": "Cw20ReceiveMsg should be de/serialized under `Receive()` variant in a ExecuteMsg",
+        "type": "struct",
+        "properties": {
+          "amount": {
+            "value": 3
+          },
+          "msg": {
+            "value": 4
+          },
+          "sender": {
+            "value": 2
+          }
+        }
+      },
+      {
+        "name": "String",
+        "type": "string"
+      },
+      {
+        "name": "cosmwasm_std_math_uint256_Uint256",
+        "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+        "type": "integer",
+        "precision": 256,
+        "signed": false
+      },
+      {
+        "name": "cosmwasm_std_binary_Binary",
+        "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization\nwith serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>.\nSee also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+        "type": "binary"
+      },
+      {
+        "name": "core::option::Option<cosmwasm_std::math::uint256::Uint256>",
+        "type": "optional",
+        "inner": 3
+      },
+      {
+        "name": "cosmwasm_std_timestamp_Timestamp",
+        "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+        "type": "timestamp"
+      },
+      {
+        "name": "bool",
+        "type": "boolean"
+      },
+      {
+        "name": "cw_ownable_Action",
+        "description": "Actions that can be taken to alter the contract's ownership",
+        "type": "enum",
+        "cases": {
+          "accept_ownership": {
+            "description": "Accept the pending ownership transfer.\n\nCan only be called by the pending owner.",
+            "type": "unit"
+          },
+          "renounce_ownership": {
+            "description": "Give up the contract's ownership and the possibility of appointing\na new owner.\n\nCan only be invoked by the contract's current owner.\n\nAny existing pending ownership transfer is canceled.",
+            "type": "unit"
+          },
+          "transfer_ownership": {
+            "description": "Propose to transfer the contract's ownership to another account,\noptionally with an expiry time.\n\nCan only be called by the contract's current owner.\n\nAny existing pending ownership transfer is overwritten.",
+            "type": "named",
+            "properties": {
+              "expiry": {
+                "value": 11
+              },
+              "new_owner": {
+                "value": 2
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "cw_utils_expiration_Expiration",
+        "description": "Expiration represents a point in time when some event happens.\nIt can compare with a BlockInfo and will return is_expired() == true\nonce the condition is hit (and for every block in the future)",
+        "type": "enum",
+        "cases": {
+          "at_height": {
+            "description": "AtHeight will expire when `env.block.height` >= height",
+            "type": "tuple",
+            "items": [
+              10
+            ]
+          },
+          "at_time": {
+            "description": "AtTime will expire when `env.block.time` >= time",
+            "type": "tuple",
+            "items": [
+              6
+            ]
+          },
+          "never": {
+            "description": "Never will never expire. Used to express the empty variant",
+            "type": "named",
+            "properties": {}
+          }
+        }
+      },
+      {
+        "name": "u64",
+        "type": "integer",
+        "precision": 64,
+        "signed": false
+      },
+      {
+        "name": "core::option::Option<cw_utils::expiration::Expiration>",
+        "type": "optional",
+        "inner": 9
+      }
+    ]
+  },
+  "query": {
+    "type": "v1",
+    "root": 0,
+    "definitions": [
+      {
+        "name": "cw_vesting_msg_QueryMsg",
+        "type": "enum",
+        "cases": {
+          "distributable": {
+            "description": "Returns the number of tokens currently claimable by the\nvestee. This is the minimum of the number of unstaked tokens\nin the contract, and the number of tokens that have been\nvested at time t.",
+            "type": "named",
+            "properties": {
+              "t": {
+                "description": "The time or none to use the current time.",
+                "value": 2
+              }
+            }
+          },
+          "info": {
+            "description": "Returns information about the vesting contract and the\nstatus of the payment.",
+            "type": "named",
+            "properties": {}
+          },
+          "ownership": {
+            "description": "Get the current ownership.",
+            "type": "named",
+            "properties": {}
+          },
+          "stake": {
+            "description": "Queries information about the contract's understanding of it's\nbonded and unbonding token balances. See the\n`StakeTrackerQuery` in `packages/cw-stake-tracker/lib.rs` for\nquery methods and their return types.",
+            "type": "tuple",
+            "items": [
+              3
+            ]
+          },
+          "total_to_vest": {
+            "description": "Gets the total amount that will ever vest, `max(vested(t))`.\n\nNote that if the contract is canceled at time c, this value\nwill change to `vested(c)`. Thus, it can not be assumed to be\nconstant over the contract's lifetime.",
+            "type": "named",
+            "properties": {}
+          },
+          "vest_duration": {
+            "description": "Gets the amount of time between the vest starting, and it\ncompleting. Returns `None` if the vest has been cancelled.",
+            "type": "named",
+            "properties": {}
+          },
+          "vested": {
+            "description": "Gets the current value of `vested(t)`. If `t` is `None`, the\ncurrent time is used.",
+            "type": "named",
+            "properties": {
+              "t": {
+                "value": 2
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_timestamp_Timestamp",
+        "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+        "type": "timestamp"
+      },
+      {
+        "name": "core::option::Option<cosmwasm_std::timestamp::Timestamp>",
+        "type": "optional",
+        "inner": 1
+      },
+      {
+        "name": "cw_stake_tracker_StakeTrackerQuery",
+        "type": "enum",
+        "cases": {
+          "cardinality": {
+            "type": "named",
+            "properties": {
+              "t": {
+                "value": 1
+              }
+            }
+          },
+          "total_staked": {
+            "type": "named",
+            "properties": {
+              "t": {
+                "value": 1
+              }
+            }
+          },
+          "validator_staked": {
+            "type": "named",
+            "properties": {
+              "t": {
+                "value": 1
+              },
+              "validator": {
+                "value": 4
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "String",
+        "type": "string"
+      }
+    ]
+  },
+  "migrate": null,
+  "sudo": null,
+  "responses": {
+    "distributable": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cosmwasm_std_math_uint256_Uint256",
+          "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+          "type": "integer",
+          "precision": 256,
+          "signed": false
+        }
+      ]
+    },
+    "info": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cw_vesting_vesting_Vest",
+          "type": "struct",
+          "properties": {
+            "claimed": {
+              "description": "The number of tokens that have been claimed by the vest receiver.",
+              "value": 10
+            },
+            "denom": {
+              "value": 12
+            },
+            "description": {
+              "value": 14
+            },
+            "recipient": {
+              "value": 11
+            },
+            "slashed": {
+              "description": "The number of tokens that have been slashed while staked by\nthe vest receiver. Slashed tokens count against the number of\ntokens the receiver is entitled to.",
+              "value": 10
+            },
+            "start_time": {
+              "value": 8
+            },
+            "status": {
+              "value": 9
+            },
+            "title": {
+              "value": 13
+            },
+            "vested": {
+              "description": "vested(t), where t is seconds since start_time.",
+              "value": 1
+            }
+          }
+        },
+        {
+          "name": "wynd_utils_curve_Curve",
+          "type": "enum",
+          "cases": {
+            "constant": {
+              "type": "named",
+              "properties": {
+                "y": {
+                  "value": 2
+                }
+              }
+            },
+            "piecewise_linear": {
+              "type": "tuple",
+              "items": [
+                5
+              ]
+            },
+            "saturating_linear": {
+              "type": "tuple",
+              "items": [
+                3
+              ]
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_math_uint128_Uint128",
+          "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding,\nsuch that the full u128 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n```\n# use cosmwasm_std::Uint128;\nlet a = Uint128::from(123u128);\nassert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64);\nassert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32);\nassert_eq!(c.u128(), 70);\n```",
+          "type": "integer",
+          "precision": 128,
+          "signed": false
+        },
+        {
+          "name": "wynd_utils_curve_SaturatingLinear",
+          "description": "min_y for all x <= min_x, max_y for all x >= max_x, linear in between",
+          "type": "struct",
+          "properties": {
+            "max_x": {
+              "value": 4
+            },
+            "max_y": {
+              "value": 2
+            },
+            "min_x": {
+              "value": 4
+            },
+            "min_y": {
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        },
+        {
+          "name": "wynd_utils_curve_PiecewiseLinear",
+          "description": "This is a generalization of SaturatingLinear, steps must be arranged with increasing time (u64).\nAny point before first step gets the first value, after last step the last value.\nOtherwise, it is a linear interpolation between the two closest points.\nVec of length 1 -> Constant\nVec of length 2 -> SaturatingLinear",
+          "type": "struct",
+          "properties": {
+            "steps": {
+              "value": 7
+            }
+          }
+        },
+        {
+          "name": "(u64, cosmwasm_std::math::uint128::Uint128)",
+          "type": "tuple",
+          "items": [
+            4,
+            2
+          ]
+        },
+        {
+          "name": "alloc::vec::Vec<(u64, cosmwasm_std::math::uint128::Uint128)>",
+          "type": "array",
+          "items": 6
+        },
+        {
+          "name": "cosmwasm_std_timestamp_Timestamp",
+          "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+          "type": "timestamp"
+        },
+        {
+          "name": "cw_vesting_vesting_Status",
+          "type": "enum",
+          "cases": {
+            "canceled": {
+              "type": "named",
+              "properties": {
+                "owner_withdrawable": {
+                  "description": "owner_withdrawable(t). This is monotonically decreasing and\nwill be zero once the owner has completed withdrawing\ntheir funds.",
+                  "value": 10
+                }
+              }
+            },
+            "funded": {
+              "type": "unit"
+            },
+            "unfunded": {
+              "type": "unit"
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_math_uint256_Uint256",
+          "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+          "type": "integer",
+          "precision": 256,
+          "signed": false
+        },
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        },
+        {
+          "name": "cw_denom_CheckedDenom",
+          "description": "A denom that has been checked to point to a valid asset. This enum\nshould never be constructed literally and should always be built\nby calling `into_checked` on an `UncheckedDenom` instance.",
+          "type": "enum",
+          "cases": {
+            "cw20": {
+              "description": "A cw20 asset.",
+              "type": "tuple",
+              "items": [
+                11
+              ]
+            },
+            "native": {
+              "description": "A native (bank module) asset.",
+              "type": "tuple",
+              "items": [
+                13
+              ]
+            }
+          }
+        },
+        {
+          "name": "String",
+          "type": "string"
+        },
+        {
+          "name": "core::option::Option<alloc::string::String>",
+          "type": "optional",
+          "inner": 13
+        }
+      ]
+    },
+    "ownership": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cw_ownable_Ownership_cosmwasm_std_addresses_Addr_",
+          "description": "The contract's ownership info",
+          "type": "struct",
+          "properties": {
+            "owner": {
+              "description": "The contract's current owner.\n`None` if the ownership has been renounced.",
+              "value": 2
+            },
+            "pending_expiry": {
+              "description": "The deadline for the pending owner to accept the ownership.\n`None` if there isn't a pending ownership transfer, or if a transfer\nexists and it doesn't have a deadline.",
+              "value": 6
+            },
+            "pending_owner": {
+              "description": "The account who has been proposed to take over the ownership.\n`None` if there isn't a pending ownership transfer.",
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        },
+        {
+          "name": "core::option::Option<cosmwasm_std::addresses::Addr>",
+          "type": "optional",
+          "inner": 1
+        },
+        {
+          "name": "cw_utils_expiration_Expiration",
+          "description": "Expiration represents a point in time when some event happens.\nIt can compare with a BlockInfo and will return is_expired() == true\nonce the condition is hit (and for every block in the future)",
+          "type": "enum",
+          "cases": {
+            "at_height": {
+              "description": "AtHeight will expire when `env.block.height` >= height",
+              "type": "tuple",
+              "items": [
+                4
+              ]
+            },
+            "at_time": {
+              "description": "AtTime will expire when `env.block.time` >= time",
+              "type": "tuple",
+              "items": [
+                5
+              ]
+            },
+            "never": {
+              "description": "Never will never expire. Used to express the empty variant",
+              "type": "named",
+              "properties": {}
+            }
+          }
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        },
+        {
+          "name": "cosmwasm_std_timestamp_Timestamp",
+          "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+          "type": "timestamp"
+        },
+        {
+          "name": "core::option::Option<cw_utils::expiration::Expiration>",
+          "type": "optional",
+          "inner": 3
+        }
+      ]
+    },
+    "stake": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cosmwasm_std_math_uint256_Uint256",
+          "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+          "type": "integer",
+          "precision": 256,
+          "signed": false
+        }
+      ]
+    },
+    "total_to_vest": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cosmwasm_std_math_uint256_Uint256",
+          "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+          "type": "integer",
+          "precision": 256,
+          "signed": false
+        }
+      ]
+    },
+    "vest_duration": {
+      "type": "v1",
+      "root": 1,
+      "definitions": [
+        {
+          "name": "cosmwasm_std_math_uint64_Uint64",
+          "description": "A thin wrapper around u64 that is using strings for JSON encoding/decoding,\nsuch that the full u64 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u64` to get the value out:\n\n```\n# use cosmwasm_std::Uint64;\nlet a = Uint64::from(42u64);\nassert_eq!(a.u64(), 42);\n\nlet b = Uint64::from(70u32);\nassert_eq!(b.u64(), 70);\n```",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        },
+        {
+          "name": "core::option::Option<cosmwasm_std::math::uint64::Uint64>",
+          "type": "optional",
+          "inner": 0
+        }
+      ]
+    },
+    "vested": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cosmwasm_std_math_uint256_Uint256",
+          "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+          "type": "integer",
+          "precision": 256,
+          "signed": false
+        }
+      ]
+    }
+  }
+}

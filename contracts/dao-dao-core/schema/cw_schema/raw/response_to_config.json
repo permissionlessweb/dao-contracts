@@ -1,0 +1,50 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "dao_interface_state_Config",
+      "description": "Top level config type for core module.",
+      "type": "struct",
+      "properties": {
+        "automatically_add_cw20s": {
+          "description": "If true the contract will automatically add received cw20\ntokens to its treasury.",
+          "value": 3
+        },
+        "automatically_add_cw721s": {
+          "description": "If true the contract will automatically add received cw721\ntokens to its treasury.",
+          "value": 3
+        },
+        "dao_uri": {
+          "description": "The URI for the DAO as defined by the DAOstar standard\n<https://daostar.one/EIP>",
+          "value": 2
+        },
+        "description": {
+          "description": "A description of the contract.",
+          "value": 1
+        },
+        "image_url": {
+          "description": "An optional image URL for displaying alongside the contract.",
+          "value": 2
+        },
+        "name": {
+          "description": "The name of the contract.",
+          "value": 1
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "core::option::Option<alloc::string::String>",
+      "type": "optional",
+      "inner": 1
+    },
+    {
+      "name": "bool",
+      "type": "boolean"
+    }
+  ]
+}

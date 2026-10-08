@@ -334,6 +334,7 @@ fn test_simple_proposal_auto_vote_no() {
 }
 
 #[test]
+#[allow(deprecated)]
 fn test_propose_supports_stargate_messages() {
     // If we can make a proposal with a stargate message, we support
     // stargate messages in proposals.
@@ -493,7 +494,7 @@ fn test_proposal_message_execution() {
         ],
         None,
     );
-    let cw20_balance = query_balance_cw20(&app, &gov_token, &addr_str(CREATOR_ADDR));
+    let cw20_balance = query_balance_cw20(&app, &gov_token, addr_str(CREATOR_ADDR));
     let native_balance = query_balance_native(&app, &addr_str(CREATOR_ADDR), "ujuno");
     assert_eq!(cw20_balance, Uint128::zero());
     assert_eq!(native_balance, Uint128::zero());
@@ -530,7 +531,7 @@ fn test_proposal_message_execution() {
     let proposal = query_proposal(&app, &proposal_module, proposal_id);
     assert_eq!(proposal.proposal.status, Status::Executed);
 
-    let cw20_balance = query_balance_cw20(&app, &gov_token, &addr_str(CREATOR_ADDR));
+    let cw20_balance = query_balance_cw20(&app, &gov_token, addr_str(CREATOR_ADDR));
     let native_balance = query_balance_native(&app, &addr_str(CREATOR_ADDR), "ujuno");
     assert_eq!(cw20_balance, Uint128::new(20_000_000));
     assert_eq!(native_balance, Uint128::new(10));
@@ -605,7 +606,7 @@ fn test_proposal_message_timelock_execution() -> StdResult<()> {
         ],
         None,
     );
-    let cw20_balance = query_balance_cw20(&app, &gov_token, &addr_str(CREATOR_ADDR));
+    let cw20_balance = query_balance_cw20(&app, &gov_token, addr_str(CREATOR_ADDR));
     let native_balance = query_balance_native(&app, &addr_str(CREATOR_ADDR), "ujuno");
     assert_eq!(cw20_balance, Uint128::zero());
     assert_eq!(native_balance, Uint128::zero());
@@ -1650,7 +1651,7 @@ fn test_proposal_message_timelock_veto() -> StdResult<()> {
         ],
         None,
     );
-    let cw20_balance = query_balance_cw20(&app, &gov_token, &addr_str(CREATOR_ADDR));
+    let cw20_balance = query_balance_cw20(&app, &gov_token, addr_str(CREATOR_ADDR));
     let native_balance = query_balance_native(&app, &addr_str(CREATOR_ADDR), "ujuno");
     assert_eq!(cw20_balance, Uint128::zero());
     assert_eq!(native_balance, Uint128::zero());
@@ -1776,7 +1777,7 @@ fn test_proposal_message_timelock_early_execution() -> StdResult<()> {
         ],
         None,
     );
-    let cw20_balance = query_balance_cw20(&app, &gov_token, &addr_str(CREATOR_ADDR));
+    let cw20_balance = query_balance_cw20(&app, &gov_token, addr_str(CREATOR_ADDR));
     let native_balance = query_balance_native(&app, &addr_str(CREATOR_ADDR), "ujuno");
     assert_eq!(cw20_balance, Uint128::zero());
     assert_eq!(native_balance, Uint128::zero());
@@ -1953,7 +1954,7 @@ fn test_veto_only_members_execute_proposal() -> StdResult<()> {
         ],
         None,
     );
-    let cw20_balance = query_balance_cw20(&app, &gov_token, &addr_str(CREATOR_ADDR));
+    let cw20_balance = query_balance_cw20(&app, &gov_token, addr_str(CREATOR_ADDR));
     let native_balance = query_balance_native(&app, &addr_str(CREATOR_ADDR), "ujuno");
     assert_eq!(cw20_balance, Uint128::zero());
     assert_eq!(native_balance, Uint128::zero());
@@ -3910,7 +3911,7 @@ fn test_execution_failed() {
     assert_eq!(proposal.proposal.status, Status::ExecutionFailed);
 
     // Make sure the deposit was returned.
-    let balance = query_balance_cw20(&app, &gov_token, &addr_str(CREATOR_ADDR));
+    let balance = query_balance_cw20(&app, &gov_token, addr_str(CREATOR_ADDR));
     assert_eq!(balance, Uint128::new(10_000_000));
 
     // ExecutionFailed is an end state.
@@ -3983,7 +3984,7 @@ fn test_execution_failed() {
     // This proposal's deposit should not have been returned. It will
     // not be returnable until this is executed, or close on execution
     // is re-enabled.
-    let balance = query_balance_cw20(&app, &gov_token, &addr_str(CREATOR_ADDR));
+    let balance = query_balance_cw20(&app, &gov_token, addr_str(CREATOR_ADDR));
     assert_eq!(balance, Uint128::zero());
 }
 
@@ -4590,7 +4591,7 @@ fn test_update_pre_propose_module() {
         None,
     );
     // Check that the deposit was withdrawn.
-    let balance = query_balance_cw20(&app, gov_token.as_str(), &addr_str(CREATOR_ADDR));
+    let balance = query_balance_cw20(&app, gov_token.as_str(), addr_str(CREATOR_ADDR));
     assert_eq!(balance, Uint128::new(9_999_999));
 
     // Vote on and execute the proposal created with the old
@@ -4611,7 +4612,7 @@ fn test_update_pre_propose_module() {
     );
 
     // Deposit should not have been returned.
-    let balance = query_balance_cw20(&app, gov_token.as_str(), &addr_str(CREATOR_ADDR));
+    let balance = query_balance_cw20(&app, gov_token.as_str(), addr_str(CREATOR_ADDR));
     assert_eq!(balance, Uint128::new(9_999_999));
 
     // Withdraw from the old pre-propose module.

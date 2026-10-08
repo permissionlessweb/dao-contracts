@@ -1,0 +1,100 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "dao_pre_propose_base_msg_QueryMsg_dao_pre_propose_approver_msg_QueryExt_",
+      "type": "enum",
+      "cases": {
+        "can_propose": {
+          "description": "Returns whether or not the address can submit proposals.",
+          "type": "named",
+          "properties": {
+            "address": {
+              "value": 2
+            }
+          }
+        },
+        "config": {
+          "description": "Gets the module's configuration.",
+          "type": "named",
+          "properties": {}
+        },
+        "dao": {
+          "description": "Gets the DAO (dao-dao-core) module this contract is associated\nwith. Returns `Addr`.",
+          "type": "named",
+          "properties": {}
+        },
+        "deposit_info": {
+          "description": "Gets the deposit info for the proposal identified by\nPROPOSAL_ID.",
+          "type": "named",
+          "properties": {
+            "proposal_id": {
+              "value": 1
+            }
+          }
+        },
+        "info": {
+          "description": "Returns contract version info.",
+          "type": "named",
+          "properties": {}
+        },
+        "proposal_module": {
+          "description": "Gets the proposal module that this pre propose module is\nassociated with. Returns `Addr`.",
+          "type": "named",
+          "properties": {}
+        },
+        "proposal_submitted_hooks": {
+          "description": "Returns list of proposal submitted hooks.",
+          "type": "named",
+          "properties": {}
+        },
+        "query_extension": {
+          "description": "Extension for queries. The default implementation will do\nnothing if queried for will return `Binary::default()`.",
+          "type": "named",
+          "properties": {
+            "msg": {
+              "value": 3
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "u64",
+      "type": "integer",
+      "precision": 64,
+      "signed": false
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "dao_pre_propose_approver_msg_QueryExt",
+      "type": "enum",
+      "cases": {
+        "approver_proposal_id_for_pre_propose_approval_id": {
+          "type": "named",
+          "properties": {
+            "id": {
+              "value": 1
+            }
+          }
+        },
+        "pre_propose_approval_contract": {
+          "type": "named",
+          "properties": {}
+        },
+        "pre_propose_approval_id_for_approver_proposal_id": {
+          "type": "named",
+          "properties": {
+            "id": {
+              "value": 1
+            }
+          }
+        }
+      }
+    }
+  ]
+}

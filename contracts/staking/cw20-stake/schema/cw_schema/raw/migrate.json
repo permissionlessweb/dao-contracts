@@ -1,0 +1,22 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "cw20_stake_msg_MigrateMsg",
+      "type": "enum",
+      "cases": {
+        "from_compatible": {
+          "description": "Migrates a v2 or later contract to this version. Only the stored\ncontract version changes.",
+          "type": "named",
+          "properties": {}
+        },
+        "from_v1": {
+          "description": "Migrates the contract from version one to version two. This\nwill remove the contract's current manager, and require a\nnomination -> acceptance flow for future ownership transfers.",
+          "type": "named",
+          "properties": {}
+        }
+      }
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-use cosmwasm_std::{coins, testing::MockApi, to_json_binary, Addr, Coin, Uint128, Uint256};
+use cosmwasm_std::{coins, testing::MockApi, to_json_binary, Coin, Uint256};
 use cw20::{Cw20Coin, Cw20ExecuteMsg};
 use cw_denom::UncheckedDenom;
 use cw_multi_test::{App, BankSudo, Executor, SudoMsg};
@@ -82,7 +82,7 @@ pub fn test_instantiate_native_payroll_contract() {
             MockApi::default().addr_make(ALICE),
             factory_addr.clone(),
             &instantiate_payroll_msg,
-            &vec![Coin::new(amount, NATIVE_DENOM)],
+            &[Coin::new(amount, NATIVE_DENOM)],
         )
         .unwrap();
 
@@ -92,7 +92,7 @@ pub fn test_instantiate_native_payroll_contract() {
             MockApi::default().addr_make(BOB),
             factory_addr.clone(),
             &instantiate_payroll_msg,
-            &vec![Coin::new(amount, NATIVE_DENOM)],
+            &[Coin::new(amount, NATIVE_DENOM)],
         )
         .unwrap_err();
     assert!(err.to_string().contains("Unauthorized"));
@@ -200,7 +200,7 @@ pub fn test_instantiate_cw20_payroll_contract() {
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
                     address: MockApi::default().addr_make(ALICE).to_string(),
-                    amount: Uint256::new(INITIAL_BALANCE).into(),
+                    amount: Uint256::new(INITIAL_BALANCE),
                 }],
                 mint: None,
                 marketing: None,
@@ -259,7 +259,7 @@ pub fn test_instantiate_cw20_payroll_contract() {
             instantiate_msg: instantiate_payroll_msg.clone(),
             label: "Payroll".to_string(),
         },
-        &vec![Coin::new(amount, NATIVE_DENOM)],
+        &[Coin::new(amount, NATIVE_DENOM)],
     )
     .unwrap_err();
 
@@ -269,14 +269,14 @@ pub fn test_instantiate_cw20_payroll_contract() {
             cw20_addr,
             &Cw20ExecuteMsg::Send {
                 contract: factory_addr.to_string(),
-                amount: instantiate_payroll_msg.total.into(),
+                amount: instantiate_payroll_msg.total,
                 msg: to_json_binary(&ReceiveMsg::InstantiatePayrollContract {
                     instantiate_msg: instantiate_payroll_msg,
                     label: "Payroll".to_string(),
                 })
                 .unwrap(),
             },
-            &vec![Coin::new(amount, NATIVE_DENOM)],
+            &[Coin::new(amount, NATIVE_DENOM)],
         )
         .unwrap();
 
@@ -377,7 +377,7 @@ fn test_instantiate_wrong_ownership_native() {
                 },
                 label: "vesting".to_string(),
             },
-            &vec![Coin::new(amount, NATIVE_DENOM)],
+            &[Coin::new(amount, NATIVE_DENOM)],
         )
         .unwrap_err();
 
@@ -466,7 +466,7 @@ fn test_update_vesting_code_id() {
             MockApi::default().addr_make(ALICE),
             factory_addr,
             &instantiate_payroll_msg,
-            &vec![Coin::new(amount, NATIVE_DENOM)],
+            &[Coin::new(amount, NATIVE_DENOM)],
         )
         .unwrap();
 
@@ -502,7 +502,7 @@ pub fn test_inconsistent_cw20_amount() {
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
                     address: MockApi::default().addr_make(ALICE).to_string(),
-                    amount: Uint256::new(INITIAL_BALANCE).into(),
+                    amount: Uint256::new(INITIAL_BALANCE),
                 }],
                 mint: None,
                 marketing: None,
@@ -554,14 +554,14 @@ pub fn test_inconsistent_cw20_amount() {
             cw20_addr,
             &Cw20ExecuteMsg::Send {
                 contract: factory_addr.to_string(),
-                amount: amount.into(),
+                amount,
                 msg: to_json_binary(&ReceiveMsg::InstantiatePayrollContract {
                     instantiate_msg: instantiate_payroll_msg,
                     label: "Payroll".to_string(),
                 })
                 .unwrap(),
             },
-            &vec![Coin::new(amount, NATIVE_DENOM)],
+            &[Coin::new(amount, NATIVE_DENOM)],
         )
         .unwrap_err();
     println!("{:#?}", err);

@@ -1,0 +1,664 @@
+{
+  "contract_name": "cw-fund-distributor",
+  "contract_version": "2.8.0-alpha.3",
+  "idl_version": "1.0.0",
+  "instantiate": {
+    "type": "v1",
+    "root": 0,
+    "definitions": [
+      {
+        "name": "dao_voting_cw20_staked_msg_InstantiateMsg",
+        "type": "struct",
+        "properties": {
+          "active_threshold": {
+            "description": "The number or percentage of tokens that must be staked\nfor the DAO to be active",
+            "value": 22
+          },
+          "token_info": {
+            "value": 1
+          }
+        }
+      },
+      {
+        "name": "dao_voting_cw20_staked_msg_TokenInfo",
+        "type": "enum",
+        "cases": {
+          "existing": {
+            "type": "named",
+            "properties": {
+              "address": {
+                "description": "Address of an already instantiated cw20 token contract.",
+                "value": 2
+              },
+              "staking_contract": {
+                "description": "Information about the staking contract to use.",
+                "value": 3
+              }
+            }
+          },
+          "new": {
+            "type": "named",
+            "properties": {
+              "code_id": {
+                "description": "Code ID for cw20 token contract.",
+                "value": 4
+              },
+              "decimals": {
+                "value": 9
+              },
+              "initial_balances": {
+                "value": 12
+              },
+              "initial_dao_balance": {
+                "value": 19
+              },
+              "label": {
+                "description": "Label to use for instantiated cw20 contract.",
+                "value": 2
+              },
+              "marketing": {
+                "value": 18
+              },
+              "name": {
+                "value": 2
+              },
+              "salt": {
+                "description": "Optionally instantiate the token via instantiate2 using this salt.",
+                "value": 6
+              },
+              "staking_code_id": {
+                "value": 4
+              },
+              "staking_salt": {
+                "description": "Optionally instantiate the staking contract via instantiate2 using\nthis salt.",
+                "value": 6
+              },
+              "symbol": {
+                "value": 2
+              },
+              "unstaking_duration": {
+                "value": 8
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "String",
+        "type": "string"
+      },
+      {
+        "name": "dao_voting_cw20_staked_msg_StakingInfo",
+        "description": "Information about the staking contract to be used with this voting\nmodule.",
+        "type": "enum",
+        "cases": {
+          "existing": {
+            "type": "named",
+            "properties": {
+              "staking_contract_address": {
+                "description": "Address of an already instantiated staking contract.",
+                "value": 2
+              }
+            }
+          },
+          "new": {
+            "type": "named",
+            "properties": {
+              "staking_code_id": {
+                "description": "Code ID for staking contract to instantiate.",
+                "value": 4
+              },
+              "staking_salt": {
+                "description": "Optionally instantiate the staking contract via instantiate2 using\nthis salt.",
+                "value": 6
+              },
+              "unstaking_duration": {
+                "description": "See corresponding field in cw20-stake's\ninstantiation. This will be used when instantiating the\nnew staking contract.",
+                "value": 8
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "u64",
+        "type": "integer",
+        "precision": 64,
+        "signed": false
+      },
+      {
+        "name": "cosmwasm_std_binary_Binary",
+        "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization\nwith serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>.\nSee also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+        "type": "binary"
+      },
+      {
+        "name": "core::option::Option<cosmwasm_std::binary::Binary>",
+        "type": "optional",
+        "inner": 5
+      },
+      {
+        "name": "cw_utils_expiration_Duration",
+        "description": "Duration is a delta of time. You can add it to a BlockInfo or Expiration to\nmove that further in the future. Note that an height-based Duration and\na time-based Expiration cannot be combined",
+        "type": "enum",
+        "cases": {
+          "height": {
+            "type": "tuple",
+            "items": [
+              4
+            ]
+          },
+          "time": {
+            "description": "Time in seconds",
+            "type": "tuple",
+            "items": [
+              4
+            ]
+          }
+        }
+      },
+      {
+        "name": "core::option::Option<cw_utils::expiration::Duration>",
+        "type": "optional",
+        "inner": 7
+      },
+      {
+        "name": "u8",
+        "type": "integer",
+        "precision": 8,
+        "signed": false
+      },
+      {
+        "name": "cw20_coin_Cw20Coin",
+        "type": "struct",
+        "properties": {
+          "address": {
+            "value": 2
+          },
+          "amount": {
+            "value": 11
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_math_uint256_Uint256",
+        "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+        "type": "integer",
+        "precision": 256,
+        "signed": false
+      },
+      {
+        "name": "alloc::vec::Vec<cw20::coin::Cw20Coin>",
+        "type": "array",
+        "items": 10
+      },
+      {
+        "name": "cw20_base_msg_InstantiateMarketingInfo",
+        "type": "struct",
+        "properties": {
+          "description": {
+            "value": 14
+          },
+          "logo": {
+            "value": 17
+          },
+          "marketing": {
+            "value": 14
+          },
+          "project": {
+            "value": 14
+          }
+        }
+      },
+      {
+        "name": "core::option::Option<alloc::string::String>",
+        "type": "optional",
+        "inner": 2
+      },
+      {
+        "name": "cw20_logo_Logo",
+        "description": "This is used for uploading logo data, or setting it in InstantiateData",
+        "type": "enum",
+        "cases": {
+          "embedded": {
+            "description": "Logo content stored on the blockchain. Enforce maximum size of 5KB on all variants",
+            "type": "tuple",
+            "items": [
+              16
+            ]
+          },
+          "url": {
+            "description": "A reference to an externally hosted logo. Must be a valid HTTP or HTTPS URL.",
+            "type": "tuple",
+            "items": [
+              2
+            ]
+          }
+        }
+      },
+      {
+        "name": "cw20_logo_EmbeddedLogo",
+        "description": "This is used to store the logo on the blockchain in an accepted format.\nEnforce maximum size of 5KB on all variants.",
+        "type": "enum",
+        "cases": {
+          "png": {
+            "description": "Store the Logo as a PNG file. This will likely only support up to 64x64 or so\nwithin the 5KB limit.",
+            "type": "tuple",
+            "items": [
+              5
+            ]
+          },
+          "svg": {
+            "description": "Store the Logo as an SVG file. The content must conform to the spec\nat https://en.wikipedia.org/wiki/Scalable_Vector_Graphics\n(The contract should do some light-weight sanity-check validation)",
+            "type": "tuple",
+            "items": [
+              5
+            ]
+          }
+        }
+      },
+      {
+        "name": "core::option::Option<cw20::logo::Logo>",
+        "type": "optional",
+        "inner": 15
+      },
+      {
+        "name": "core::option::Option<cw20_base::msg::InstantiateMarketingInfo>",
+        "type": "optional",
+        "inner": 13
+      },
+      {
+        "name": "core::option::Option<cosmwasm_std::math::uint256::Uint256>",
+        "type": "optional",
+        "inner": 11
+      },
+      {
+        "name": "dao_voting_threshold_ActiveThreshold",
+        "description": "The threshold of tokens that must be staked in order for this\nvoting module to be active. If this is not reached, this module\nwill response to `is_active` queries with false and proposal\nmodules which respect active thresholds will not allow the\ncreation of proposals.",
+        "type": "enum",
+        "cases": {
+          "absolute_count": {
+            "description": "The absolute number of tokens that must be staked for the\nmodule to be active.",
+            "type": "named",
+            "properties": {
+              "count": {
+                "value": 11
+              }
+            }
+          },
+          "percentage": {
+            "description": "The percentage of tokens that must be staked for the module to\nbe active. Computed as `staked / total_supply`.",
+            "type": "named",
+            "properties": {
+              "percent": {
+                "value": 21
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_math_decimal256_Decimal256",
+        "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal256(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 115792089237316195423570985008687907853269984665640564039457.584007913129639935 = (2^256 - 1) / 10^18",
+        "type": "decimal",
+        "precision": 256,
+        "signed": false
+      },
+      {
+        "name": "core::option::Option<dao_voting::threshold::ActiveThreshold>",
+        "type": "optional",
+        "inner": 20
+      }
+    ]
+  },
+  "execute": {
+    "type": "v1",
+    "root": 0,
+    "definitions": [
+      {
+        "name": "dao_voting_cw20_staked_msg_ExecuteMsg",
+        "type": "enum",
+        "cases": {
+          "update_active_threshold": {
+            "description": "Sets the active threshold to a new value. Only the\ninstantiator this contract (a DAO most likely) may call this\nmethod.",
+            "type": "named",
+            "properties": {
+              "new_threshold": {
+                "value": 4
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "dao_voting_threshold_ActiveThreshold",
+        "description": "The threshold of tokens that must be staked in order for this\nvoting module to be active. If this is not reached, this module\nwill response to `is_active` queries with false and proposal\nmodules which respect active thresholds will not allow the\ncreation of proposals.",
+        "type": "enum",
+        "cases": {
+          "absolute_count": {
+            "description": "The absolute number of tokens that must be staked for the\nmodule to be active.",
+            "type": "named",
+            "properties": {
+              "count": {
+                "value": 2
+              }
+            }
+          },
+          "percentage": {
+            "description": "The percentage of tokens that must be staked for the module to\nbe active. Computed as `staked / total_supply`.",
+            "type": "named",
+            "properties": {
+              "percent": {
+                "value": 3
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_math_uint256_Uint256",
+        "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+        "type": "integer",
+        "precision": 256,
+        "signed": false
+      },
+      {
+        "name": "cosmwasm_std_math_decimal256_Decimal256",
+        "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal256(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 115792089237316195423570985008687907853269984665640564039457.584007913129639935 = (2^256 - 1) / 10^18",
+        "type": "decimal",
+        "precision": 256,
+        "signed": false
+      },
+      {
+        "name": "core::option::Option<dao_voting::threshold::ActiveThreshold>",
+        "type": "optional",
+        "inner": 1
+      }
+    ]
+  },
+  "query": {
+    "type": "v1",
+    "root": 0,
+    "definitions": [
+      {
+        "name": "dao_voting_cw20_staked_msg_QueryMsg",
+        "type": "enum",
+        "cases": {
+          "active_threshold": {
+            "type": "named",
+            "properties": {}
+          },
+          "dao": {
+            "description": "Returns the address of the DAO this module belongs to.",
+            "type": "named",
+            "properties": {}
+          },
+          "info": {
+            "description": "Returns contract version info.",
+            "type": "named",
+            "properties": {}
+          },
+          "is_active": {
+            "type": "named",
+            "properties": {}
+          },
+          "staking_contract": {
+            "description": "Gets the address of the cw20-stake contract this voting module\nis wrapping.",
+            "type": "named",
+            "properties": {}
+          },
+          "token_contract": {
+            "type": "named",
+            "properties": {}
+          },
+          "total_power_at_height": {
+            "description": "Returns the total voting power at a given block heigh.",
+            "type": "named",
+            "properties": {
+              "height": {
+                "value": 3
+              }
+            }
+          },
+          "voting_power_at_height": {
+            "description": "Returns the voting power for an address at a given height.",
+            "type": "named",
+            "properties": {
+              "address": {
+                "value": 1
+              },
+              "height": {
+                "value": 3
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "String",
+        "type": "string"
+      },
+      {
+        "name": "u64",
+        "type": "integer",
+        "precision": 64,
+        "signed": false
+      },
+      {
+        "name": "core::option::Option<u64>",
+        "type": "optional",
+        "inner": 2
+      }
+    ]
+  },
+  "migrate": {
+    "type": "v1",
+    "root": 0,
+    "definitions": [
+      {
+        "name": "dao_voting_cw20_staked_msg_MigrateMsg",
+        "type": "struct",
+        "properties": {}
+      }
+    ]
+  },
+  "sudo": null,
+  "responses": {
+    "active_threshold": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "dao_voting_threshold_ActiveThresholdResponse",
+          "type": "struct",
+          "properties": {
+            "active_threshold": {
+              "value": 4
+            }
+          }
+        },
+        {
+          "name": "dao_voting_threshold_ActiveThreshold",
+          "description": "The threshold of tokens that must be staked in order for this\nvoting module to be active. If this is not reached, this module\nwill response to `is_active` queries with false and proposal\nmodules which respect active thresholds will not allow the\ncreation of proposals.",
+          "type": "enum",
+          "cases": {
+            "absolute_count": {
+              "description": "The absolute number of tokens that must be staked for the\nmodule to be active.",
+              "type": "named",
+              "properties": {
+                "count": {
+                  "value": 2
+                }
+              }
+            },
+            "percentage": {
+              "description": "The percentage of tokens that must be staked for the module to\nbe active. Computed as `staked / total_supply`.",
+              "type": "named",
+              "properties": {
+                "percent": {
+                  "value": 3
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_math_uint256_Uint256",
+          "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+          "type": "integer",
+          "precision": 256,
+          "signed": false
+        },
+        {
+          "name": "cosmwasm_std_math_decimal256_Decimal256",
+          "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal256(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 115792089237316195423570985008687907853269984665640564039457.584007913129639935 = (2^256 - 1) / 10^18",
+          "type": "decimal",
+          "precision": 256,
+          "signed": false
+        },
+        {
+          "name": "core::option::Option<dao_voting::threshold::ActiveThreshold>",
+          "type": "optional",
+          "inner": 1
+        }
+      ]
+    },
+    "dao": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        }
+      ]
+    },
+    "info": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "dao_interface_voting_InfoResponse",
+          "type": "struct",
+          "properties": {
+            "info": {
+              "value": 1
+            }
+          }
+        },
+        {
+          "name": "cw2_ContractVersion",
+          "type": "struct",
+          "properties": {
+            "contract": {
+              "description": "contract is the crate name of the implementing contract, e.g. `crate:cw20-base`\nwe will use other prefixes for other languages, and their standard global namespacing",
+              "value": 2
+            },
+            "version": {
+              "description": "version is any string that this implementation knows. It may be simple counter \"1\", \"2\".\nor semantic version on release tags \"v0.7.0\", or some custom feature flag list.\nthe only code that needs to understand the version parsing is code that knows how to\nmigrate from the given contract (and is tied to its implementation somehow)",
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "String",
+          "type": "string"
+        }
+      ]
+    },
+    "is_active": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "bool",
+          "type": "boolean"
+        }
+      ]
+    },
+    "staking_contract": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        }
+      ]
+    },
+    "token_contract": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        }
+      ]
+    },
+    "total_power_at_height": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "dao_interface_voting_TotalPowerAtHeightResponse",
+          "type": "struct",
+          "properties": {
+            "height": {
+              "value": 2
+            },
+            "power": {
+              "value": 1
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_math_uint256_Uint256",
+          "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+          "type": "integer",
+          "precision": 256,
+          "signed": false
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        }
+      ]
+    },
+    "voting_power_at_height": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "dao_interface_voting_VotingPowerAtHeightResponse",
+          "type": "struct",
+          "properties": {
+            "height": {
+              "value": 2
+            },
+            "power": {
+              "value": 1
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_math_uint256_Uint256",
+          "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+          "type": "integer",
+          "precision": 256,
+          "signed": false
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        }
+      ]
+    }
+  }
+}

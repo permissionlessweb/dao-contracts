@@ -1,0 +1,165 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "dao_rbam_msg_InstantiateMsg",
+      "type": "struct",
+      "properties": {
+        "dao": {
+          "description": "The address of the DAO to execute actions on.",
+          "value": 2
+        },
+        "enabled": {
+          "description": "Whether the RBAM system starts enabled. Defaults to true.",
+          "value": 8
+        },
+        "filter_code_id": {
+          "description": "The filter code ID to instantiate.",
+          "value": 3
+        },
+        "filter_salt": {
+          "description": "The filter salt to use for instantiate2.",
+          "value": 5
+        },
+        "initial_roles": {
+          "description": "Initial roles to create.",
+          "value": 16
+        },
+        "owner": {
+          "description": "The address of the initial owner of the contract. Defaults to the DAO.",
+          "value": 2
+        },
+        "protobuf_registry_code_id": {
+          "description": "The protobuf registry code ID to instantiate.",
+          "value": 6
+        },
+        "protobuf_registry_salt": {
+          "description": "The protobuf registry salt to use for instantiate.",
+          "value": 5
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "core::option::Option<alloc::string::String>",
+      "type": "optional",
+      "inner": 1
+    },
+    {
+      "name": "u64",
+      "type": "integer",
+      "precision": 64,
+      "signed": false
+    },
+    {
+      "name": "cosmwasm_std_binary_Binary",
+      "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization\nwith serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>.\nSee also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+      "type": "binary"
+    },
+    {
+      "name": "core::option::Option<cosmwasm_std::binary::Binary>",
+      "type": "optional",
+      "inner": 4
+    },
+    {
+      "name": "core::option::Option<u64>",
+      "type": "optional",
+      "inner": 3
+    },
+    {
+      "name": "bool",
+      "type": "boolean"
+    },
+    {
+      "name": "core::option::Option<bool>",
+      "type": "optional",
+      "inner": 7
+    },
+    {
+      "name": "dao_rbam_msg_InitialRole",
+      "type": "struct",
+      "properties": {
+        "assignments": {
+          "description": "Optionally assign the role to addresses immediately.",
+          "value": 14
+        },
+        "authorizations": {
+          "description": "Optionally create authorizations for the role.",
+          "value": 12
+        },
+        "enabled": {
+          "description": "Optionally set whether the role is enabled.",
+          "value": 8
+        },
+        "metadata": {
+          "description": "Optionally set metadata for the role.",
+          "value": 2
+        },
+        "name": {
+          "description": "The name for the role.",
+          "value": 1
+        }
+      }
+    },
+    {
+      "name": "dao_rbam_msg_InitialAuthorization",
+      "type": "struct",
+      "properties": {
+        "enabled": {
+          "description": "Optionally set whether the authorization is enabled.",
+          "value": 8
+        },
+        "filter": {
+          "description": "Optionally set the filter for the authorization.",
+          "value": 2
+        },
+        "metadata": {
+          "description": "Optionally set metadata for the authorization.",
+          "value": 2
+        },
+        "name": {
+          "description": "The name for the authorization.",
+          "value": 1
+        },
+        "skip_prepare": {
+          "description": "Optionally skip preparing the protobuf messages, if any. Defaults to\nfalse, meaning it will prepare the protobuf messages.",
+          "value": 8
+        }
+      }
+    },
+    {
+      "name": "alloc::vec::Vec<dao_rbam::msg::InitialAuthorization>",
+      "type": "array",
+      "items": 10
+    },
+    {
+      "name": "core::option::Option<alloc::vec::Vec<dao_rbam::msg::InitialAuthorization>>",
+      "type": "optional",
+      "inner": 11
+    },
+    {
+      "name": "alloc::vec::Vec<alloc::string::String>",
+      "type": "array",
+      "items": 1
+    },
+    {
+      "name": "core::option::Option<alloc::vec::Vec<alloc::string::String>>",
+      "type": "optional",
+      "inner": 13
+    },
+    {
+      "name": "alloc::vec::Vec<dao_rbam::msg::InitialRole>",
+      "type": "array",
+      "items": 9
+    },
+    {
+      "name": "core::option::Option<alloc::vec::Vec<dao_rbam::msg::InitialRole>>",
+      "type": "optional",
+      "inner": 15
+    }
+  ]
+}

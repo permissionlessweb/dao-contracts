@@ -1,0 +1,44 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "dao_rbam_msg_ListAssignmentsResponse",
+      "type": "struct",
+      "properties": {
+        "assignments": {
+          "value": 4
+        }
+      }
+    },
+    {
+      "name": "dao_rbam_msg_Assignment",
+      "type": "struct",
+      "properties": {
+        "addr": {
+          "description": "The address to assign the role to.",
+          "value": 2
+        },
+        "role_id": {
+          "description": "The role ID to assign.",
+          "value": 3
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "u64",
+      "type": "integer",
+      "precision": 64,
+      "signed": false
+    },
+    {
+      "name": "alloc::vec::Vec<dao_rbam::msg::Assignment>",
+      "type": "array",
+      "items": 1
+    }
+  ]
+}

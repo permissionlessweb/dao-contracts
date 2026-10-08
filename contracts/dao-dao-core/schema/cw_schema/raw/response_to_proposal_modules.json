@@ -1,0 +1,52 @@
+{
+  "type": "v1",
+  "root": 4,
+  "definitions": [
+    {
+      "name": "dao_interface_state_ProposalModule",
+      "description": "Top level type describing a proposal module.",
+      "type": "struct",
+      "properties": {
+        "address": {
+          "description": "The address of the proposal module.",
+          "value": 1
+        },
+        "prefix": {
+          "description": "The URL prefix of this proposal module as derived from the module ID.\nPrefixes are mapped to letters, e.g. 0 is 'A', and 26 is 'AA'.",
+          "value": 2
+        },
+        "status": {
+          "description": "The status of the proposal module, e.g. 'Enabled' or 'Disabled.'",
+          "value": 3
+        }
+      }
+    },
+    {
+      "name": "cosmwasm_std_addresses_Addr",
+      "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+      "type": "address"
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "dao_interface_state_ProposalModuleStatus",
+      "description": "The status of a proposal module.",
+      "type": "enum",
+      "cases": {
+        "disabled": {
+          "type": "unit"
+        },
+        "enabled": {
+          "type": "unit"
+        }
+      }
+    },
+    {
+      "name": "alloc::vec::Vec<dao_interface::state::ProposalModule>",
+      "type": "array",
+      "items": 0
+    }
+  ]
+}

@@ -154,7 +154,7 @@ pub fn test_claim_lots_of_native_tokens() {
         app.sudo(SudoMsg::Bank(BankSudo::Mint {
             to_address: MockApi::default().addr_make(CREATOR_ADDR).to_string(),
             amount: vec![Coin {
-                amount: amount.into(),
+                amount,
                 denom: denom.clone(),
             }],
         }))

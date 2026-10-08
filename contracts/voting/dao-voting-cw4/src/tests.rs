@@ -742,7 +742,7 @@ fn test_zero_voting_power() {
 pub fn test_migrate_update_version() {
     let mut deps = mock_dependencies();
     cw2::set_contract_version(&mut deps.storage, "my-contract", "1.0.0").unwrap();
-    let version = cw2::get_contract_version(&deps.storage).unwrap();
+    let _version = cw2::get_contract_version(&deps.storage).unwrap();
     migrate(
         deps.as_mut(),
         mock_env(),

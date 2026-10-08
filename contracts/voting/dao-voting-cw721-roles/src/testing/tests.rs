@@ -106,7 +106,7 @@ fn test_voting_queries() {
     // Minter should be the contract that instantiated the cw721 contract.
     // In the test setup, this is the module_addr but would normally be
     // the dao-core contract.
-    assert_eq!(minter.minter, Some(module_addr.to_string()));
+    assert_eq!(minter.owner.as_ref(), Some(&module_addr));
 
     // Get total power
     let total = query_total_power(&app, &module_addr, None).unwrap();

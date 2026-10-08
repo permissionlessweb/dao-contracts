@@ -53,7 +53,7 @@ pub fn get_coins_from_bytes(coin_bytes: Vec<Vec<u8>>) -> Vec<Coin> {
         let this = bytes.clone().to_vec();
         let repeated = Bufany::deserialize(&this).unwrap();
         let coin = coin(
-            u128::from_str_radix(&repeated.string(2).clone().unwrap(), 10).unwrap(),
+            repeated.string(2).clone().unwrap().parse::<u128>().unwrap(),
             repeated.string(1).clone().unwrap(),
         );
         coins.push(coin)
@@ -65,7 +65,12 @@ pub fn get_coin_from_bytes(coin_bytes: Vec<u8>) -> Coin {
     let bufany_token = Bufany::deserialize(&coin_bytes).unwrap();
 
     coin(
-        u128::from_str_radix(&bufany_token.string(2).clone().unwrap(), 10).unwrap(),
+        bufany_token
+            .string(2)
+            .clone()
+            .unwrap()
+            .parse::<u128>()
+            .unwrap(),
         bufany_token.string(1).clone().unwrap(),
     )
 }

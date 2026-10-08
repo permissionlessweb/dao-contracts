@@ -43,9 +43,9 @@ pub fn query_info(app: &App, module: &Addr) -> StdResult<InfoResponse> {
     Ok(info)
 }
 
-pub fn query_minter(app: &App, nft: &Addr) -> StdResult<cw721::msg::MinterResponse> {
+pub fn query_minter(app: &App, nft: &Addr) -> StdResult<cw721::Ownership<Addr>> {
     let minter = app
         .wrap()
-        .query_wasm_smart(nft, &cw721_base::msg::QueryMsg::Minter {})?;
+        .query_wasm_smart(nft, &cw721_base::msg::QueryMsg::GetMinterOwnership {})?;
     Ok(minter)
 }

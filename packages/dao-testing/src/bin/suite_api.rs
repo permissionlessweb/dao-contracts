@@ -10,7 +10,7 @@ fn main() {
         .parent()
         .unwrap();
 
-    let out = std::env::args()
+    let _out = std::env::args()
         .nth(1)
         .filter(|a| a == "--out")
         .and_then(|_| std::env::args().nth(2))

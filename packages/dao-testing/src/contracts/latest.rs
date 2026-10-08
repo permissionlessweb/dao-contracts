@@ -35,7 +35,7 @@ pub fn cw721_base_contract() -> Box<dyn Contract<Empty>> {
         cw721_base::entry::instantiate,
         cw721_base::entry::query,
     )
-    .with_migrate(cw721_base::entry::migrate);
+    .with_migrate(|deps, env, msg, _info| cw721_base::entry::migrate(deps, env, msg));
     Box::new(contract)
 }
 

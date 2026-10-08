@@ -1,6 +1,6 @@
 use std::mem::discriminant;
 
-use cosmwasm_std::{coins, Addr, Coin, Uint128, Uint256};
+use cosmwasm_std::{Addr, Coin, Uint128, Uint256};
 use cw20::Cw20Coin;
 
 use cw_multi_test::{App, BankSudo, Executor, SudoMsg};
@@ -270,8 +270,8 @@ where
                         rationale: None,
                         voter: Addr::unchecked(&voter_bech32),
                         vote: position,
-                        power: expected_power.into(),
-                        individual_power: expected_power.into(),
+                        power: expected_power,
+                        individual_power: expected_power,
                     }),
                 };
                 assert_eq!(vote, expected)

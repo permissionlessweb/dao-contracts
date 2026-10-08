@@ -1,9 +1,9 @@
-use crate::{msg::SubmissionResponse, ContractError};
+use crate::msg::SubmissionResponse;
 
 use super::suite::SuiteBuilder;
 
 use cosmwasm_std::testing::MockApi;
-use cosmwasm_std::{coin, Addr, Uint128};
+use cosmwasm_std::{coin, Addr};
 
 #[test]
 fn create_default_submission() {

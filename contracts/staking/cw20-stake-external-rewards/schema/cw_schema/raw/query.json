@@ -1,0 +1,32 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "cw20_stake_external_rewards_msg_QueryMsg",
+      "type": "enum",
+      "cases": {
+        "get_pending_rewards": {
+          "type": "named",
+          "properties": {
+            "address": {
+              "value": 1
+            }
+          }
+        },
+        "info": {
+          "type": "named",
+          "properties": {}
+        },
+        "ownership": {
+          "type": "named",
+          "properties": {}
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    }
+  ]
+}

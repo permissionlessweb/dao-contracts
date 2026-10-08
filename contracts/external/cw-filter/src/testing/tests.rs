@@ -63,6 +63,7 @@ fn test_init_owner() {
 }
 
 #[test]
+#[allow(deprecated)] // this case asserts the #stargate filter path
 fn test_no_protobuf_registry() {
     let mut suite = SuiteBuilder::base().build();
 

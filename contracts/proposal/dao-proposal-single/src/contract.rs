@@ -2,7 +2,7 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_json_binary, Addr, Attribute, Binary, Deps, DepsMut, Env, MessageInfo, MigrateInfo, Order,
-    Reply, Response, StdResult, Storage, SubMsg, Uint256, WasmMsg,
+    Reply, Response, StdResult, Storage, SubMsg, WasmMsg,
 };
 use cw2::{get_contract_version, set_contract_version, ContractVersion};
 use cw_hooks::Hooks;
@@ -518,8 +518,8 @@ pub fn execute_vote(
         prop.start_height,
     )?;
     let vote_power = crate::proposal::VotePower {
-        total: Uint256::try_from(vote_power_raw.total).unwrap(),
-        individual: Uint256::try_from(vote_power_raw.individual).unwrap(),
+        total: vote_power_raw.total,
+        individual: vote_power_raw.individual,
     };
     if vote_power.individual.is_zero() {
         return Err(ContractError::NotRegistered {});

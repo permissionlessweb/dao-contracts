@@ -42,7 +42,7 @@ fn dao_proposal_multiple_contract() -> Box<dyn Contract<Empty>> {
         dao_proposal_multiple::contract::instantiate,
         dao_proposal_multiple::contract::query,
     )
-    .with_migrate(|deps, env, msg, info| {
+    .with_migrate(|deps, env, msg, _info| {
         dao_proposal_multiple::contract::migrate(
             deps,
             env,
@@ -627,7 +627,7 @@ fn test_cw20_permutation(
     let pre_propose_id = make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &[]);
 
     // Make sure it went await.
-    let balance = get_balance_cw20(&app, cw20_address.clone(), &addr_str("ekez"));
+    let balance = get_balance_cw20(&app, cw20_address.clone(), addr_str("ekez"));
     assert_eq!(balance, Uint128::zero());
 
     // Approver approves or rejects proposal
@@ -681,7 +681,7 @@ fn test_cw20_permutation(
         RefundReceiver::Dao => (10, 0),
     };
 
-    let proposer_balance = get_balance_cw20(&app, &cw20_address, &addr_str("ekez"));
+    let proposer_balance = get_balance_cw20(&app, &cw20_address, addr_str("ekez"));
     let dao_balance = get_balance_cw20(&app, &cw20_address, core_addr);
     assert_eq!(proposer_expected, proposer_balance.u128());
     assert_eq!(dao_expected, dao_balance.u128())
@@ -1598,7 +1598,7 @@ fn test_anyone_denylist() {
     assert!(query_can_propose(
         &app,
         pre_propose.clone(),
-        &addr_str(rando)
+        addr_str(rando)
     ));
     make_pre_proposal(&mut app, pre_propose.clone(), &addr_str(rando), &[]);
 
@@ -1616,7 +1616,7 @@ fn test_anyone_denylist() {
     assert!(!query_can_propose(
         &app,
         pre_propose.clone(),
-        &addr_str(rando)
+        addr_str(rando)
     ));
     let err = app
         .execute_contract(
@@ -1652,7 +1652,7 @@ fn test_anyone_denylist() {
     assert!(query_can_propose(
         &app,
         pre_propose.clone(),
-        &addr_str("ekez")
+        addr_str("ekez")
     ));
     make_pre_proposal(&mut app, pre_propose, &addr_str("ekez"), &[]);
 }
@@ -1682,7 +1682,7 @@ fn test_specific_allowlist_denylist() {
     assert!(query_can_propose(
         &app,
         pre_propose.clone(),
-        &addr_str("ekez")
+        addr_str("ekez")
     ));
     make_pre_proposal(&mut app, pre_propose.clone(), &addr_str("ekez"), &[]);
 
@@ -1692,7 +1692,7 @@ fn test_specific_allowlist_denylist() {
     assert!(!query_can_propose(
         &app,
         pre_propose.clone(),
-        &addr_str(rando)
+        addr_str(rando)
     ));
     let err = app
         .execute_contract(
@@ -1740,7 +1740,7 @@ fn test_specific_allowlist_denylist() {
     assert!(query_can_propose(
         &app,
         pre_propose.clone(),
-        &addr_str(rando)
+        addr_str(rando)
     ));
     make_pre_proposal(&mut app, pre_propose.clone(), &addr_str(rando), &[]);
 
@@ -1760,7 +1760,7 @@ fn test_specific_allowlist_denylist() {
     assert!(!query_can_propose(
         &app,
         pre_propose.clone(),
-        &addr_str("ekez")
+        addr_str("ekez")
     ));
     let err = app
         .execute_contract(
@@ -1808,7 +1808,7 @@ fn test_specific_allowlist_denylist() {
     assert!(!query_can_propose(
         &app,
         pre_propose.clone(),
-        &addr_str("ekez")
+        addr_str("ekez")
     ));
     let err = app
         .execute_contract(
@@ -1844,7 +1844,7 @@ fn test_specific_allowlist_denylist() {
     assert!(query_can_propose(
         &app,
         pre_propose.clone(),
-        &addr_str(rando)
+        addr_str(rando)
     ));
     make_pre_proposal(&mut app, pre_propose.clone(), &addr_str(rando), &[]);
 }

@@ -969,7 +969,7 @@ checksum = "90dbd31c98227229239363921e60fcf5e558e43ec69094d46fc4996f08d1d5bc"
 dependencies = [
  "bitcoin_hashes",
  "rand 0.8.8",
- "rand_core 0.6.4",
+ "rand_core 0.5.1",
  "serde",
  "unicode-normalization",
 ]
@@ -2054,7 +2054,7 @@ dependencies = [
 [[package]]
 name = "cw-orch"
 version = "0.30.0"
-source = "git+https://github.com/permissionlessweb/cw-orchestrator?branch=zk-mvp#60d3c559ff62d5daf09a30327d5fab0425895b34"
+source = "git+https://github.com/permissionlessweb/cw-orchestrator?branch=zk-mvp#118699c8ab501a42dd56ac7209c99ec8f05b1577"
 dependencies = [
  "anyhow",
  "cosmrs 0.23.0",
@@ -2079,7 +2079,7 @@ dependencies = [
 [[package]]
 name = "cw-orch-circuit-derive"
 version = "0.21.1"
-source = "git+https://github.com/permissionlessweb/cw-orchestrator?branch=zk-mvp#60d3c559ff62d5daf09a30327d5fab0425895b34"
+source = "git+https://github.com/permissionlessweb/cw-orchestrator?branch=zk-mvp#118699c8ab501a42dd56ac7209c99ec8f05b1577"
 dependencies = [
  "convert_case 0.6.0",
  "quote",
@@ -2089,7 +2089,7 @@ dependencies = [
 [[package]]
 name = "cw-orch-contract-derive"
 version = "0.21.1"
-source = "git+https://github.com/permissionlessweb/cw-orchestrator?branch=zk-mvp#60d3c559ff62d5daf09a30327d5fab0425895b34"
+source = "git+https://github.com/permissionlessweb/cw-orchestrator?branch=zk-mvp#118699c8ab501a42dd56ac7209c99ec8f05b1577"
 dependencies = [
  "convert_case 0.6.0",
  "quote",
@@ -2099,7 +2099,7 @@ dependencies = [
 [[package]]
 name = "cw-orch-core"
 version = "2.1.4"
-source = "git+https://github.com/permissionlessweb/cw-orchestrator?branch=zk-mvp#60d3c559ff62d5daf09a30327d5fab0425895b34"
+source = "git+https://github.com/permissionlessweb/cw-orchestrator?branch=zk-mvp#118699c8ab501a42dd56ac7209c99ec8f05b1577"
 dependencies = [
  "abstract-cw-multi-test",
  "anyhow",
@@ -2119,7 +2119,7 @@ dependencies = [
 [[package]]
 name = "cw-orch-daemon"
 version = "0.29.0"
-source = "git+https://github.com/permissionlessweb/cw-orchestrator?branch=zk-mvp#60d3c559ff62d5daf09a30327d5fab0425895b34"
+source = "git+https://github.com/permissionlessweb/cw-orchestrator?branch=zk-mvp#118699c8ab501a42dd56ac7209c99ec8f05b1577"
 dependencies = [
  "anyhow",
  "async-recursion",
@@ -2166,7 +2166,7 @@ dependencies = [
 [[package]]
 name = "cw-orch-fns-derive"
 version = "0.23.1"
-source = "git+https://github.com/permissionlessweb/cw-orchestrator?branch=zk-mvp#60d3c559ff62d5daf09a30327d5fab0425895b34"
+source = "git+https://github.com/permissionlessweb/cw-orchestrator?branch=zk-mvp#118699c8ab501a42dd56ac7209c99ec8f05b1577"
 dependencies = [
  "convert_case 0.6.0",
  "proc-macro2",
@@ -2177,7 +2177,7 @@ dependencies = [
 [[package]]
 name = "cw-orch-interchain"
 version = "0.8.1"
-source = "git+https://github.com/permissionlessweb/cw-orchestrator?branch=zk-mvp#60d3c559ff62d5daf09a30327d5fab0425895b34"
+source = "git+https://github.com/permissionlessweb/cw-orchestrator?branch=zk-mvp#118699c8ab501a42dd56ac7209c99ec8f05b1577"
 dependencies = [
  "cosmwasm-std",
  "cw-orch-interchain-core",
@@ -2191,7 +2191,7 @@ dependencies = [
 [[package]]
 name = "cw-orch-interchain-core"
 version = "0.9.2"
-source = "git+https://github.com/permissionlessweb/cw-orchestrator?branch=zk-mvp#60d3c559ff62d5daf09a30327d5fab0425895b34"
+source = "git+https://github.com/permissionlessweb/cw-orchestrator?branch=zk-mvp#118699c8ab501a42dd56ac7209c99ec8f05b1577"
 dependencies = [
  "base64 0.22.1",
  "cosmwasm-schema",
@@ -2212,7 +2212,7 @@ dependencies = [
 [[package]]
 name = "cw-orch-interchain-mock"
 version = "0.9.0"
-source = "git+https://github.com/permissionlessweb/cw-orchestrator?branch=zk-mvp#60d3c559ff62d5daf09a30327d5fab0425895b34"
+source = "git+https://github.com/permissionlessweb/cw-orchestrator?branch=zk-mvp#118699c8ab501a42dd56ac7209c99ec8f05b1577"
 dependencies = [
  "anyhow",
  "cosmrs 0.23.0",
@@ -2231,7 +2231,7 @@ dependencies = [
 [[package]]
 name = "cw-orch-mock"
 version = "0.24.4"
-source = "git+https://github.com/permissionlessweb/cw-orchestrator?branch=zk-mvp#60d3c559ff62d5daf09a30327d5fab0425895b34"
+source = "git+https://github.com/permissionlessweb/cw-orchestrator?branch=zk-mvp#118699c8ab501a42dd56ac7209c99ec8f05b1577"
 dependencies = [
  "abstract-cw-multi-test",
  "cosmos-sdk-proto 0.28.0",
@@ -2246,7 +2246,7 @@ dependencies = [
 [[package]]
 name = "cw-orch-networks"
 version = "0.24.10"
-source = "git+https://github.com/permissionlessweb/cw-orchestrator?branch=zk-mvp#60d3c559ff62d5daf09a30327d5fab0425895b34"
+source = "git+https://github.com/permissionlessweb/cw-orchestrator?branch=zk-mvp#118699c8ab501a42dd56ac7209c99ec8f05b1577"
 dependencies = [
  "cw-orch-core",
  "serde",
@@ -2255,7 +2255,7 @@ dependencies = [
 [[package]]
 name = "cw-orch-traits"
 version = "0.25.0"
-source = "git+https://github.com/permissionlessweb/cw-orchestrator?branch=zk-mvp#60d3c559ff62d5daf09a30327d5fab0425895b34"
+source = "git+https://github.com/permissionlessweb/cw-orchestrator?branch=zk-mvp#118699c8ab501a42dd56ac7209c99ec8f05b1577"
 dependencies = [
  "cw-orch-core",
  "prost-types 0.14.4",
@@ -6179,7 +6179,7 @@ dependencies = [
 [[package]]
 name = "osmosis-test-tube"
 version = "25.0.0"
-source = "git+https://github.com/permissionlessweb/osmosis-test-tube?branch=zk-mvp#3ecbf414aaa1d6fef4aedeb042bd182b6244b852"
+source = "git+https://github.com/permissionlessweb/osmosis-test-tube?branch=zk-mvp#202af166f972a6a53c36eab6ff81ce013d1f5cd0"
 dependencies = [
  "base64 0.21.7",
  "bindgen 0.69.5",
@@ -8475,11 +8475,12 @@ dependencies = [
 [[package]]
 name = "test-tube"
 version = "0.7.0"
-source = "git+https://github.com/permissionlessweb/osmosis-test-tube?branch=zk-mvp#3ecbf414aaa1d6fef4aedeb042bd182b6244b852"
+source = "git+https://github.com/permissionlessweb/osmosis-test-tube?branch=zk-mvp#202af166f972a6a53c36eab6ff81ce013d1f5cd0"
 dependencies = [
  "base64 0.21.7",
  "cosmrs 0.23.0",
  "cosmwasm-std",
+ "osmosis-std",
  "prost 0.14.4",
  "serde",
  "serde_json",

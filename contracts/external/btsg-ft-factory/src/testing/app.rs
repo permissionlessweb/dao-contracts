@@ -7,8 +7,8 @@ use cosmwasm_std::{GovMsg, IbcMsg};
 use cw_multi_test::ibc::types::MockIbcQuery;
 use cw_multi_test::ibc::IbcPacketRelayingMsg;
 use cw_multi_test::{
-    no_init, App, AppBuilder, BankKeeper, DistributionKeeper, FailingModule, GovFailingModule,
-    IbcFailingModule, StakeKeeper, WasmKeeper,
+    no_init, App, AppBuilder, BankKeeper, DistributionKeeper, FailingModule, IbcFailingModule,
+    StakeKeeper, WasmKeeper,
 };
 
 #[allow(clippy::type_complexity)]

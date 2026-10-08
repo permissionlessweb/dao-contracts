@@ -62,7 +62,7 @@ fn dao_proposal_single_contract() -> Box<dyn Contract<Empty>> {
         dps::contract::instantiate,
         dps::contract::query,
     )
-    .with_migrate(|deps, env, msg, info| {
+    .with_migrate(|deps, env, msg, _info| {
         dps::contract::migrate(deps, env, msg, dummy_migrate_info())
     })
     .with_reply(dps::contract::reply);
@@ -75,7 +75,7 @@ fn dao_proposal_multiple_contract() -> Box<dyn Contract<Empty>> {
         dpm::contract::instantiate,
         dpm::contract::query,
     )
-    .with_migrate(|deps, env, msg, info| {
+    .with_migrate(|deps, env, msg, _info| {
         dpm::contract::migrate(deps, env, msg, dummy_migrate_info())
     })
     .with_reply(dpm::contract::reply);

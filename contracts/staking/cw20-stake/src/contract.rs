@@ -250,7 +250,7 @@ pub fn execute_unstake(
             CLAIMS.create_claim(
                 deps.storage,
                 &info.sender,
-                amount_to_claim.try_into().unwrap(),
+                amount_to_claim,
                 duration.after(&env.block),
             )?;
             Ok(Response::new()

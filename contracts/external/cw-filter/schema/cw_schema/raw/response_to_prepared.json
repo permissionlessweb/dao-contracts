@@ -1,0 +1,19 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "cw_protobuf_registry_msg_PreparedResponse",
+      "type": "struct",
+      "properties": {
+        "prepared": {
+          "value": 1
+        }
+      }
+    },
+    {
+      "name": "bool",
+      "type": "boolean"
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "cw20_stake_msg_QueryMsg",
+      "type": "enum",
+      "cases": {
+        "claims": {
+          "type": "named",
+          "properties": {
+            "address": {
+              "value": 1
+            }
+          }
+        },
+        "get_config": {
+          "type": "named",
+          "properties": {}
+        },
+        "get_hooks": {
+          "type": "named",
+          "properties": {}
+        },
+        "list_stakers": {
+          "type": "named",
+          "properties": {
+            "limit": {
+              "value": 6
+            },
+            "start_after": {
+              "value": 4
+            }
+          }
+        },
+        "ownership": {
+          "type": "named",
+          "properties": {}
+        },
+        "staked_balance_at_height": {
+          "type": "named",
+          "properties": {
+            "address": {
+              "value": 1
+            },
+            "height": {
+              "value": 3
+            }
+          }
+        },
+        "staked_value": {
+          "type": "named",
+          "properties": {
+            "address": {
+              "value": 1
+            }
+          }
+        },
+        "total_staked_at_height": {
+          "type": "named",
+          "properties": {
+            "height": {
+              "value": 3
+            }
+          }
+        },
+        "total_value": {
+          "type": "named",
+          "properties": {}
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "u64",
+      "type": "integer",
+      "precision": 64,
+      "signed": false
+    },
+    {
+      "name": "core::option::Option<u64>",
+      "type": "optional",
+      "inner": 2
+    },
+    {
+      "name": "core::option::Option<alloc::string::String>",
+      "type": "optional",
+      "inner": 1
+    },
+    {
+      "name": "u32",
+      "type": "integer",
+      "precision": 32,
+      "signed": false
+    },
+    {
+      "name": "core::option::Option<u32>",
+      "type": "optional",
+      "inner": 5
+    }
+  ]
+}

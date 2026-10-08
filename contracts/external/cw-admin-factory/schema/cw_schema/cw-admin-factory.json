@@ -1,0 +1,154 @@
+{
+  "contract_name": "cw-admin-factory",
+  "contract_version": "2.8.0-alpha.3",
+  "idl_version": "1.0.0",
+  "instantiate": {
+    "type": "v1",
+    "root": 0,
+    "definitions": [
+      {
+        "name": "cw_admin_factory_msg_InstantiateMsg",
+        "type": "struct",
+        "properties": {
+          "admin": {
+            "description": "The account allowed to execute this contract. If no admin, anyone can\nexecute it.",
+            "value": 2
+          }
+        }
+      },
+      {
+        "name": "String",
+        "type": "string"
+      },
+      {
+        "name": "core::option::Option<alloc::string::String>",
+        "type": "optional",
+        "inner": 1
+      }
+    ]
+  },
+  "execute": {
+    "type": "v1",
+    "root": 0,
+    "definitions": [
+      {
+        "name": "cw_admin_factory_msg_ExecuteMsg",
+        "type": "enum",
+        "cases": {
+          "instantiate2_contract_with_self_admin": {
+            "description": "Instantiates the target contract with the provided instantiate message,\ncode ID, label, and salt, via instantiate2 to give a predictable\naddress, and updates the contract's admin to be itself.",
+            "type": "named",
+            "properties": {
+              "code_id": {
+                "value": 2
+              },
+              "expect": {
+                "description": "Optionally specify the expected address and fail if it doesn't match\nthe instantiated contract. This makes it easy for a consumer to\nvalidate that they are using the correct address elsewhere.",
+                "value": 4
+              },
+              "instantiate_msg": {
+                "value": 1
+              },
+              "label": {
+                "value": 3
+              },
+              "salt": {
+                "value": 1
+              }
+            }
+          },
+          "instantiate_contract_with_self_admin": {
+            "description": "Instantiates the target contract with the provided instantiate message,\ncode ID, and label and updates the contract's admin to be itself.",
+            "type": "named",
+            "properties": {
+              "code_id": {
+                "value": 2
+              },
+              "instantiate_msg": {
+                "value": 1
+              },
+              "label": {
+                "value": 3
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_binary_Binary",
+        "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization\nwith serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>.\nSee also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+        "type": "binary"
+      },
+      {
+        "name": "u64",
+        "type": "integer",
+        "precision": 64,
+        "signed": false
+      },
+      {
+        "name": "String",
+        "type": "string"
+      },
+      {
+        "name": "core::option::Option<alloc::string::String>",
+        "type": "optional",
+        "inner": 3
+      }
+    ]
+  },
+  "query": {
+    "type": "v1",
+    "root": 0,
+    "definitions": [
+      {
+        "name": "cw_admin_factory_msg_QueryMsg",
+        "type": "enum",
+        "cases": {
+          "admin": {
+            "type": "named",
+            "properties": {}
+          }
+        }
+      }
+    ]
+  },
+  "migrate": {
+    "type": "v1",
+    "root": 0,
+    "definitions": [
+      {
+        "name": "cw_admin_factory_msg_MigrateMsg",
+        "type": "struct",
+        "properties": {}
+      }
+    ]
+  },
+  "sudo": null,
+  "responses": {
+    "admin": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cw_admin_factory_msg_AdminResponse",
+          "type": "struct",
+          "properties": {
+            "admin": {
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        },
+        {
+          "name": "core::option::Option<cosmwasm_std::addresses::Addr>",
+          "type": "optional",
+          "inner": 1
+        }
+      ]
+    }
+  }
+}

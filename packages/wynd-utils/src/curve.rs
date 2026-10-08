@@ -216,14 +216,12 @@ impl PiecewiseLinear {
         if self.steps.is_empty() {
             return Err(CurveError::MissingSteps);
         }
-        self.steps.iter().fold(Ok(0u64), |acc, (x, _)| {
-            acc.and_then(|last| {
-                if *x > last {
-                    Ok(*x)
-                } else {
-                    Err(CurveError::PointsOutOfOrder)
-                }
-            })
+        self.steps.iter().try_fold(0u64, |last, (x, _)| {
+            if *x > last {
+                Ok(*x)
+            } else {
+                Err(CurveError::PointsOutOfOrder)
+            }
         })?;
         Ok(())
     }

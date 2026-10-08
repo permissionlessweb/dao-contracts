@@ -226,6 +226,7 @@ pub fn test_authorized_set_self_admin() {
 }
 
 #[test]
+#[allow(deprecated)] // SubMsgResponse::data is still required on this reply shape
 pub fn test_set_self_admin_mock() {
     let mut deps = mock_dependencies();
     // Instantiate factory contract

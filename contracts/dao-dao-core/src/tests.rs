@@ -1,6 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    coins, from_json,
+    coins,
     testing::{mock_dependencies, mock_env, MockApi},
     to_json_binary, Addr, AnyMsg, BankMsg, CosmosMsg, Empty, MigrateInfo, Storage, Uint128,
     Uint256, WasmMsg,
@@ -23,10 +23,7 @@ use dao_testing::contracts::{
     dao_voting_cw20_balance_contract,
 };
 
-use crate::{
-    contract::{derive_proposal_module_prefix, migrate, CONTRACT_NAME, CONTRACT_VERSION},
-    state::PROPOSAL_MODULES,
-};
+use crate::contract::{migrate, CONTRACT_NAME, CONTRACT_VERSION};
 
 fn err_str(err: cosmwasm_std::StdError) -> String {
     err.to_string()
@@ -2878,13 +2875,13 @@ fn test_migrate_from_compatible() {
 fn test_migrate_mock() {
     let mut deps = mock_dependencies();
     let dao_uri: String = "/dao/uri".to_string();
-    let msg = MigrateMsg::FromV1 {
+    let _msg = MigrateMsg::FromV1 {
         dao_uri: Some(dao_uri.clone()),
         params: None,
     };
-    let env = mock_env();
+    let _env = mock_env();
 
-    let migrator = deps.api.addr_make("migrator");
+    let _migrator = deps.api.addr_make("migrator");
     // Set starting version to v1.
     set_contract_version(&mut deps.storage, CONTRACT_NAME, "0.1.0").unwrap();
 

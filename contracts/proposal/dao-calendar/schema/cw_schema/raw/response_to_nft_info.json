@@ -1,0 +1,82 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "cw721_msg_NftInfoResponse_dao_calendar_contract_MetadataExt_",
+      "type": "struct",
+      "properties": {
+        "extension": {
+          "description": "You can add any custom metadata here when you extend cw721-base",
+          "value": 3
+        },
+        "token_uri": {
+          "description": "Universal resource identifier for this NFT\nShould point to a JSON file that conforms to the ERC721\nMetadata JSON Schema",
+          "value": 2
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "core::option::Option<alloc::string::String>",
+      "type": "optional",
+      "inner": 1
+    },
+    {
+      "name": "dao_calendar_contract_MetadataExt",
+      "type": "struct",
+      "properties": {
+        "author_pubkey": {
+          "description": "Optional: Store the author's pubkey.",
+          "value": 2
+        },
+        "calendar_d": {
+          "description": "Calendar this event belongs to. Token ID of the parent calendar NFT,\nor `None` for standalone events (no parent calendar).",
+          "value": 2
+        },
+        "cid": {
+          "description": "IPFS CID pointing to the full Nostr event JSON (off-chain only).",
+          "value": 2
+        },
+        "d_tag": {
+          "description": "Cached d-tag for addressable events (kind 30000–39999).\nAvoids decoding `e` just to read the identifier.",
+          "value": 2
+        },
+        "e": {
+          "description": "Encoded NIP-52 `CalendarEventMetadata` (on-chain).\nEmpty `Binary` when off-chain.",
+          "value": 5
+        },
+        "kind": {
+          "description": "Nostr event kind (31922 date-based, 31923 time-based).\nAlways populated for efficient on-chain filtering.",
+          "value": 6
+        },
+        "nostr_e_d": {
+          "description": "Optional: Store the raw nostr event ID for verification.",
+          "value": 2
+        },
+        "on_chain": {
+          "description": "`true` = full Nostr event stored on-chain in `e`.\n`false` = only an IPFS CID pointer lives on-chain.",
+          "value": 4
+        }
+      }
+    },
+    {
+      "name": "bool",
+      "type": "boolean"
+    },
+    {
+      "name": "cosmwasm_std_binary_Binary",
+      "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization\nwith serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>.\nSee also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+      "type": "binary"
+    },
+    {
+      "name": "u16",
+      "type": "integer",
+      "precision": 16,
+      "signed": false
+    }
+  ]
+}

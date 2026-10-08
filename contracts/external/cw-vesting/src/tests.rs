@@ -164,7 +164,7 @@ fn setup_test_case(app: &mut App, msg: InstantiateMsg, funds: &[Coin]) -> TestCa
         UncheckedDenom::Cw20(ref cw20_addr) => {
             let send_msg = Cw20ExecuteMsg::Send {
                 contract: cw_vesting_addr.to_string(),
-                amount: msg.total.into(),
+                amount: msg.total,
                 msg: to_json_binary(&ReceiveMsg::Fund {}).unwrap(),
             };
             app.execute_contract(

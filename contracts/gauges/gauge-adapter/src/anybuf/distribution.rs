@@ -1,6 +1,6 @@
 use anybuf::{Anybuf, Bufany};
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Binary, Coin, CosmosMsg, Decimal, Deps, Empty, StdResult};
+use cosmwasm_std::{Addr, AnyMsg, Binary, Coin, CosmosMsg, Decimal, Deps, Empty, StdResult};
 
 use crate::{
     get_coins_from_bytes,
@@ -66,9 +66,9 @@ pub fn encode_fund_community_pool_anybuf(
         .append_repeated_message(1, &anybuf_coins)
         .append_string(2, &sender)
         .into_vec();
-    let msg: CosmosMsg<Empty> = CosmosMsg::Stargate {
+    let msg: CosmosMsg<Empty> = CosmosMsg::Any(AnyMsg {
         type_url: "/cosmos.distribution.v1beta1.MsgFundCommunityPool".to_string(),
         value: proto.into(),
-    };
+    });
     Ok(msg)
 }

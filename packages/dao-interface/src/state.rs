@@ -153,7 +153,7 @@ mod tests {
     use cosmwasm_std::{
         coins,
         testing::{mock_dependencies, MockApi},
-        to_json_binary, Addr, Uint128, Uint256, WasmMsg,
+        to_json_binary, Uint256, WasmMsg,
     };
 
     #[test]

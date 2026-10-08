@@ -1,6 +1,6 @@
 use cosmwasm_std::{
     testing::{mock_dependencies, mock_env, MockApi},
-    to_json_binary, Addr, Decimal, Empty, MigrateInfo, Uint128, Uint256,
+    to_json_binary, Addr, Decimal, Empty, Uint128, Uint256,
 };
 use cw_multi_test::{Contract, ContractWrapper};
 use cw_utils::Duration;

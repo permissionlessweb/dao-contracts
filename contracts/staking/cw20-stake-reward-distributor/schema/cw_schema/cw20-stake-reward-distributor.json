@@ -1,0 +1,333 @@
+{
+  "contract_name": "cw20-stake-reward-distributor",
+  "contract_version": "2.8.0-alpha.3",
+  "idl_version": "1.0.0",
+  "instantiate": {
+    "type": "v1",
+    "root": 0,
+    "definitions": [
+      {
+        "name": "cw20_stake_reward_distributor_msg_InstantiateMsg",
+        "type": "struct",
+        "properties": {
+          "owner": {
+            "value": 1
+          },
+          "reward_rate": {
+            "value": 2
+          },
+          "reward_token": {
+            "value": 1
+          },
+          "staking_addr": {
+            "value": 1
+          }
+        }
+      },
+      {
+        "name": "String",
+        "type": "string"
+      },
+      {
+        "name": "cosmwasm_std_math_uint128_Uint128",
+        "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding,\nsuch that the full u128 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n```\n# use cosmwasm_std::Uint128;\nlet a = Uint128::from(123u128);\nassert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64);\nassert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32);\nassert_eq!(c.u128(), 70);\n```",
+        "type": "integer",
+        "precision": 128,
+        "signed": false
+      }
+    ]
+  },
+  "execute": {
+    "type": "v1",
+    "root": 0,
+    "definitions": [
+      {
+        "name": "cw20_stake_reward_distributor_msg_ExecuteMsg",
+        "type": "enum",
+        "cases": {
+          "distribute": {
+            "type": "named",
+            "properties": {}
+          },
+          "update_config": {
+            "type": "named",
+            "properties": {
+              "reward_rate": {
+                "value": 2
+              },
+              "reward_token": {
+                "value": 1
+              },
+              "staking_addr": {
+                "value": 1
+              }
+            }
+          },
+          "update_ownership": {
+            "description": "Update the contract's ownership. The `action` to be provided\ncan be either to propose transferring ownership to an account,\naccept a pending ownership transfer, or renounce the ownership\npermanently.",
+            "type": "tuple",
+            "items": [
+              3
+            ]
+          },
+          "withdraw": {
+            "type": "named",
+            "properties": {}
+          }
+        }
+      },
+      {
+        "name": "String",
+        "type": "string"
+      },
+      {
+        "name": "cosmwasm_std_math_uint128_Uint128",
+        "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding,\nsuch that the full u128 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n```\n# use cosmwasm_std::Uint128;\nlet a = Uint128::from(123u128);\nassert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64);\nassert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32);\nassert_eq!(c.u128(), 70);\n```",
+        "type": "integer",
+        "precision": 128,
+        "signed": false
+      },
+      {
+        "name": "cw_ownable_Action",
+        "description": "Actions that can be taken to alter the contract's ownership",
+        "type": "enum",
+        "cases": {
+          "accept_ownership": {
+            "description": "Accept the pending ownership transfer.\n\nCan only be called by the pending owner.",
+            "type": "unit"
+          },
+          "renounce_ownership": {
+            "description": "Give up the contract's ownership and the possibility of appointing\na new owner.\n\nCan only be invoked by the contract's current owner.\n\nAny existing pending ownership transfer is canceled.",
+            "type": "unit"
+          },
+          "transfer_ownership": {
+            "description": "Propose to transfer the contract's ownership to another account,\noptionally with an expiry time.\n\nCan only be called by the contract's current owner.\n\nAny existing pending ownership transfer is overwritten.",
+            "type": "named",
+            "properties": {
+              "expiry": {
+                "value": 7
+              },
+              "new_owner": {
+                "value": 1
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "cw_utils_expiration_Expiration",
+        "description": "Expiration represents a point in time when some event happens.\nIt can compare with a BlockInfo and will return is_expired() == true\nonce the condition is hit (and for every block in the future)",
+        "type": "enum",
+        "cases": {
+          "at_height": {
+            "description": "AtHeight will expire when `env.block.height` >= height",
+            "type": "tuple",
+            "items": [
+              5
+            ]
+          },
+          "at_time": {
+            "description": "AtTime will expire when `env.block.time` >= time",
+            "type": "tuple",
+            "items": [
+              6
+            ]
+          },
+          "never": {
+            "description": "Never will never expire. Used to express the empty variant",
+            "type": "named",
+            "properties": {}
+          }
+        }
+      },
+      {
+        "name": "u64",
+        "type": "integer",
+        "precision": 64,
+        "signed": false
+      },
+      {
+        "name": "cosmwasm_std_timestamp_Timestamp",
+        "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+        "type": "timestamp"
+      },
+      {
+        "name": "core::option::Option<cw_utils::expiration::Expiration>",
+        "type": "optional",
+        "inner": 4
+      }
+    ]
+  },
+  "query": {
+    "type": "v1",
+    "root": 0,
+    "definitions": [
+      {
+        "name": "cw20_stake_reward_distributor_msg_QueryMsg",
+        "type": "enum",
+        "cases": {
+          "info": {
+            "type": "named",
+            "properties": {}
+          },
+          "ownership": {
+            "type": "named",
+            "properties": {}
+          }
+        }
+      }
+    ]
+  },
+  "migrate": {
+    "type": "v1",
+    "root": 0,
+    "definitions": [
+      {
+        "name": "cw20_stake_reward_distributor_msg_MigrateMsg",
+        "type": "enum",
+        "cases": {}
+      }
+    ]
+  },
+  "sudo": null,
+  "responses": {
+    "info": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cw20_stake_reward_distributor_msg_InfoResponse",
+          "type": "struct",
+          "properties": {
+            "balance": {
+              "value": 5
+            },
+            "config": {
+              "value": 1
+            },
+            "last_payment_block": {
+              "value": 4
+            }
+          }
+        },
+        {
+          "name": "cw20_stake_reward_distributor_state_Config",
+          "type": "struct",
+          "properties": {
+            "reward_rate": {
+              "value": 3
+            },
+            "reward_token": {
+              "value": 2
+            },
+            "staking_addr": {
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        },
+        {
+          "name": "cosmwasm_std_math_uint128_Uint128",
+          "description": "A thin wrapper around u128 that is using strings for JSON encoding/decoding,\nsuch that the full u128 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u128` to get the value out:\n\n```\n# use cosmwasm_std::Uint128;\nlet a = Uint128::from(123u128);\nassert_eq!(a.u128(), 123);\n\nlet b = Uint128::from(42u64);\nassert_eq!(b.u128(), 42);\n\nlet c = Uint128::from(70u32);\nassert_eq!(c.u128(), 70);\n```",
+          "type": "integer",
+          "precision": 128,
+          "signed": false
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        },
+        {
+          "name": "cosmwasm_std_math_uint256_Uint256",
+          "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+          "type": "integer",
+          "precision": 256,
+          "signed": false
+        }
+      ]
+    },
+    "ownership": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cw_ownable_Ownership_cosmwasm_std_addresses_Addr_",
+          "description": "The contract's ownership info",
+          "type": "struct",
+          "properties": {
+            "owner": {
+              "description": "The contract's current owner.\n`None` if the ownership has been renounced.",
+              "value": 2
+            },
+            "pending_expiry": {
+              "description": "The deadline for the pending owner to accept the ownership.\n`None` if there isn't a pending ownership transfer, or if a transfer\nexists and it doesn't have a deadline.",
+              "value": 6
+            },
+            "pending_owner": {
+              "description": "The account who has been proposed to take over the ownership.\n`None` if there isn't a pending ownership transfer.",
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        },
+        {
+          "name": "core::option::Option<cosmwasm_std::addresses::Addr>",
+          "type": "optional",
+          "inner": 1
+        },
+        {
+          "name": "cw_utils_expiration_Expiration",
+          "description": "Expiration represents a point in time when some event happens.\nIt can compare with a BlockInfo and will return is_expired() == true\nonce the condition is hit (and for every block in the future)",
+          "type": "enum",
+          "cases": {
+            "at_height": {
+              "description": "AtHeight will expire when `env.block.height` >= height",
+              "type": "tuple",
+              "items": [
+                4
+              ]
+            },
+            "at_time": {
+              "description": "AtTime will expire when `env.block.time` >= time",
+              "type": "tuple",
+              "items": [
+                5
+              ]
+            },
+            "never": {
+              "description": "Never will never expire. Used to express the empty variant",
+              "type": "named",
+              "properties": {}
+            }
+          }
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        },
+        {
+          "name": "cosmwasm_std_timestamp_Timestamp",
+          "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+          "type": "timestamp"
+        },
+        {
+          "name": "core::option::Option<cw_utils::expiration::Expiration>",
+          "type": "optional",
+          "inner": 3
+        }
+      ]
+    }
+  }
+}

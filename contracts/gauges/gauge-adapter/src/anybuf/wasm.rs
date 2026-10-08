@@ -1,8 +1,8 @@
 use anybuf::{Anybuf, Bufany};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
-    from_json, to_json_binary, Addr, Binary, Coin, CosmosMsg, Decimal, Deps, Empty, StdResult,
-    Uint256,
+    from_json, to_json_binary, Addr, AnyMsg, Binary, Coin, CosmosMsg, Decimal, Deps, Empty,
+    StdResult, Uint256,
 };
 use cw20::Expiration;
 
@@ -152,15 +152,14 @@ pub fn encode_cw20_transfer_anybuf(
         .append_repeated_message::<Anybuf>(5, &[]) // empty native tokens sent for now.
         .into_vec();
 
-    let msg: CosmosMsg<Empty> = CosmosMsg::Stargate {
+    let msg: CosmosMsg<Empty> = CosmosMsg::Any(AnyMsg {
         type_url: "/cosmwasm.v1.wasm.MsgExecuteContract".to_string(),
         value: proto.into(),
-    };
+    });
     Ok(msg)
 }
 
 /// SEND  ////
-
 pub fn encode_cw20_send_anybuf(
     anybuf: Anybuf,
     contract: String,
@@ -181,10 +180,10 @@ pub fn encode_cw20_send_anybuf(
         .append_repeated_message::<Anybuf>(5, &[]) // empty native tokens sent for now.
         .into_vec();
 
-    let msg: CosmosMsg<Empty> = CosmosMsg::Stargate {
+    let msg: CosmosMsg<Empty> = CosmosMsg::Any(AnyMsg {
         type_url: "/cosmwasm.v1.wasm.MsgExecuteContract".to_string(),
         value: proto.into(),
-    };
+    });
     Ok(msg)
 }
 
@@ -209,10 +208,10 @@ pub fn encode_cw20_allowance_anybuf(
         .append_repeated_message::<Anybuf>(5, &[]) // empty native tokens sent for now.
         .into_vec();
 
-    let msg: CosmosMsg<Empty> = CosmosMsg::Stargate {
+    let msg: CosmosMsg<Empty> = CosmosMsg::Any(AnyMsg {
         type_url: "/cosmwasm.v1.wasm.MsgExecuteContract".to_string(),
         value: proto.into(),
-    };
+    });
     Ok(msg)
 }
 
@@ -237,9 +236,9 @@ pub fn encode_cw20_mint_anybuf(
         .append_repeated_message::<Anybuf>(5, &[]) // empty native tokens sent for now.
         .into_vec();
 
-    let msg: CosmosMsg<Empty> = CosmosMsg::Stargate {
+    let msg: CosmosMsg<Empty> = CosmosMsg::Any(AnyMsg {
         type_url: "/cosmwasm.v1.wasm.MsgExecuteContract".to_string(),
         value: proto.into(),
-    };
+    });
     Ok(msg)
 }

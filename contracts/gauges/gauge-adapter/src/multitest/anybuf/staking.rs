@@ -50,7 +50,7 @@ fn test_staking_anybuf_assertions() {
             msg: to_json_binary(
                 &Anybuf::new()
                     .append_string(1, owner.clone())
-                    .append_string(2, "grantee".to_string())
+                    .append_string(2, "grantee")
                     .into_vec(),
             )
             .unwrap(),
@@ -75,8 +75,8 @@ fn test_staking_anybuf_assertions() {
                     .append_message(
                         2,
                         &Anybuf::new()
-                            .append_string(1, "juno".to_string())
-                            .append_string(2, "1000".to_string()),
+                            .append_string(1, "juno")
+                            .append_string(2, "1000"),
                     )
                     .into_vec(),
             )
@@ -109,7 +109,7 @@ fn test_staking_anybuf_assertions() {
                                 4,
                                 &Anybuf::new()
                                     .append_string(1, "juno")
-                                    .append_string(2, "1000".to_string()),
+                                    .append_string(2, "1000"),
                             ),
                     )
                     .into_vec(),

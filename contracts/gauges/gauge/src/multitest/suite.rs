@@ -847,11 +847,11 @@ impl Suite {
 
     pub fn query_balance(&self, account: &str, denom: &str) -> StdResult<u128> {
         let balance = self.app.wrap().query_balance(account, denom)?;
-        Ok(balance
+        balance
             .amount
             .to_string()
             .parse::<u128>()
-            .map_err(|e| StdError::msg(e.to_string()))?)
+            .map_err(|e| StdError::msg(e.to_string()))
     }
 
     pub fn auto_migrate_gauge(

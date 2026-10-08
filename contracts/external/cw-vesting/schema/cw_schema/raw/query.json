@@ -1,0 +1,105 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "cw_vesting_msg_QueryMsg",
+      "type": "enum",
+      "cases": {
+        "distributable": {
+          "description": "Returns the number of tokens currently claimable by the\nvestee. This is the minimum of the number of unstaked tokens\nin the contract, and the number of tokens that have been\nvested at time t.",
+          "type": "named",
+          "properties": {
+            "t": {
+              "description": "The time or none to use the current time.",
+              "value": 2
+            }
+          }
+        },
+        "info": {
+          "description": "Returns information about the vesting contract and the\nstatus of the payment.",
+          "type": "named",
+          "properties": {}
+        },
+        "ownership": {
+          "description": "Get the current ownership.",
+          "type": "named",
+          "properties": {}
+        },
+        "stake": {
+          "description": "Queries information about the contract's understanding of it's\nbonded and unbonding token balances. See the\n`StakeTrackerQuery` in `packages/cw-stake-tracker/lib.rs` for\nquery methods and their return types.",
+          "type": "tuple",
+          "items": [
+            3
+          ]
+        },
+        "total_to_vest": {
+          "description": "Gets the total amount that will ever vest, `max(vested(t))`.\n\nNote that if the contract is canceled at time c, this value\nwill change to `vested(c)`. Thus, it can not be assumed to be\nconstant over the contract's lifetime.",
+          "type": "named",
+          "properties": {}
+        },
+        "vest_duration": {
+          "description": "Gets the amount of time between the vest starting, and it\ncompleting. Returns `None` if the vest has been cancelled.",
+          "type": "named",
+          "properties": {}
+        },
+        "vested": {
+          "description": "Gets the current value of `vested(t)`. If `t` is `None`, the\ncurrent time is used.",
+          "type": "named",
+          "properties": {
+            "t": {
+              "value": 2
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "cosmwasm_std_timestamp_Timestamp",
+      "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+      "type": "timestamp"
+    },
+    {
+      "name": "core::option::Option<cosmwasm_std::timestamp::Timestamp>",
+      "type": "optional",
+      "inner": 1
+    },
+    {
+      "name": "cw_stake_tracker_StakeTrackerQuery",
+      "type": "enum",
+      "cases": {
+        "cardinality": {
+          "type": "named",
+          "properties": {
+            "t": {
+              "value": 1
+            }
+          }
+        },
+        "total_staked": {
+          "type": "named",
+          "properties": {
+            "t": {
+              "value": 1
+            }
+          }
+        },
+        "validator_staked": {
+          "type": "named",
+          "properties": {
+            "t": {
+              "value": 1
+            },
+            "validator": {
+              "value": 4
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    }
+  ]
+}

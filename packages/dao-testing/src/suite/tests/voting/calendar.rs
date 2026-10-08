@@ -16,7 +16,7 @@ use dao_cw_orch::DaoCalendar;
 /// Deployer is minter + DAO address.
 fn setup() -> (Mock, DaoCalendar<Mock>) {
     let creator = MockApi::default().addr_make("creator");
-    let mut chain = Mock::new(&creator.to_string());
+    let chain = Mock::new(creator.to_string());
     let calendar = DaoCalendar::new(chain.clone());
     calendar.upload().unwrap();
 
@@ -138,7 +138,7 @@ mod tests {
     #[test]
     fn test_dao_query() {
         let (_, cal) = setup();
-        let dao = cal.dao().unwrap();
+        let _dao = cal.dao().unwrap();
     }
 
     #[test]

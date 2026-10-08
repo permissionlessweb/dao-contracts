@@ -43,7 +43,7 @@ fn test_gov_anybuf_assertions() {
             msg: to_json_binary(
                 &Anybuf::new()
                     .append_string(1, owner.clone())
-                    .append_string(2, "grantee".to_string())
+                    .append_string(2, "grantee")
                     .into_vec(),
             )
             .unwrap(),
@@ -66,17 +66,17 @@ fn test_gov_anybuf_assertions() {
                 &Anybuf::new()
                     .append_repeated_bytes(
                         1,
-                        &vec![&to_json_binary(&BankMsg::Send {
+                        &[&to_json_binary(&BankMsg::Send {
                             to_address: einstein.clone(),
                             amount: coins(1_000_000u128, "juno"),
                         })
                         .unwrap()],
                     )
-                    .append_repeated_bytes(2, &vec![&Anybuf::new().into_vec()])
+                    .append_repeated_bytes(2, &[&Anybuf::new().into_vec()])
                     .append_string(3, einstein.clone())
-                    .append_string(4, "metadata".to_string())
-                    .append_string(5, "title".to_string())
-                    .append_string(6, "summary".to_string())
+                    .append_string(4, "metadata")
+                    .append_string(5, "title")
+                    .append_string(6, "summary")
                     .into_vec(),
             )
             .unwrap(),

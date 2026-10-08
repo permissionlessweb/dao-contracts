@@ -1,0 +1,131 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "cw_protobuf_registry_msg_QueryMsg",
+      "type": "enum",
+      "cases": {
+        "decode": {
+          "type": "named",
+          "properties": {
+            "message_name": {
+              "description": "The name of the message to decode.",
+              "value": 1
+            },
+            "value": {
+              "description": "The value to decode.",
+              "value": 7
+            }
+          }
+        },
+        "file_descriptor_set": {
+          "type": "named",
+          "properties": {
+            "messages": {
+              "description": "The messages to include in the file descriptor set.",
+              "value": 5
+            }
+          }
+        },
+        "info": {
+          "type": "named",
+          "properties": {}
+        },
+        "list_files": {
+          "type": "named",
+          "properties": {
+            "limit": {
+              "description": "The maximum number of files to return. Defaults to 10, max is 100.",
+              "value": 4
+            },
+            "start_after": {
+              "description": "The file name to start after. If not provided, the query will start\nfrom the beginning.",
+              "value": 2
+            }
+          }
+        },
+        "list_messages": {
+          "type": "named",
+          "properties": {
+            "file_name": {
+              "description": "Optionally list messages by file name.",
+              "value": 2
+            },
+            "limit": {
+              "description": "The maximum number of messages to return. Defaults to 10, max is\n100.",
+              "value": 4
+            },
+            "start_after": {
+              "description": "The message name to start after. If not provided, the query will\nstart from the beginning.",
+              "value": 2
+            }
+          }
+        },
+        "list_prepared": {
+          "type": "named",
+          "properties": {
+            "limit": {
+              "description": "The maximum number of messages to return. Defaults to 10, max is\n100.",
+              "value": 4
+            },
+            "start_after": {
+              "description": "The message name to start after. If not provided, the query will\nstart from the beginning.",
+              "value": 2
+            }
+          }
+        },
+        "ownership": {
+          "description": "Query the contract's ownership information",
+          "type": "named",
+          "properties": {}
+        },
+        "prepared": {
+          "type": "named",
+          "properties": {
+            "message_name": {
+              "description": "The message name to check.",
+              "value": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "core::option::Option<alloc::string::String>",
+      "type": "optional",
+      "inner": 1
+    },
+    {
+      "name": "u32",
+      "type": "integer",
+      "precision": 32,
+      "signed": false
+    },
+    {
+      "name": "core::option::Option<u32>",
+      "type": "optional",
+      "inner": 3
+    },
+    {
+      "name": "alloc::vec::Vec<alloc::string::String>",
+      "type": "array",
+      "items": 1
+    },
+    {
+      "name": "u8",
+      "type": "integer",
+      "precision": 8,
+      "signed": false
+    },
+    {
+      "name": "alloc::vec::Vec<u8>",
+      "type": "array",
+      "items": 6
+    }
+  ]
+}

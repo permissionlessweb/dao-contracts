@@ -1,4 +1,4 @@
-use cosmwasm_std::{Uint128, Uint256};
+use cosmwasm_std::Uint256;
 use cw_utils::Expiration;
 
 use crate::{

@@ -1,0 +1,49 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "cw721_msg_NftInfoResponse_dao_cw721_extensions_roles_MetadataExt_",
+      "type": "struct",
+      "properties": {
+        "extension": {
+          "description": "You can add any custom metadata here when you extend cw721-base",
+          "value": 3
+        },
+        "token_uri": {
+          "description": "Universal resource identifier for this NFT\nShould point to a JSON file that conforms to the ERC721\nMetadata JSON Schema",
+          "value": 2
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "core::option::Option<alloc::string::String>",
+      "type": "optional",
+      "inner": 1
+    },
+    {
+      "name": "dao_cw721_extensions_roles_MetadataExt",
+      "type": "struct",
+      "properties": {
+        "role": {
+          "description": "Optional on-chain role for this member, can be used by other contracts to enforce permissions",
+          "value": 2
+        },
+        "weight": {
+          "description": "The voting weight of this role",
+          "value": 4
+        }
+      }
+    },
+    {
+      "name": "u64",
+      "type": "integer",
+      "precision": 64,
+      "signed": false
+    }
+  ]
+}

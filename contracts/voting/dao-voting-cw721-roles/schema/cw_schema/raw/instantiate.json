@@ -1,0 +1,126 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "dao_voting_cw721_roles_msg_InstantiateMsg",
+      "type": "struct",
+      "properties": {
+        "nft_contract": {
+          "description": "Info about the associated NFT contract",
+          "value": 1
+        }
+      }
+    },
+    {
+      "name": "dao_voting_cw721_roles_msg_NftContract",
+      "type": "enum",
+      "cases": {
+        "existing": {
+          "type": "named",
+          "properties": {
+            "address": {
+              "description": "Address of an already instantiated cw721-weighted-roles token contract.",
+              "value": 2
+            }
+          }
+        },
+        "new": {
+          "type": "named",
+          "properties": {
+            "code_id": {
+              "description": "Code ID for cw721 token contract.",
+              "value": 3
+            },
+            "initial_nfts": {
+              "description": "Initial NFTs to mint when instantiating the new cw721 contract.\nIf empty, an error is thrown.",
+              "value": 9
+            },
+            "label": {
+              "description": "Label to use for instantiated cw721 contract.",
+              "value": 2
+            },
+            "name": {
+              "description": "NFT collection name",
+              "value": 2
+            },
+            "salt": {
+              "description": "Optionally instantiate the token via instantiate2 using this salt.",
+              "value": 5
+            },
+            "symbol": {
+              "description": "NFT collection symbol",
+              "value": 2
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "u64",
+      "type": "integer",
+      "precision": 64,
+      "signed": false
+    },
+    {
+      "name": "cosmwasm_std_binary_Binary",
+      "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization\nwith serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>.\nSee also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+      "type": "binary"
+    },
+    {
+      "name": "core::option::Option<cosmwasm_std::binary::Binary>",
+      "type": "optional",
+      "inner": 4
+    },
+    {
+      "name": "dao_voting_cw721_roles_msg_NftMintMsg",
+      "type": "struct",
+      "properties": {
+        "extension": {
+          "description": "Any custom extension used by this contract",
+          "value": 8
+        },
+        "owner": {
+          "description": "The owner of the newly minter NFT",
+          "value": 2
+        },
+        "token_id": {
+          "description": "Unique ID of the NFT",
+          "value": 2
+        },
+        "token_uri": {
+          "description": "Universal resource identifier for this NFT\nShould point to a JSON file that conforms to the ERC721\nMetadata JSON Schema",
+          "value": 7
+        }
+      }
+    },
+    {
+      "name": "core::option::Option<alloc::string::String>",
+      "type": "optional",
+      "inner": 2
+    },
+    {
+      "name": "dao_cw721_extensions_roles_MetadataExt",
+      "type": "struct",
+      "properties": {
+        "role": {
+          "description": "Optional on-chain role for this member, can be used by other contracts to enforce permissions",
+          "value": 7
+        },
+        "weight": {
+          "description": "The voting weight of this role",
+          "value": 3
+        }
+      }
+    },
+    {
+      "name": "alloc::vec::Vec<dao_voting_cw721_roles::msg::NftMintMsg>",
+      "type": "array",
+      "items": 6
+    }
+  ]
+}

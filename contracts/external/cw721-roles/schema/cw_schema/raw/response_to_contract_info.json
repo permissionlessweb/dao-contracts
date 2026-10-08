@@ -1,0 +1,45 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "cw721_msg_CollectionInfoAndExtensionResponse_core_option_Option_cosmwasm_std_results_empty_Empty__",
+      "description": "This is a wrapper around CollectionInfo that includes the extension.",
+      "type": "struct",
+      "properties": {
+        "extension": {
+          "value": 3
+        },
+        "name": {
+          "value": 1
+        },
+        "symbol": {
+          "value": 1
+        },
+        "updated_at": {
+          "value": 4
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "cosmwasm_std_results_empty_Empty",
+      "description": "An empty struct that serves as a placeholder in different places,\nsuch as contracts that don't set a custom message.\n\nIt is designed to be expressible in correct JSON and JSON Schema but\ncontains no meaningful data. Previously we used enums without cases,\nbut those cannot be represented as valid JSON Schema (https://github.com/CosmWasm/cosmwasm/issues/451)",
+      "type": "struct",
+      "properties": {}
+    },
+    {
+      "name": "core::option::Option<cosmwasm_std::results::empty::Empty>",
+      "type": "optional",
+      "inner": 2
+    },
+    {
+      "name": "cosmwasm_std_timestamp_Timestamp",
+      "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+      "type": "timestamp"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-use cosmwasm_std::{coins, testing::MockApi, Addr, Uint256};
+use cosmwasm_std::{coins, testing::MockApi, Uint256};
 use cw20::Cw20Coin;
 use cw_multi_test::{App, BankSudo, Executor};
 use dao_testing::contracts::cw20_base_contract;
@@ -19,7 +19,7 @@ fn test_cw20_denom_send() {
                 symbol: "symbol".to_string(),
                 decimals: 6,
                 initial_balances: vec![Cw20Coin {
-                    amount: Uint256::new(10).into(),
+                    amount: Uint256::new(10),
                     address: MockApi::default().addr_make("ekez").to_string(),
                 }],
                 mint: None,

@@ -278,8 +278,8 @@ where
                     vote: Some(VoteInfo {
                         voter: Addr::unchecked(&voter),
                         vote: position,
-                        power: expected_power.into(),
-                        individual_power: expected_power.into(),
+                        power: expected_power,
+                        individual_power: expected_power,
                         rationale: None,
                     }),
                 };

@@ -1,0 +1,99 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "dao_pre_propose_base_msg_DepositInfoResponse",
+      "type": "struct",
+      "properties": {
+        "deposit_info": {
+          "description": "The deposit that has been paid for the specified proposal.",
+          "value": 7
+        },
+        "proposer": {
+          "description": "The address that created the proposal.",
+          "value": 4
+        }
+      }
+    },
+    {
+      "name": "dao_voting_deposit_CheckedDepositInfo",
+      "description": "Counterpart to the `DepositInfo` struct which has been\nprocessed. This type should never be constructed literally and\nshould always by built by calling `into_checked` on a\n`DepositInfo` instance.",
+      "type": "struct",
+      "properties": {
+        "amount": {
+          "description": "The number of tokens that must be deposited to create a\nproposal. This is validated to be non-zero if this struct is\nconstructed by converted via the `into_checked` method on\n`DepositInfo`.",
+          "value": 5
+        },
+        "denom": {
+          "description": "The address of the cw20 token to be used for proposal\ndeposits.",
+          "value": 2
+        },
+        "refund_policy": {
+          "description": "The policy used for refunding proposal deposits.",
+          "value": 6
+        }
+      }
+    },
+    {
+      "name": "cw_denom_CheckedDenom",
+      "description": "A denom that has been checked to point to a valid asset. This enum\nshould never be constructed literally and should always be built\nby calling `into_checked` on an `UncheckedDenom` instance.",
+      "type": "enum",
+      "cases": {
+        "cw20": {
+          "description": "A cw20 asset.",
+          "type": "tuple",
+          "items": [
+            4
+          ]
+        },
+        "native": {
+          "description": "A native (bank module) asset.",
+          "type": "tuple",
+          "items": [
+            3
+          ]
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "cosmwasm_std_addresses_Addr",
+      "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+      "type": "address"
+    },
+    {
+      "name": "cosmwasm_std_math_uint256_Uint256",
+      "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+      "type": "integer",
+      "precision": 256,
+      "signed": false
+    },
+    {
+      "name": "dao_voting_deposit_DepositRefundPolicy",
+      "type": "enum",
+      "cases": {
+        "always": {
+          "description": "Deposits should always be refunded.",
+          "type": "unit"
+        },
+        "never": {
+          "description": "Deposits should never be refunded.",
+          "type": "unit"
+        },
+        "only_passed": {
+          "description": "Deposits should only be refunded for passed proposals.",
+          "type": "unit"
+        }
+      }
+    },
+    {
+      "name": "core::option::Option<dao_voting::deposit::CheckedDepositInfo>",
+      "type": "optional",
+      "inner": 1
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "cw_protobuf_registry_msg_FileDescriptorSetResponse",
+      "type": "struct",
+      "properties": {
+        "file_descriptor_set": {
+          "value": 2
+        }
+      }
+    },
+    {
+      "name": "u8",
+      "type": "integer",
+      "precision": 8,
+      "signed": false
+    },
+    {
+      "name": "alloc::vec::Vec<u8>",
+      "type": "array",
+      "items": 1
+    }
+  ]
+}

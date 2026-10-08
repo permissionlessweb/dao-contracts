@@ -1,0 +1,25 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "cw_protobuf_registry_msg_InstantiateMsg",
+      "type": "struct",
+      "properties": {
+        "owner": {
+          "description": "The address of the initial owner of the contract. Defaults to the\nsender.",
+          "value": 2
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "core::option::Option<alloc::string::String>",
+      "type": "optional",
+      "inner": 1
+    }
+  ]
+}

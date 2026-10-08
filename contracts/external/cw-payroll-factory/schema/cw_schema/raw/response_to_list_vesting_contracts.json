@@ -1,0 +1,30 @@
+{
+  "type": "v1",
+  "root": 2,
+  "definitions": [
+    {
+      "name": "cw_payroll_factory_state_VestingContract",
+      "type": "struct",
+      "properties": {
+        "contract": {
+          "value": 1
+        },
+        "instantiator": {
+          "value": 1
+        },
+        "recipient": {
+          "value": 1
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "alloc::vec::Vec<cw_payroll_factory::state::VestingContract>",
+      "type": "array",
+      "items": 0
+    }
+  ]
+}

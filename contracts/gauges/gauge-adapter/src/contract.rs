@@ -401,7 +401,6 @@ mod tests {
     use super::*;
 
     use cosmwasm_std::{
-        coins,
         testing::{message_info, mock_dependencies, mock_env, MockApi},
         BankMsg, Coin, CosmosMsg, Decimal, Uint256, WasmMsg,
     };

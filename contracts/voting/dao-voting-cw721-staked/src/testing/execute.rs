@@ -116,6 +116,7 @@ pub fn claim_nfts(app: &mut App, module: &Addr, sender: &str) -> StdResult<AppRe
     )
 }
 
+#[allow(dead_code)]
 pub fn claim_specific_nfts(
     app: &mut App,
     module: &Addr,

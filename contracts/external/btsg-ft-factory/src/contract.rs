@@ -43,9 +43,6 @@ pub fn execute(
     }
 }
 
-#[cfg(test)]
-const MOCK_FANTOKEN_DENOM: &str = "fantoken1";
-
 pub fn execute_issue(
     deps: DepsMut,
     env: Env,

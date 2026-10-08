@@ -1,0 +1,87 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "dao_vote_delegation_msg_InstantiateMsg",
+      "type": "struct",
+      "properties": {
+        "dao": {
+          "description": "The DAO. If not provided, the instantiator is used.",
+          "value": 2
+        },
+        "delegation_validity_blocks": {
+          "description": "the number of blocks a delegation is valid for, after which it must be\nrenewed by the delegator. if not set, the delegation will never expire.",
+          "value": 10
+        },
+        "max_delegations": {
+          "description": "the total number of delegations a member can have. this should be set\nbased on the max gas allowed in a single block for the given chain.\n\nthis limit is relevant for two reasons:\n1. when voting power is updated for a delegator, we must loop through\nall of their delegates and update their delegated voting power\n2. when a delegator casts a vote on a proposal that overrides their\ndelegates' votes, we must loop through all of their delegates and\nupdate the proposal vote tally accordingly\n\nin tests on Neutron, with a block max gas of 30M (which is one of the\nlowest gas limits on any chain), we found that 50 delegations is a safe\nupper bound, so this defaults to 50.",
+          "value": 10
+        },
+        "no_sync_proposal_modules": {
+          "description": "Whether or not to sync proposal modules initially. If there are too\nmany, the instantiation will run out of gas, so this should be disabled\nand `SyncProposalModules` called manually.\n\nDefaults to `false`.",
+          "value": 6
+        },
+        "vp_cap_percent": {
+          "description": "the maximum percent of voting power that a single delegate can wield.\nthey can be delegated any amount of voting power—this cap is only\napplied when casting votes.",
+          "value": 8
+        },
+        "vp_hook_callers": {
+          "description": "The authorized voting power changed hook callers.",
+          "value": 4
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "core::option::Option<alloc::string::String>",
+      "type": "optional",
+      "inner": 1
+    },
+    {
+      "name": "alloc::vec::Vec<alloc::string::String>",
+      "type": "array",
+      "items": 1
+    },
+    {
+      "name": "core::option::Option<alloc::vec::Vec<alloc::string::String>>",
+      "type": "optional",
+      "inner": 3
+    },
+    {
+      "name": "bool",
+      "type": "boolean"
+    },
+    {
+      "name": "core::option::Option<bool>",
+      "type": "optional",
+      "inner": 5
+    },
+    {
+      "name": "cosmwasm_std_math_decimal_Decimal",
+      "description": "A fixed-point decimal value with 18 fractional digits, i.e. Decimal(1_000_000_000_000_000_000) == 1.0\n\nThe greatest possible value that can be represented is 340282366920938463463.374607431768211455 = (2^128 - 1) / 10^18",
+      "type": "decimal",
+      "precision": 128,
+      "signed": false
+    },
+    {
+      "name": "core::option::Option<cosmwasm_std::math::decimal::Decimal>",
+      "type": "optional",
+      "inner": 7
+    },
+    {
+      "name": "u64",
+      "type": "integer",
+      "precision": 64,
+      "signed": false
+    },
+    {
+      "name": "core::option::Option<u64>",
+      "type": "optional",
+      "inner": 9
+    }
+  ]
+}

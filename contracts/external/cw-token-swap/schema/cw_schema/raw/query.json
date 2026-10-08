@@ -1,0 +1,16 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "cw_token_swap_msg_QueryMsg",
+      "type": "enum",
+      "cases": {
+        "status": {
+          "type": "named",
+          "properties": {}
+        }
+      }
+    }
+  ]
+}

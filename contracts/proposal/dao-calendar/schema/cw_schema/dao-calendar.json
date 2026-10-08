@@ -1,0 +1,3582 @@
+{
+  "contract_name": "dao-calendar",
+  "contract_version": "2.8.0-alpha.3",
+  "idl_version": "1.0.0",
+  "instantiate": {
+    "type": "v1",
+    "root": 0,
+    "definitions": [
+      {
+        "name": "cw721_msg_Cw721InstantiateMsg_dao_calendar_contract_CalendarModuleCollectionExtension_",
+        "type": "struct",
+        "properties": {
+          "collection_info_extension": {
+            "description": "Optional extension of the collection metadata",
+            "value": 2
+          },
+          "creator": {
+            "description": "Sets the creator of collection. The creator is the only one eligible to update `CollectionInfo`.",
+            "value": 19
+          },
+          "minter": {
+            "description": "The minter is the only one who can create new NFTs.\nThis is designed for a base NFT that is controlled by an external program\nor contract. You will likely replace this with custom logic in custom NFTs",
+            "value": 19
+          },
+          "name": {
+            "description": "Name of the NFT contract",
+            "value": 1
+          },
+          "symbol": {
+            "description": "Symbol of the NFT contract",
+            "value": 1
+          },
+          "withdraw_address": {
+            "value": 19
+          }
+        }
+      },
+      {
+        "name": "String",
+        "type": "string"
+      },
+      {
+        "name": "dao_calendar_contract_CalendarModuleCollectionExtension",
+        "type": "struct",
+        "properties": {
+          "delegation_module": {
+            "value": 19
+          },
+          "max_event_period": {
+            "value": 3
+          },
+          "min_event_period": {
+            "value": 5
+          },
+          "pre_propose_info": {
+            "value": 6
+          },
+          "veto": {
+            "value": 18
+          }
+        }
+      },
+      {
+        "name": "cw_utils_expiration_Duration",
+        "description": "Duration is a delta of time. You can add it to a BlockInfo or Expiration to\nmove that further in the future. Note that an height-based Duration and\na time-based Expiration cannot be combined",
+        "type": "enum",
+        "cases": {
+          "height": {
+            "type": "tuple",
+            "items": [
+              4
+            ]
+          },
+          "time": {
+            "description": "Time in seconds",
+            "type": "tuple",
+            "items": [
+              4
+            ]
+          }
+        }
+      },
+      {
+        "name": "u64",
+        "type": "integer",
+        "precision": 64,
+        "signed": false
+      },
+      {
+        "name": "core::option::Option<cw_utils::expiration::Duration>",
+        "type": "optional",
+        "inner": 3
+      },
+      {
+        "name": "dao_voting_pre_propose_PreProposeInfo",
+        "type": "enum",
+        "cases": {
+          "anyone_may_propose": {
+            "description": "Anyone may create a proposal free of charge.",
+            "type": "named",
+            "properties": {}
+          },
+          "module_may_propose": {
+            "description": "The module specified in INFO has exclusive rights to proposal\ncreation.",
+            "type": "named",
+            "properties": {
+              "info": {
+                "value": 7
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "dao_interface_state_ModuleInstantiateInfo",
+        "description": "Information needed to instantiate a module.",
+        "type": "struct",
+        "properties": {
+          "admin": {
+            "description": "CosmWasm level admin of the instantiated contract. See:\n<https://docs.cosmwasm.com/docs/1.0/smart-contracts/migration>",
+            "value": 10
+          },
+          "code_id": {
+            "description": "Code ID of the contract to be instantiated.",
+            "value": 4
+          },
+          "funds": {
+            "description": "Funds to be sent to the instantiated contract.",
+            "value": 14
+          },
+          "label": {
+            "description": "Label for the instantiated contract.",
+            "value": 1
+          },
+          "msg": {
+            "description": "Instantiate message to be used to create the contract.",
+            "value": 8
+          },
+          "salt": {
+            "description": "Salt to use with instantiate2, if defined. Otherwise uses normal\ninstantiate.",
+            "value": 15
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_binary_Binary",
+        "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization\nwith serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>.\nSee also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+        "type": "binary"
+      },
+      {
+        "name": "dao_interface_state_Admin",
+        "description": "Information about the CosmWasm level admin of a contract. Used in\nconjunction with `ModuleInstantiateInfo` to instantiate modules.",
+        "type": "enum",
+        "cases": {
+          "address": {
+            "description": "Set the admin to a specified address.",
+            "type": "named",
+            "properties": {
+              "addr": {
+                "value": 1
+              }
+            }
+          },
+          "core_module": {
+            "description": "Sets the admin as the core module address.",
+            "type": "named",
+            "properties": {}
+          }
+        }
+      },
+      {
+        "name": "core::option::Option<dao_interface::state::Admin>",
+        "type": "optional",
+        "inner": 9
+      },
+      {
+        "name": "cosmwasm_std_coin_Coin",
+        "type": "struct",
+        "properties": {
+          "amount": {
+            "value": 12
+          },
+          "denom": {
+            "value": 1
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_math_uint256_Uint256",
+        "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+        "type": "integer",
+        "precision": 256,
+        "signed": false
+      },
+      {
+        "name": "alloc::vec::Vec<cosmwasm_std::coin::Coin>",
+        "type": "array",
+        "items": 11
+      },
+      {
+        "name": "core::option::Option<alloc::vec::Vec<cosmwasm_std::coin::Coin>>",
+        "type": "optional",
+        "inner": 13
+      },
+      {
+        "name": "core::option::Option<cosmwasm_std::binary::Binary>",
+        "type": "optional",
+        "inner": 8
+      },
+      {
+        "name": "dao_voting_veto_VetoConfig",
+        "type": "struct",
+        "properties": {
+          "early_execute": {
+            "description": "Whether or not the vetoer can execute a proposal early before the\ntimelock duration has expired",
+            "value": 17
+          },
+          "timelock_duration": {
+            "description": "The time duration to lock a proposal for after its expiration to allow\nthe vetoer to veto.",
+            "value": 3
+          },
+          "veto_before_passed": {
+            "description": "Whether or not the vetoer can veto a proposal before it passes.",
+            "value": 17
+          },
+          "vetoer": {
+            "description": "The address able to veto proposals.",
+            "value": 1
+          }
+        }
+      },
+      {
+        "name": "bool",
+        "type": "boolean"
+      },
+      {
+        "name": "core::option::Option<dao_voting::veto::VetoConfig>",
+        "type": "optional",
+        "inner": 16
+      },
+      {
+        "name": "core::option::Option<alloc::string::String>",
+        "type": "optional",
+        "inner": 1
+      }
+    ]
+  },
+  "execute": {
+    "type": "v1",
+    "root": 0,
+    "definitions": [
+      {
+        "name": "cw721_msg_Cw721ExecuteMsg_dao_calendar_contract_MetadataExt, dao_calendar_contract_CalendarModuleCollectionExtension, dao_calendar_contract_msg_ExecuteExt_",
+        "type": "enum",
+        "cases": {
+          "add_minter": {
+            "description": "Add an additional minter. Only the primary minter (manager) can call this.",
+            "type": "named",
+            "properties": {
+              "minter": {
+                "value": 2
+              }
+            }
+          },
+          "approve": {
+            "description": "Allows operator to transfer / send the token from the owner's account.\nIf expiration is set, then this allowance has a time/height limit",
+            "type": "named",
+            "properties": {
+              "expires": {
+                "value": 6
+              },
+              "spender": {
+                "value": 2
+              },
+              "token_id": {
+                "value": 2
+              }
+            }
+          },
+          "approve_all": {
+            "description": "Allows operator to transfer / send any token from the owner's account.\nIf expiration is set, then this allowance has a time/height limit",
+            "type": "named",
+            "properties": {
+              "expires": {
+                "value": 6
+              },
+              "operator": {
+                "value": 2
+              }
+            }
+          },
+          "burn": {
+            "description": "Burn an NFT the sender has access to",
+            "type": "named",
+            "properties": {
+              "token_id": {
+                "value": 2
+              }
+            }
+          },
+          "mint": {
+            "description": "Mint a new NFT, can only be called by the contract minter",
+            "type": "named",
+            "properties": {
+              "extension": {
+                "description": "Any custom extension used by this contract",
+                "value": 25
+              },
+              "owner": {
+                "description": "The owner of the newly minter NFT",
+                "value": 2
+              },
+              "token_id": {
+                "description": "Unique ID of the NFT",
+                "value": 2
+              },
+              "token_uri": {
+                "description": "Universal resource identifier for this NFT\nShould point to a JSON file that conforms to the ERC721\nMetadata JSON Schema",
+                "value": 8
+              }
+            }
+          },
+          "remove_minter": {
+            "description": "Remove an additional minter. Only the primary minter (manager) can call this.",
+            "type": "named",
+            "properties": {
+              "minter": {
+                "value": 2
+              }
+            }
+          },
+          "remove_withdraw_address": {
+            "description": "Removes the withdraw address, so fees are sent to the contract. Only owner can call this.",
+            "type": "named",
+            "properties": {}
+          },
+          "revoke": {
+            "description": "Remove previously granted Approval",
+            "type": "named",
+            "properties": {
+              "spender": {
+                "value": 2
+              },
+              "token_id": {
+                "value": 2
+              }
+            }
+          },
+          "revoke_all": {
+            "description": "Remove previously granted ApproveAll permission",
+            "type": "named",
+            "properties": {
+              "operator": {
+                "value": 2
+              }
+            }
+          },
+          "send_nft": {
+            "description": "Send is a base message to transfer a token to a contract and trigger an action\non the receiving contract.",
+            "type": "named",
+            "properties": {
+              "contract": {
+                "value": 2
+              },
+              "msg": {
+                "value": 14
+              },
+              "token_id": {
+                "value": 2
+              }
+            }
+          },
+          "set_withdraw_address": {
+            "description": "Sets address to send withdrawn fees to. Only owner can call this.",
+            "type": "named",
+            "properties": {
+              "address": {
+                "value": 2
+              }
+            }
+          },
+          "transfer_nft": {
+            "description": "Transfer is a base message to move a token to another account without triggering actions",
+            "type": "named",
+            "properties": {
+              "recipient": {
+                "value": 2
+              },
+              "token_id": {
+                "value": 2
+              }
+            }
+          },
+          "update_collection_info": {
+            "description": "The creator is the only one eligible to update `CollectionInfo`.",
+            "type": "named",
+            "properties": {
+              "collection_info": {
+                "value": 7
+              }
+            }
+          },
+          "update_creator_ownership": {
+            "type": "tuple",
+            "items": [
+              1
+            ]
+          },
+          "update_extension": {
+            "description": "Custom msg execution. This is a no-op in default implementation.",
+            "type": "named",
+            "properties": {
+              "msg": {
+                "value": 27
+              }
+            }
+          },
+          "update_minter_ownership": {
+            "type": "tuple",
+            "items": [
+              1
+            ]
+          },
+          "update_nft_info": {
+            "description": "The creator is the only one eligible to update NFT's token uri and onchain metadata (`NftInfo.extension`).\nNOTE: approvals and owner are not affected by this call, since they belong to the NFT owner.",
+            "type": "named",
+            "properties": {
+              "extension": {
+                "value": 25
+              },
+              "token_id": {
+                "value": 2
+              },
+              "token_uri": {
+                "description": "NOTE: Empty string is handled as None",
+                "value": 8
+              }
+            }
+          },
+          "update_ownership": {
+            "description": "Deprecated: use UpdateMinterOwnership instead! Will be removed in next release!",
+            "type": "tuple",
+            "items": [
+              1
+            ]
+          },
+          "withdraw_funds": {
+            "description": "Withdraw from the contract to the given address. Anyone can call this,\nwhich is okay since withdraw address has been set by owner.",
+            "type": "named",
+            "properties": {
+              "amount": {
+                "value": 17
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "cw_ownable_Action",
+        "description": "Actions that can be taken to alter the contract's ownership",
+        "type": "enum",
+        "cases": {
+          "accept_ownership": {
+            "description": "Accept the pending ownership transfer.\n\nCan only be called by the pending owner.",
+            "type": "unit"
+          },
+          "renounce_ownership": {
+            "description": "Give up the contract's ownership and the possibility of appointing\na new owner.\n\nCan only be invoked by the contract's current owner.\n\nAny existing pending ownership transfer is canceled.",
+            "type": "unit"
+          },
+          "transfer_ownership": {
+            "description": "Propose to transfer the contract's ownership to another account,\noptionally with an expiry time.\n\nCan only be called by the contract's current owner.\n\nAny existing pending ownership transfer is overwritten.",
+            "type": "named",
+            "properties": {
+              "expiry": {
+                "value": 6
+              },
+              "new_owner": {
+                "value": 2
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "String",
+        "type": "string"
+      },
+      {
+        "name": "cw_utils_expiration_Expiration",
+        "description": "Expiration represents a point in time when some event happens.\nIt can compare with a BlockInfo and will return is_expired() == true\nonce the condition is hit (and for every block in the future)",
+        "type": "enum",
+        "cases": {
+          "at_height": {
+            "description": "AtHeight will expire when `env.block.height` >= height",
+            "type": "tuple",
+            "items": [
+              4
+            ]
+          },
+          "at_time": {
+            "description": "AtTime will expire when `env.block.time` >= time",
+            "type": "tuple",
+            "items": [
+              5
+            ]
+          },
+          "never": {
+            "description": "Never will never expire. Used to express the empty variant",
+            "type": "named",
+            "properties": {}
+          }
+        }
+      },
+      {
+        "name": "u64",
+        "type": "integer",
+        "precision": 64,
+        "signed": false
+      },
+      {
+        "name": "cosmwasm_std_timestamp_Timestamp",
+        "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+        "type": "timestamp"
+      },
+      {
+        "name": "core::option::Option<cw_utils::expiration::Expiration>",
+        "type": "optional",
+        "inner": 3
+      },
+      {
+        "name": "cw721_msg_CollectionInfoMsg_dao_calendar_contract_CalendarModuleCollectionExtension_",
+        "type": "struct",
+        "properties": {
+          "extension": {
+            "value": 9
+          },
+          "name": {
+            "value": 8
+          },
+          "symbol": {
+            "value": 8
+          }
+        }
+      },
+      {
+        "name": "core::option::Option<alloc::string::String>",
+        "type": "optional",
+        "inner": 2
+      },
+      {
+        "name": "dao_calendar_contract_CalendarModuleCollectionExtension",
+        "type": "struct",
+        "properties": {
+          "delegation_module": {
+            "value": 8
+          },
+          "max_event_period": {
+            "value": 10
+          },
+          "min_event_period": {
+            "value": 11
+          },
+          "pre_propose_info": {
+            "value": 12
+          },
+          "veto": {
+            "value": 24
+          }
+        }
+      },
+      {
+        "name": "cw_utils_expiration_Duration",
+        "description": "Duration is a delta of time. You can add it to a BlockInfo or Expiration to\nmove that further in the future. Note that an height-based Duration and\na time-based Expiration cannot be combined",
+        "type": "enum",
+        "cases": {
+          "height": {
+            "type": "tuple",
+            "items": [
+              4
+            ]
+          },
+          "time": {
+            "description": "Time in seconds",
+            "type": "tuple",
+            "items": [
+              4
+            ]
+          }
+        }
+      },
+      {
+        "name": "core::option::Option<cw_utils::expiration::Duration>",
+        "type": "optional",
+        "inner": 10
+      },
+      {
+        "name": "dao_voting_pre_propose_PreProposeInfo",
+        "type": "enum",
+        "cases": {
+          "anyone_may_propose": {
+            "description": "Anyone may create a proposal free of charge.",
+            "type": "named",
+            "properties": {}
+          },
+          "module_may_propose": {
+            "description": "The module specified in INFO has exclusive rights to proposal\ncreation.",
+            "type": "named",
+            "properties": {
+              "info": {
+                "value": 13
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "dao_interface_state_ModuleInstantiateInfo",
+        "description": "Information needed to instantiate a module.",
+        "type": "struct",
+        "properties": {
+          "admin": {
+            "description": "CosmWasm level admin of the instantiated contract. See:\n<https://docs.cosmwasm.com/docs/1.0/smart-contracts/migration>",
+            "value": 16
+          },
+          "code_id": {
+            "description": "Code ID of the contract to be instantiated.",
+            "value": 4
+          },
+          "funds": {
+            "description": "Funds to be sent to the instantiated contract.",
+            "value": 20
+          },
+          "label": {
+            "description": "Label for the instantiated contract.",
+            "value": 2
+          },
+          "msg": {
+            "description": "Instantiate message to be used to create the contract.",
+            "value": 14
+          },
+          "salt": {
+            "description": "Salt to use with instantiate2, if defined. Otherwise uses normal\ninstantiate.",
+            "value": 21
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_binary_Binary",
+        "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization\nwith serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>.\nSee also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+        "type": "binary"
+      },
+      {
+        "name": "dao_interface_state_Admin",
+        "description": "Information about the CosmWasm level admin of a contract. Used in\nconjunction with `ModuleInstantiateInfo` to instantiate modules.",
+        "type": "enum",
+        "cases": {
+          "address": {
+            "description": "Set the admin to a specified address.",
+            "type": "named",
+            "properties": {
+              "addr": {
+                "value": 2
+              }
+            }
+          },
+          "core_module": {
+            "description": "Sets the admin as the core module address.",
+            "type": "named",
+            "properties": {}
+          }
+        }
+      },
+      {
+        "name": "core::option::Option<dao_interface::state::Admin>",
+        "type": "optional",
+        "inner": 15
+      },
+      {
+        "name": "cosmwasm_std_coin_Coin",
+        "type": "struct",
+        "properties": {
+          "amount": {
+            "value": 18
+          },
+          "denom": {
+            "value": 2
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_math_uint256_Uint256",
+        "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+        "type": "integer",
+        "precision": 256,
+        "signed": false
+      },
+      {
+        "name": "alloc::vec::Vec<cosmwasm_std::coin::Coin>",
+        "type": "array",
+        "items": 17
+      },
+      {
+        "name": "core::option::Option<alloc::vec::Vec<cosmwasm_std::coin::Coin>>",
+        "type": "optional",
+        "inner": 19
+      },
+      {
+        "name": "core::option::Option<cosmwasm_std::binary::Binary>",
+        "type": "optional",
+        "inner": 14
+      },
+      {
+        "name": "dao_voting_veto_VetoConfig",
+        "type": "struct",
+        "properties": {
+          "early_execute": {
+            "description": "Whether or not the vetoer can execute a proposal early before the\ntimelock duration has expired",
+            "value": 23
+          },
+          "timelock_duration": {
+            "description": "The time duration to lock a proposal for after its expiration to allow\nthe vetoer to veto.",
+            "value": 10
+          },
+          "veto_before_passed": {
+            "description": "Whether or not the vetoer can veto a proposal before it passes.",
+            "value": 23
+          },
+          "vetoer": {
+            "description": "The address able to veto proposals.",
+            "value": 2
+          }
+        }
+      },
+      {
+        "name": "bool",
+        "type": "boolean"
+      },
+      {
+        "name": "core::option::Option<dao_voting::veto::VetoConfig>",
+        "type": "optional",
+        "inner": 22
+      },
+      {
+        "name": "dao_calendar_contract_MetadataExt",
+        "type": "struct",
+        "properties": {
+          "author_pubkey": {
+            "description": "Optional: Store the author's pubkey.",
+            "value": 8
+          },
+          "calendar_d": {
+            "description": "Calendar this event belongs to. Token ID of the parent calendar NFT,\nor `None` for standalone events (no parent calendar).",
+            "value": 8
+          },
+          "cid": {
+            "description": "IPFS CID pointing to the full Nostr event JSON (off-chain only).",
+            "value": 8
+          },
+          "d_tag": {
+            "description": "Cached d-tag for addressable events (kind 30000–39999).\nAvoids decoding `e` just to read the identifier.",
+            "value": 8
+          },
+          "e": {
+            "description": "Encoded NIP-52 `CalendarEventMetadata` (on-chain).\nEmpty `Binary` when off-chain.",
+            "value": 14
+          },
+          "kind": {
+            "description": "Nostr event kind (31922 date-based, 31923 time-based).\nAlways populated for efficient on-chain filtering.",
+            "value": 26
+          },
+          "nostr_e_d": {
+            "description": "Optional: Store the raw nostr event ID for verification.",
+            "value": 8
+          },
+          "on_chain": {
+            "description": "`true` = full Nostr event stored on-chain in `e`.\n`false` = only an IPFS CID pointer lives on-chain.",
+            "value": 23
+          }
+        }
+      },
+      {
+        "name": "u16",
+        "type": "integer",
+        "precision": 16,
+        "signed": false
+      },
+      {
+        "name": "dao_calendar_contract_msg_ExecuteExt",
+        "type": "enum",
+        "cases": {
+          "add_calendar_hook": {
+            "description": "Register a calendar state change hook. DAO-only.",
+            "type": "named",
+            "properties": {
+              "address": {
+                "value": 2
+              }
+            }
+          },
+          "cancel_event": {
+            "description": "Cancel a NIP-52 event.",
+            "type": "named",
+            "properties": {
+              "e_d": {
+                "value": 2
+              }
+            }
+          },
+          "create_calendar": {
+            "description": "Create a new calendar NFT. The pre-propose module validates\nwho may call this.",
+            "type": "named",
+            "properties": {
+              "extension": {
+                "value": 25
+              },
+              "owner": {
+                "description": "Optional initial owner. Defaults to sender if unset.",
+                "value": 8
+              }
+            }
+          },
+          "create_event": {
+            "description": "Create a NIP-52 event within a calendar NFT. The calendar\nowner must be the sender.",
+            "type": "named",
+            "properties": {
+              "d": {
+                "value": 2
+              },
+              "event": {
+                "value": 25
+              }
+            }
+          },
+          "remove_calendar_hook": {
+            "description": "Remove a calendar state change hook. DAO-only.",
+            "type": "named",
+            "properties": {
+              "address": {
+                "value": 2
+              }
+            }
+          },
+          "transfer_calendar": {
+            "description": "Transfer a calendar NFT to a new owner.",
+            "type": "named",
+            "properties": {
+              "d": {
+                "value": 2
+              },
+              "recipient": {
+                "value": 2
+              }
+            }
+          },
+          "update_delegation_module": {
+            "description": "Update delegation module address. DAO-only.",
+            "type": "named",
+            "properties": {
+              "module": {
+                "value": 2
+              }
+            }
+          },
+          "update_event": {
+            "description": "Update a NIP-52 event's mutable fields.",
+            "type": "named",
+            "properties": {
+              "e_d": {
+                "value": 2
+              },
+              "event": {
+                "value": 25
+              }
+            }
+          },
+          "update_pre_propose_info": {
+            "description": "Update proposal creation policy. DAO-only.",
+            "type": "named",
+            "properties": {
+              "info": {
+                "value": 12
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "query": {
+    "type": "v1",
+    "root": 0,
+    "definitions": [
+      {
+        "name": "cw721_msg_Cw721QueryMsg_dao_calendar_contract_MetadataExt, dao_calendar_contract_CalendarModuleCollectionExtension, dao_calendar_contract_msg_QueryExt_",
+        "type": "enum",
+        "cases": {
+          "all_nft_info": {
+            "description": "With MetaData Extension.\nReturns the result of both `NftInfo` and `OwnerOf` as one query as an optimization\nfor clients",
+            "type": "named",
+            "properties": {
+              "include_expired": {
+                "description": "unset or false will filter out expired approvals, you must set to true to see them",
+                "value": 3
+              },
+              "token_id": {
+                "value": 1
+              }
+            }
+          },
+          "all_operators": {
+            "description": "List all operators that can access all of the owner's tokens",
+            "type": "named",
+            "properties": {
+              "include_expired": {
+                "description": "unset or false will filter out expired items, you must set to true to see them",
+                "value": 3
+              },
+              "limit": {
+                "value": 6
+              },
+              "owner": {
+                "value": 1
+              },
+              "start_after": {
+                "value": 4
+              }
+            }
+          },
+          "all_tokens": {
+            "description": "With Enumerable extension.\nRequires pagination. Lists all token_ids controlled by the contract.",
+            "type": "named",
+            "properties": {
+              "limit": {
+                "value": 6
+              },
+              "start_after": {
+                "value": 4
+              }
+            }
+          },
+          "approval": {
+            "description": "Return operator that can access all of the owner's tokens.",
+            "type": "named",
+            "properties": {
+              "include_expired": {
+                "value": 3
+              },
+              "spender": {
+                "value": 1
+              },
+              "token_id": {
+                "value": 1
+              }
+            }
+          },
+          "approvals": {
+            "description": "Return approvals that a token has",
+            "type": "named",
+            "properties": {
+              "include_expired": {
+                "value": 3
+              },
+              "token_id": {
+                "value": 1
+              }
+            }
+          },
+          "contract_info": {
+            "description": "Deprecated: use GetCollectionInfoAndExtension instead! Will be removed in next release!",
+            "type": "named",
+            "properties": {}
+          },
+          "extension": {
+            "description": "Custom msg query. Default implementation returns an empty binary.",
+            "type": "named",
+            "properties": {
+              "msg": {
+                "value": 10
+              }
+            }
+          },
+          "get_additional_minters": {
+            "description": "Returns the list of additional minters (paginated).",
+            "type": "named",
+            "properties": {
+              "limit": {
+                "value": 6
+              },
+              "start_after": {
+                "value": 4
+              }
+            }
+          },
+          "get_all_info": {
+            "description": "returns `AllInfoResponse` which contains contract, collection and nft details",
+            "type": "named",
+            "properties": {}
+          },
+          "get_collection_extension": {
+            "type": "named",
+            "properties": {
+              "msg": {
+                "value": 11
+              }
+            }
+          },
+          "get_collection_extension_attributes": {
+            "description": "Returns `CollectionExtensionAttributes`",
+            "type": "named",
+            "properties": {}
+          },
+          "get_collection_info_and_extension": {
+            "description": "Returns `CollectionInfoAndExtensionResponse`",
+            "type": "named",
+            "properties": {}
+          },
+          "get_config": {
+            "description": "Returns `AllCollectionInfoResponse`",
+            "type": "named",
+            "properties": {}
+          },
+          "get_creator_ownership": {
+            "type": "named",
+            "properties": {}
+          },
+          "get_minter_ownership": {
+            "type": "named",
+            "properties": {}
+          },
+          "get_nft_by_extension": {
+            "type": "named",
+            "properties": {
+              "extension": {
+                "value": 7
+              },
+              "limit": {
+                "value": 6
+              },
+              "start_after": {
+                "value": 4
+              }
+            }
+          },
+          "get_withdraw_address": {
+            "type": "named",
+            "properties": {}
+          },
+          "minter": {
+            "description": "Return the minter\nDeprecated: use GetMinterOwnership instead! Will be removed in next release!",
+            "type": "named",
+            "properties": {}
+          },
+          "nft_info": {
+            "description": "With MetaData Extension.\nReturns metadata about one particular token, based on *ERC721 Metadata JSON Schema*\nbut directly from the contract",
+            "type": "named",
+            "properties": {
+              "token_id": {
+                "value": 1
+              }
+            }
+          },
+          "num_tokens": {
+            "description": "Total number of tokens issued",
+            "type": "named",
+            "properties": {}
+          },
+          "operator": {
+            "description": "Return approval of a given operator for all tokens of an owner, error if not set",
+            "type": "named",
+            "properties": {
+              "include_expired": {
+                "value": 3
+              },
+              "operator": {
+                "value": 1
+              },
+              "owner": {
+                "value": 1
+              }
+            }
+          },
+          "owner_of": {
+            "description": "Return the owner of the given token, error if token does not exist",
+            "type": "named",
+            "properties": {
+              "include_expired": {
+                "description": "unset or false will filter out expired approvals, you must set to true to see them",
+                "value": 3
+              },
+              "token_id": {
+                "value": 1
+              }
+            }
+          },
+          "ownership": {
+            "description": "Deprecated: use GetMinterOwnership instead! Will be removed in next release!",
+            "type": "named",
+            "properties": {}
+          },
+          "tokens": {
+            "description": "With Enumerable extension.\nReturns all tokens owned by the given address, [] if unset.",
+            "type": "named",
+            "properties": {
+              "limit": {
+                "value": 6
+              },
+              "owner": {
+                "value": 1
+              },
+              "start_after": {
+                "value": 4
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "String",
+        "type": "string"
+      },
+      {
+        "name": "bool",
+        "type": "boolean"
+      },
+      {
+        "name": "core::option::Option<bool>",
+        "type": "optional",
+        "inner": 2
+      },
+      {
+        "name": "core::option::Option<alloc::string::String>",
+        "type": "optional",
+        "inner": 1
+      },
+      {
+        "name": "u32",
+        "type": "integer",
+        "precision": 32,
+        "signed": false
+      },
+      {
+        "name": "core::option::Option<u32>",
+        "type": "optional",
+        "inner": 5
+      },
+      {
+        "name": "dao_calendar_contract_MetadataExt",
+        "type": "struct",
+        "properties": {
+          "author_pubkey": {
+            "description": "Optional: Store the author's pubkey.",
+            "value": 4
+          },
+          "calendar_d": {
+            "description": "Calendar this event belongs to. Token ID of the parent calendar NFT,\nor `None` for standalone events (no parent calendar).",
+            "value": 4
+          },
+          "cid": {
+            "description": "IPFS CID pointing to the full Nostr event JSON (off-chain only).",
+            "value": 4
+          },
+          "d_tag": {
+            "description": "Cached d-tag for addressable events (kind 30000–39999).\nAvoids decoding `e` just to read the identifier.",
+            "value": 4
+          },
+          "e": {
+            "description": "Encoded NIP-52 `CalendarEventMetadata` (on-chain).\nEmpty `Binary` when off-chain.",
+            "value": 8
+          },
+          "kind": {
+            "description": "Nostr event kind (31922 date-based, 31923 time-based).\nAlways populated for efficient on-chain filtering.",
+            "value": 9
+          },
+          "nostr_e_d": {
+            "description": "Optional: Store the raw nostr event ID for verification.",
+            "value": 4
+          },
+          "on_chain": {
+            "description": "`true` = full Nostr event stored on-chain in `e`.\n`false` = only an IPFS CID pointer lives on-chain.",
+            "value": 2
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_binary_Binary",
+        "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization\nwith serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>.\nSee also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+        "type": "binary"
+      },
+      {
+        "name": "u16",
+        "type": "integer",
+        "precision": 16,
+        "signed": false
+      },
+      {
+        "name": "dao_calendar_contract_msg_QueryExt",
+        "type": "enum",
+        "cases": {
+          "calendar": {
+            "description": "Calendar info by NFT token ID.",
+            "type": "named",
+            "properties": {
+              "d": {
+                "value": 1
+              }
+            }
+          },
+          "calendar_event": {
+            "description": "A specific event within a calendar.",
+            "type": "named",
+            "properties": {
+              "e_d": {
+                "value": 1
+              }
+            }
+          },
+          "calendar_events": {
+            "description": "Events within a calendar, paginated.",
+            "type": "named",
+            "properties": {
+              "d": {
+                "value": 1
+              },
+              "limit": {
+                "value": 6
+              },
+              "start_after": {
+                "value": 4
+              }
+            }
+          },
+          "config": {
+            "type": "named",
+            "properties": {}
+          },
+          "dao": {
+            "description": "Returns the address of the DAO this module belongs to",
+            "type": "named",
+            "properties": {}
+          },
+          "delegation_module": {
+            "type": "named",
+            "properties": {}
+          },
+          "event_count": {
+            "description": "Total events across all calendars.",
+            "type": "named",
+            "properties": {}
+          },
+          "hooks": {
+            "type": "unit"
+          },
+          "info": {
+            "description": "Returns contract version info",
+            "type": "named",
+            "properties": {}
+          },
+          "list_calendars": {
+            "description": "Paginated list of all calendar NFTs.",
+            "type": "named",
+            "properties": {
+              "limit": {
+                "value": 6
+              },
+              "start_after": {
+                "value": 4
+              }
+            }
+          },
+          "next_proposal_id": {
+            "description": "Returns the proposal ID that will be assigned to the\nnext proposal created.",
+            "type": "named",
+            "properties": {}
+          },
+          "proposal_creation_policy": {
+            "type": "named",
+            "properties": {}
+          }
+        }
+      },
+      {
+        "name": "dao_calendar_contract_CalendarModuleCollectionExtension",
+        "type": "struct",
+        "properties": {
+          "delegation_module": {
+            "value": 4
+          },
+          "max_event_period": {
+            "value": 12
+          },
+          "min_event_period": {
+            "value": 14
+          },
+          "pre_propose_info": {
+            "value": 15
+          },
+          "veto": {
+            "value": 25
+          }
+        }
+      },
+      {
+        "name": "cw_utils_expiration_Duration",
+        "description": "Duration is a delta of time. You can add it to a BlockInfo or Expiration to\nmove that further in the future. Note that an height-based Duration and\na time-based Expiration cannot be combined",
+        "type": "enum",
+        "cases": {
+          "height": {
+            "type": "tuple",
+            "items": [
+              13
+            ]
+          },
+          "time": {
+            "description": "Time in seconds",
+            "type": "tuple",
+            "items": [
+              13
+            ]
+          }
+        }
+      },
+      {
+        "name": "u64",
+        "type": "integer",
+        "precision": 64,
+        "signed": false
+      },
+      {
+        "name": "core::option::Option<cw_utils::expiration::Duration>",
+        "type": "optional",
+        "inner": 12
+      },
+      {
+        "name": "dao_voting_pre_propose_PreProposeInfo",
+        "type": "enum",
+        "cases": {
+          "anyone_may_propose": {
+            "description": "Anyone may create a proposal free of charge.",
+            "type": "named",
+            "properties": {}
+          },
+          "module_may_propose": {
+            "description": "The module specified in INFO has exclusive rights to proposal\ncreation.",
+            "type": "named",
+            "properties": {
+              "info": {
+                "value": 16
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "dao_interface_state_ModuleInstantiateInfo",
+        "description": "Information needed to instantiate a module.",
+        "type": "struct",
+        "properties": {
+          "admin": {
+            "description": "CosmWasm level admin of the instantiated contract. See:\n<https://docs.cosmwasm.com/docs/1.0/smart-contracts/migration>",
+            "value": 18
+          },
+          "code_id": {
+            "description": "Code ID of the contract to be instantiated.",
+            "value": 13
+          },
+          "funds": {
+            "description": "Funds to be sent to the instantiated contract.",
+            "value": 22
+          },
+          "label": {
+            "description": "Label for the instantiated contract.",
+            "value": 1
+          },
+          "msg": {
+            "description": "Instantiate message to be used to create the contract.",
+            "value": 8
+          },
+          "salt": {
+            "description": "Salt to use with instantiate2, if defined. Otherwise uses normal\ninstantiate.",
+            "value": 23
+          }
+        }
+      },
+      {
+        "name": "dao_interface_state_Admin",
+        "description": "Information about the CosmWasm level admin of a contract. Used in\nconjunction with `ModuleInstantiateInfo` to instantiate modules.",
+        "type": "enum",
+        "cases": {
+          "address": {
+            "description": "Set the admin to a specified address.",
+            "type": "named",
+            "properties": {
+              "addr": {
+                "value": 1
+              }
+            }
+          },
+          "core_module": {
+            "description": "Sets the admin as the core module address.",
+            "type": "named",
+            "properties": {}
+          }
+        }
+      },
+      {
+        "name": "core::option::Option<dao_interface::state::Admin>",
+        "type": "optional",
+        "inner": 17
+      },
+      {
+        "name": "cosmwasm_std_coin_Coin",
+        "type": "struct",
+        "properties": {
+          "amount": {
+            "value": 20
+          },
+          "denom": {
+            "value": 1
+          }
+        }
+      },
+      {
+        "name": "cosmwasm_std_math_uint256_Uint256",
+        "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+        "type": "integer",
+        "precision": 256,
+        "signed": false
+      },
+      {
+        "name": "alloc::vec::Vec<cosmwasm_std::coin::Coin>",
+        "type": "array",
+        "items": 19
+      },
+      {
+        "name": "core::option::Option<alloc::vec::Vec<cosmwasm_std::coin::Coin>>",
+        "type": "optional",
+        "inner": 21
+      },
+      {
+        "name": "core::option::Option<cosmwasm_std::binary::Binary>",
+        "type": "optional",
+        "inner": 8
+      },
+      {
+        "name": "dao_voting_veto_VetoConfig",
+        "type": "struct",
+        "properties": {
+          "early_execute": {
+            "description": "Whether or not the vetoer can execute a proposal early before the\ntimelock duration has expired",
+            "value": 2
+          },
+          "timelock_duration": {
+            "description": "The time duration to lock a proposal for after its expiration to allow\nthe vetoer to veto.",
+            "value": 12
+          },
+          "veto_before_passed": {
+            "description": "Whether or not the vetoer can veto a proposal before it passes.",
+            "value": 2
+          },
+          "vetoer": {
+            "description": "The address able to veto proposals.",
+            "value": 1
+          }
+        }
+      },
+      {
+        "name": "core::option::Option<dao_voting::veto::VetoConfig>",
+        "type": "optional",
+        "inner": 24
+      }
+    ]
+  },
+  "migrate": {
+    "type": "v1",
+    "root": 0,
+    "definitions": [
+      {
+        "name": "dao_calendar_contract_MigrateMsg",
+        "type": "enum",
+        "cases": {
+          "from_compatible": {
+            "type": "named",
+            "properties": {}
+          }
+        }
+      }
+    ]
+  },
+  "sudo": null,
+  "responses": {
+    "all_nft_info": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cw721_msg_AllNftInfoResponse_dao_calendar_contract_MetadataExt_",
+          "type": "struct",
+          "properties": {
+            "access": {
+              "description": "Who can transfer the token",
+              "value": 1
+            },
+            "info": {
+              "description": "Data on the token itself,",
+              "value": 9
+            }
+          }
+        },
+        {
+          "name": "cw721_msg_OwnerOfResponse",
+          "type": "struct",
+          "properties": {
+            "approvals": {
+              "description": "If set this address is approved to transfer/send the token as well",
+              "value": 8
+            },
+            "owner": {
+              "description": "Owner of the token",
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "String",
+          "type": "string"
+        },
+        {
+          "name": "cw721_state_Approval",
+          "type": "struct",
+          "properties": {
+            "expires": {
+              "description": "When the Approval expires (maybe Expiration::never)",
+              "value": 5
+            },
+            "spender": {
+              "description": "Account that can transfer/send the token",
+              "value": 4
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        },
+        {
+          "name": "cw_utils_expiration_Expiration",
+          "description": "Expiration represents a point in time when some event happens.\nIt can compare with a BlockInfo and will return is_expired() == true\nonce the condition is hit (and for every block in the future)",
+          "type": "enum",
+          "cases": {
+            "at_height": {
+              "description": "AtHeight will expire when `env.block.height` >= height",
+              "type": "tuple",
+              "items": [
+                6
+              ]
+            },
+            "at_time": {
+              "description": "AtTime will expire when `env.block.time` >= time",
+              "type": "tuple",
+              "items": [
+                7
+              ]
+            },
+            "never": {
+              "description": "Never will never expire. Used to express the empty variant",
+              "type": "named",
+              "properties": {}
+            }
+          }
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        },
+        {
+          "name": "cosmwasm_std_timestamp_Timestamp",
+          "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+          "type": "timestamp"
+        },
+        {
+          "name": "alloc::vec::Vec<cw721::state::Approval>",
+          "type": "array",
+          "items": 3
+        },
+        {
+          "name": "cw721_msg_NftInfoResponse_dao_calendar_contract_MetadataExt_",
+          "type": "struct",
+          "properties": {
+            "extension": {
+              "description": "You can add any custom metadata here when you extend cw721-base",
+              "value": 11
+            },
+            "token_uri": {
+              "description": "Universal resource identifier for this NFT\nShould point to a JSON file that conforms to the ERC721\nMetadata JSON Schema",
+              "value": 10
+            }
+          }
+        },
+        {
+          "name": "core::option::Option<alloc::string::String>",
+          "type": "optional",
+          "inner": 2
+        },
+        {
+          "name": "dao_calendar_contract_MetadataExt",
+          "type": "struct",
+          "properties": {
+            "author_pubkey": {
+              "description": "Optional: Store the author's pubkey.",
+              "value": 10
+            },
+            "calendar_d": {
+              "description": "Calendar this event belongs to. Token ID of the parent calendar NFT,\nor `None` for standalone events (no parent calendar).",
+              "value": 10
+            },
+            "cid": {
+              "description": "IPFS CID pointing to the full Nostr event JSON (off-chain only).",
+              "value": 10
+            },
+            "d_tag": {
+              "description": "Cached d-tag for addressable events (kind 30000–39999).\nAvoids decoding `e` just to read the identifier.",
+              "value": 10
+            },
+            "e": {
+              "description": "Encoded NIP-52 `CalendarEventMetadata` (on-chain).\nEmpty `Binary` when off-chain.",
+              "value": 13
+            },
+            "kind": {
+              "description": "Nostr event kind (31922 date-based, 31923 time-based).\nAlways populated for efficient on-chain filtering.",
+              "value": 14
+            },
+            "nostr_e_d": {
+              "description": "Optional: Store the raw nostr event ID for verification.",
+              "value": 10
+            },
+            "on_chain": {
+              "description": "`true` = full Nostr event stored on-chain in `e`.\n`false` = only an IPFS CID pointer lives on-chain.",
+              "value": 12
+            }
+          }
+        },
+        {
+          "name": "bool",
+          "type": "boolean"
+        },
+        {
+          "name": "cosmwasm_std_binary_Binary",
+          "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization\nwith serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>.\nSee also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+          "type": "binary"
+        },
+        {
+          "name": "u16",
+          "type": "integer",
+          "precision": 16,
+          "signed": false
+        }
+      ]
+    },
+    "all_operators": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cw721_msg_OperatorsResponse",
+          "type": "struct",
+          "properties": {
+            "operators": {
+              "value": 6
+            }
+          }
+        },
+        {
+          "name": "cw721_state_Approval",
+          "type": "struct",
+          "properties": {
+            "expires": {
+              "description": "When the Approval expires (maybe Expiration::never)",
+              "value": 3
+            },
+            "spender": {
+              "description": "Account that can transfer/send the token",
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        },
+        {
+          "name": "cw_utils_expiration_Expiration",
+          "description": "Expiration represents a point in time when some event happens.\nIt can compare with a BlockInfo and will return is_expired() == true\nonce the condition is hit (and for every block in the future)",
+          "type": "enum",
+          "cases": {
+            "at_height": {
+              "description": "AtHeight will expire when `env.block.height` >= height",
+              "type": "tuple",
+              "items": [
+                4
+              ]
+            },
+            "at_time": {
+              "description": "AtTime will expire when `env.block.time` >= time",
+              "type": "tuple",
+              "items": [
+                5
+              ]
+            },
+            "never": {
+              "description": "Never will never expire. Used to express the empty variant",
+              "type": "named",
+              "properties": {}
+            }
+          }
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        },
+        {
+          "name": "cosmwasm_std_timestamp_Timestamp",
+          "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+          "type": "timestamp"
+        },
+        {
+          "name": "alloc::vec::Vec<cw721::state::Approval>",
+          "type": "array",
+          "items": 1
+        }
+      ]
+    },
+    "all_tokens": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cw721_msg_TokensResponse",
+          "type": "struct",
+          "properties": {
+            "tokens": {
+              "description": "Contains all token_ids in lexicographical ordering\nIf there are more than `limit`, use `start_after` in future queries\nto achieve pagination.",
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "String",
+          "type": "string"
+        },
+        {
+          "name": "alloc::vec::Vec<alloc::string::String>",
+          "type": "array",
+          "items": 1
+        }
+      ]
+    },
+    "approval": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cw721_msg_ApprovalResponse",
+          "type": "struct",
+          "properties": {
+            "approval": {
+              "value": 1
+            }
+          }
+        },
+        {
+          "name": "cw721_state_Approval",
+          "type": "struct",
+          "properties": {
+            "expires": {
+              "description": "When the Approval expires (maybe Expiration::never)",
+              "value": 3
+            },
+            "spender": {
+              "description": "Account that can transfer/send the token",
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        },
+        {
+          "name": "cw_utils_expiration_Expiration",
+          "description": "Expiration represents a point in time when some event happens.\nIt can compare with a BlockInfo and will return is_expired() == true\nonce the condition is hit (and for every block in the future)",
+          "type": "enum",
+          "cases": {
+            "at_height": {
+              "description": "AtHeight will expire when `env.block.height` >= height",
+              "type": "tuple",
+              "items": [
+                4
+              ]
+            },
+            "at_time": {
+              "description": "AtTime will expire when `env.block.time` >= time",
+              "type": "tuple",
+              "items": [
+                5
+              ]
+            },
+            "never": {
+              "description": "Never will never expire. Used to express the empty variant",
+              "type": "named",
+              "properties": {}
+            }
+          }
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        },
+        {
+          "name": "cosmwasm_std_timestamp_Timestamp",
+          "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+          "type": "timestamp"
+        }
+      ]
+    },
+    "approvals": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cw721_msg_ApprovalsResponse",
+          "type": "struct",
+          "properties": {
+            "approvals": {
+              "value": 6
+            }
+          }
+        },
+        {
+          "name": "cw721_state_Approval",
+          "type": "struct",
+          "properties": {
+            "expires": {
+              "description": "When the Approval expires (maybe Expiration::never)",
+              "value": 3
+            },
+            "spender": {
+              "description": "Account that can transfer/send the token",
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        },
+        {
+          "name": "cw_utils_expiration_Expiration",
+          "description": "Expiration represents a point in time when some event happens.\nIt can compare with a BlockInfo and will return is_expired() == true\nonce the condition is hit (and for every block in the future)",
+          "type": "enum",
+          "cases": {
+            "at_height": {
+              "description": "AtHeight will expire when `env.block.height` >= height",
+              "type": "tuple",
+              "items": [
+                4
+              ]
+            },
+            "at_time": {
+              "description": "AtTime will expire when `env.block.time` >= time",
+              "type": "tuple",
+              "items": [
+                5
+              ]
+            },
+            "never": {
+              "description": "Never will never expire. Used to express the empty variant",
+              "type": "named",
+              "properties": {}
+            }
+          }
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        },
+        {
+          "name": "cosmwasm_std_timestamp_Timestamp",
+          "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+          "type": "timestamp"
+        },
+        {
+          "name": "alloc::vec::Vec<cw721::state::Approval>",
+          "type": "array",
+          "items": 1
+        }
+      ]
+    },
+    "contract_info": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cw721_msg_CollectionInfoAndExtensionResponse_dao_calendar_contract_CalendarModuleCollectionExtension_",
+          "description": "This is a wrapper around CollectionInfo that includes the extension.",
+          "type": "struct",
+          "properties": {
+            "extension": {
+              "value": 2
+            },
+            "name": {
+              "value": 1
+            },
+            "symbol": {
+              "value": 1
+            },
+            "updated_at": {
+              "value": 20
+            }
+          }
+        },
+        {
+          "name": "String",
+          "type": "string"
+        },
+        {
+          "name": "dao_calendar_contract_CalendarModuleCollectionExtension",
+          "type": "struct",
+          "properties": {
+            "delegation_module": {
+              "value": 19
+            },
+            "max_event_period": {
+              "value": 3
+            },
+            "min_event_period": {
+              "value": 5
+            },
+            "pre_propose_info": {
+              "value": 6
+            },
+            "veto": {
+              "value": 18
+            }
+          }
+        },
+        {
+          "name": "cw_utils_expiration_Duration",
+          "description": "Duration is a delta of time. You can add it to a BlockInfo or Expiration to\nmove that further in the future. Note that an height-based Duration and\na time-based Expiration cannot be combined",
+          "type": "enum",
+          "cases": {
+            "height": {
+              "type": "tuple",
+              "items": [
+                4
+              ]
+            },
+            "time": {
+              "description": "Time in seconds",
+              "type": "tuple",
+              "items": [
+                4
+              ]
+            }
+          }
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        },
+        {
+          "name": "core::option::Option<cw_utils::expiration::Duration>",
+          "type": "optional",
+          "inner": 3
+        },
+        {
+          "name": "dao_voting_pre_propose_PreProposeInfo",
+          "type": "enum",
+          "cases": {
+            "anyone_may_propose": {
+              "description": "Anyone may create a proposal free of charge.",
+              "type": "named",
+              "properties": {}
+            },
+            "module_may_propose": {
+              "description": "The module specified in INFO has exclusive rights to proposal\ncreation.",
+              "type": "named",
+              "properties": {
+                "info": {
+                  "value": 7
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "dao_interface_state_ModuleInstantiateInfo",
+          "description": "Information needed to instantiate a module.",
+          "type": "struct",
+          "properties": {
+            "admin": {
+              "description": "CosmWasm level admin of the instantiated contract. See:\n<https://docs.cosmwasm.com/docs/1.0/smart-contracts/migration>",
+              "value": 10
+            },
+            "code_id": {
+              "description": "Code ID of the contract to be instantiated.",
+              "value": 4
+            },
+            "funds": {
+              "description": "Funds to be sent to the instantiated contract.",
+              "value": 14
+            },
+            "label": {
+              "description": "Label for the instantiated contract.",
+              "value": 1
+            },
+            "msg": {
+              "description": "Instantiate message to be used to create the contract.",
+              "value": 8
+            },
+            "salt": {
+              "description": "Salt to use with instantiate2, if defined. Otherwise uses normal\ninstantiate.",
+              "value": 15
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_binary_Binary",
+          "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization\nwith serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>.\nSee also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+          "type": "binary"
+        },
+        {
+          "name": "dao_interface_state_Admin",
+          "description": "Information about the CosmWasm level admin of a contract. Used in\nconjunction with `ModuleInstantiateInfo` to instantiate modules.",
+          "type": "enum",
+          "cases": {
+            "address": {
+              "description": "Set the admin to a specified address.",
+              "type": "named",
+              "properties": {
+                "addr": {
+                  "value": 1
+                }
+              }
+            },
+            "core_module": {
+              "description": "Sets the admin as the core module address.",
+              "type": "named",
+              "properties": {}
+            }
+          }
+        },
+        {
+          "name": "core::option::Option<dao_interface::state::Admin>",
+          "type": "optional",
+          "inner": 9
+        },
+        {
+          "name": "cosmwasm_std_coin_Coin",
+          "type": "struct",
+          "properties": {
+            "amount": {
+              "value": 12
+            },
+            "denom": {
+              "value": 1
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_math_uint256_Uint256",
+          "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+          "type": "integer",
+          "precision": 256,
+          "signed": false
+        },
+        {
+          "name": "alloc::vec::Vec<cosmwasm_std::coin::Coin>",
+          "type": "array",
+          "items": 11
+        },
+        {
+          "name": "core::option::Option<alloc::vec::Vec<cosmwasm_std::coin::Coin>>",
+          "type": "optional",
+          "inner": 13
+        },
+        {
+          "name": "core::option::Option<cosmwasm_std::binary::Binary>",
+          "type": "optional",
+          "inner": 8
+        },
+        {
+          "name": "dao_voting_veto_VetoConfig",
+          "type": "struct",
+          "properties": {
+            "early_execute": {
+              "description": "Whether or not the vetoer can execute a proposal early before the\ntimelock duration has expired",
+              "value": 17
+            },
+            "timelock_duration": {
+              "description": "The time duration to lock a proposal for after its expiration to allow\nthe vetoer to veto.",
+              "value": 3
+            },
+            "veto_before_passed": {
+              "description": "Whether or not the vetoer can veto a proposal before it passes.",
+              "value": 17
+            },
+            "vetoer": {
+              "description": "The address able to veto proposals.",
+              "value": 1
+            }
+          }
+        },
+        {
+          "name": "bool",
+          "type": "boolean"
+        },
+        {
+          "name": "core::option::Option<dao_voting::veto::VetoConfig>",
+          "type": "optional",
+          "inner": 16
+        },
+        {
+          "name": "core::option::Option<alloc::string::String>",
+          "type": "optional",
+          "inner": 1
+        },
+        {
+          "name": "cosmwasm_std_timestamp_Timestamp",
+          "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+          "type": "timestamp"
+        }
+      ]
+    },
+    "extension": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "Unit",
+          "type": "unit"
+        }
+      ]
+    },
+    "get_additional_minters": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cw721_msg_AdditionalMintersResponse",
+          "type": "struct",
+          "properties": {
+            "minters": {
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "String",
+          "type": "string"
+        },
+        {
+          "name": "alloc::vec::Vec<alloc::string::String>",
+          "type": "array",
+          "items": 1
+        }
+      ]
+    },
+    "get_all_info": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cw721_msg_AllInfoResponse",
+          "description": "This is a wrapper around CollectionInfo that includes the extension, contract info, and number of tokens (supply).",
+          "type": "struct",
+          "properties": {
+            "collection_extension": {
+              "value": 12
+            },
+            "collection_info": {
+              "value": 8
+            },
+            "contract_info": {
+              "value": 1
+            },
+            "num_tokens": {
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_query_wasm_ContractInfoResponse",
+          "type": "struct",
+          "properties": {
+            "admin": {
+              "description": "admin who can run migrations (if any)",
+              "value": 4
+            },
+            "code_id": {
+              "value": 2
+            },
+            "creator": {
+              "description": "address that instantiated this contract",
+              "value": 3
+            },
+            "ibc2_port": {
+              "description": "set if this contract has bound an Ibc2 port",
+              "value": 7
+            },
+            "ibc_port": {
+              "description": "set if this contract has bound an IBC port",
+              "value": 7
+            },
+            "pinned": {
+              "description": "if set, the contract is pinned to the cache, and thus uses less gas when called",
+              "value": 5
+            }
+          }
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        },
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        },
+        {
+          "name": "core::option::Option<cosmwasm_std::addresses::Addr>",
+          "type": "optional",
+          "inner": 3
+        },
+        {
+          "name": "bool",
+          "type": "boolean"
+        },
+        {
+          "name": "String",
+          "type": "string"
+        },
+        {
+          "name": "core::option::Option<alloc::string::String>",
+          "type": "optional",
+          "inner": 6
+        },
+        {
+          "name": "cw721_state_CollectionInfo",
+          "type": "struct",
+          "properties": {
+            "name": {
+              "value": 6
+            },
+            "symbol": {
+              "value": 6
+            },
+            "updated_at": {
+              "value": 9
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_timestamp_Timestamp",
+          "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+          "type": "timestamp"
+        },
+        {
+          "name": "cw721_state_Attribute",
+          "type": "struct",
+          "properties": {
+            "key": {
+              "value": 6
+            },
+            "value": {
+              "value": 11
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_binary_Binary",
+          "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization\nwith serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>.\nSee also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+          "type": "binary"
+        },
+        {
+          "name": "alloc::vec::Vec<cw721::state::Attribute>",
+          "type": "array",
+          "items": 10
+        }
+      ]
+    },
+    "get_collection_extension": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "Unit",
+          "type": "unit"
+        }
+      ]
+    },
+    "get_collection_extension_attributes": {
+      "type": "v1",
+      "root": 3,
+      "definitions": [
+        {
+          "name": "cw721_state_Attribute",
+          "type": "struct",
+          "properties": {
+            "key": {
+              "value": 1
+            },
+            "value": {
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "String",
+          "type": "string"
+        },
+        {
+          "name": "cosmwasm_std_binary_Binary",
+          "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization\nwith serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>.\nSee also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+          "type": "binary"
+        },
+        {
+          "name": "alloc::vec::Vec<cw721::state::Attribute>",
+          "type": "array",
+          "items": 0
+        }
+      ]
+    },
+    "get_collection_info_and_extension": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cw721_msg_CollectionInfoAndExtensionResponse_dao_calendar_contract_CalendarModuleCollectionExtension_",
+          "description": "This is a wrapper around CollectionInfo that includes the extension.",
+          "type": "struct",
+          "properties": {
+            "extension": {
+              "value": 2
+            },
+            "name": {
+              "value": 1
+            },
+            "symbol": {
+              "value": 1
+            },
+            "updated_at": {
+              "value": 20
+            }
+          }
+        },
+        {
+          "name": "String",
+          "type": "string"
+        },
+        {
+          "name": "dao_calendar_contract_CalendarModuleCollectionExtension",
+          "type": "struct",
+          "properties": {
+            "delegation_module": {
+              "value": 19
+            },
+            "max_event_period": {
+              "value": 3
+            },
+            "min_event_period": {
+              "value": 5
+            },
+            "pre_propose_info": {
+              "value": 6
+            },
+            "veto": {
+              "value": 18
+            }
+          }
+        },
+        {
+          "name": "cw_utils_expiration_Duration",
+          "description": "Duration is a delta of time. You can add it to a BlockInfo or Expiration to\nmove that further in the future. Note that an height-based Duration and\na time-based Expiration cannot be combined",
+          "type": "enum",
+          "cases": {
+            "height": {
+              "type": "tuple",
+              "items": [
+                4
+              ]
+            },
+            "time": {
+              "description": "Time in seconds",
+              "type": "tuple",
+              "items": [
+                4
+              ]
+            }
+          }
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        },
+        {
+          "name": "core::option::Option<cw_utils::expiration::Duration>",
+          "type": "optional",
+          "inner": 3
+        },
+        {
+          "name": "dao_voting_pre_propose_PreProposeInfo",
+          "type": "enum",
+          "cases": {
+            "anyone_may_propose": {
+              "description": "Anyone may create a proposal free of charge.",
+              "type": "named",
+              "properties": {}
+            },
+            "module_may_propose": {
+              "description": "The module specified in INFO has exclusive rights to proposal\ncreation.",
+              "type": "named",
+              "properties": {
+                "info": {
+                  "value": 7
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "dao_interface_state_ModuleInstantiateInfo",
+          "description": "Information needed to instantiate a module.",
+          "type": "struct",
+          "properties": {
+            "admin": {
+              "description": "CosmWasm level admin of the instantiated contract. See:\n<https://docs.cosmwasm.com/docs/1.0/smart-contracts/migration>",
+              "value": 10
+            },
+            "code_id": {
+              "description": "Code ID of the contract to be instantiated.",
+              "value": 4
+            },
+            "funds": {
+              "description": "Funds to be sent to the instantiated contract.",
+              "value": 14
+            },
+            "label": {
+              "description": "Label for the instantiated contract.",
+              "value": 1
+            },
+            "msg": {
+              "description": "Instantiate message to be used to create the contract.",
+              "value": 8
+            },
+            "salt": {
+              "description": "Salt to use with instantiate2, if defined. Otherwise uses normal\ninstantiate.",
+              "value": 15
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_binary_Binary",
+          "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization\nwith serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>.\nSee also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+          "type": "binary"
+        },
+        {
+          "name": "dao_interface_state_Admin",
+          "description": "Information about the CosmWasm level admin of a contract. Used in\nconjunction with `ModuleInstantiateInfo` to instantiate modules.",
+          "type": "enum",
+          "cases": {
+            "address": {
+              "description": "Set the admin to a specified address.",
+              "type": "named",
+              "properties": {
+                "addr": {
+                  "value": 1
+                }
+              }
+            },
+            "core_module": {
+              "description": "Sets the admin as the core module address.",
+              "type": "named",
+              "properties": {}
+            }
+          }
+        },
+        {
+          "name": "core::option::Option<dao_interface::state::Admin>",
+          "type": "optional",
+          "inner": 9
+        },
+        {
+          "name": "cosmwasm_std_coin_Coin",
+          "type": "struct",
+          "properties": {
+            "amount": {
+              "value": 12
+            },
+            "denom": {
+              "value": 1
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_math_uint256_Uint256",
+          "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+          "type": "integer",
+          "precision": 256,
+          "signed": false
+        },
+        {
+          "name": "alloc::vec::Vec<cosmwasm_std::coin::Coin>",
+          "type": "array",
+          "items": 11
+        },
+        {
+          "name": "core::option::Option<alloc::vec::Vec<cosmwasm_std::coin::Coin>>",
+          "type": "optional",
+          "inner": 13
+        },
+        {
+          "name": "core::option::Option<cosmwasm_std::binary::Binary>",
+          "type": "optional",
+          "inner": 8
+        },
+        {
+          "name": "dao_voting_veto_VetoConfig",
+          "type": "struct",
+          "properties": {
+            "early_execute": {
+              "description": "Whether or not the vetoer can execute a proposal early before the\ntimelock duration has expired",
+              "value": 17
+            },
+            "timelock_duration": {
+              "description": "The time duration to lock a proposal for after its expiration to allow\nthe vetoer to veto.",
+              "value": 3
+            },
+            "veto_before_passed": {
+              "description": "Whether or not the vetoer can veto a proposal before it passes.",
+              "value": 17
+            },
+            "vetoer": {
+              "description": "The address able to veto proposals.",
+              "value": 1
+            }
+          }
+        },
+        {
+          "name": "bool",
+          "type": "boolean"
+        },
+        {
+          "name": "core::option::Option<dao_voting::veto::VetoConfig>",
+          "type": "optional",
+          "inner": 16
+        },
+        {
+          "name": "core::option::Option<alloc::string::String>",
+          "type": "optional",
+          "inner": 1
+        },
+        {
+          "name": "cosmwasm_std_timestamp_Timestamp",
+          "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+          "type": "timestamp"
+        }
+      ]
+    },
+    "get_config": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cw721_msg_ConfigResponse_dao_calendar_contract_CalendarModuleCollectionExtension_",
+          "description": "This is a wrapper around CollectionInfo that includes the extension.",
+          "type": "struct",
+          "properties": {
+            "collection_extension": {
+              "value": 11
+            },
+            "collection_info": {
+              "value": 10
+            },
+            "contract_info": {
+              "value": 27
+            },
+            "creator_ownership": {
+              "value": 2
+            },
+            "minter_ownership": {
+              "value": 2
+            },
+            "num_tokens": {
+              "value": 1
+            },
+            "withdraw_address": {
+              "value": 9
+            }
+          }
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        },
+        {
+          "name": "cw_ownable_Ownership_cosmwasm_std_addresses_Addr_",
+          "description": "The contract's ownership info",
+          "type": "struct",
+          "properties": {
+            "owner": {
+              "description": "The contract's current owner.\n`None` if the ownership has been renounced.",
+              "value": 4
+            },
+            "pending_expiry": {
+              "description": "The deadline for the pending owner to accept the ownership.\n`None` if there isn't a pending ownership transfer, or if a transfer\nexists and it doesn't have a deadline.",
+              "value": 7
+            },
+            "pending_owner": {
+              "description": "The account who has been proposed to take over the ownership.\n`None` if there isn't a pending ownership transfer.",
+              "value": 4
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        },
+        {
+          "name": "core::option::Option<cosmwasm_std::addresses::Addr>",
+          "type": "optional",
+          "inner": 3
+        },
+        {
+          "name": "cw_utils_expiration_Expiration",
+          "description": "Expiration represents a point in time when some event happens.\nIt can compare with a BlockInfo and will return is_expired() == true\nonce the condition is hit (and for every block in the future)",
+          "type": "enum",
+          "cases": {
+            "at_height": {
+              "description": "AtHeight will expire when `env.block.height` >= height",
+              "type": "tuple",
+              "items": [
+                1
+              ]
+            },
+            "at_time": {
+              "description": "AtTime will expire when `env.block.time` >= time",
+              "type": "tuple",
+              "items": [
+                6
+              ]
+            },
+            "never": {
+              "description": "Never will never expire. Used to express the empty variant",
+              "type": "named",
+              "properties": {}
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_timestamp_Timestamp",
+          "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+          "type": "timestamp"
+        },
+        {
+          "name": "core::option::Option<cw_utils::expiration::Expiration>",
+          "type": "optional",
+          "inner": 5
+        },
+        {
+          "name": "String",
+          "type": "string"
+        },
+        {
+          "name": "core::option::Option<alloc::string::String>",
+          "type": "optional",
+          "inner": 8
+        },
+        {
+          "name": "cw721_state_CollectionInfo",
+          "type": "struct",
+          "properties": {
+            "name": {
+              "value": 8
+            },
+            "symbol": {
+              "value": 8
+            },
+            "updated_at": {
+              "value": 6
+            }
+          }
+        },
+        {
+          "name": "dao_calendar_contract_CalendarModuleCollectionExtension",
+          "type": "struct",
+          "properties": {
+            "delegation_module": {
+              "value": 9
+            },
+            "max_event_period": {
+              "value": 12
+            },
+            "min_event_period": {
+              "value": 13
+            },
+            "pre_propose_info": {
+              "value": 14
+            },
+            "veto": {
+              "value": 26
+            }
+          }
+        },
+        {
+          "name": "cw_utils_expiration_Duration",
+          "description": "Duration is a delta of time. You can add it to a BlockInfo or Expiration to\nmove that further in the future. Note that an height-based Duration and\na time-based Expiration cannot be combined",
+          "type": "enum",
+          "cases": {
+            "height": {
+              "type": "tuple",
+              "items": [
+                1
+              ]
+            },
+            "time": {
+              "description": "Time in seconds",
+              "type": "tuple",
+              "items": [
+                1
+              ]
+            }
+          }
+        },
+        {
+          "name": "core::option::Option<cw_utils::expiration::Duration>",
+          "type": "optional",
+          "inner": 12
+        },
+        {
+          "name": "dao_voting_pre_propose_PreProposeInfo",
+          "type": "enum",
+          "cases": {
+            "anyone_may_propose": {
+              "description": "Anyone may create a proposal free of charge.",
+              "type": "named",
+              "properties": {}
+            },
+            "module_may_propose": {
+              "description": "The module specified in INFO has exclusive rights to proposal\ncreation.",
+              "type": "named",
+              "properties": {
+                "info": {
+                  "value": 15
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "dao_interface_state_ModuleInstantiateInfo",
+          "description": "Information needed to instantiate a module.",
+          "type": "struct",
+          "properties": {
+            "admin": {
+              "description": "CosmWasm level admin of the instantiated contract. See:\n<https://docs.cosmwasm.com/docs/1.0/smart-contracts/migration>",
+              "value": 18
+            },
+            "code_id": {
+              "description": "Code ID of the contract to be instantiated.",
+              "value": 1
+            },
+            "funds": {
+              "description": "Funds to be sent to the instantiated contract.",
+              "value": 22
+            },
+            "label": {
+              "description": "Label for the instantiated contract.",
+              "value": 8
+            },
+            "msg": {
+              "description": "Instantiate message to be used to create the contract.",
+              "value": 16
+            },
+            "salt": {
+              "description": "Salt to use with instantiate2, if defined. Otherwise uses normal\ninstantiate.",
+              "value": 23
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_binary_Binary",
+          "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization\nwith serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>.\nSee also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+          "type": "binary"
+        },
+        {
+          "name": "dao_interface_state_Admin",
+          "description": "Information about the CosmWasm level admin of a contract. Used in\nconjunction with `ModuleInstantiateInfo` to instantiate modules.",
+          "type": "enum",
+          "cases": {
+            "address": {
+              "description": "Set the admin to a specified address.",
+              "type": "named",
+              "properties": {
+                "addr": {
+                  "value": 8
+                }
+              }
+            },
+            "core_module": {
+              "description": "Sets the admin as the core module address.",
+              "type": "named",
+              "properties": {}
+            }
+          }
+        },
+        {
+          "name": "core::option::Option<dao_interface::state::Admin>",
+          "type": "optional",
+          "inner": 17
+        },
+        {
+          "name": "cosmwasm_std_coin_Coin",
+          "type": "struct",
+          "properties": {
+            "amount": {
+              "value": 20
+            },
+            "denom": {
+              "value": 8
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_math_uint256_Uint256",
+          "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+          "type": "integer",
+          "precision": 256,
+          "signed": false
+        },
+        {
+          "name": "alloc::vec::Vec<cosmwasm_std::coin::Coin>",
+          "type": "array",
+          "items": 19
+        },
+        {
+          "name": "core::option::Option<alloc::vec::Vec<cosmwasm_std::coin::Coin>>",
+          "type": "optional",
+          "inner": 21
+        },
+        {
+          "name": "core::option::Option<cosmwasm_std::binary::Binary>",
+          "type": "optional",
+          "inner": 16
+        },
+        {
+          "name": "dao_voting_veto_VetoConfig",
+          "type": "struct",
+          "properties": {
+            "early_execute": {
+              "description": "Whether or not the vetoer can execute a proposal early before the\ntimelock duration has expired",
+              "value": 25
+            },
+            "timelock_duration": {
+              "description": "The time duration to lock a proposal for after its expiration to allow\nthe vetoer to veto.",
+              "value": 12
+            },
+            "veto_before_passed": {
+              "description": "Whether or not the vetoer can veto a proposal before it passes.",
+              "value": 25
+            },
+            "vetoer": {
+              "description": "The address able to veto proposals.",
+              "value": 8
+            }
+          }
+        },
+        {
+          "name": "bool",
+          "type": "boolean"
+        },
+        {
+          "name": "core::option::Option<dao_voting::veto::VetoConfig>",
+          "type": "optional",
+          "inner": 24
+        },
+        {
+          "name": "cosmwasm_std_query_wasm_ContractInfoResponse",
+          "type": "struct",
+          "properties": {
+            "admin": {
+              "description": "admin who can run migrations (if any)",
+              "value": 4
+            },
+            "code_id": {
+              "value": 1
+            },
+            "creator": {
+              "description": "address that instantiated this contract",
+              "value": 3
+            },
+            "ibc2_port": {
+              "description": "set if this contract has bound an Ibc2 port",
+              "value": 9
+            },
+            "ibc_port": {
+              "description": "set if this contract has bound an IBC port",
+              "value": 9
+            },
+            "pinned": {
+              "description": "if set, the contract is pinned to the cache, and thus uses less gas when called",
+              "value": 25
+            }
+          }
+        }
+      ]
+    },
+    "get_creator_ownership": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cw_ownable_Ownership_cosmwasm_std_addresses_Addr_",
+          "description": "The contract's ownership info",
+          "type": "struct",
+          "properties": {
+            "owner": {
+              "description": "The contract's current owner.\n`None` if the ownership has been renounced.",
+              "value": 2
+            },
+            "pending_expiry": {
+              "description": "The deadline for the pending owner to accept the ownership.\n`None` if there isn't a pending ownership transfer, or if a transfer\nexists and it doesn't have a deadline.",
+              "value": 6
+            },
+            "pending_owner": {
+              "description": "The account who has been proposed to take over the ownership.\n`None` if there isn't a pending ownership transfer.",
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        },
+        {
+          "name": "core::option::Option<cosmwasm_std::addresses::Addr>",
+          "type": "optional",
+          "inner": 1
+        },
+        {
+          "name": "cw_utils_expiration_Expiration",
+          "description": "Expiration represents a point in time when some event happens.\nIt can compare with a BlockInfo and will return is_expired() == true\nonce the condition is hit (and for every block in the future)",
+          "type": "enum",
+          "cases": {
+            "at_height": {
+              "description": "AtHeight will expire when `env.block.height` >= height",
+              "type": "tuple",
+              "items": [
+                4
+              ]
+            },
+            "at_time": {
+              "description": "AtTime will expire when `env.block.time` >= time",
+              "type": "tuple",
+              "items": [
+                5
+              ]
+            },
+            "never": {
+              "description": "Never will never expire. Used to express the empty variant",
+              "type": "named",
+              "properties": {}
+            }
+          }
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        },
+        {
+          "name": "cosmwasm_std_timestamp_Timestamp",
+          "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+          "type": "timestamp"
+        },
+        {
+          "name": "core::option::Option<cw_utils::expiration::Expiration>",
+          "type": "optional",
+          "inner": 3
+        }
+      ]
+    },
+    "get_minter_ownership": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cw_ownable_Ownership_cosmwasm_std_addresses_Addr_",
+          "description": "The contract's ownership info",
+          "type": "struct",
+          "properties": {
+            "owner": {
+              "description": "The contract's current owner.\n`None` if the ownership has been renounced.",
+              "value": 2
+            },
+            "pending_expiry": {
+              "description": "The deadline for the pending owner to accept the ownership.\n`None` if there isn't a pending ownership transfer, or if a transfer\nexists and it doesn't have a deadline.",
+              "value": 6
+            },
+            "pending_owner": {
+              "description": "The account who has been proposed to take over the ownership.\n`None` if there isn't a pending ownership transfer.",
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        },
+        {
+          "name": "core::option::Option<cosmwasm_std::addresses::Addr>",
+          "type": "optional",
+          "inner": 1
+        },
+        {
+          "name": "cw_utils_expiration_Expiration",
+          "description": "Expiration represents a point in time when some event happens.\nIt can compare with a BlockInfo and will return is_expired() == true\nonce the condition is hit (and for every block in the future)",
+          "type": "enum",
+          "cases": {
+            "at_height": {
+              "description": "AtHeight will expire when `env.block.height` >= height",
+              "type": "tuple",
+              "items": [
+                4
+              ]
+            },
+            "at_time": {
+              "description": "AtTime will expire when `env.block.time` >= time",
+              "type": "tuple",
+              "items": [
+                5
+              ]
+            },
+            "never": {
+              "description": "Never will never expire. Used to express the empty variant",
+              "type": "named",
+              "properties": {}
+            }
+          }
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        },
+        {
+          "name": "cosmwasm_std_timestamp_Timestamp",
+          "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+          "type": "timestamp"
+        },
+        {
+          "name": "core::option::Option<cw_utils::expiration::Expiration>",
+          "type": "optional",
+          "inner": 3
+        }
+      ]
+    },
+    "get_nft_by_extension": {
+      "type": "v1",
+      "root": 7,
+      "definitions": [
+        {
+          "name": "cw721_msg_NftInfoResponse_dao_calendar_contract_MetadataExt_",
+          "type": "struct",
+          "properties": {
+            "extension": {
+              "description": "You can add any custom metadata here when you extend cw721-base",
+              "value": 3
+            },
+            "token_uri": {
+              "description": "Universal resource identifier for this NFT\nShould point to a JSON file that conforms to the ERC721\nMetadata JSON Schema",
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "String",
+          "type": "string"
+        },
+        {
+          "name": "core::option::Option<alloc::string::String>",
+          "type": "optional",
+          "inner": 1
+        },
+        {
+          "name": "dao_calendar_contract_MetadataExt",
+          "type": "struct",
+          "properties": {
+            "author_pubkey": {
+              "description": "Optional: Store the author's pubkey.",
+              "value": 2
+            },
+            "calendar_d": {
+              "description": "Calendar this event belongs to. Token ID of the parent calendar NFT,\nor `None` for standalone events (no parent calendar).",
+              "value": 2
+            },
+            "cid": {
+              "description": "IPFS CID pointing to the full Nostr event JSON (off-chain only).",
+              "value": 2
+            },
+            "d_tag": {
+              "description": "Cached d-tag for addressable events (kind 30000–39999).\nAvoids decoding `e` just to read the identifier.",
+              "value": 2
+            },
+            "e": {
+              "description": "Encoded NIP-52 `CalendarEventMetadata` (on-chain).\nEmpty `Binary` when off-chain.",
+              "value": 5
+            },
+            "kind": {
+              "description": "Nostr event kind (31922 date-based, 31923 time-based).\nAlways populated for efficient on-chain filtering.",
+              "value": 6
+            },
+            "nostr_e_d": {
+              "description": "Optional: Store the raw nostr event ID for verification.",
+              "value": 2
+            },
+            "on_chain": {
+              "description": "`true` = full Nostr event stored on-chain in `e`.\n`false` = only an IPFS CID pointer lives on-chain.",
+              "value": 4
+            }
+          }
+        },
+        {
+          "name": "bool",
+          "type": "boolean"
+        },
+        {
+          "name": "cosmwasm_std_binary_Binary",
+          "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization\nwith serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>.\nSee also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+          "type": "binary"
+        },
+        {
+          "name": "u16",
+          "type": "integer",
+          "precision": 16,
+          "signed": false
+        },
+        {
+          "name": "core::option::Option<cw721::msg::NftInfoResponse<dao_calendar::contract::MetadataExt>>",
+          "type": "optional",
+          "inner": 0
+        }
+      ]
+    },
+    "get_withdraw_address": {
+      "type": "v1",
+      "root": 1,
+      "definitions": [
+        {
+          "name": "String",
+          "type": "string"
+        },
+        {
+          "name": "core::option::Option<alloc::string::String>",
+          "type": "optional",
+          "inner": 0
+        }
+      ]
+    },
+    "minter": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cw721_msg_MinterResponse",
+          "description": "Deprecated: use Cw721QueryMsg::GetMinterOwnership instead!\nShows who can mint these tokens.",
+          "type": "struct",
+          "properties": {
+            "minter": {
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "String",
+          "type": "string"
+        },
+        {
+          "name": "core::option::Option<alloc::string::String>",
+          "type": "optional",
+          "inner": 1
+        }
+      ]
+    },
+    "nft_info": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cw721_msg_NftInfoResponse_dao_calendar_contract_MetadataExt_",
+          "type": "struct",
+          "properties": {
+            "extension": {
+              "description": "You can add any custom metadata here when you extend cw721-base",
+              "value": 3
+            },
+            "token_uri": {
+              "description": "Universal resource identifier for this NFT\nShould point to a JSON file that conforms to the ERC721\nMetadata JSON Schema",
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "String",
+          "type": "string"
+        },
+        {
+          "name": "core::option::Option<alloc::string::String>",
+          "type": "optional",
+          "inner": 1
+        },
+        {
+          "name": "dao_calendar_contract_MetadataExt",
+          "type": "struct",
+          "properties": {
+            "author_pubkey": {
+              "description": "Optional: Store the author's pubkey.",
+              "value": 2
+            },
+            "calendar_d": {
+              "description": "Calendar this event belongs to. Token ID of the parent calendar NFT,\nor `None` for standalone events (no parent calendar).",
+              "value": 2
+            },
+            "cid": {
+              "description": "IPFS CID pointing to the full Nostr event JSON (off-chain only).",
+              "value": 2
+            },
+            "d_tag": {
+              "description": "Cached d-tag for addressable events (kind 30000–39999).\nAvoids decoding `e` just to read the identifier.",
+              "value": 2
+            },
+            "e": {
+              "description": "Encoded NIP-52 `CalendarEventMetadata` (on-chain).\nEmpty `Binary` when off-chain.",
+              "value": 5
+            },
+            "kind": {
+              "description": "Nostr event kind (31922 date-based, 31923 time-based).\nAlways populated for efficient on-chain filtering.",
+              "value": 6
+            },
+            "nostr_e_d": {
+              "description": "Optional: Store the raw nostr event ID for verification.",
+              "value": 2
+            },
+            "on_chain": {
+              "description": "`true` = full Nostr event stored on-chain in `e`.\n`false` = only an IPFS CID pointer lives on-chain.",
+              "value": 4
+            }
+          }
+        },
+        {
+          "name": "bool",
+          "type": "boolean"
+        },
+        {
+          "name": "cosmwasm_std_binary_Binary",
+          "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization\nwith serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>.\nSee also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+          "type": "binary"
+        },
+        {
+          "name": "u16",
+          "type": "integer",
+          "precision": 16,
+          "signed": false
+        }
+      ]
+    },
+    "num_tokens": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cw721_msg_NumTokensResponse",
+          "type": "struct",
+          "properties": {
+            "count": {
+              "value": 1
+            }
+          }
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        }
+      ]
+    },
+    "operator": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cw721_msg_OperatorResponse",
+          "type": "struct",
+          "properties": {
+            "approval": {
+              "value": 1
+            }
+          }
+        },
+        {
+          "name": "cw721_state_Approval",
+          "type": "struct",
+          "properties": {
+            "expires": {
+              "description": "When the Approval expires (maybe Expiration::never)",
+              "value": 3
+            },
+            "spender": {
+              "description": "Account that can transfer/send the token",
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        },
+        {
+          "name": "cw_utils_expiration_Expiration",
+          "description": "Expiration represents a point in time when some event happens.\nIt can compare with a BlockInfo and will return is_expired() == true\nonce the condition is hit (and for every block in the future)",
+          "type": "enum",
+          "cases": {
+            "at_height": {
+              "description": "AtHeight will expire when `env.block.height` >= height",
+              "type": "tuple",
+              "items": [
+                4
+              ]
+            },
+            "at_time": {
+              "description": "AtTime will expire when `env.block.time` >= time",
+              "type": "tuple",
+              "items": [
+                5
+              ]
+            },
+            "never": {
+              "description": "Never will never expire. Used to express the empty variant",
+              "type": "named",
+              "properties": {}
+            }
+          }
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        },
+        {
+          "name": "cosmwasm_std_timestamp_Timestamp",
+          "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+          "type": "timestamp"
+        }
+      ]
+    },
+    "owner_of": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cw721_msg_OwnerOfResponse",
+          "type": "struct",
+          "properties": {
+            "approvals": {
+              "description": "If set this address is approved to transfer/send the token as well",
+              "value": 7
+            },
+            "owner": {
+              "description": "Owner of the token",
+              "value": 1
+            }
+          }
+        },
+        {
+          "name": "String",
+          "type": "string"
+        },
+        {
+          "name": "cw721_state_Approval",
+          "type": "struct",
+          "properties": {
+            "expires": {
+              "description": "When the Approval expires (maybe Expiration::never)",
+              "value": 4
+            },
+            "spender": {
+              "description": "Account that can transfer/send the token",
+              "value": 3
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        },
+        {
+          "name": "cw_utils_expiration_Expiration",
+          "description": "Expiration represents a point in time when some event happens.\nIt can compare with a BlockInfo and will return is_expired() == true\nonce the condition is hit (and for every block in the future)",
+          "type": "enum",
+          "cases": {
+            "at_height": {
+              "description": "AtHeight will expire when `env.block.height` >= height",
+              "type": "tuple",
+              "items": [
+                5
+              ]
+            },
+            "at_time": {
+              "description": "AtTime will expire when `env.block.time` >= time",
+              "type": "tuple",
+              "items": [
+                6
+              ]
+            },
+            "never": {
+              "description": "Never will never expire. Used to express the empty variant",
+              "type": "named",
+              "properties": {}
+            }
+          }
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        },
+        {
+          "name": "cosmwasm_std_timestamp_Timestamp",
+          "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+          "type": "timestamp"
+        },
+        {
+          "name": "alloc::vec::Vec<cw721::state::Approval>",
+          "type": "array",
+          "items": 2
+        }
+      ]
+    },
+    "ownership": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cw_ownable_Ownership_cosmwasm_std_addresses_Addr_",
+          "description": "The contract's ownership info",
+          "type": "struct",
+          "properties": {
+            "owner": {
+              "description": "The contract's current owner.\n`None` if the ownership has been renounced.",
+              "value": 2
+            },
+            "pending_expiry": {
+              "description": "The deadline for the pending owner to accept the ownership.\n`None` if there isn't a pending ownership transfer, or if a transfer\nexists and it doesn't have a deadline.",
+              "value": 6
+            },
+            "pending_owner": {
+              "description": "The account who has been proposed to take over the ownership.\n`None` if there isn't a pending ownership transfer.",
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "cosmwasm_std_addresses_Addr",
+          "description": "A human-readable address.\n\nIn Cosmos, this is typically bech32 encoded. But for multichain smart contracts no\nassumptions should be made other than being UTF-8 encoded and of reasonable length.\n\nThis type represents a validated address. It can be created in the following ways\n1. Use `Addr::unchecked(input)`\n2. Use `let checked: Addr = deps.api.addr_validate(input)?`\n3. Use `let checked: Addr = deps.api.addr_humanize(canonical_addr)?`\n4. Deserialize from JSON. This must only be done from JSON that was validated before\nsuch as a contract's state. `Addr` must not be used in messages sent by the user\nbecause this would result in unvalidated instances.\n\nThis type is immutable. If you really need to mutate it (Really? Are you sure?), create\na mutable copy using `let mut mutable = Addr::to_string()` and operate on that `String`\ninstance.",
+          "type": "address"
+        },
+        {
+          "name": "core::option::Option<cosmwasm_std::addresses::Addr>",
+          "type": "optional",
+          "inner": 1
+        },
+        {
+          "name": "cw_utils_expiration_Expiration",
+          "description": "Expiration represents a point in time when some event happens.\nIt can compare with a BlockInfo and will return is_expired() == true\nonce the condition is hit (and for every block in the future)",
+          "type": "enum",
+          "cases": {
+            "at_height": {
+              "description": "AtHeight will expire when `env.block.height` >= height",
+              "type": "tuple",
+              "items": [
+                4
+              ]
+            },
+            "at_time": {
+              "description": "AtTime will expire when `env.block.time` >= time",
+              "type": "tuple",
+              "items": [
+                5
+              ]
+            },
+            "never": {
+              "description": "Never will never expire. Used to express the empty variant",
+              "type": "named",
+              "properties": {}
+            }
+          }
+        },
+        {
+          "name": "u64",
+          "type": "integer",
+          "precision": 64,
+          "signed": false
+        },
+        {
+          "name": "cosmwasm_std_timestamp_Timestamp",
+          "description": "A point in time in nanosecond precision.\n\nThis type can represent times from 1970-01-01T00:00:00Z to 2554-07-21T23:34:33Z.\n\n## Examples\n\n```\n# use cosmwasm_std::Timestamp;\nlet ts = Timestamp::from_nanos(1_000_000_202);\nassert_eq!(ts.nanos(), 1_000_000_202);\nassert_eq!(ts.seconds(), 1);\nassert_eq!(ts.subsec_nanos(), 202);\n\nlet ts = ts.plus_seconds(2);\nassert_eq!(ts.nanos(), 3_000_000_202);\nassert_eq!(ts.seconds(), 3);\nassert_eq!(ts.subsec_nanos(), 202);\n```",
+          "type": "timestamp"
+        },
+        {
+          "name": "core::option::Option<cw_utils::expiration::Expiration>",
+          "type": "optional",
+          "inner": 3
+        }
+      ]
+    },
+    "tokens": {
+      "type": "v1",
+      "root": 0,
+      "definitions": [
+        {
+          "name": "cw721_msg_TokensResponse",
+          "type": "struct",
+          "properties": {
+            "tokens": {
+              "description": "Contains all token_ids in lexicographical ordering\nIf there are more than `limit`, use `start_after` in future queries\nto achieve pagination.",
+              "value": 2
+            }
+          }
+        },
+        {
+          "name": "String",
+          "type": "string"
+        },
+        {
+          "name": "alloc::vec::Vec<alloc::string::String>",
+          "type": "array",
+          "items": 1
+        }
+      ]
+    }
+  }
+}

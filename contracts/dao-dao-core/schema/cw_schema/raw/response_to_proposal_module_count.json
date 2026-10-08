@@ -1,0 +1,26 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "dao_interface_query_ProposalModuleCountResponse",
+      "type": "struct",
+      "properties": {
+        "active_proposal_module_count": {
+          "description": "The number of active proposal modules.",
+          "value": 1
+        },
+        "total_proposal_module_count": {
+          "description": "The total number of proposal modules.",
+          "value": 1
+        }
+      }
+    },
+    {
+      "name": "u32",
+      "type": "integer",
+      "precision": 32,
+      "signed": false
+    }
+  ]
+}

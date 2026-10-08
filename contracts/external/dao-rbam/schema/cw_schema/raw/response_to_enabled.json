@@ -1,0 +1,19 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "dao_rbam_msg_EnabledResponse",
+      "type": "struct",
+      "properties": {
+        "enabled": {
+          "value": 1
+        }
+      }
+    },
+    {
+      "name": "bool",
+      "type": "boolean"
+    }
+  ]
+}

@@ -1,0 +1,174 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "dao_voting_delegation_QueryMsg",
+      "type": "enum",
+      "cases": {
+        "config": {
+          "description": "Returns the config.",
+          "type": "named",
+          "properties": {}
+        },
+        "delegates": {
+          "description": "Returns the paginated list of active delegates.",
+          "type": "named",
+          "properties": {
+            "limit": {
+              "value": 6
+            },
+            "start_after": {
+              "value": 4
+            }
+          }
+        },
+        "delegations": {
+          "description": "Returns the delegations by a delegator, optionally at a given height.\nUses the current block height if not provided.",
+          "type": "named",
+          "properties": {
+            "delegator": {
+              "value": 1
+            },
+            "height": {
+              "value": 3
+            },
+            "limit": {
+              "value": 3
+            },
+            "offset": {
+              "value": 3
+            }
+          }
+        },
+        "effective_unvoted_delegated_voting_power_reduction": {
+          "description": "Returns the VP that should be removed from a delegate's effective UDVP\n(and vote tally if already voted) on a specific proposal when a\ndelegator casts a vote (potentially overriding the delegate's vote). The\n`proposal_height` field is the height at which the proposal was created.\nThe `delegated_vp` field is the amount of VP delegated by the delegator\nto the delegate for this proposal. This query takes into account the\nconfigured VP cap and should be used by proposal modules when a\ndelegator overrides a delegate's vote to compute ballot VP updates.",
+          "type": "named",
+          "properties": {
+            "delegate": {
+              "value": 1
+            },
+            "delegated_vp": {
+              "value": 7
+            },
+            "proposal_height": {
+              "value": 2
+            },
+            "proposal_id": {
+              "value": 2
+            },
+            "proposal_module": {
+              "value": 1
+            }
+          }
+        },
+        "info": {
+          "description": "Returns contract version info",
+          "type": "named",
+          "properties": {}
+        },
+        "proposal_modules": {
+          "description": "Returns the proposal modules synced from the DAO.",
+          "type": "named",
+          "properties": {
+            "limit": {
+              "value": 6
+            },
+            "start_after": {
+              "value": 4
+            }
+          }
+        },
+        "registration": {
+          "description": "Returns registration info for a delegate, optionally at a given height.",
+          "type": "named",
+          "properties": {
+            "delegate": {
+              "value": 1
+            },
+            "height": {
+              "value": 3
+            }
+          }
+        },
+        "unvoted_delegated_voting_power": {
+          "description": "Returns the VP delegated to a delegate that has not yet been used in\nvotes cast by delegators in a specific proposal. This updates\nimmediately via vote hooks (instead of being delayed 1 block like other\nhistorical queries), making it safe to vote multiple times in the same\nblock. Proposal modules are responsible for maintaining the effective VP\ncap when a delegator overrides a delegate's vote. The `proposal_height`\nfield is the height at which the proposal was created.",
+          "type": "named",
+          "properties": {
+            "delegate": {
+              "value": 1
+            },
+            "proposal_height": {
+              "value": 2
+            },
+            "proposal_id": {
+              "value": 2
+            },
+            "proposal_module": {
+              "value": 1
+            }
+          }
+        },
+        "voting_power_cap": {
+          "description": "Returns the voting power cap, optionally at a given height.",
+          "type": "named",
+          "properties": {
+            "height": {
+              "value": 3
+            }
+          }
+        },
+        "voting_power_hook_callers": {
+          "description": "Returns the voting power hook callers.",
+          "type": "named",
+          "properties": {
+            "limit": {
+              "value": 6
+            },
+            "start_after": {
+              "value": 4
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "u64",
+      "type": "integer",
+      "precision": 64,
+      "signed": false
+    },
+    {
+      "name": "core::option::Option<u64>",
+      "type": "optional",
+      "inner": 2
+    },
+    {
+      "name": "core::option::Option<alloc::string::String>",
+      "type": "optional",
+      "inner": 1
+    },
+    {
+      "name": "u32",
+      "type": "integer",
+      "precision": 32,
+      "signed": false
+    },
+    {
+      "name": "core::option::Option<u32>",
+      "type": "optional",
+      "inner": 5
+    },
+    {
+      "name": "cosmwasm_std_math_uint256_Uint256",
+      "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+      "type": "integer",
+      "precision": 256,
+      "signed": false
+    }
+  ]
+}

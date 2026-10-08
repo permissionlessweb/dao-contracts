@@ -1,0 +1,31 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "dao_voting_delegation_Config",
+      "type": "struct",
+      "properties": {
+        "delegation_validity_blocks": {
+          "description": "the number of blocks a delegation is valid for, after which it must be\nrenewed by the delegator. if not set, the delegation will never expire.",
+          "value": 2
+        },
+        "max_delegations": {
+          "description": "the total number of delegations a member can have. this should be set\nbased on the max gas allowed in a single block for the given chain.\n\nthis limit is relevant for two reasons:\n1. when voting power is updated for a delegator, we must loop through\nall of their delegates and update their delegated voting power\n2. when a delegator casts a vote on a proposal that overrides their\ndelegates' votes, we must loop through all of their delegates and\nupdate the proposal vote tally accordingly\n\nin tests on Neutron, with a block max gas of 30M (which is one of the\nlowest gas limits on any chain), we found that 50 delegations is a safe\nupper bound.",
+          "value": 1
+        }
+      }
+    },
+    {
+      "name": "u64",
+      "type": "integer",
+      "precision": 64,
+      "signed": false
+    },
+    {
+      "name": "core::option::Option<u64>",
+      "type": "optional",
+      "inner": 1
+    }
+  ]
+}

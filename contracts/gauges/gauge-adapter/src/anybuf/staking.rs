@@ -1,6 +1,6 @@
 use anybuf::{Anybuf, Bufany};
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{coin, Addr, Binary, Coin, CosmosMsg, Decimal, Deps, Empty, StdResult};
+use cosmwasm_std::{coin, Addr, AnyMsg, Binary, Coin, CosmosMsg, Decimal, Deps, Empty, StdResult};
 
 use crate::{
     get_coin_from_bytes,
@@ -79,7 +79,12 @@ pub fn parse_delegate_msg_bufany(msg: Binary) -> ParseStakingSubmissionResponse 
     let coin_bytes = deserialized.bytes(3).unwrap();
     let bufany_coin_bytes = Bufany::deserialize(&coin_bytes).unwrap();
     let amount = coin(
-        u128::from_str_radix(&bufany_coin_bytes.string(2).clone().unwrap(), 10).unwrap(),
+        bufany_coin_bytes
+            .string(2)
+            .clone()
+            .unwrap()
+            .parse::<u128>()
+            .unwrap(),
         bufany_coin_bytes.string(1).clone().unwrap(),
     );
 
@@ -107,10 +112,10 @@ pub fn encode_delegate_msg_anybuf(
         .append_message(3, &token)
         .into_vec();
 
-    let msg: CosmosMsg<Empty> = CosmosMsg::Stargate {
+    let msg: CosmosMsg<Empty> = CosmosMsg::Any(AnyMsg {
         type_url: "/cosmos.staking.v1beta1.MsgDelegate".to_string(),
         value: proto.into(),
-    };
+    });
     Ok(msg)
 }
 
@@ -137,9 +142,9 @@ pub fn encode_redelegate_msg_anybuf(
         .append_message(4, &token) // val delegating to
         .into_vec();
 
-    let msg: CosmosMsg<Empty> = CosmosMsg::Stargate {
+    let msg: CosmosMsg<Empty> = CosmosMsg::Any(AnyMsg {
         type_url: "/cosmos.staking.v1beta1.MsgReDelegate".to_string(),
         value: proto.into(),
-    };
+    });
     Ok(msg)
 }

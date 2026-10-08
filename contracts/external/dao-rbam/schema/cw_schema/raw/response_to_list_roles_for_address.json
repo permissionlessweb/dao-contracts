@@ -1,0 +1,26 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "dao_rbam_msg_ListRolesForAddressResponse",
+      "type": "struct",
+      "properties": {
+        "role_ids": {
+          "value": 2
+        }
+      }
+    },
+    {
+      "name": "u64",
+      "type": "integer",
+      "precision": 64,
+      "signed": false
+    },
+    {
+      "name": "alloc::vec::Vec<u64>",
+      "type": "array",
+      "items": 1
+    }
+  ]
+}

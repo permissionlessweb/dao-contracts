@@ -1,6 +1,6 @@
 use anybuf::{Anybuf, Bufany};
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Binary, Coin, CosmosMsg, Decimal, Deps, Empty, StdResult};
+use cosmwasm_std::{Addr, AnyMsg, Binary, Coin, CosmosMsg, Decimal, Deps, Empty, StdResult};
 
 use crate::{
     get_coins_from_bytes,
@@ -64,6 +64,7 @@ pub fn parse_gov_prop_msg_bufany(msg: Binary) -> ParseGovPropSubmissionResponse 
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn encode_gov_prop_msg_anybuf(
     anybuf: Anybuf,
     proposer: String,
@@ -94,9 +95,9 @@ pub fn encode_gov_prop_msg_anybuf(
         .append_string(6, summary)
         .into_vec();
 
-    let msg: CosmosMsg<Empty> = CosmosMsg::Stargate {
+    let msg: CosmosMsg<Empty> = CosmosMsg::Any(AnyMsg {
         type_url: "/cosmos.gov.v1.MsgSubmitProposal".to_string(),
         value: proto.into(),
-    };
+    });
     Ok(msg)
 }

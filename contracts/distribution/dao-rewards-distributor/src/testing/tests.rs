@@ -3017,7 +3017,7 @@ fn test_fund_latest_cw20_wrong_denom() {
 
     let mint_cw20 = Cw20Coin {
         address: OWNER.to_string(),
-        amount: Uint256::new(100).into(),
+        amount: Uint256::new(100),
     };
 
     let address = suite.mint_cw20(mint_cw20.clone(), "newcoin").to_string();

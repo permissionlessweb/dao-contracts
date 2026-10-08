@@ -1,0 +1,144 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "dao_proposal_single_msg_QueryMsg",
+      "type": "enum",
+      "cases": {
+        "config": {
+          "description": "Gets the proposal module's config.",
+          "type": "named",
+          "properties": {}
+        },
+        "dao": {
+          "description": "Returns the address of the DAO this module belongs to",
+          "type": "named",
+          "properties": {}
+        },
+        "delegation_module": {
+          "description": "Gets the address of the delegation module associated with this\nproposal module (if any).",
+          "type": "named",
+          "properties": {}
+        },
+        "get_vote": {
+          "description": "Returns a voters position on a propsal.",
+          "type": "named",
+          "properties": {
+            "proposal_id": {
+              "value": 1
+            },
+            "voter": {
+              "value": 3
+            }
+          }
+        },
+        "info": {
+          "description": "Returns contract version info",
+          "type": "named",
+          "properties": {}
+        },
+        "list_proposals": {
+          "description": "Lists all the proposals that have been cast in this\nmodule.",
+          "type": "named",
+          "properties": {
+            "limit": {
+              "description": "The maximum number of proposals to return as part of this\nquery. If no limit is set a max of 30 proposals will be\nreturned.",
+              "value": 2
+            },
+            "start_after": {
+              "description": "The proposal ID to start listing proposals after. For\nexample, if this is set to 2 proposals with IDs 3 and\nhigher will be returned.",
+              "value": 2
+            }
+          }
+        },
+        "list_votes": {
+          "description": "Lists all of the votes that have been cast on a\nproposal.",
+          "type": "named",
+          "properties": {
+            "limit": {
+              "description": "The maximum number of votes to return in response to this\nquery. If no limit is specified a max of 30 are returned.",
+              "value": 2
+            },
+            "proposal_id": {
+              "description": "The proposal to list the votes of.",
+              "value": 1
+            },
+            "start_after": {
+              "description": "The voter to start listing votes after. Ordering is done\nalphabetically.",
+              "value": 4
+            }
+          }
+        },
+        "next_proposal_id": {
+          "description": "Returns the proposal ID that will be assigned to the\nnext proposal created.",
+          "type": "named",
+          "properties": {}
+        },
+        "proposal": {
+          "description": "Gets information about a proposal.",
+          "type": "named",
+          "properties": {
+            "proposal_id": {
+              "value": 1
+            }
+          }
+        },
+        "proposal_count": {
+          "description": "Returns the number of proposals that have been created in this module.",
+          "type": "named",
+          "properties": {}
+        },
+        "proposal_creation_policy": {
+          "description": "Gets the current proposal creation policy for this module.",
+          "type": "named",
+          "properties": {}
+        },
+        "proposal_hooks": {
+          "description": "Lists all of the consumers of proposal hooks for this module.",
+          "type": "named",
+          "properties": {}
+        },
+        "reverse_proposals": {
+          "description": "Lists all of the proposals that have been cast in this module\nin decending order of proposal ID.",
+          "type": "named",
+          "properties": {
+            "limit": {
+              "description": "The maximum number of proposals to return as part of this\nquery. If no limit is set a max of 30 proposals will be\nreturned.",
+              "value": 2
+            },
+            "start_before": {
+              "description": "The proposal ID to start listing proposals before. For\nexample, if this is set to 6 proposals with IDs 5 and\nlower will be returned.",
+              "value": 2
+            }
+          }
+        },
+        "vote_hooks": {
+          "description": "Lists all of the consumers of vote hooks for this module.",
+          "type": "named",
+          "properties": {}
+        }
+      }
+    },
+    {
+      "name": "u64",
+      "type": "integer",
+      "precision": 64,
+      "signed": false
+    },
+    {
+      "name": "core::option::Option<u64>",
+      "type": "optional",
+      "inner": 1
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "core::option::Option<alloc::string::String>",
+      "type": "optional",
+      "inner": 3
+    }
+  ]
+}

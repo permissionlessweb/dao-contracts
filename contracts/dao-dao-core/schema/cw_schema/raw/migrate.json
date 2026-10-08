@@ -1,0 +1,296 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "dao_interface_msg_MigrateMsg",
+      "type": "enum",
+      "cases": {
+        "from_compatible": {
+          "type": "named",
+          "properties": {}
+        },
+        "from_v1": {
+          "type": "named",
+          "properties": {
+            "dao_uri": {
+              "value": 2
+            },
+            "params": {
+              "value": 26
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "String",
+      "type": "string"
+    },
+    {
+      "name": "core::option::Option<alloc::string::String>",
+      "type": "optional",
+      "inner": 1
+    },
+    {
+      "name": "dao_interface_migrate_msg_MigrateParams",
+      "type": "struct",
+      "properties": {
+        "migrator_code_id": {
+          "value": 4
+        },
+        "params": {
+          "value": 5
+        }
+      }
+    },
+    {
+      "name": "u64",
+      "type": "integer",
+      "precision": 64,
+      "signed": false
+    },
+    {
+      "name": "dao_interface_migrate_msg_MigrateV1ToV2",
+      "type": "struct",
+      "properties": {
+        "migration_params": {
+          "value": 8
+        },
+        "sub_daos": {
+          "value": 7
+        },
+        "v1_code_ids": {
+          "value": 24
+        },
+        "v2_code_ids": {
+          "value": 25
+        }
+      }
+    },
+    {
+      "name": "dao_interface_query_SubDao",
+      "type": "struct",
+      "properties": {
+        "addr": {
+          "description": "The contract address of the SubDAO",
+          "value": 1
+        },
+        "charter": {
+          "description": "The purpose/constitution for the SubDAO",
+          "value": 2
+        }
+      }
+    },
+    {
+      "name": "alloc::vec::Vec<dao_interface::query::SubDao>",
+      "type": "array",
+      "items": 6
+    },
+    {
+      "name": "dao_interface_migrate_msg_MigrationModuleParams",
+      "type": "struct",
+      "properties": {
+        "migrate_stake_cw20_manager": {
+          "description": "Rather or not to migrate the stake_cw20 contract and its\nmanager. If this is not set to true and a stake_cw20\ncontract is detected in the DAO's configuration the\nmigration will be aborted.",
+          "value": 10
+        },
+        "proposal_params": {
+          "value": 23
+        }
+      }
+    },
+    {
+      "name": "bool",
+      "type": "boolean"
+    },
+    {
+      "name": "core::option::Option<bool>",
+      "type": "optional",
+      "inner": 9
+    },
+    {
+      "name": "dao_interface_migrate_msg_ProposalParams",
+      "description": "The params we need to provide for migration msgs",
+      "type": "struct",
+      "properties": {
+        "close_proposal_on_execution_failure": {
+          "value": 9
+        },
+        "pre_propose_info": {
+          "value": 12
+        }
+      }
+    },
+    {
+      "name": "dao_interface_migrate_msg_PreProposeInfo",
+      "type": "enum",
+      "cases": {
+        "anyone_may_propose": {
+          "description": "Anyone may create a proposal free of charge.",
+          "type": "named",
+          "properties": {}
+        },
+        "module_may_propose": {
+          "description": "The module specified in INFO has exclusive rights to proposal\ncreation.",
+          "type": "named",
+          "properties": {
+            "info": {
+              "value": 13
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "dao_interface_state_ModuleInstantiateInfo",
+      "description": "Information needed to instantiate a module.",
+      "type": "struct",
+      "properties": {
+        "admin": {
+          "description": "CosmWasm level admin of the instantiated contract. See:\n<https://docs.cosmwasm.com/docs/1.0/smart-contracts/migration>",
+          "value": 16
+        },
+        "code_id": {
+          "description": "Code ID of the contract to be instantiated.",
+          "value": 4
+        },
+        "funds": {
+          "description": "Funds to be sent to the instantiated contract.",
+          "value": 20
+        },
+        "label": {
+          "description": "Label for the instantiated contract.",
+          "value": 1
+        },
+        "msg": {
+          "description": "Instantiate message to be used to create the contract.",
+          "value": 14
+        },
+        "salt": {
+          "description": "Salt to use with instantiate2, if defined. Otherwise uses normal\ninstantiate.",
+          "value": 21
+        }
+      }
+    },
+    {
+      "name": "cosmwasm_std_binary_Binary",
+      "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization\nwith serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>.\nSee also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+      "type": "binary"
+    },
+    {
+      "name": "dao_interface_state_Admin",
+      "description": "Information about the CosmWasm level admin of a contract. Used in\nconjunction with `ModuleInstantiateInfo` to instantiate modules.",
+      "type": "enum",
+      "cases": {
+        "address": {
+          "description": "Set the admin to a specified address.",
+          "type": "named",
+          "properties": {
+            "addr": {
+              "value": 1
+            }
+          }
+        },
+        "core_module": {
+          "description": "Sets the admin as the core module address.",
+          "type": "named",
+          "properties": {}
+        }
+      }
+    },
+    {
+      "name": "core::option::Option<dao_interface::state::Admin>",
+      "type": "optional",
+      "inner": 15
+    },
+    {
+      "name": "cosmwasm_std_coin_Coin",
+      "type": "struct",
+      "properties": {
+        "amount": {
+          "value": 18
+        },
+        "denom": {
+          "value": 1
+        }
+      }
+    },
+    {
+      "name": "cosmwasm_std_math_uint256_Uint256",
+      "description": "An implementation of u256 that is using strings for JSON encoding/decoding,\nsuch that the full u256 range can be used for clients that convert JSON numbers to floats,\nlike JavaScript and jq.\n\n# Examples\n\nUse `new` to create instances out of u128, `from` for other primitive uint types\nor `from_be_bytes` to provide big endian bytes:\n\n```\n# use cosmwasm_std::Uint256;\nlet a = Uint256::new(258u128);\nlet b = Uint256::from(258u16);\nlet c = Uint256::from_be_bytes([\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8,\n0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8, 2u8,\n]);\nassert_eq!(a, b);\nassert_eq!(a, c);\n```",
+      "type": "integer",
+      "precision": 256,
+      "signed": false
+    },
+    {
+      "name": "alloc::vec::Vec<cosmwasm_std::coin::Coin>",
+      "type": "array",
+      "items": 17
+    },
+    {
+      "name": "core::option::Option<alloc::vec::Vec<cosmwasm_std::coin::Coin>>",
+      "type": "optional",
+      "inner": 19
+    },
+    {
+      "name": "core::option::Option<cosmwasm_std::binary::Binary>",
+      "type": "optional",
+      "inner": 14
+    },
+    {
+      "name": "(alloc::string::String, dao_interface::migrate_msg::ProposalParams)",
+      "type": "tuple",
+      "items": [
+        1,
+        11
+      ]
+    },
+    {
+      "name": "alloc::vec::Vec<(alloc::string::String, dao_interface::migrate_msg::ProposalParams)>",
+      "type": "array",
+      "items": 22
+    },
+    {
+      "name": "dao_interface_migrate_msg_V1CodeIds",
+      "type": "struct",
+      "properties": {
+        "cw20_stake": {
+          "value": 4
+        },
+        "cw20_staked_balances_voting": {
+          "value": 4
+        },
+        "cw4_voting": {
+          "value": 4
+        },
+        "proposal_single": {
+          "value": 4
+        }
+      }
+    },
+    {
+      "name": "dao_interface_migrate_msg_V2CodeIds",
+      "type": "struct",
+      "properties": {
+        "cw20_stake": {
+          "value": 4
+        },
+        "cw20_staked_balances_voting": {
+          "value": 4
+        },
+        "cw4_voting": {
+          "value": 4
+        },
+        "proposal_single": {
+          "value": 4
+        }
+      }
+    },
+    {
+      "name": "core::option::Option<dao_interface::migrate_msg::MigrateParams>",
+      "type": "optional",
+      "inner": 3
+    }
+  ]
+}

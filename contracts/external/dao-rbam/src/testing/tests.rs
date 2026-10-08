@@ -2255,6 +2255,7 @@ fn test_role_and_authorization_metadata_updates() {
 }
 
 #[test]
+#[allow(deprecated)] // filter fixtures still match CosmosMsg::Stargate JSON
 fn test_protobuf_filter() {
     let mut suite = SuiteBuilder::base().build();
     let dao = suite.core_addr.clone();

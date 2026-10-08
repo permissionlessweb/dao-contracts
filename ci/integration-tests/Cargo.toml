@@ -3,6 +3,10 @@ name = "integration-tests"
 version = "0.1.0"
 edition = { workspace = true }
 
+[features]
+# Vesting tests stay off: cosmos-sdk-proto and cosm-tome disagree on prost.
+prost_compat = []
+
 
 
 # This crate depends on rand. These are not featured in

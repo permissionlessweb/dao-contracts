@@ -1,0 +1,16 @@
+{
+  "type": "v1",
+  "root": 0,
+  "definitions": [
+    {
+      "name": "dao_calendar_contract_MigrateMsg",
+      "type": "enum",
+      "cases": {
+        "from_compatible": {
+          "type": "named",
+          "properties": {}
+        }
+      }
+    }
+  ]
+}
