@@ -28,11 +28,11 @@ jobs:
           docker-images: true
           swap-storage: true
 
-      - name: Install 1.91.0 toolchain
+      - name: Install 1.95.0 toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: 1.91.0
+          toolchain: 1.95.0
           target: wasm32-unknown-unknown
           override: true
 
