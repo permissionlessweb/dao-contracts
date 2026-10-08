@@ -41,4 +41,6 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           # Specify whether the Codecov output should be verbose
           verbose: true
-          fail_ci_if_error: true
+          # Tokenless uploads are rate-limited. llvm-cov already failed the job if
+          # coverage itself did not run; an upload 429 should not.
+          fail_ci_if_error: false
