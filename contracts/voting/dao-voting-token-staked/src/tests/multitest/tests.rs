@@ -224,7 +224,11 @@ fn unstake_tokens(
     )
 }
 
-fn claim(app: &mut App, staking_addr: Addr, sender: &str) -> Result<AppResponse, cosmwasm_std::StdError> {
+fn claim(
+    app: &mut App,
+    staking_addr: Addr,
+    sender: &str,
+) -> Result<AppResponse, cosmwasm_std::StdError> {
     app.execute_contract(
         MockApi::default().addr_make(sender),
         staking_addr,

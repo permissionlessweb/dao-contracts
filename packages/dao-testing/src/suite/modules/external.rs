@@ -15,6 +15,7 @@ impl DaoExternalDeployData {
 /// External module interfaces.
 pub struct DaoExternalSuite<Chain: CwEnv> {
     pub admin_factory: DaoExternalAdminFactory<Chain>,
+    #[cfg(feature = "btsg")]
     pub btsg_ft_factory: DaoExternalFantokenFactory<Chain>,
     pub payroll_factory: DaoExternalPayrollFactory<Chain>,
     pub cw_tokenswap: DaoExternalTokenSwap<Chain>,
@@ -27,6 +28,7 @@ impl<Chain: CwEnv> DaoExternalSuite<Chain> {
     pub fn new(chain: Chain) -> Self {
         Self {
             admin_factory: DaoExternalAdminFactory::new("cw_admin_factory", chain.clone()),
+            #[cfg(feature = "btsg")]
             btsg_ft_factory: DaoExternalFantokenFactory::new("btsg_ft_factory", chain.clone()),
             payroll_factory: DaoExternalPayrollFactory::new("cw_payroll", chain.clone()),
             cw_tokenswap: DaoExternalTokenSwap::new("cw_tokenswap", chain.clone()),
@@ -41,6 +43,7 @@ impl<Chain: CwEnv> DaoExternalSuite<Chain> {
 
     pub fn upload(&self) -> Result<(), CwOrchError> {
         self.admin_factory.upload()?;
+        #[cfg(feature = "btsg")]
         self.btsg_ft_factory.upload()?;
         self.payroll_factory.upload()?;
         self.cw_tokenswap.upload()?;
@@ -50,16 +53,30 @@ impl<Chain: CwEnv> DaoExternalSuite<Chain> {
         Ok(())
     }
 
+    pub fn upload_if_needed(&self) -> Result<(), CwOrchError> {
+        self.admin_factory.upload_if_needed()?;
+        #[cfg(feature = "btsg")]
+        self.btsg_ft_factory.upload_if_needed()?;
+        self.payroll_factory.upload_if_needed()?;
+        self.cw_tokenswap.upload_if_needed()?;
+        self.cw_tokenfactory_issuer.upload_if_needed()?;
+        self.cw_vesting.upload_if_needed()?;
+        self.cw721_roles.upload_if_needed()?;
+        Ok(())
+    }
+
     pub fn get_contracts_mut(&mut self) -> Vec<Box<&mut dyn ContractInstance<Chain>>> {
-        vec![
+        let mut contracts: Vec<Box<&mut dyn ContractInstance<Chain>>> = vec![
             Box::new(&mut self.admin_factory),
-            Box::new(&mut self.btsg_ft_factory),
-            Box::new(&mut self.payroll_factory),
-            Box::new(&mut self.cw_tokenswap),
-            Box::new(&mut self.cw_tokenfactory_issuer),
-            Box::new(&mut self.cw_vesting),
-            Box::new(&mut self.cw721_roles),
-        ]
+        ];
+        #[cfg(feature = "btsg")]
+        contracts.push(Box::new(&mut self.btsg_ft_factory));
+        contracts.push(Box::new(&mut self.payroll_factory));
+        contracts.push(Box::new(&mut self.cw_tokenswap));
+        contracts.push(Box::new(&mut self.cw_tokenfactory_issuer));
+        contracts.push(Box::new(&mut self.cw_vesting));
+        contracts.push(Box::new(&mut self.cw721_roles));
+        contracts
     }
 }
 
@@ -69,7 +86,7 @@ impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for DaoExternalSuite<Chain> 
 
     fn store_on(chain: Chain) -> Result<Self, Self::Error> {
         let suite = Self::new(chain);
-        suite.upload()?;
+        suite.upload_if_needed()?;
         Ok(suite)
     }
     fn get_contracts_mut(&mut self) -> Vec<Box<&mut dyn ContractInstance<Chain>>> {

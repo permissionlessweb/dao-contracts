@@ -572,6 +572,21 @@ impl DaoTestingSuiteBase {
         (proposal_module.clone(), proposal_id, proposal)
     }
 
+    /// execute a passed single choice proposal
+    pub fn execute_single_choice<T>(
+        &mut self,
+        dao: &TestDao<T>,
+        executor: impl Into<String>,
+        proposal_id: u64,
+    ) -> AppResponse {
+        self.execute_smart_ok(
+            executor,
+            &dao.proposal_modules[0].1,
+            &dao_proposal_single::msg::ExecuteMsg::Execute { proposal_id },
+            &[],
+        )
+    }
+
     /// vote on a single choice proposal
     pub fn vote_single_choice<T>(
         &mut self,

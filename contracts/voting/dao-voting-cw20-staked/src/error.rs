@@ -11,7 +11,7 @@ pub enum ContractError {
 
     #[error("Initial governance token balances must not be empty")]
     InitialBalancesError {},
-    
+
     #[error("ReplyParseError: {err}")]
     ReplyParseError { err: String },
 

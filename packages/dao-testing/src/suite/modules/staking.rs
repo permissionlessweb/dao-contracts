@@ -34,6 +34,13 @@ impl<Chain: CwEnv> DaoStakingSuite<Chain> {
         Ok(())
     }
 
+    pub fn upload_if_needed(&self) -> Result<(), CwOrchError> {
+        self.cw20_stake.upload_if_needed()?;
+        self.external_rewards.upload_if_needed()?;
+        self.rewards_distributor.upload_if_needed()?;
+        Ok(())
+    }
+
     pub fn get_contracts_mut(&mut self) -> Vec<Box<&mut dyn ContractInstance<Chain>>> {
         vec![
             Box::new(&mut self.cw20_stake),
@@ -49,7 +56,7 @@ impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for DaoStakingSuite<Chain> {
 
     fn store_on(chain: Chain) -> Result<Self, Self::Error> {
         let suite = Self::new(chain);
-        suite.upload()?;
+        suite.upload_if_needed()?;
         Ok(suite)
     }
 

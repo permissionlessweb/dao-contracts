@@ -31,6 +31,7 @@ pub struct DaoDaoDeployData {
     pub distribution: DaoDistributionDeployData,
     pub external: DaoExternalDeployData,
     pub gauges: DaoGaugeDeployData,
+    pub polytone: crate::suite::modules::polytone::DaoPolytoneDeployData,
 }
 
 /// Voting module configuration for a single DAO instance.
@@ -212,6 +213,9 @@ pub struct DaoDaoSuite<Chain: CwEnv + TxHandler> {
     pub distribution: DaoDistributionSuite<Chain>,
     pub external: DaoExternalSuite<Chain>,
     pub gauges: DaoGaugeSuite<Chain>,
+    pub polytone: crate::suite::modules::polytone::DaoPolytoneSuite<Chain>,
+    /// Vote-power + native-stake delegation (append-only; does not replace `staking`).
+    pub delegation: crate::suite::modules::delegation::DaoDelegationSuite<Chain>,
     pub registry: DaoStateRegistry,
 }
 
@@ -225,6 +229,8 @@ impl<Chain: CwEnv> DaoDaoSuite<Chain> {
             distribution: DaoDistributionSuite::new(chain.clone()),
             external: DaoExternalSuite::new(chain.clone()),
             gauges: DaoGaugeSuite::new(chain.clone()),
+            polytone: crate::suite::modules::polytone::DaoPolytoneSuite::new(chain.clone()),
+            delegation: crate::suite::modules::delegation::DaoDelegationSuite::new(chain),
             registry: DaoStateRegistry::new(),
         }
     }
@@ -237,6 +243,21 @@ impl<Chain: CwEnv> DaoDaoSuite<Chain> {
         self.distribution.upload()?;
         self.external.upload()?;
         self.gauges.upload()?;
+        self.polytone.upload()?;
+        self.delegation.upload()?;
+        Ok(())
+    }
+
+    pub fn upload_if_needed(&self) -> Result<(), CwOrchError> {
+        self.dao_core.upload_if_needed()?;
+        self.proposal.upload_if_needed()?;
+        self.voting.upload_if_needed()?;
+        self.staking.upload_if_needed()?;
+        self.distribution.upload_if_needed()?;
+        self.external.upload_if_needed()?;
+        self.gauges.upload_if_needed()?;
+        self.polytone.upload()?;
+        self.delegation.upload_if_needed()?;
         Ok(())
     }
 }
@@ -465,7 +486,7 @@ impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for DaoDaoSuite<Chain> {
 
     fn store_on(chain: Chain) -> Result<Self, Self::Error> {
         let suite = Self::new(chain);
-        suite.upload()?;
+        suite.upload_if_needed()?;
         Ok(suite)
     }
 
@@ -477,10 +498,12 @@ impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for DaoDaoSuite<Chain> {
         cs.extend(self.distribution.get_contracts_mut());
         cs.extend(self.external.get_contracts_mut());
         cs.extend(self.gauges.get_contracts_mut());
+        cs.extend(self.polytone.get_contracts_mut());
         cs
     }
 
     fn load_from(chain: Chain) -> Result<Self, Self::Error> {
+        // Hydrate from Daemon state.json via contract ids (dao_dao_core, …).
         Ok(Self::new(chain))
     }
 
@@ -495,7 +518,14 @@ impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for DaoDaoSuite<Chain> {
             staking: DaoStakingSuite::deploy_on(chain.clone(), data.staking)?,
             distribution: DaoDistributionSuite::deploy_on(chain.clone(), data.distribution)?,
             external: DaoExternalSuite::deploy_on(chain.clone(), data.external)?,
-            gauges: DaoGaugeSuite::deploy_on(chain, data.gauges)?,
+            gauges: DaoGaugeSuite::deploy_on(chain.clone(), data.gauges)?,
+            polytone: crate::suite::modules::polytone::DaoPolytoneSuite::deploy_on(
+                chain.clone(),
+                data.polytone,
+            )?,
+            delegation: crate::suite::modules::delegation::DaoDelegationSuite::deploy_on(
+                chain, (),
+            )?,
             registry: DaoStateRegistry::new(),
         };
 

@@ -96,7 +96,13 @@ impl Suite {
         self.base
             .app
             .wrap()
-            .query_wasm_smart(self.filter_addr.clone(), &QueryMsg::Filter { filter: filter_str, msg })
+            .query_wasm_smart(
+                self.filter_addr.clone(),
+                &QueryMsg::Filter {
+                    filter: filter_str,
+                    msg,
+                },
+            )
             .unwrap()
     }
 }

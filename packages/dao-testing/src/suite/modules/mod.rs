@@ -1,7 +1,10 @@
 pub mod dao_state;
+pub mod delegation;
 pub mod distribution;
 pub mod external;
 pub mod gauges;
+pub mod native_delegation;
 pub mod proposal;
 pub mod staking;
 pub mod voting;
+pub mod polytone;

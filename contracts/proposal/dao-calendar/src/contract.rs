@@ -712,14 +712,6 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
-    let own = DaoNostrCalendar::default()
-        .query_minter_ownership(deps.storage)?
-        .owner;
-    println!("{:#?}", own);
-    if let Some(o) = own { match o == info.sender {
-        true => {}
-        false => return Err(ContractError::Unauthorized {}),
-    } }
     match msg {
         cw721::msg::Cw721ExecuteMsg::UpdateExtension { msg } => match msg {
             ExecuteExt::CreateCalendar { owner, extension } => {
@@ -792,20 +784,33 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
                 d,
                 start_after,
                 limit,
-            } => to_json_binary(
-                &DaoNostrCalendar::default()
-                    .query_nft_by_extension(
-                        deps.storage,
-                        MetadataExt {
-                            kind: Nip52Kind::TimeEvent.kind_value(),
-                            calendar_d: Some(d),
-                            ..Default::default()
-                        },
-                        start_after,
-                        limit,
-                    )?
-                    .unwrap_or_default(),
-            ),
+            } => {
+                let mut events = Vec::new();
+                let calendar_d = if d.is_empty() { None } else { Some(d.clone()) };
+                for kind in [
+                    Nip52Kind::TimeEvent.kind_value(),
+                    Nip52Kind::DateEvent.kind_value(),
+                ] {
+                    if let Some(mut batch) = DaoNostrCalendar::default()
+                        .query_nft_by_extension(
+                            deps.storage,
+                            MetadataExt {
+                                kind,
+                                calendar_d: calendar_d.clone(),
+                                ..Default::default()
+                            },
+                            start_after.clone(),
+                            limit,
+                        )?
+                    {
+                        events.append(&mut batch);
+                    }
+                }
+                if let Some(lim) = limit {
+                    events.truncate(lim as usize);
+                }
+                to_json_binary(&events)
+            }
             QueryExt::Info {} => query_info(deps),
             QueryExt::NextProposalId {} => to_json_binary(&CALENDAR_COUNT.load(deps.storage)?),
         },
@@ -874,7 +879,7 @@ pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractE
 pub mod execute {
     use super::*;
     use cosmwasm_std::{Addr, DepsMut, Env, MessageInfo, Response};
-    use cw721_nips::NipMetadata;
+    use cw721_nips::{nips::nip52::Nip52Kind, NipKind, NipMetadata};
 
     pub fn create_calendar(
         deps: DepsMut,
@@ -883,6 +888,7 @@ pub mod execute {
         owner: Option<String>,
         extension: MetadataExt,
     ) -> Result<Response, ContractError> {
+        assert_may_create(deps.storage, &info.sender)?;
         let dao = DAO.load(deps.storage)?;
         let owner_addr = owner
             .map(|o| deps.api.addr_validate(&o))
@@ -892,6 +898,15 @@ pub mod execute {
         let d = cal_d(cal_count);
         CALENDAR_COUNT.save(deps.storage, &cal_count)?;
         EVENT_COUNT.save(deps.storage, &d, &0u64)?;
+        let mut extension = extension;
+        if extension.kind == 0 {
+            extension.kind = Nip52Kind::Calendar.kind_value();
+        }
+        if extension.on_chain || extension.cid.is_some() {
+            extension
+                .validate()
+                .map_err(ContractError::NipError)?;
+        }
         let hook_msgs = fire_calendar_hooks(deps.storage, format!("calendar_created:{}", d))?;
         DaoNostrCalendar::default().execute(
             deps,
@@ -925,12 +940,16 @@ pub mod execute {
         }
         let recipient_addr = deps.api.addr_validate(&recipient)?;
 
-        cal.owner = recipient_addr;
+        cal.owner = recipient_addr.clone();
+        contract
+            .config
+            .nft_info
+            .save(deps.storage, &d, &cal)?;
 
         Ok(Response::new()
             .add_attribute("action", "transfer_calendar")
             .add_attribute("d", d.to_string())
-            .add_attribute("new_owner", &cal.owner))
+            .add_attribute("new_owner", recipient_addr))
     }
 
     pub fn create_event(
@@ -945,11 +964,20 @@ pub mod execute {
         // include them in the count normally.
         //
         // validate the calendar exists when d is non-empty
+        assert_may_create(deps.storage, &info.sender)?;
+        extension
+            .validate()
+            .map_err(ContractError::NipError)?;
         if !d.is_empty() {
-            DaoNostrCalendar::default()
+            let cal = DaoNostrCalendar::default()
                 .config
                 .nft_info
-                .load(deps.storage, &d)?;
+                .load(deps.storage, &d)
+                .map_err(|_| ContractError::NoSuchCalendar { d: d.clone() })?;
+            if cal.extension.kind != Nip52Kind::Calendar.kind_value() {
+                return Err(ContractError::NoSuchCalendar { d: d.clone() });
+            }
+            assert_owner_or_dao(deps.storage, &info.sender, &cal.owner)?;
         }
 
         let e_count = EVENT_COUNT.load(deps.storage, &d).unwrap_or(0) + 1;
@@ -984,23 +1012,23 @@ pub mod execute {
     #[allow(clippy::too_many_arguments)]
     pub fn update_event(
         deps: DepsMut,
-        _info: MessageInfo,
+        info: MessageInfo,
         e_d: String,
         new: MetadataExt,
     ) -> Result<Response, ContractError> {
         new.validate().map_err(ContractError::NipError)?;
         let cals = DaoNostrCalendar::default();
-        if let Some(mut event) = cals.config.nft_info.may_load(deps.storage, &e_d)? {
-            // potentially invoke specific hooks based on on/offchain event
-            match event.extension.on_chain {
-                true => {
-                    event.extension = new;
-                }
-                false => {
-                    event.extension = new;
-                }
-            }
-        } 
+        let mut event = cals
+            .config
+            .nft_info
+            .may_load(deps.storage, &e_d)?
+            .ok_or_else(|| ContractError::NoSuchEvent {
+                d: new.calendar_d.clone().unwrap_or_default(),
+                e_d: e_d.clone(),
+            })?;
+        assert_owner_or_dao(deps.storage, &info.sender, &event.owner)?;
+        event.extension = new;
+        cals.config.nft_info.save(deps.storage, &e_d, &event)?;
         Ok(Response::new()
             .add_attribute("action", "update_event")
             .add_attribute("e_d", e_d.to_string()))
@@ -1008,13 +1036,20 @@ pub mod execute {
 
     pub fn cancel_event(
         deps: DepsMut,
-        _info: MessageInfo,
+        info: MessageInfo,
         e_d: String,
     ) -> Result<Response, ContractError> {
-        DaoNostrCalendar::default()
+        let cals = DaoNostrCalendar::default();
+        let event = cals
             .config
             .nft_info
-            .remove(deps.storage, &e_d)?;
+            .may_load(deps.storage, &e_d)?
+            .ok_or_else(|| ContractError::NoSuchEvent {
+                d: String::new(),
+                e_d: e_d.clone(),
+            })?;
+        assert_owner_or_dao(deps.storage, &info.sender, &event.owner)?;
+        cals.config.nft_info.remove(deps.storage, &e_d)?;
         let hook_msgs = fire_calendar_hooks(deps.storage, format!("event_cancelled:{}", e_d))?;
 
         Ok(Response::new()
@@ -1028,6 +1063,7 @@ pub mod execute {
         info: MessageInfo,
         new_info: PreProposeInfo,
     ) -> Result<Response, ContractError> {
+        assert_dao(deps.storage, &info.sender)?;
         let (initial_policy, messages) =
             new_info.into_initial_policy_and_messages(info.sender.clone())?;
         CREATION_POLICY.save(deps.storage, &initial_policy)?;
@@ -1084,11 +1120,41 @@ pub mod execute {
         Ok(())
     }
 
+    fn assert_owner_or_dao(
+        storage: &dyn cosmwasm_std::Storage,
+        sender: &Addr,
+        owner: &Addr,
+    ) -> Result<(), ContractError> {
+        let dao = DAO.load(storage)?;
+        if *sender == dao || sender == owner {
+            Ok(())
+        } else {
+            Err(ContractError::Unauthorized {})
+        }
+    }
+
+    fn assert_may_create(
+        storage: &dyn cosmwasm_std::Storage,
+        sender: &Addr,
+    ) -> Result<(), ContractError> {
+        let dao = DAO.load(storage)?;
+        if *sender == dao {
+            return Ok(());
+        }
+        if CREATION_POLICY.load(storage)?.is_permitted(sender) {
+            return Ok(());
+        }
+        Err(ContractError::Unauthorized {})
+    }
+
     fn fire_calendar_hooks(
         storage: &dyn cosmwasm_std::Storage,
         event: String,
     ) -> Result<Vec<cosmwasm_std::SubMsg>, ContractError> {
+        let mut idx: u64 = 0;
         let msgs = CALENDAR_HOOKS.prepare_hooks(storage, |addr| {
+            let reply_id = crate::contract::FAILED_HOOK_REPLY_ID_BASE + idx;
+            idx += 1;
             let msg = cosmwasm_std::to_json_binary(&serde_json::json!({
                 "calendar_hook": { "event": event.clone() }
             }))?;
@@ -1098,7 +1164,7 @@ pub mod execute {
                     msg,
                     funds: vec![],
                 },
-                crate::contract::FAILED_HOOK_REPLY_ID_BASE,
+                reply_id,
             ))
         })?;
         Ok(msgs)

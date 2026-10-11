@@ -24,6 +24,12 @@ impl<Chain: CwEnv> DaoGaugeSuite<Chain> {
         self.adapter.upload()?;
         Ok(())
     }
+
+    pub fn upload_if_needed(&self) -> Result<(), CwOrchError> {
+        self.orchestrator.upload_if_needed()?;
+        self.adapter.upload_if_needed()?;
+        Ok(())
+    }
 }
 
 impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for DaoGaugeSuite<Chain> {
@@ -32,7 +38,7 @@ impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for DaoGaugeSuite<Chain> {
 
     fn store_on(chain: Chain) -> Result<Self, Self::Error> {
         let suite = Self::new(chain);
-        suite.upload()?;
+        suite.upload_if_needed()?;
         Ok(suite)
     }
 

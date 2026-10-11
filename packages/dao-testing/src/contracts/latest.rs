@@ -299,6 +299,7 @@ pub fn dao_rewards_distributor_contract() -> Box<dyn Contract<Empty>> {
     Box::new(contract)
 }
 
+#[cfg(feature = "btsg")]
 pub fn btsg_ft_factory_contract() -> Box<dyn Contract<Empty>> {
     let contract = ContractWrapper::new(
         btsg_ft_factory::contract::execute,

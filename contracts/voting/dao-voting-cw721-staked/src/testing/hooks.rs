@@ -1,4 +1,4 @@
-use cosmwasm_std::testing::{mock_dependencies, mock_env, message_info, MockApi};
+use cosmwasm_std::testing::{message_info, mock_dependencies, mock_env, MockApi};
 use dao_hooks::nft_stake::{stake_nft_hook_msgs, unstake_nft_hook_msgs};
 
 use crate::{

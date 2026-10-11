@@ -122,6 +122,18 @@ impl<Chain: CwEnv> DaoVotingSuite<Chain> {
         Ok(())
     }
 
+    pub fn upload_if_needed(&self) -> Result<(), CwOrchError> {
+        self.voting_cw4.upload_if_needed()?;
+        self.voting_cw20_staked.upload_if_needed()?;
+        self.voting_cw721_roles.upload_if_needed()?;
+        self.voting_cw721_staked.upload_if_needed()?;
+        self.voting_token_staked.upload_if_needed()?;
+        self.vote_delegation.upload_if_needed()?;
+        self.cw1_whitelist.upload_if_needed()?;
+        self.cw4_group.upload_if_needed()?;
+        Ok(())
+    }
+
     pub fn get_contracts_mut(&mut self) -> Vec<Box<&mut dyn ContractInstance<Chain>>> {
         vec![
             Box::new(&mut self.voting_cw4),
@@ -141,7 +153,7 @@ impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for DaoVotingSuite<Chain> {
 
     fn store_on(chain: Chain) -> Result<Self, Self::Error> {
         let suite = Self::new(chain);
-        suite.upload()?;
+        suite.upload_if_needed()?;
         Ok(suite)
     }
 

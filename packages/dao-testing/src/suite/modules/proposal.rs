@@ -69,6 +69,14 @@ impl<Chain: CwEnv> DaoPreProposeSuite<Chain> {
         Ok(())
     }
 
+    pub fn upload_if_needed(&self) -> Result<(), CwOrchError> {
+        self.pre_prop_approval_single.upload_if_needed()?;
+        self.pre_prop_approver.upload_if_needed()?;
+        self.pre_prop_multiple.upload_if_needed()?;
+        self.pre_prop_single.upload_if_needed()?;
+        Ok(())
+    }
+
     pub fn get_contracts_mut(&mut self) -> Vec<Box<&mut dyn ContractInstance<Chain>>> {
         vec![
             Box::new(&mut self.pre_prop_approval_single),
@@ -85,7 +93,7 @@ impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for DaoPreProposeSuite<Chain
 
     fn store_on(chain: Chain) -> Result<Self, Self::Error> {
         let suite = Self::new(chain);
-        suite.upload()?;
+        suite.upload_if_needed()?;
         Ok(suite)
     }
 
@@ -134,6 +142,16 @@ impl<Chain: CwEnv> DaoProposalSuite<Chain> {
         Ok(())
     }
 
+    pub fn upload_if_needed(&self) -> Result<(), CwOrchError> {
+        self.prop_single.upload_if_needed()?;
+        self.prop_multiple.upload_if_needed()?;
+        self.prop_condorcet.upload_if_needed()?;
+        self.prop_sudo.upload_if_needed()?;
+        self.pre_prop_suite.upload_if_needed()?;
+        self.calendar.upload_if_needed()?;
+        Ok(())
+    }
+
     pub fn get_contracts_mut(&mut self) -> Vec<Box<&mut dyn ContractInstance<Chain>>> {
         let mut cs: Vec<Box<&mut dyn ContractInstance<Chain>>> = vec![
             Box::new(&mut self.prop_single),
@@ -153,7 +171,7 @@ impl<Chain: CwEnv> cw_orch::contract::Deploy<Chain> for DaoProposalSuite<Chain> 
 
     fn store_on(chain: Chain) -> Result<Self, Self::Error> {
         let suite = Self::new(chain);
-        suite.upload()?;
+        suite.upload_if_needed()?;
         Ok(suite)
     }
 

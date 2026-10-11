@@ -1531,9 +1531,7 @@ fn test_unsupported_factory_msg() {
 }
 
 #[test]
-#[should_panic(
-    expected = "missing field `nft_contract`"
-)]
+#[should_panic(expected = "missing field `nft_contract`")]
 fn test_factory_wrong_callback() {
     let mut app = App::default();
     let module_id = app.store_code(dao_voting_cw721_staked_contract());
