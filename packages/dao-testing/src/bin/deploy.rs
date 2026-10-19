@@ -52,21 +52,30 @@ fn main() {
 
 fn print_help() {
     eprintln!(
-        r#"dao-testing deploy — lab DAO matrix CLI
+        r#"dao-testing deploy — lab / testnet / mainnet stack matrix CLI
 
 Commands:
   stack-plan   --profile <path.toml>     Offline plan JSON (ports, params, steps)
   export-state --scenario <name>         Merge profile + APPSTATE + state.json
                [--appstate PATH] [--cw-state PATH] [-o PATH]
+               scenarios: open-lab | community-core | testnet | mainnet
   bind         --profile <path.toml>     Bind checklist (no chain writes)
-  stack        --profile <path.toml>     Deferred: prints G4 execute checklist
+  stack        --profile <path.toml>     Deferred G4 checklist (mainnet needs --allow-mainnet)
   list-profiles                          Built-in profile paths under package
+
+Code IDs:
+  ensure_code_ids uses strategy upload_if_needed against ~/.cw-orchestrator/state.json
+  (per chain_id). Mainnet profiles default to reuse_state_json_only.
+
+Guards:
+  Mainnet profiles set safety.require_allow_mainnet=true.
+  For `stack` (and recreate plans): ALLOW_MAINNET=1 or --allow-mainnet.
 
 Docs:
   packages/dao-testing/docs/DEMO-WORKFLOW.md
-  packages/dao-testing/docs/DESIGN-dao-orch-ecosystem-stack.md
+  packages/dao-testing/docs/STACK-PROFILES.md
 
-Groot2 default ports: RPC 36657 · LCD 1617 · gRPC 9390 · faucet 5000
+Soft-dep: LAB-ORCH-2 lab-spawn ensure --profile open-lab|testnet|mainnet
 "#
     );
 }
@@ -86,6 +95,7 @@ struct StackProfile {
     code_ids: Option<BTreeMap<String, u64>>,
     export: Option<ExportSection>,
     hooks: Option<HooksSection>,
+    safety: Option<SafetySection>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -117,6 +127,12 @@ struct GovernanceSection {
 struct ModulesSection {
     calendar: Option<bool>,
     marketplace: Option<bool>,
+    /// Event-hub ceremony surface (soft; UI + mesh.v1 items).
+    ceremony: Option<bool>,
+    /// mesh.v1 / collab mesh items on DAO core.
+    mesh: Option<bool>,
+    /// Aggregate Event Hub widget pack flag.
+    event_hub: Option<bool>,
     widgets: Option<Vec<String>>,
 }
 
@@ -124,6 +140,9 @@ struct ModulesSection {
 struct AppsSection {
     dao_calendar: Option<String>,
     marketplace_mirror: Option<String>,
+    ceremony: Option<String>,
+    /// DAO core item key for mesh pointer (default mesh.v1).
+    mesh_item_key: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -138,6 +157,20 @@ struct HooksSection {
     seed: Option<String>,
     fe_setup: Option<String>,
     spawn_shell: Option<String>,
+}
+
+/// Operator safety for lab / testnet / mainnet profile classes.
+#[derive(Debug, Deserialize, Serialize, Clone)]
+struct SafetySection {
+    /// lab | testnet | mainnet
+    environment: Option<String>,
+    allow_recreate: Option<bool>,
+    /// When false, plan marks store-code / upload as blocked (reuse state.json only).
+    allow_upload: Option<bool>,
+    /// If true, stack / stack-plan destructive paths need ALLOW_MAINNET or --allow-mainnet.
+    require_allow_mainnet: Option<bool>,
+    allow_mainnet_env: Option<String>,
+    notes: Option<String>,
 }
 
 fn load_profile(path: &Path) -> Result<StackProfile, i32> {
@@ -214,12 +247,16 @@ fn resolve_profile_arg(args: &[String]) -> Result<PathBuf, i32> {
 
 fn profile_for_scenario(scenario: &str) -> Result<PathBuf, i32> {
     let name = match scenario {
-        "open-lab" | "open_lab" | "open-lab-dao" => "open-lab.stack.toml",
+        "open-lab" | "open_lab" | "open-lab-dao" | "lab" => "open-lab.stack.toml",
         "community-core" | "community_core" | "community-core-local" => {
             "community-core-local.stack.toml"
         }
+        "testnet" | "120u-1" | "public-testnet" => "testnet.stack.toml",
+        "mainnet" | "morocco-1" | "morocco" => "mainnet.stack.toml",
         other => {
-            eprintln!("unknown scenario '{other}' (open-lab | community-core)");
+            eprintln!(
+                "unknown scenario '{other}' (open-lab | community-core | testnet | mainnet)"
+            );
             return Err(2);
         }
     };
@@ -232,11 +269,73 @@ fn profile_for_scenario(scenario: &str) -> Result<PathBuf, i32> {
     }
 }
 
+// ── Mainnet / environment guards ───────────────────────────────────────────
+
+fn allow_mainnet_flag(args: &[String]) -> bool {
+    if args.iter().any(|a| a == "--allow-mainnet") {
+        return true;
+    }
+    env::var("ALLOW_MAINNET")
+        .map(|v| matches!(v.as_str(), "1" | "true" | "TRUE" | "yes" | "YES"))
+        .unwrap_or(false)
+}
+
+/// Enforce profile safety for potentially destructive plan/stack paths.
+/// `bind` and `export-state` stay read-only and never call this with need_write=true.
+fn assert_profile_safety(profile: &StackProfile, args: &[String], need_write: bool) -> Result<(), i32> {
+    let safety = match &profile.safety {
+        Some(s) => s,
+        None => return Ok(()),
+    };
+
+    if safety.require_allow_mainnet.unwrap_or(false) && need_write {
+        if !allow_mainnet_flag(args) {
+            let env_name = safety
+                .allow_mainnet_env
+                .clone()
+                .unwrap_or_else(|| "ALLOW_MAINNET".into());
+            eprintln!(
+                "refused: profile '{}' is guarded mainnet (environment={:?}).\n\
+                 Set {env_name}=1 or pass --allow-mainnet for write/plan paths that can recreate or upload.\n\
+                 Use `bind` / `export-state` for read-only inspection without the flag.\n\
+                 notes: {}",
+                profile.name,
+                safety.environment,
+                safety.notes.as_deref().unwrap_or("(none)")
+            );
+            return Err(3);
+        }
+    }
+
+    if need_write {
+        if safety.allow_recreate == Some(false) && profile.dao.recreate.unwrap_or(false) {
+            eprintln!(
+                "refused: profile '{}' sets safety.allow_recreate=false but dao.recreate=true",
+                profile.name
+            );
+            return Err(3);
+        }
+    }
+
+    Ok(())
+}
+
+fn code_strategy(profile: &StackProfile) -> &'static str {
+    match &profile.safety {
+        Some(s) if s.allow_upload == Some(false) => "reuse_state_json_only",
+        _ => "upload_if_needed",
+    }
+}
+
 // ── Commands ────────────────────────────────────────────────────────────────
 
 fn cmd_stack_plan(args: &[String]) -> Result<(), i32> {
     let path = resolve_profile_arg(args)?;
     let profile = load_profile(&path)?;
+    // Offline plan always allowed; mainnet recreate attempts still refused.
+    if profile.dao.recreate.unwrap_or(false) {
+        assert_profile_safety(&profile, args, true)?;
+    }
     let plan = build_plan(&profile, &path);
     println!("{}", serde_json::to_string_pretty(&plan).unwrap());
     Ok(())
@@ -260,8 +359,11 @@ fn build_plan(profile: &StackProfile, path: &Path) -> Value {
         json!({
             "id": "codes",
             "action": "ensure_code_ids",
+            "strategy": code_strategy(profile),
             "source": "~/.cw-orchestrator/state.json",
+            "reuse": true,
             "code_ids": profile.code_ids,
+            "note": "Prefer existing code_ids in state.json for this chain_id; store-code only if missing and allow_upload",
         }),
     ];
 
@@ -306,10 +408,20 @@ fn build_plan(profile: &StackProfile, path: &Path) -> Value {
         "chain": profile.chain,
         "dao": profile.dao,
         "governance": profile.governance,
+        "modules": profile.modules,
+        "safety": profile.safety,
+        "code_strategy": code_strategy(profile),
+        "lab_orch_soft_dep": {
+            "interface": "lab-spawn ensure --profile <open-lab|community-core|testnet|mainnet>",
+            "task": "LAB-ORCH-2",
+            "note": "This CLI is the profile/plan surface; unified multi-device spawn is soft-dep.",
+        },
         "steps": steps,
         "notes": [
             "stack-plan is offline. Chain execute remains shell (G4: deploy stack).",
-            "Ports SoR: groot2 36657/1617/9390/5000 — see DEMO-WORKFLOW.md",
+            "Code IDs: upload_if_needed against ~/.cw-orchestrator/state.json (per chain_id).",
+            "Lab ports SoR: SDA 127.0.0.1:3000 /lab-rpc|/lab-lcd or groot2 36657/1617 — see DEMO-WORKFLOW.md",
+            "Mainnet: require ALLOW_MAINNET=1 or --allow-mainnet for write paths.",
         ]
     })
 }
@@ -344,11 +456,15 @@ fn cmd_bind(args: &[String]) -> Result<(), i32> {
 fn cmd_stack(args: &[String]) -> Result<(), i32> {
     let path = resolve_profile_arg(args)?;
     let profile = load_profile(&path)?;
+    // Deferred execute still guarded: mainnet must opt-in before shell hooks are emitted.
+    assert_profile_safety(&profile, args, true)?;
     let plan = build_plan(&profile, &path);
     let out = json!({
         "schema": "dao-testing/stack-execute@deferred",
         "status": "deferred_g4",
         "message": "Full cw-orch stack execute is G4. Use shell hooks from the plan.",
+        "code_strategy": code_strategy(&profile),
+        "safety": profile.safety,
         "plan": plan,
         "shell_now": {
             "spawn": profile.hooks.as_ref().and_then(|h| h.spawn_shell.clone()),
@@ -356,6 +472,7 @@ fn cmd_stack(args: &[String]) -> Result<(), i32> {
             "seed": profile.hooks.as_ref().and_then(|h| h.seed.clone()),
         },
         "docs": "packages/dao-testing/docs/DEMO-WORKFLOW.md",
+        "lab_orch_soft_dep": "lab-spawn ensure --profile <name> (LAB-ORCH-2)",
     });
     println!("{}", serde_json::to_string_pretty(&out).unwrap());
     Ok(())
@@ -440,12 +557,16 @@ fn cmd_export_state(args: &[String]) -> Result<(), i32> {
         "chain": profile.chain,
         "dao": profile.dao,
         "governance": profile.governance,
+        "modules": profile.modules,
         "apps": profile.apps,
         "code_ids": code_ids,
+        "code_strategy": code_strategy(&profile),
+        "state_json": cw_state_path.display().to_string(),
         "state_default_addrs": state_addrs,
         "appstate_path": appstate_path.display().to_string(),
         "appstate": appstate,
         "hooks": profile.hooks,
+        "safety": profile.safety,
     });
 
     let pretty = serde_json::to_string_pretty(&snapshot).unwrap();

@@ -63,7 +63,7 @@ fn onchain_metadata(d_tag: &str, kind: Nip52Kind) -> MetadataExt {
     let tags: Vec<Vec<String>> = event.to_tags().into_iter().map(Tag::into_inner).collect();
     let raw = RawNostrEvent {
         id: format!("test-event-{d_tag}"),
-        pubkey: "test-pubkey".to_string(),
+        pubkey: "11".repeat(32),
         created_at: 1000000,
         kind: kind.kind_value(),
         tags,
@@ -423,12 +423,7 @@ mod tests {
 
     #[test]
     fn test_transfer_calendar_changes_owner() {
-        // CAUTION: This test documents a known bug.
-        // transfer_calendar reads NFT info, checks ownership,
-        // and updates the in-memory struct — but never calls
-        // nft_info.save() to persist the change.
         let (_, cal) = setup();
-        let dao = cal.dao().unwrap();
         let recipient = MockApi::default().addr_make("recipient");
 
         let meta = MetadataExt {
@@ -437,12 +432,9 @@ mod tests {
         };
         cal.create_calendar(meta, None).unwrap();
 
-        // Attempt transfer (current owner = DAO = sender)
         cal.transfer_calendar("cal/1".to_string(), recipient.to_string())
             .unwrap();
 
-        // Owner should be recipient, but is STILL dao due to the
-        // missing nft_info.save() in transfer_calendar.
         use cw721::msg::OwnerOfResponse;
         let owner: OwnerOfResponse = cal
             .query(&QueryMsg::OwnerOf {
@@ -450,17 +442,6 @@ mod tests {
                 include_expired: None,
             })
             .unwrap();
-
-        // This assertion FAILS because the transfer doesn't persist.
-        // Uncomment the next line once transfer_calendar is fixed:
-        // assert_eq!(owner.owner, recipient.to_string());
-
-        // Document the current broken behaviour:
-        assert_eq!(
-            owner.owner,
-            dao.to_string(),
-            "BUG: transfer_calendar reads owner, modifies in-memory, \
-             but never calls nft_info.save() — change is lost"
-        );
+        assert_eq!(owner.owner, recipient.to_string());
     }
 }

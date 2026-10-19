@@ -1,8 +1,9 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{BlockInfo, Uint128, Uint256};
+use cosmwasm_std::{BlockInfo, StdError, Uint128, Uint256};
 use cw_utils::Expiration;
 
 use crate::{
+    error::{uint256_to_uint128, ContractError},
     m::{Stats, M},
     vote::Vote,
 };
@@ -81,8 +82,12 @@ impl Tally {
     ///
     /// - Voter has not already voted.
     /// - Tally is not expired.
-    pub fn add_vote(&mut self, vote: Vote, power: Uint256) {
-        let power_u128: Uint128 = power.try_into().unwrap();
+    pub fn add_vote(&mut self, vote: Vote, power: Uint256) -> Result<(), ContractError> {
+        let power_u128 = uint256_to_uint128(power)?;
+        uint256_to_uint128(self.power_outstanding)?;
+        if power > self.power_outstanding {
+            return Err(ContractError::PowerExceedsTallyRange {});
+        }
         for (index, preference) in vote.iter().enumerate() {
             // an interesting property of the symetry of M is that in
             // recording all the defeats, we also record all of the
@@ -91,8 +96,12 @@ impl Tally {
                 self.m.decrement((*preference, vote[defeat]), power_u128)
             }
         }
-        self.power_outstanding -= power;
+        self.power_outstanding = self
+            .power_outstanding
+            .checked_sub(power)
+            .map_err(|err| StdError::from(err))?;
         self.winner = self.winner();
+        Ok(())
     }
 
     fn winner(&self) -> Winner {

@@ -22,6 +22,10 @@ hash.txt
 contracts.txt
 #@hard-nett: we publish artifacts for cw-orch library to access
 #artifacts/
+packages/dao-testing/docs
+packages/dao-testing/evidence
+packages/dao-testing/profiles
+wasm-onchain-diff.md
 
 # code coverage
 tarpaulin-report.*
@@ -39,3 +43,4 @@ ci/**/Cargo.lock
 # git worktrees
 .worktrees/
 .claude/
+.lake

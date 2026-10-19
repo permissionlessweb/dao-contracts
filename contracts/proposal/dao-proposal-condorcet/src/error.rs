@@ -1,4 +1,4 @@
-use cosmwasm_std::StdError;
+use cosmwasm_std::{StdError, Uint128, Uint256};
 use dao_voting::{error::VotingError, reply::error::TagError, threshold::ThresholdError};
 use thiserror::Error;
 
@@ -37,4 +37,14 @@ pub enum ContractError {
 
     #[error("must specify at least one choice for proposal")]
     ZeroChoices {},
+
+    #[error("power exceeds tally range")]
+    PowerExceedsTallyRange {},
+}
+
+/// Converts a `Uint256` voting power into the `Uint128` tally range.
+pub(crate) fn uint256_to_uint128(value: Uint256) -> Result<Uint128, ContractError> {
+    value
+        .try_into()
+        .map_err(|_| ContractError::PowerExceedsTallyRange {})
 }

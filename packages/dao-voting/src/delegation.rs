@@ -198,6 +198,16 @@ pub fn calculate_delegated_vp(vp: Uint256, percent: Decimal) -> Uint256 {
     vp.mul_floor(percent)
 }
 
+/// Loss of effective unvoted delegated power when `delegated` is removed.
+///
+/// `new_effective = min(total.saturating_sub(delegated), effective)`, then
+/// `effective.saturating_sub(new_effective)`. `effective` is total power after
+/// the cap, so it is at most `total`.
+pub fn unvoted_delegated_loss(total: Uint256, effective: Uint256, delegated: Uint256) -> Uint256 {
+    let new_effective = total.saturating_sub(delegated).min(effective);
+    effective.saturating_sub(new_effective)
+}
+
 // DELEGATE VOTE OVERRIDE: if this is the first time this member voted, override
 // their delegates' votes with the delegator's vote.
 //
@@ -275,7 +285,8 @@ pub fn handle_delegate_vote_override<Vote: Serialize + DeserializeOwned>(
                 // the delegate's individual VP even if they lose all delegated
                 // VP due to delegators overriding votes.
                 if !reduction.is_zero() {
-                    delegate_ballot.power -= reduction;
+                    let reduction = std::cmp::min(reduction, delegate_ballot.power);
+                    delegate_ballot.power = delegate_ballot.power.checked_sub(reduction)?;
                     remove_vote(&delegate_ballot.vote, reduction)?;
                     ballots.save(deps.storage, (proposal_id, &delegate), &delegate_ballot)?;
                 }

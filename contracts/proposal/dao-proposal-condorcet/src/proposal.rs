@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{to_json_binary, Addr, BlockInfo, StdResult, SubMsg, Uint128, Uint256, WasmMsg};
+use cosmwasm_std::{to_json_binary, Addr, BlockInfo, StdError, StdResult, SubMsg, Uint256, WasmMsg};
 use cw_utils::Expiration;
 use dao_voting::{
     reply::mask_proposal_execution_proposal_id, threshold::PercentageThreshold,
@@ -8,6 +8,7 @@ use dao_voting::{
 
 use crate::{
     config::Config,
+    error::{uint256_to_uint128, ContractError},
     msg::Choice,
     tally::{Tally, Winner},
 };
@@ -52,54 +53,61 @@ pub struct ProposalResponse {
     pub tally: Tally,
 }
 
-fn status(block: &BlockInfo, proposal: &Proposal, tally: &Tally) -> Status {
+fn status(
+    block: &BlockInfo,
+    proposal: &Proposal,
+    tally: &Tally,
+) -> Result<Status, ContractError> {
     match proposal.last_status {
         Status::Rejected
         | Status::Passed { .. }
         | Status::Executed
         | Status::Closed
-        | Status::ExecutionFailed => proposal.last_status,
+        | Status::ExecutionFailed => Ok(proposal.last_status),
         Status::Open => {
             if proposal
                 .min_voting_period
                 .is_some_and(|min| !min.is_expired(block))
             {
-                return Status::Open;
+                return Ok(Status::Open);
             }
 
             let winner = tally.winner;
             let expired = tally.expiration.is_expired(block);
-            let votes_cast: Uint128 = (proposal.total_power - tally.power_outstanding)
-                .try_into()
-                .unwrap();
-            let total_power_u128: Uint128 = proposal.total_power.try_into().unwrap();
+            let votes_cast = uint256_to_uint128(
+                proposal
+                    .total_power
+                    .checked_sub(tally.power_outstanding)
+                    .map_err(|err| StdError::from(err))?,
+            )?;
+            let total_power_u128 = uint256_to_uint128(proposal.total_power)?;
             let quorum =
                 does_vote_count_pass(votes_cast.into(), total_power_u128.into(), proposal.quorum);
 
             if expired && !quorum {
-                Status::Rejected
+                Ok(Status::Rejected)
             } else {
                 match winner {
-                    Winner::Never => Status::Rejected,
+                    Winner::Never => Ok(Status::Rejected),
                     Winner::None => {
                         if expired {
-                            Status::Rejected
+                            Ok(Status::Rejected)
                         } else {
-                            Status::Open
+                            Ok(Status::Open)
                         }
                     }
                     Winner::Some(winner) => {
                         if expired && quorum {
-                            Status::Passed { winner }
+                            Ok(Status::Passed { winner })
                         } else {
-                            Status::Open
+                            Ok(Status::Open)
                         }
                     }
                     Winner::Undisputed(winner) => {
                         if quorum {
-                            Status::Passed { winner }
+                            Ok(Status::Passed { winner })
                         } else {
-                            Status::Open
+                            Ok(Status::Open)
                         }
                     }
                 }
@@ -131,12 +139,16 @@ impl Proposal {
         }
     }
 
-    pub(crate) fn update_status(&mut self, block: &BlockInfo, tally: &Tally) -> Status {
-        self.last_status = status(block, self, tally);
-        self.last_status
+    pub(crate) fn update_status(
+        &mut self,
+        block: &BlockInfo,
+        tally: &Tally,
+    ) -> Result<Status, ContractError> {
+        self.last_status = status(block, self, tally)?;
+        Ok(self.last_status)
     }
 
-    pub fn status(&self, block: &BlockInfo, tally: &Tally) -> Status {
+    pub fn status(&self, block: &BlockInfo, tally: &Tally) -> Result<Status, ContractError> {
         status(block, self, tally)
     }
 

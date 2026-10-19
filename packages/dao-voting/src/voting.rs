@@ -530,4 +530,173 @@ mod test {
             Decimal::percent(0)
         ))
     }
+
+    /// Oracle for V1–V4 and the active-threshold overflow named in the ledger.
+    /// The floor expression is the same one `VotingPow.lean` proves.
+    #[test]
+    fn uint256_voting_power_soundness() {
+        use cosmwasm_std::{Uint128, Uint512};
+
+        fn floor_geq(votes: Uint256, total: Uint256, atomics: u128) -> bool {
+            let precision = Uint512::from(PRECISION_FACTOR);
+            let denom = Uint512::from(10u64).pow(18);
+            let left = Uint512::from(votes).checked_mul(precision).unwrap();
+            let right = Uint512::from(total)
+                .checked_mul(precision)
+                .unwrap()
+                .checked_mul(Uint512::from(atomics))
+                .unwrap()
+                .checked_div(denom)
+                .unwrap();
+            left >= right
+        }
+
+        let samples = [
+            (Uint256::new(7), Uint256::new(13), Decimal::percent(50).atomics().u128()),
+            (Uint256::zero(), Uint256::new(1), 0),
+            (Uint256::MAX, Uint256::MAX, u128::MAX),
+            (Uint256::from_be_bytes({
+                let mut bytes = [0u8; 32];
+                bytes[0] = 1;
+                bytes
+            }), Uint256::new(3), Decimal::percent(60).atomics().u128()),
+        ];
+        for (votes, total, atomics) in samples {
+            if atomics == 0 {
+                assert!(compare_vote_count(votes, VoteCmp::Geq, total, Decimal::percent(0)));
+                continue;
+            }
+            let percent = Decimal::from_atomics(atomics, 18).unwrap_or(Decimal::one());
+            assert_eq!(percent.decimal_places(), 18);
+            let used = percent.atomics().u128();
+            assert_eq!(
+                compare_vote_count(votes, VoteCmp::Geq, total, percent),
+                floor_geq(votes, total, used),
+                "geq drifted at votes={votes} total={total} atomics={used}"
+            );
+        }
+
+        let above = Uint256::from_be_bytes({
+            let mut bytes = [0u8; 32];
+            bytes[0] = 1;
+            bytes
+        });
+        assert!(above > Uint256::from(u128::MAX));
+        assert!(floor_geq(above, above, Decimal::percent(100).atomics().u128()));
+
+        let atomics = (Uint128::new(10u128.pow(18)) + Uint128::new(2)) / Uint128::new(3);
+        let percent = Decimal::from_atomics(atomics, 18).unwrap();
+        let complement = Decimal::one() - percent;
+        assert!(compare_vote_count(
+            Uint256::new(1),
+            VoteCmp::Geq,
+            Uint256::new(3),
+            percent
+        ));
+        assert!(compare_vote_count(
+            Uint256::new(2),
+            VoteCmp::Greater,
+            Uint256::new(3),
+            complement
+        ));
+        assert!(does_vote_count_pass(
+            Uint256::new(1),
+            Uint256::new(3),
+            PercentageThreshold::Percent(percent)
+        ));
+        assert!(does_vote_count_fail(
+            Uint256::new(2),
+            Uint256::new(3),
+            PercentageThreshold::Percent(percent)
+        ));
+
+        assert!(!does_vote_count_pass(
+            Uint256::zero(),
+            Uint256::zero(),
+            PercentageThreshold::Majority {}
+        ));
+        assert!(does_vote_count_fail(
+            Uint256::zero(),
+            Uint256::zero(),
+            PercentageThreshold::Majority {}
+        ));
+
+        let precision = Uint256::from(PRECISION_FACTOR);
+        let max_supply = Uint256::MAX.checked_div(precision).unwrap();
+        let scaled = max_supply.checked_mul(precision).unwrap();
+        assert!(scaled.checked_add(precision - Uint256::one()).is_err());
+
+        // Closed terms from `single_choice_percentage_evaluates` and
+        // `rejection_uses_complement`: 6 of 10 meets 60%, 5 of 10 does not,
+        // and 5 no-votes fail 60% because the comparison uses the complement.
+        let sixty = Decimal::from_atomics(6u128 * 10u128.pow(17), 18).unwrap();
+        let sixty_threshold = PercentageThreshold::Percent(sixty);
+        assert!(does_vote_count_pass(
+            Uint256::new(6),
+            Uint256::new(10),
+            sixty_threshold
+        ));
+        assert!(!does_vote_count_pass(
+            Uint256::new(5),
+            Uint256::new(10),
+            sixty_threshold
+        ));
+        assert!(does_vote_count_fail(
+            Uint256::new(5),
+            Uint256::new(10),
+            sixty_threshold
+        ));
+        assert!(!compare_vote_count(
+            Uint256::new(5),
+            VoteCmp::Greater,
+            Uint256::new(10),
+            sixty
+        ));
+
+        // `votes_total_some` and `remove_limb_preserves_sum` on the production tally.
+        let mut votes = Votes::zero();
+        votes.add_vote(Vote::Yes, Uint256::new(1));
+        votes.add_vote(Vote::No, Uint256::new(2));
+        votes.add_vote(Vote::Abstain, Uint256::new(3));
+        assert_eq!(votes.total(), Uint256::new(6));
+        votes.remove_vote(Vote::Yes, Uint256::one());
+        assert_eq!(votes.total(), Uint256::new(5));
+        assert_eq!(votes.yes, Uint256::zero());
+        // `votes_total_none` and `remove_limb_none`: the panicking operators
+        // are these checked failures.
+        assert!(Uint256::MAX.checked_add(Uint256::one()).is_err());
+        assert!(Uint256::one().checked_sub(Uint256::new(2)).is_err());
+        let removed_past_limb = std::panic::catch_unwind(|| {
+            let mut overflow = Votes::zero();
+            overflow.add_vote(Vote::Yes, Uint256::one());
+            overflow.remove_vote(Vote::Yes, Uint256::new(2));
+        });
+        assert!(removed_past_limb.is_err());
+
+        // `delegation_loss_*` on the production helper the query calls.
+        let delegation_loss = crate::delegation::unvoted_delegated_loss;
+        assert_eq!(
+            delegation_loss(Uint256::new(10), Uint256::new(10), Uint256::new(4)),
+            Uint256::new(4)
+        );
+        assert_eq!(
+            delegation_loss(Uint256::new(10), Uint256::new(7), Uint256::new(4)),
+            Uint256::one()
+        );
+        assert_eq!(
+            delegation_loss(Uint256::new(10), Uint256::new(4), Uint256::new(3)),
+            Uint256::zero()
+        );
+        assert_eq!(
+            delegation_loss(Uint256::new(10), Uint256::new(6), Uint256::new(12)),
+            Uint256::new(6)
+        );
+        let individual = Uint256::new(7);
+        let delegated = Uint256::new(3);
+        let ballot = individual + delegated;
+        let reduction = delegation_loss(Uint256::new(10), Uint256::new(8), delegated);
+        assert!(reduction <= delegated);
+        let kept = ballot - reduction.min(ballot);
+        assert_eq!(kept, individual + (delegated - reduction));
+    }
 }

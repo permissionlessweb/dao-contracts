@@ -574,28 +574,7 @@ pub fn query_is_active(deps: Deps) -> StdResult<Binary> {
                 active: actual_power >= count,
             }),
             ActiveThreshold::Percentage { percent } => {
-                // percent is bounded between [0, 100]. decimal
-                // represents percents in u128 terms as p *
-                // 10^15. this bounds percent between [0, 10^17].
-                //
-                // total_potential_power is bounded between [0, 2^128]
-                // as it tracks the balances of a cw20 token which has
-                // a max supply of 2^128.
-                //
-                // with our precision factor being 10^9:
-                //
-                // total_power <= 2^128 * 10^9 <= 2^256
-                //
-                // so we're good to put that in a u256.
-                //
-                // multiply_ratio promotes to a u512 under the hood,
-                // so it won't overflow, multiplying by a percent less
-                // than 100 is gonna make something the same size or
-                // smaller, applied + 10^9 <= 2^128 * 10^9 + 10^9 <=
-                // 2^256, so the top of the round won't overflow, and
-                // rounding is rounding down, so the whole thing can
-                // be safely unwrapped at the end of the day thank you
-                // for coming to my ted talk.
+                // Supply is Uint256 and these checked calls return the overflow.
                 let total_potential_power: cosmwasm_std::SupplyResponse =
                     deps.querier
                         .query(&cosmwasm_std::QueryRequest::Bank(BankQuery::Supply {
@@ -607,12 +586,14 @@ pub fn query_is_active(deps: Deps) -> StdResult<Binary> {
                 // cosmwasm doesn't give us a Decimal * Uint256
                 // implementation so we take the decimal apart and
                 // multiply by the fraction.
-                let applied = total_power.multiply_ratio(
+                let applied = total_power.checked_multiply_ratio(
                     percent.atomics(),
                     Uint256::from(10u64).pow(percent.decimal_places()),
-                );
-                let rounded = (applied + Uint256::from(PRECISION_FACTOR) - Uint256::from(1u128))
-                    / Uint256::from(PRECISION_FACTOR);
+                )?;
+                let rounded = applied
+                    .checked_add(Uint256::from(PRECISION_FACTOR))?
+                    .checked_sub(Uint256::from(1u128))?
+                    .checked_div(Uint256::from(PRECISION_FACTOR))?;
                 to_json_binary(&IsActiveResponse {
                     active: actual_power >= rounded,
                 })

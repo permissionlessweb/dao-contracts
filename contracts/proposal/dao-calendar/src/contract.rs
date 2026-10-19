@@ -189,14 +189,67 @@ pub mod state {
         NipMetadata, NostrExt, RawNostrEvent,
     };
 
+    /// On-chain `e` is `CalendarMetadata` for kind 31924 and
+    /// `CalendarEventMetadata` for date and time events.
+    enum StoredCalendar {
+        Calendar(CalendarMetadata),
+        Event(CalendarEventMetadata),
+    }
+
+    impl StoredCalendar {
+        fn decode(meta: &MetadataExt) -> NipResult<Self> {
+            if meta.kind == Nip52Kind::Calendar.kind_value() {
+                CalendarMetadata::from_storage_binary(&meta.e)
+                    .map(Self::Calendar)
+                    .map_err(|e| NipError::Validation(format!("Failed to decode: {e}")))
+            } else {
+                CalendarEventMetadata::from_storage_binary(&meta.e)
+                    .map(Self::Event)
+                    .map_err(|e| NipError::Validation(format!("Failed to decode: {e}")))
+            }
+        }
+
+        fn nip_kind(&self) -> Nip52Kind {
+            match self {
+                Self::Calendar(inner) => inner.kind(),
+                Self::Event(inner) => inner.kind(),
+            }
+        }
+
+        fn validate_inner(&self) -> NipResult<()> {
+            match self {
+                Self::Calendar(inner) => inner.validate(),
+                Self::Event(inner) => inner.validate(),
+            }
+        }
+
+        fn to_tags(&self) -> Vec<cw721_nips::Tag> {
+            match self {
+                Self::Calendar(inner) => inner.to_tags(),
+                Self::Event(inner) => inner.to_tags(),
+            }
+        }
+
+        fn content(&self) -> String {
+            match self {
+                Self::Calendar(inner) => inner.content(),
+                Self::Event(inner) => inner.content(),
+            }
+        }
+    }
+
     impl NipMetadata for MetadataExt {
         type Kind = Nip52Kind;
 
         fn kind(&self) -> Self::Kind {
             if self.on_chain {
-                CalendarEventMetadata::from_storage_binary(&self.e)
-                    .map(|m| m.kind())
-                    .unwrap_or(Nip52Kind::TimeEvent)
+                StoredCalendar::decode(self)
+                    .map(|stored| stored.nip_kind())
+                    .unwrap_or(match self.kind {
+                        31924 => Nip52Kind::Calendar,
+                        31922 => Nip52Kind::DateEvent,
+                        _ => Nip52Kind::TimeEvent,
+                    })
             } else {
                 match self.kind {
                     31922 => Nip52Kind::DateEvent,
@@ -210,9 +263,7 @@ pub mod state {
                 if self.e.is_empty() {
                     return Err(NipError::Validation("Empty event data".into()));
                 }
-                CalendarEventMetadata::from_storage_binary(&self.e)
-                    .map_err(|e| NipError::Validation(format!("Failed to decode: {e}")))?
-                    .validate()
+                StoredCalendar::decode(self)?.validate_inner()
             } else {
                 if self.cid.is_none() {
                     return Err(NipError::Validation(
@@ -225,8 +276,8 @@ pub mod state {
 
         fn to_tags(&self) -> Vec<cw721_nips::Tag> {
             if self.on_chain {
-                CalendarEventMetadata::from_storage_binary(&self.e)
-                    .map(|m| m.to_tags())
+                StoredCalendar::decode(self)
+                    .map(|stored| stored.to_tags())
                     .unwrap_or_default()
             } else {
                 vec![]
@@ -235,8 +286,8 @@ pub mod state {
 
         fn content(&self) -> String {
             if self.on_chain {
-                CalendarEventMetadata::from_storage_binary(&self.e)
-                    .map(|m| m.content())
+                StoredCalendar::decode(self)
+                    .map(|stored| stored.content())
                     .unwrap_or_default()
             } else {
                 self.cid.clone().unwrap_or_default()
@@ -310,8 +361,7 @@ pub mod state {
 
         fn into_event(self, pubkey: &str, created_at: u64) -> NipResult<RawNostrEvent> {
             if self.on_chain {
-                let inner = CalendarEventMetadata::from_storage_binary(&self.e)
-                    .map_err(|e| NipError::Validation(format!("{e}")))?;
+                let inner = StoredCalendar::decode(&self)?;
                 let tags: Vec<Vec<String>> = inner
                     .to_tags()
                     .into_iter()

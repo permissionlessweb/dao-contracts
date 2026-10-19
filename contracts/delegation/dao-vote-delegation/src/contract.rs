@@ -12,7 +12,7 @@ use dao_interface::helpers::OptionalUpdate;
 use dao_interface::state::{ProposalModule, ProposalModuleStatus};
 use dao_interface::voting::InfoResponse;
 use dao_voting::delegation::{
-    calculate_delegated_vp, DelegationResponse, RegistrationResponse,
+    calculate_delegated_vp, unvoted_delegated_loss, DelegationResponse, RegistrationResponse,
     UnvotedDelegatedVotingPowerResponse, VotingPowerCapResponse,
 };
 use dao_voting::voting;
@@ -715,12 +715,10 @@ fn query_effective_unvoted_delegated_vote_power_reduction(
     // preventing this delegator from voting at all until the drift is
     // repaired (e.g. via `Sync` or a subsequent hook). saturating just
     // reduces the delegate's computed loss instead, which self-heals.
-    let new_effective_udvp = udvp.total.saturating_sub(delegated_vp).min(udvp.effective);
-
     // compute the amount of UDVP the delegate will lose due to this voter's
     // delegated VP being removed (likely due to a vote override).
     // new_effective_udvp is capped at udvp.effective, so this will never
-    // underflow, but use saturating_sub for vibes anyway.
+    // underflow. `unvoted_delegated_loss` is this same expression.
     //
     // the delegate will lose none, part, or all of this voter's delegated VP
     // based on how the delegate's total UDVP and voter's delegated VP compare
@@ -745,7 +743,11 @@ fn query_effective_unvoted_delegated_vote_power_reduction(
     //    not lose any VP since the cap is already low enough.
     //
     //       IF total_udvp - voter_delegated >= cap, THEN loss = 0
-    Ok(udvp.effective.saturating_sub(new_effective_udvp))
+    Ok(unvoted_delegated_loss(
+        udvp.total,
+        udvp.effective,
+        delegated_vp,
+    ))
 }
 
 fn query_proposal_modules(

@@ -1,7 +1,7 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdResult,
+    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError, StdResult,
 };
 
 use cw2::set_contract_version;
@@ -9,7 +9,7 @@ use dao_voting::reply::TaggedReplyId;
 use dao_voting::voting::{get_total_power, get_voting_power};
 
 use crate::config::UncheckedConfig;
-use crate::error::ContractError;
+use crate::error::{uint256_to_uint128, ContractError};
 use crate::msg::{Choice, ExecuteMsg, InstantiateMsg, QueryMsg};
 use crate::proposal::{Proposal, ProposalResponse, Status};
 use crate::state::{next_proposal_id, CONFIG, DAO, PROPOSAL, TALLY, VOTE};
@@ -122,6 +122,8 @@ fn execute_propose(
     let mut choices = choices;
     choices.push(none_of_the_above);
 
+    uint256_to_uint128(total_power)?;
+
     let tally = Tally::new(
         choices.len() as u32,
         total_power,
@@ -131,7 +133,7 @@ fn execute_propose(
     TALLY.save(deps.storage, id, &tally)?;
 
     let mut proposal = Proposal::new(&env.block, &config, info.sender, id, choices, total_power);
-    proposal.update_status(&env.block, &tally);
+    proposal.update_status(&env.block, &tally)?;
     PROPOSAL.save(deps.storage, id, &proposal)?;
 
     Ok(Response::default()
@@ -165,7 +167,7 @@ fn execute_vote(
         VOTE.save(deps.storage, (proposal_id, info.sender.clone()), &vote)?;
 
         let mut tally = tally;
-        tally.add_vote(vote, sender_power);
+        tally.add_vote(vote, sender_power)?;
         TALLY.save(deps.storage, proposal_id, &tally)?;
 
         Ok(Response::default()
@@ -195,7 +197,7 @@ fn execute_execute(
     }
 
     let mut proposal = PROPOSAL.load(deps.storage, proposal_id)?;
-    if let Status::Passed { winner } = proposal.update_status(&env.block, &tally) {
+    if let Status::Passed { winner } = proposal.update_status(&env.block, &tally)? {
         let msgs = proposal.set_executed(dao, winner)?;
         PROPOSAL.save(deps.storage, proposal_id, &proposal)?;
 
@@ -217,7 +219,7 @@ fn execute_close(
 ) -> Result<Response, ContractError> {
     let tally = TALLY.load(deps.storage, proposal_id)?;
     let mut proposal = PROPOSAL.load(deps.storage, proposal_id)?;
-    if let Status::Rejected = proposal.update_status(&env.block, &tally) {
+    if let Status::Rejected = proposal.update_status(&env.block, &tally)? {
         proposal.set_closed();
         PROPOSAL.save(deps.storage, proposal_id, &proposal)?;
 
@@ -251,7 +253,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::Proposal { id } => {
             let mut proposal = PROPOSAL.load(deps.storage, id)?;
             let tally = TALLY.load(deps.storage, id)?;
-            proposal.update_status(&env.block, &tally);
+            proposal
+                .update_status(&env.block, &tally)
+                .map_err(|err| StdError::msg(err.to_string()))?;
             to_json_binary(&ProposalResponse { proposal, tally })
         }
         QueryMsg::Config {} => to_json_binary(&CONFIG.load(deps.storage)?),
