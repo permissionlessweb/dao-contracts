@@ -1,0 +1,6 @@
+name = "VotingPow"
+version = "0.1.0"
+defaultTargets = ["VotingPow"]
+
+[[lean_lib]]
+name = "VotingPow"
