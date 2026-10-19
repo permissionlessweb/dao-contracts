@@ -1,5 +1,11 @@
 [workspace]
-exclude = ["ci/configs/", "ci/optimizer/", "contracts/voting/dao-voting-onft-staked", "contracts/external/dao-migrator", "wasmvm/libwasmvm"]
+exclude = [
+    "ci/configs/",
+    "ci/optimizer/",
+    "contracts/external/dao-migrator",
+    "contracts/voting/dao-voting-onft-staked",
+    "wasmvm/libwasmvm",
+]
 members = [
     "ci/*",
     "contracts/dao-dao-core",
@@ -12,7 +18,7 @@ members = [
     "contracts/staking/*",
     "contracts/test/*",
     "contracts/voting/*",
-    "packages/*"
+    "packages/*",
 ]
 resolver = "2"
 
@@ -30,28 +36,28 @@ base64 = "0.22.1"
 bech32 = "0.11.1"
 chrono = "0.4"
 cosm-orc = { version = "4.0" }
-cosmos-sdk-proto = { git = "https://github.com/permissionlessweb/cosmos-rust", rev = "2a070ec1111a14a9e479e49b52c21bbf0093b117" }
-cosmwasm-schema = { git = "https://github.com/permissionlessweb/cosmwasm", rev = "e20646e2d9a9c4f93e993eb0656afa795f6e387a" }
-cosmwasm-std = { git = "https://github.com/permissionlessweb/cosmwasm", rev = "e20646e2d9a9c4f93e993eb0656afa795f6e387a", features = ["cosmwasm_1_2", "cosmwasm_2_2", "stargate"] }
-cw-controllers = { git = "https://github.com/permissionlessweb/cw-minus", rev = "c5c680ddc3d896cc746618d7ad9b93e0f8271461" }
-cw-multi-test = { package = "abstract-cw-multi-test", git = "https://github.com/permissionlessweb/cw-multi-test-fork", rev = "cbf6c519e16840ba2454553ff117f482d539b4cd" }
-cw-ownable = { git = "https://github.com/permissionlessweb/cw-plus-plus", rev = "5b3f80d8c4a9cc99e92bd214b49730efeb3032ec" }
-cw-storage-plus = { git = "https://github.com/permissionlessweb/cw-storage-plus", rev = "cf066f8ca57cc30a7cf8f50fca9cf6e18291d71a" }
-cw-utils = { git = "https://github.com/permissionlessweb/cw-minus", rev = "c5c680ddc3d896cc746618d7ad9b93e0f8271461" }
-cw721-nips = { git = "https://github.com/permissionlessweb/terp-rs", rev = "1575d44cb1b16a7fc42ec7b4c533ea716fa5b416" }
-cw2 = { git = "https://github.com/permissionlessweb/cw-minus", rev = "c5c680ddc3d896cc746618d7ad9b93e0f8271461" }
-cw20 = { git = "https://github.com/permissionlessweb/cw-plus", rev = "f7ef1aaafd368d811f268cf47360a7d808e74102" }
-cw20-base = { git = "https://github.com/permissionlessweb/cw-plus", rev = "f7ef1aaafd368d811f268cf47360a7d808e74102" }
-cw3 = { git = "https://github.com/permissionlessweb/cw-plus", rev = "f7ef1aaafd368d811f268cf47360a7d808e74102" }
-cw4 = { git = "https://github.com/permissionlessweb/cw-plus", rev = "f7ef1aaafd368d811f268cf47360a7d808e74102" }
-cw4-group = { git = "https://github.com/permissionlessweb/cw-plus", rev = "f7ef1aaafd368d811f268cf47360a7d808e74102" }
-cw721 = { git = "https://github.com/permissionlessweb/cw-nfts", rev = "677860dc49599324bca781a569b973dcd6d85a12" }
-cw721-base = { git = "https://github.com/permissionlessweb/cw-nfts", rev = "677860dc49599324bca781a569b973dcd6d85a12" }
+cosmos-sdk-proto = { version = "0.28.0" }
+cosmwasm-schema = { version = "=4.0.0-zk" }
+cosmwasm-std = { version = "=4.0.0-zk", features = ["cosmwasm_1_2", "cosmwasm_2_2", "stargate"] }
+cw-controllers = { version = "3.0.0" }
+cw-multi-test = { package = "abstract-cw-multi-test", version = "=3.0.0-rc" }
+cw-ownable = { version = "3.0.1" }
+cw-storage-plus = { version = "3.0.1" }
+cw-utils = { version = "3.0.0" }
+cw2 = { version = "3.0.0" }
+cw20 = { version = "3.0.0" }
+cw20-base = { version = "3.0.0" }
+cw3 = { version = "3.0.0" }
+cw4 = { version = "3.0.0" }
+cw4-group = { version = "3.0.0" }
+cw721 = { version = "0.22.0" }
+cw721-base = { version = "0.22.0" }
+cw721-nips = { version = "=0.1.0" }
 env_logger = "0.11.10"
 once_cell = "1.18"
-osmosis-std = { git = "https://github.com/permissionlessweb/osmosis-rust", rev = "cb7b4bc4892a8ad74eaaeeba56e634e119608d30" }
-osmosis-std-derive = { git = "https://github.com/permissionlessweb/osmosis-rust", rev = "cb7b4bc4892a8ad74eaaeeba56e634e119608d30" }
-osmosis-test-tube = { git = "https://github.com/permissionlessweb/osmosis-test-tube", rev = "601a8b1d2d50e2631daf2b1c86dc288fd9726773" }
+osmosis-std = { version = "0.26.0" }
+osmosis-std-derive = { version = "0.20.1" }
+osmosis-test-tube = { version = "25.0.0" }
 proc-macro2 = "1.0"
 prost = { version = "=0.14.4" }
 prost-reflect = { version = "=0.16.3", features = ["serde"] }
@@ -72,8 +78,8 @@ thiserror = { version = "1.0" }
 # One commit ahead of version 0.3.0. Allows initialization with an
 # optional owner.
 
-cw-orch = { git = "https://github.com/permissionlessweb/cw-orchestrator", rev = "ec4d693aad80ee70ddbd77c3b78c9807bedb6be0" }
-cw-orch-polytone = { package = "abstract-cw-orch-polytone", git = "https://github.com/permissionlessweb/polytone", rev = "82d67c471b9b728ed39be29de16ecd325dee7000" }
+cw-orch = { version = "0.30.0" }
+cw-orch-polytone = { package = "abstract-cw-orch-polytone", version = "=6.0.1" }
 
 btsg-ft-factory = { path = "./contracts/external/btsg-ft-factory", version = "2.9.0-delta.9" }
 cw-admin-factory = { path = "./contracts/external/cw-admin-factory", version = "2.9.0-delta.9" }
@@ -134,13 +140,13 @@ nft-controllers = { path = "./packages/nft-controllers", version = "2.9.0-delta.
 wynd-utils = { path = "./packages/wynd-utils", version = "0.4.2" }
 
 [patch.crates-io]
+
 osmosis-std-derive = { path = "../osmosis-rust/packages/osmosis-std-derive" }
 cw-utils = { path = "../cw-minus/packages/cw-utils" }
 cw2 = { path = "../cw-minus/packages/cw2" }
 cw-controllers = { path = "../cw-minus/packages/controllers" }
 cw20 = { path = "../cw-plus/packages/cw20" }
 cw20-base = { path = "../cw-plus/contracts/cw20-base" }
-cw3 = { path = "../cw-plus/packages/cw3" }
 cw4 = { path = "../cw-plus/packages/cw4" }
 cw4-group = { path = "../cw-plus/contracts/cw4-group" }
 cw-ownable = { path = "../cw-plus-plus/packages/ownable" }
@@ -150,79 +156,28 @@ cosmos-sdk-proto = { path = "../cosmos-rust/cosmos-sdk-proto" }
 osmosis-std = { path = "../osmosis-rust/packages/osmosis-std" }
 osmosis-test-tube = { path = "../osmosis-test-tube/packages/osmosis-test-tube" }
 cw-orch = { path = "../cw-orchestrator/cw-orch" }
-
-[patch."https://github.com/permissionlessweb/cw-orchestrator"]
-cw-orch = { path = "../cw-orchestrator/cw-orch" }
-cw-orch-core = { path = "../cw-orchestrator/packages/cw-orch-core" }
-cw-orch-daemon = { path = "../cw-orchestrator/cw-orch-daemon" }
-cw-orch-interchain = { path = "../cw-orchestrator/cw-orch-interchain" }
-cw-orch-traits = { path = "../cw-orchestrator/packages/cw-orch-traits" }
-
-[patch.'https://github.com/permissionlessweb/cw-plus']
-cw1 = { path = "../cw-plus/packages/cw1" }
-cw1-whitelist = { path = "../cw-plus/contracts/cw1-whitelist" }
-cw20 = { path = "../cw-plus/packages/cw20" }
-cw20-base = { path = "../cw-plus/contracts/cw20-base" }
-cw20-ics20 = { path = "../cw-plus/contracts/cw20-ics20" }
-cw3 = { path = "../cw-plus/packages/cw3" }
-cw4 = { path = "../cw-plus/packages/cw4" }
-cw4-group = { path = "../cw-plus/contracts/cw4-group" }
-
-# Unify all git branch tips (freeze/mvp/main) of CosmWasm onto monorepo paths.
-[patch.'https://github.com/permissionlessweb/cosmwasm']
-cosmwasm-core = { path = "../cosmwasm/packages/core" }
-cosmwasm-crypto = { path = "../cosmwasm/packages/crypto" }
-cosmwasm-derive = { path = "../cosmwasm/packages/derive" }
-cosmwasm-schema = { path = "../cosmwasm/packages/schema" }
-cosmwasm-schema-derive = { path = "../cosmwasm/packages/schema-derive" }
-cosmwasm-std = { path = "../cosmwasm/packages/std" }
-cw-schema = { path = "../cosmwasm/packages/cw-schema" }
-cw-schema-derive = { path = "../cosmwasm/packages/cw-schema-derive" }
-
-[patch.'https://github.com/permissionlessweb/cw-minus']
-cw-controllers = { path = "../cw-minus/packages/controllers" }
-cw-utils = { path = "../cw-minus/packages/cw-utils" }
-cw2 = { path = "../cw-minus/packages/cw2" }
-
-[patch.'https://github.com/permissionlessweb/cw-storage-plus']
-cw-storage-plus = { path = "../cw-storage-plus" }
-
-[patch.'https://github.com/permissionlessweb/cw-plus-plus']
-cw-ownable = { path = "../cw-plus-plus/packages/ownable" }
-cw-address-like = { path = "../cw-plus-plus/packages/address-like" }
-
-[patch.'https://github.com/permissionlessweb/cw-multi-test-fork']
 abstract-cw-multi-test = { path = "../cw-multi-test-fork" }
-
-[patch.'https://github.com/permissionlessweb/cw-nfts']
-cw721 = { path = "../cw-nfts/packages/cw721" }
-cw721-base = { path = "../cw-nfts/contracts/cw721-base" }
-
-[patch.'https://github.com/permissionlessweb/osmosis-rust']
-osmosis-std = { path = "../osmosis-rust/packages/osmosis-std" }
-osmosis-std-derive = { path = "../osmosis-rust/packages/osmosis-std-derive" }
-
-[patch.'https://github.com/permissionlessweb/osmosis-test-tube']
-osmosis-test-tube = { path = "../osmosis-test-tube/packages/osmosis-test-tube" }
-
-[patch.'https://github.com/permissionlessweb/cosmos-rust']
-cosmos-sdk-proto = { path = "../cosmos-rust/cosmos-sdk-proto" }
-cosmrs = { path = "../cosmos-rust/cosmrs" }
-
-[patch.'https://github.com/permissionlessweb/tendermint-rs']
-tendermint = { path = "../tendermint-rs/tendermint" }
-tendermint-proto = { path = "../tendermint-rs/proto" }
-tendermint-rpc = { path = "../tendermint-rs/rpc" }
-
-[patch.'https://github.com/permissionlessweb/pbjson']
-informalsystems-pbjson = { path = "../pbjson/pbjson" }
-
-[patch.'https://github.com/permissionlessweb/polytone']
 abstract-cw-orch-polytone = { path = "../polytone/packages/cw-orch-polytone" }
-
-[patch.'https://github.com/permissionlessweb/terp-rs']
+cosmwasm-schema = { path = "../cosmwasm/packages/schema" }
+cosmwasm-std = { path = "../cosmwasm/packages/std" }
+cw-storage-plus = { path = "../cw-storage-plus" }
+cw1-whitelist = { path = "../cw-plus/contracts/cw1-whitelist" }
 cw721-nips = { path = "../terp-rs/crates/nips" }
-
+cw-orch-interchain = { path = "../cw-orchestrator/cw-orch-interchain" }
+cw1 = { path = "../cw-plus/packages/cw1" }
+ibc-relayer-types = { path = "../hermes/crates/relayer-types" }
+tendermint-proto = { path = "../tendermint-rs/proto" }
+informalsystems-pbjson = { path = "../pbjson/pbjson" }
+ibc-chain-registry = { path = "../hermes/crates/chain-registry" }
+cosmrs = { path = "../cosmos-rust/cosmrs" }
+ibc-proto = { path = "../ibc-proto-rs" }
+tendermint = { path = "../tendermint-rs/tendermint" }
+tendermint-rpc = { path = "../tendermint-rs/rpc" }
+zk-cosmwasm = { path = "../cosmwasm/packages/zk" }
+cw20-ics20 = { path = "../cw-plus/contracts/cw20-ics20" }
+ics23 = { path = "../ics23/rust" }
+tendermint-light-client-verifier = { path = "../tendermint-rs/light-client-verifier" }
+cw-schema = { path = "../cosmwasm/packages/cw-schema" }
 [profile.release]
 codegen-units = 1
 debug = false

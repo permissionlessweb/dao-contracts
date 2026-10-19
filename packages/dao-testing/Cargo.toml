@@ -1,15 +1,23 @@
 [package]
 name = "dao-testing"
 authors = [
-  "ekez ekez@withoutdoing.com",
-  "Jake Hartnell <no-reply@no-reply.com>",
-  "noah <noah@daodao.zone>",
+    "ekez ekez@withoutdoing.com",
+    "Jake Hartnell <no-reply@no-reply.com>",
+    "noah <noah@daodao.zone>",
 ]
 description = "Testing helper functions and interfaces for testing DAO modules."
 edition = { workspace = true }
 license = { workspace = true }
 repository = { workspace = true }
 version = { workspace = true }
+
+[[bin]]
+name = "suite_api"
+path = "src/bin/suite_api.rs"
+
+[[bin]]
+name = "deploy"
+path = "src/bin/deploy.rs"
 
 [features]
 default = ["btsg"]
@@ -29,71 +37,63 @@ btsg = ["dep:btsg-ft-factory", "dao-cw-orch/btsg"]
 # conditionally. As such, we don't compile anything here if we're
 # targeting wasm.
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+
+btsg-ft-factory = { workspace = true, optional = true }
 cosmwasm-schema = { workspace = true }
 cosmwasm-std = { workspace = true, features = ["staking"] }
+cw-admin-factory = { workspace = true }
+cw-filter = { workspace = true }
+cw-hooks = { workspace = true }
 cw-multi-test = { workspace = true }
+cw-orch = { workspace = true, features = ["daemon"] }
+cw-orch-polytone = { workspace = true, default-features = false }
+cw-payroll-factory = { workspace = true }
+cw-protobuf-registry = { workspace = true }
+cw-token-swap = { workspace = true }
+cw-tokenfactory-issuer = { workspace = true }
 cw-utils = { workspace = true }
+cw-vesting = { workspace = true }
+cw1-whitelist = { version = "3.0.0" }
 cw2 = { workspace = true }
 cw20 = { workspace = true }
 cw20-base = { workspace = true }
-cw4 = { workspace = true }
-cw4-group = { workspace = true }
-osmosis-std = { workspace = true }
-osmosis-test-tube = { workspace = true, optional = true }
-rand = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
-toml = "0.8"
-cw1-whitelist = { git = "https://github.com/permissionlessweb/cw-plus", rev = "f7ef1aaafd368d811f268cf47360a7d808e74102" }
-
-btsg-ft-factory = { workspace = true, optional = true }
-cw-admin-factory = { workspace = true }
-cw-hooks = { workspace = true }
-cw-payroll-factory = { workspace = true }
-cw-token-swap = { workspace = true }
-cw-vesting = { workspace = true }
 cw20-stake = { workspace = true }
 cw20-stake-external-rewards = { workspace = true }
 cw20-stake-reward-distributor = { workspace = true }
+cw4 = { workspace = true }
+cw4-group = { workspace = true }
 cw721 = { workspace = true }
 cw721-base = { workspace = true }
-cw721-roles = { workspace = true }
 cw721-nips = { workspace = true }
-cw-tokenfactory-issuer = { workspace = true }
-dao-calendar = { workspace = true , features = ["interface"]}
+cw721-roles = { workspace = true }
+dao-calendar = { workspace = true, features = ["interface"] }
+dao-cw-orch = { workspace = true, default-features = false }
 dao-dao-core = { workspace = true }
 dao-interface = { workspace = true }
-dao-cw-orch = { workspace = true, default-features = false }
-cw-orch = { workspace = true, features = ["daemon"] }
-cw-orch-polytone = { workspace = true, default-features = false }
+dao-pre-propose-approval-single = { workspace = true }
 dao-pre-propose-approver = { workspace = true }
 dao-pre-propose-multiple = { workspace = true }
 dao-pre-propose-single = { workspace = true }
-dao-pre-propose-approval-single = { workspace = true }
 dao-proposal-condorcet = { workspace = true }
-dao-proposal-single = { workspace = true }
+dao-proposal-hook-counter = { workspace = true }
 dao-proposal-multiple = { workspace = true }
+dao-proposal-single = { workspace = true }
 dao-proposal-sudo = { workspace = true }
 dao-rbam = { workspace = true }
-cw-filter = { workspace = true }
-cw-protobuf-registry = { workspace = true }
 dao-rewards-distributor = { workspace = true }
 dao-test-custom-factory = { workspace = true }
 dao-voting = { workspace = true }
 dao-voting-cw20-balance = { workspace = true }
 dao-voting-cw20-staked = { workspace = true }
 dao-voting-cw4 = { workspace = true }
-dao-voting-cw721-staked = { workspace = true }
 dao-voting-cw721-roles = { workspace = true }
+dao-voting-cw721-staked = { workspace = true }
 dao-voting-token-staked = { workspace = true }
-dao-proposal-hook-counter = { workspace = true }
 gauge-adapter = { workspace = true }
 gauge-orchestrator = { workspace = true }
-
-[[bin]]
-name = "suite_api"
-path = "src/bin/suite_api.rs"
-
-[[bin]]
-name = "deploy"
-path = "src/bin/deploy.rs"
+osmosis-std = { workspace = true }
+osmosis-test-tube = { workspace = true, optional = true }
+rand = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = "0.8"
