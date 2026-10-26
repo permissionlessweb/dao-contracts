@@ -141,9 +141,10 @@ wynd-utils = { path = "./packages/wynd-utils", version = "0.4.2" }
 
 [patch.crates-io]
 
+cw721-nips = { git = "https://github.com/permissionlessweb/terp-rs", rev = "10f19e15daf9b8a0e0429c56e75854868103ea2e" }
+
 ibc-relayer-types = { git = "https://github.com/permissionlessweb/hermes", rev = "f636aa80a13623b55197ef63e8f980894354307b" }
 ibc-chain-registry = { git = "https://github.com/permissionlessweb/hermes", rev = "f636aa80a13623b55197ef63e8f980894354307b" }
-cw721-nips = { git = "https://github.com/permissionlessweb/terp-rs", rev = "10f19e15daf9b8a0e0429c56e75854868103ea2e" }
 ibc-proto = { git = "https://github.com/permissionlessweb/ibc-proto-rs", rev = "6bb6236eef08c56b4c0490ed564864936b412151" }
 zk-cosmwasm = { git = "https://github.com/permissionlessweb/cosmwasm", rev = "63ac6cb94311daccf73ce658e8c2f6b4dcade3a0" }
 ics23 = { git = "https://github.com/permissionlessweb/ics23", rev = "a60a82d843d94f90a154ad2df390e1515546492e" }
@@ -174,10 +175,10 @@ tendermint = { git = "https://github.com/permissionlessweb/tendermint-rs", rev =
 tendermint-rpc = { git = "https://github.com/permissionlessweb/tendermint-rs", rev = "c732393410cefadb53da98836a7620ef1a1ef8bb" }
 cw20-ics20 = { git = "https://github.com/permissionlessweb/cw-plus", rev = "f66883649c08d2671cc7d66cdf4f7f6abec4e44d" }
 tendermint-light-client-verifier = { git = "https://github.com/permissionlessweb/tendermint-rs", rev = "c732393410cefadb53da98836a7620ef1a1ef8bb" }
-cosmwasm-schema = { git = "https://github.com/permissionlessweb/cosmwasm", rev = "e20646e2d9a9c4f93e993eb0656afa795f6e387a" }
-cosmwasm-std = { git = "https://github.com/permissionlessweb/cosmwasm", rev = "e20646e2d9a9c4f93e993eb0656afa795f6e387a" }
+cosmwasm-schema = { git = "https://github.com/permissionlessweb/cosmwasm", rev = "63ac6cb94311daccf73ce658e8c2f6b4dcade3a0" }
+cosmwasm-std = { git = "https://github.com/permissionlessweb/cosmwasm", rev = "63ac6cb94311daccf73ce658e8c2f6b4dcade3a0" }
 informalsystems-pbjson = { git = "https://github.com/permissionlessweb/pbjson", rev = "df9ae64ffc106affccdfec2437365f8498ef306d" }
-cw-schema = { git = "https://github.com/permissionlessweb/cosmwasm", rev = "e20646e2d9a9c4f93e993eb0656afa795f6e387a" }
+cw-schema = { git = "https://github.com/permissionlessweb/cosmwasm", rev = "63ac6cb94311daccf73ce658e8c2f6b4dcade3a0" }
 cw3 = { git = "https://github.com/permissionlessweb/cw-plus", rev = "f66883649c08d2671cc7d66cdf4f7f6abec4e44d" }
 [profile.release]
 codegen-units = 1
