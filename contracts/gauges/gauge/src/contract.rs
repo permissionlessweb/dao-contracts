@@ -424,12 +424,12 @@ mod execute {
             max_options_selected,
             max_available_percentage,
             is_stopped: false,
-            next_epoch: env.block.time.seconds() + epoch_size,
+            next_epoch: crate::gauge_block_seconds(env.block.time.nanos()) + epoch_size,
             last_executed_set: None,
             reset: reset_epoch.map(|r| Reset {
                 last: None,
                 reset_each: r,
-                next: env.block.time.plus_seconds(r).seconds(),
+                next: crate::gauge_block_seconds(env.block.time.plus_seconds(r).nanos()),
             }),
             total_epoch: total_epochs,
         };
@@ -563,7 +563,9 @@ mod execute {
     ) -> Result<Response, ContractError> {
         let mut gauge = GAUGES.load(deps.storage, gauge_id)?;
         match gauge.reset {
-            Some(ref mut reset) if reset.next <= env.block.time.seconds() => {
+            Some(ref mut reset)
+                if reset.next <= crate::gauge_block_seconds(env.block.time.nanos()) =>
+            {
                 reset.last = Some(reset.next);
 
                 // remove all options from the gauge
@@ -787,7 +789,7 @@ mod execute {
             return Err(ContractError::GaugeResetting(gauge_id));
         }
 
-        let current_epoch = env.block.time.seconds();
+        let current_epoch = crate::gauge_block_seconds(env.block.time.nanos());
         if current_epoch < gauge.next_epoch {
             return Err(ContractError::EpochNotReached {
                 gauge_id,
@@ -795,7 +797,8 @@ mod execute {
                 next_epoch: gauge.next_epoch,
             });
         }
-        gauge.next_epoch = env.block.time.plus_seconds(gauge.epoch).seconds();
+        gauge.next_epoch =
+            crate::gauge_block_seconds(env.block.time.plus_seconds(gauge.epoch).nanos());
 
         // this set contains tuple (option, total_voted_power)
         // for adapter query, this needs to be transformed into (option, voted_weight)
@@ -1081,7 +1084,7 @@ pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg,_info: MigrateInfo) -> R
             let mut gauge = gauge
                 .ok_or_else(|| StdError::msg(format!(" not found: Gauge with id {}", gauge_id)))?;
             if let Some(next_epoch) = config.next_epoch {
-                if next_epoch < env.block.time.seconds() {
+                if next_epoch < crate::gauge_block_seconds(env.block.time.nanos()) {
                     return Err(StdError::msg(
                         "Next epoch value cannot be earlier then current epoch!",
                     ));
@@ -1089,7 +1092,7 @@ pub fn migrate(deps: DepsMut, env: Env, msg: MigrateMsg,_info: MigrateInfo) -> R
                 gauge.next_epoch = next_epoch;
             }
             if let Some(reset_config) = config.reset {
-                if reset_config.next_reset < env.block.time.seconds() {
+                if reset_config.next_reset < crate::gauge_block_seconds(env.block.time.nanos()) {
                     return Err(StdError::msg(
                         "Next reset value cannot be earlier then current epoch!",
                     ));

@@ -210,7 +210,7 @@ impl Votes {
                 gauge_id,
                 power,
                 votes,
-                cast: Some(env.block.time.seconds()),
+                cast: Some(crate::gauge_block_seconds(env.block.time.nanos())),
             },
         )
     }

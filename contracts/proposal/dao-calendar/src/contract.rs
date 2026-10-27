@@ -762,6 +762,19 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
+    // wasm-opt inlines every one-caller function. The query deserializer and
+    // the cw721 query body must stay separate functions: a ~100k Wasm body
+    // compiles past the AArch64 ±1 MiB short branch. This branch is not taken
+    // (block time is never u64::MAX) and exists only as the second caller.
+    if std::hint::black_box(env.block.time.nanos()) == u64::MAX {
+        let _ = cosmwasm_std::from_json::<QueryMsg>(&Binary::default());
+        let _ = query(
+            deps.as_ref(),
+            env.clone(),
+            QueryMsg::Extension { msg: QueryExt::Info {} },
+        );
+        let _ = query_cw721(deps.as_ref(), &env, QueryMsg::Extension { msg: QueryExt::Dao {} });
+    }
     match msg {
         cw721::msg::Cw721ExecuteMsg::UpdateExtension { msg } => match msg {
             ExecuteExt::CreateCalendar { owner, extension } => {
@@ -799,6 +812,7 @@ pub fn execute(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
+#[inline(never)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Extension { msg } => match msg {
@@ -866,10 +880,16 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         },
         // Delegate standard cw721 queries (OwnerOf, Tokens, etc.)
         // to the underlying cw721 base collection.
-        other => DaoNostrCalendar::default()
-            .query(deps, &env, other)
-            .map_err(|e| cosmwasm_std::StdError::msg(e.to_string())),
+        other => query_cw721(deps, &env, other),
     }
+}
+
+/// cw721 base queries, outlined so wasm-opt cannot fuse them into the query export.
+#[inline(never)]
+fn query_cw721(deps: Deps, env: &Env, msg: QueryMsg) -> StdResult<Binary> {
+    DaoNostrCalendar::default()
+        .query(deps, env, msg)
+        .map_err(|e| cosmwasm_std::StdError::msg(e.to_string()))
 }
 
 pub fn query_info(deps: Deps) -> StdResult<Binary> {
