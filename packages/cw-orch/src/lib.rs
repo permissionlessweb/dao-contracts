@@ -1,4 +1,6 @@
 #[cfg(not(target_arch = "wasm32"))]
+mod artifacts;
+#[cfg(not(target_arch = "wasm32"))]
 mod core;
 #[cfg(not(target_arch = "wasm32"))]
 mod distribution;
@@ -17,6 +19,8 @@ mod voting;
 #[cfg(not(target_arch = "wasm32"))]
 mod gauges;
 
+#[cfg(not(target_arch = "wasm32"))]
+pub use artifacts::{is_terp_chain, terp_wasm_file};
 #[cfg(not(target_arch = "wasm32"))]
 pub use core::*;
 #[cfg(not(target_arch = "wasm32"))]

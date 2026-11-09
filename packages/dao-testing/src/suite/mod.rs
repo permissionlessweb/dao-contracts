@@ -1,4 +1,5 @@
 mod base;
+pub mod curate;
 mod cw20_suite;
 mod cw4_suite;
 mod cw721_suite;
@@ -26,6 +27,7 @@ pub use cw_multi_test::Executor;
 // Old cw-multi-test suite (preserved)
 pub use deploy_data::DaoDeployData;
 pub use base::*;
+pub use curate::*;
 pub use cw20_suite::*;
 pub use cw4_suite::*;
 pub use cw721_suite::*;

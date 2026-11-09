@@ -8,10 +8,13 @@ pub struct DaoVotingTokenStaked;
 
 impl<Chain> Uploadable for DaoVotingTokenStaked<Chain> {
     /// Return the path to the wasm file corresponding to the contract
-    fn wasm(_chain: &ChainInfoOwned) -> WasmPath {
-        artifacts_dir_from_workspace!()
-            .find_wasm_path("dao_voting_token_staked")
-            .unwrap()
+    fn wasm(chain: &ChainInfoOwned) -> WasmPath {
+        let dir = artifacts_dir_from_workspace!();
+        if crate::is_terp_chain(chain) {
+            return WasmPath::new(dir.path().join(crate::terp_wasm_file("dao_voting_token_staked")))
+                .expect("dao_voting_token_staked-default.wasm");
+        }
+        dir.find_wasm_path("dao_voting_token_staked").unwrap()
     }
     /// Returns a CosmWasm contract wrapper
     fn wrapper() -> Box<dyn MockContract<Empty>> {
