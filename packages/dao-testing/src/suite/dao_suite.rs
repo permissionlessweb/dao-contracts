@@ -260,6 +260,25 @@ impl<Chain: CwEnv> DaoDaoSuite<Chain> {
         self.delegation.upload_if_needed()?;
         Ok(())
     }
+
+    /// Setup that runs only after a script spawned a local image.
+    ///
+    /// The default checks the suite sender has a spendable balance, which is
+    /// the account `--spawn` funded. A suite that needs module state or an
+    /// extra contract before upload overrides this.
+    pub fn on_spawn(&self) -> Result<(), CwOrchError> {
+        let env = self.dao_core.environment();
+        let addr = env.sender_addr();
+        let coins = env
+            .balance(&addr, None)
+            .map_err(|err| CwOrchError::StdErr(err.to_string()))?;
+        if coins.iter().all(|coin| coin.amount.is_zero()) {
+            return Err(CwOrchError::StdErr(format!(
+                "spawn preflight: {addr} has no spendable balance"
+            )));
+        }
+        Ok(())
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════
